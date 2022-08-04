@@ -1,6 +1,12 @@
 # kogito-serverless-operator
 Kogito Serverless Workflow CRD PoC
 
+# PreRequisites
+
+operator-sdk-v1.22.2
+
+Go 1.17
+
 ## Description
 The aim of this project is to collect everything is needed for a proof-of-concept of the Kogito Serverless Workflow CRD
 
