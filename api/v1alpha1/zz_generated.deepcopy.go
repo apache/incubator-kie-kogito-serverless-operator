@@ -503,8 +503,12 @@ func (in *State) DeepCopyInto(out *State) {
 	}
 	if in.Actions != nil {
 		in, out := &in.Actions, &out.Actions
-		*out = make([]Action, len(*in))
-		copy(*out, *in)
+		*out = new([]Action)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]Action, len(*in))
+			copy(*out, *in)
+		}
 	}
 	if in.Data != nil {
 		in, out := &in.Data, &out.Data

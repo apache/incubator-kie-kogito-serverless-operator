@@ -186,7 +186,8 @@ type Transition struct{}
 //TODO: Define Transition
 
 type State struct {
-	Name string    `json:"name"`
+	Name string `json:"name"`
+	// +kubebuilder:validation:Enum:=event;operation;switch;sleep;parallel;inject;foreach
 	Type StateType `json:"type"`
 	// +optional
 	Exclusive *bool `json:"exclusive,omitempty"`
