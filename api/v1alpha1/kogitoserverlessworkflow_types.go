@@ -29,28 +29,36 @@ type Constant struct {
 }
 
 type Timeout struct {
-	WorkflowExecTimeout string `json:"workflowExecTimeout,omitempty"`
-	StateExecTimeout    string `json:"stateExecTimeout,omitempty"`
-	ActionExecTimeout   string `json:"actionExecTimeout,omitempty"`
-	BranchExecTimeout   string `json:"branchExecTimeout,omitempty"`
-	EventTimeout        string `json:"eventTimeout,omitempty"`
+	// +optional
+	WorkflowExecTimeout *string `json:"workflowExecTimeout,omitempty"`
+	// +optional
+	StateExecTimeout *string `json:"stateExecTimeout,omitempty"`
+	// +optional
+	ActionExecTimeout *string `json:"actionExecTimeout,omitempty"`
+	// +optional
+	BranchExecTimeout *string `json:"branchExecTimeout,omitempty"`
+	// +optional
+	EventTimeout *string `json:"eventTimeout,omitempty"`
 }
 
 type Error struct {
-	Name        string `json:"name"`
-	Code        string `json:"code"`
-	Description string `json:"description,omitempty"`
+	Name string `json:"name"`
+	Code string `json:"code"`
+	// +optional
+	Description *string `json:"description,omitempty"`
 }
 
 type BasicAuthProperties struct {
-	Username string     `json:"username"`
-	Password string     `json:"password"`
-	Metadata []Metadata `json:"metadata,omitempty"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	// +optional
+	Metadata *[]Metadata `json:"metadata,omitempty"`
 }
 
 type BearerAuthProperties struct {
-	Token    string     `json:"token"`
-	Metadata []Metadata `json:"metadata,omitempty"`
+	Token string `json:"token"`
+	// +optional
+	Metadata *[]Metadata `json:"metadata,omitempty"`
 }
 
 type GrantType string
@@ -62,24 +70,37 @@ const (
 )
 
 type OAuth2Properties struct {
-	Authority        string     `json:"basic,omitempty"`
-	GrantType        GrantType  `json:"grantType"`
-	ClientId         string     `json:"clientId"`
-	ClientSecret     string     `json:"clientSecret"`
-	Scopes           []string   `json:"scopes,omitempty"`
-	Username         string     `json:"username,omitempty"`
-	Password         string     `json:"password,omitempty"`
-	Audiences        []string   `json:"audiences,omitempty"`
-	SubjectToken     string     `json:"subjectToken,omitempty"`
-	RequestedSubject string     `json:"requestedSubject,omitempty"`
-	RequestedIssuer  string     `json:"requestedIssuer,omitempty"`
-	Metadata         []Metadata `json:"metadata,omitempty"`
+	// +optional
+	Authority *string   `json:"basic,omitempty"`
+	GrantType GrantType `json:"grantType"`
+	ClientId  string    `json:"clientId"`
+	// +optional
+	ClientSecret *string `json:"clientSecret"`
+	// +optional
+	Scopes *[]string `json:"scopes,omitempty"`
+	// +optional
+	Username *string `json:"username,omitempty"`
+	// +optional
+	Password *string `json:"password,omitempty"`
+	// +optional
+	Audiences *[]string `json:"audiences,omitempty"`
+	// +optional
+	SubjectToken *string `json:"subjectToken,omitempty"`
+	// +optional
+	RequestedSubject *string `json:"requestedSubject,omitempty"`
+	// +optional
+	RequestedIssuer *string `json:"requestedIssuer,omitempty"`
+	// +optional
+	Metadata *[]Metadata `json:"metadata,omitempty"`
 }
 
 type AuthProperties struct {
-	Basic  BasicAuthProperties  `json:"basic,omitempty"`
-	Bearer BearerAuthProperties `json:"bearer,omitempty"`
-	Oauth2 OAuth2Properties     `json:"oauth2,omitempty"`
+	// +optional
+	Basic *BasicAuthProperties `json:"basic,omitempty"`
+	// +optional
+	Bearer *BearerAuthProperties `json:"bearer,omitempty"`
+	// +optional
+	Oauth2 *OAuth2Properties `json:"oauth2,omitempty"`
 }
 
 type Auth struct {
@@ -106,13 +127,18 @@ type Metadata struct {
 }
 
 type Event struct {
-	Name        string                 `json:"name"`
-	Source      string                 `json:"source"`
-	Type        string                 `json:"type"`
-	Kind        EventKind              `json:"kind,omitempty"`
-	Correlation []EventCorrelationRule `json:"correlation,omitempty"`
-	DataOnly    bool                   `json:"dataOnly,omitempty"`
-	Metadata    []Metadata             `json:"metadata,omitempty"`
+	Name string `json:"name"`
+	// +optional
+	Source *string `json:"source"`
+	Type   string  `json:"type"`
+	// +optional
+	Kind *EventKind `json:"kind,omitempty"`
+	// +optional
+	Correlation *[]EventCorrelationRule `json:"correlation,omitempty"`
+	// +optional
+	DataOnly *bool `json:"dataOnly,omitempty"`
+	// +optional
+	Metadata *[]Metadata `json:"metadata,omitempty"`
 }
 
 type FunctionType string
@@ -127,21 +153,30 @@ const (
 )
 
 type Function struct {
-	Name      string       `json:"name"`
-	Operation string       `json:"operation"`
-	Type      FunctionType `json:"type"`
-	AuthRef   string       `json:"authRef,omitempty"`
-	Metadata  []Metadata   `json:"metadata,omitempty"`
+	Name      string `json:"name"`
+	Operation string `json:"operation"`
+	// +optional
+	Type *FunctionType `json:"type"`
+	// +optional
+	AuthRef *string `json:"authRef,omitempty"`
+	// +optional
+	Metadata *[]Metadata `json:"metadata,omitempty"`
 }
 
 type Retry struct {
-	Name        string `json:"name"`
-	Delay       string `json:"delay,omitempty"`
-	MaxAttempts int    `json:"maxAttempts,omitempty"`
-	MaxDelay    string `json:"maxDelay,omitempty"`
-	Increment   string `json:"increment,omitempty"`
-	Multiplier  string `json:"multiplier,omitempty"`
-	Jitter      string `json:"jitter,omitempty"`
+	Name string `json:"name"`
+	// +optional
+	Delay *string `json:"delay,omitempty"`
+	// +optional
+	MaxAttempts *int `json:"maxAttempts,omitempty"`
+	// +optional
+	MaxDelay *string `json:"maxDelay,omitempty"`
+	// +optional
+	Increment *string `json:"increment,omitempty"`
+	// +optional
+	Multiplier *string `json:"multiplier,omitempty"`
+	// +optional
+	Jitter *string `json:"jitter,omitempty"`
 }
 
 type StateType string
@@ -172,20 +207,29 @@ const (
 
 type EventRef struct {
 	// +kubebuilder:validation:Required
-	ProduceEventRef     string  `json:"produceEventRef"`
-	ConsumeEventRef     *string `json:"consumeEventRef,omitempty"`
+	ProduceEventRef string `json:"produceEventRef"`
+	// +optional
+	ConsumeEventRef *string `json:"consumeEventRef,omitempty"`
+	// +optional
 	ConsumeEventTimeout *string `json:"consumeEventTimeout,omitempty"`
-	Data                *string `json:"data,omitempty"`
+	// +optional
+	Data *string `json:"data,omitempty"`
 	//TODO Define a custom type for ContextAttribute
+	// +optional
 	ContextAttributes *map[string]unstructured.Unstructured `json:"contextAttributes,omitempty"`
-	Invoke            *InvokeTye                            `json:"invoke,omitempty"`
+	// +optional
+	Invoke *InvokeTye `json:"invoke,omitempty"`
 }
 
 type ActionDataFilter struct {
+	// +optional
 	FromStateData *string `json:"fromStateData,omitempty"`
-	UseResults    *bool   `json:"useResults,omitempty"`
-	Results       *string `json:"results,omitempty"`
-	ToStateData   *string `json:"toStateData,omitempty"`
+	// +optional
+	UseResults *bool `json:"useResults,omitempty"`
+	// +optional
+	Results *string `json:"results,omitempty"`
+	// +optional
+	ToStateData *string `json:"toStateData,omitempty"`
 }
 
 // Sleep ...
@@ -197,16 +241,26 @@ type Sleep struct {
 }
 
 type Action struct {
-	Name               *string           `json:"name"`
-	FunctionRef        *string           `json:"functionRef,omitempty"`
-	EventRef           *EventRef         `json:"eventRef,omitempty"`
-	SubFlowRef         *string           `json:"subFlowRef,omitempty"`
-	RetryRef           *string           `json:"retryRef,omitempty"`
-	NonRetryableErrors *[]string         `json:"nonRetryableErrors,omitempty"`
-	RetryableErrors    *[]string         `json:"retryableErrors,omitempty"`
-	ActionDataFilter   *ActionDataFilter `json:"actionDataFilter,omitempty"`
-	Sleep              *Sleep            `json:"sleep,omitempty"`
-	Condition          *bool             `json:"condition,omitempty"`
+	// +optional
+	Name *string `json:"name"`
+	// +optional
+	FunctionRef *string `json:"functionRef,omitempty"`
+	// +optional
+	EventRef *EventRef `json:"eventRef,omitempty"`
+	// +optional
+	SubFlowRef *string `json:"subFlowRef,omitempty"`
+	// +optional
+	RetryRef *string `json:"retryRef,omitempty"`
+	// +optional
+	NonRetryableErrors *[]string `json:"nonRetryableErrors,omitempty"`
+	// +optional
+	RetryableErrors *[]string `json:"retryableErrors,omitempty"`
+	// +optional
+	ActionDataFilter *ActionDataFilter `json:"actionDataFilter,omitempty"`
+	// +optional
+	Sleep *Sleep `json:"sleep,omitempty"`
+	// +optional
+	Condition *bool `json:"condition,omitempty"`
 }
 
 type CompletionType struct{}
@@ -250,11 +304,11 @@ type State struct {
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 	// +kubebuilder:validation:Enum:=event;operation;switch;sleep;parallel;inject;foreach
-	Type       StateType          `json:"type"`
-	Exclusive  *bool              `json:"exclusive,omitempty"`
-	ActionMode *ActionMode        `json:"actionMode,omitempty"`
-	Actions    *[]Action          `json:"actions,omitempty"`
-	Data       *map[string]string `json:"data,omitempty"`
+	Type       StateType                             `json:"type"`
+	Exclusive  *bool                                 `json:"exclusive,omitempty"`
+	ActionMode *ActionMode                           `json:"actionMode,omitempty"`
+	Actions    *[]Action                             `json:"actions,omitempty"`
+	Data       *map[string]unstructured.Unstructured `json:"data,omitempty"`
 	//TODO: Define a type for DataCondition objects
 	DataConditions *[]DataCondition `json:"dataConditions,omitempty"`
 	//TODO: Define a type for EventContitions objects
@@ -322,9 +376,9 @@ type KogitoServerlessWorkflowStatus struct {
 }
 
 // KogitoServerlessWorkflow is the Schema for the kogitoserverlessworkflows API
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:items
-//+k8s:openapi-gen=true
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:items
+// +k8s:openapi-gen=true
 type KogitoServerlessWorkflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -334,8 +388,8 @@ type KogitoServerlessWorkflow struct {
 }
 
 // KogitoServerlessWorkflowList contains a list of KogitoServerlessWorkflow
-//+kubebuilder:object:root=true
-//+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KogitoServerlessWorkflowList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
