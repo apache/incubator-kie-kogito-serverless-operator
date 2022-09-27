@@ -352,6 +352,8 @@ github.com/prometheus/procfs v0.8.0 h1:ODq8ZFEaYeCaZOJlZZdJA2AbQR98dSHSM1KW/You5
 github.com/prometheus/procfs v0.8.0/go.mod h1:z7EfXMXOkbkqb9IINtpCn86r/to3BnA0uaxHdg830/4=
 github.com/ricardozanini/kogito-builder v0.0.0-20220905192819-0a5f0eafa2c9 h1:/LfJ/B/swAR/RMnQ91OtsSDi9gK7J1+lH3zJkWo7CBQ=
 github.com/ricardozanini/kogito-builder v0.0.0-20220905192819-0a5f0eafa2c9/go.mod h1:or7FAhBQw1zliG4FlclaU/OnPhsksWi2/vM3iLmlvos=
+github.com/ricardozanini/kogito-builder v0.0.0-20220927150622-723f13d043b0 h1:Wj6nFryXetzTgbE8oD1ig6WEP6vH+K5GWhu+BvB5UNw=
+github.com/ricardozanini/kogito-builder v0.0.0-20220927150622-723f13d043b0/go.mod h1:or7FAhBQw1zliG4FlclaU/OnPhsksWi2/vM3iLmlvos=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.6.1/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTEfhy4qGm1nDQc=

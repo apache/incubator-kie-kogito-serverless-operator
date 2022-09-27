@@ -27,7 +27,7 @@ require (
 require (
 	github.com/RHsyseng/operator-utils v1.4.11
 	github.com/openshift/api v0.0.0-20211209135129-c58d9f695577
-	github.com/ricardozanini/kogito-builder v0.0.0-20220905192819-0a5f0eafa2c9
+	github.com/ricardozanini/kogito-builder v0.0.0-20220927150622-723f13d043b0
 )
 
 require (

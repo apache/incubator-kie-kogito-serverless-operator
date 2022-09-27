@@ -1,0 +1,24 @@
+# permissions for end users to edit kogitoserverlessworkflowbuilds.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kogitoserverlessworkflowbuild-editor-role
+rules:
+- apiGroups:
+  - sw.kogito.kie.org
+  resources:
+  - kogitoserverlessworkflowbuilds
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - sw.kogito.kie.org
+  resources:
+  - kogitoserverlessworkflowbuilds/status
+  verbs:
+  - get
