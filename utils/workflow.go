@@ -16,7 +16,9 @@
 package utils
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"os"
@@ -75,4 +77,20 @@ func GetConfigMap(client client.Client) (corev1.ConfigMap, error) {
 	} else {
 		return existingConfigMap, nil
 	}
+}
+
+func SameOrMatch(build *apiv08.KogitoServerlessBuild, workflow *apiv08.KogitoServerlessWorkflow) (bool, error) {
+	if build.Name == workflow.Name {
+		if build.Namespace == workflow.Namespace {
+			return true, nil
+		}
+		return false, errors.New("Build & Workflow namespaces are not matching")
+	}
+	return false, errors.New("Build & Workflow names are not matching")
+}
+
+func Hash(s apiv08.KogitoServerlessWorkflowSpec) []byte {
+	var b bytes.Buffer
+	gob.NewEncoder(&b).Encode(s)
+	return b.Bytes()
 }

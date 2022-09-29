@@ -161,7 +161,7 @@ podman-push: ## Push container image with the manager.
 	podman push ${IMG}
 
 .PHONY: container-build
-container-build: ## Build the container image
+container-build: test ## Build the container image
 	$(BUILDER) build -t ${IMG} .
 
 .PHONY: container-push

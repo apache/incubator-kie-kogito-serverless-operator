@@ -28,12 +28,12 @@ func (k *KogitoServerlessWorkflowConverter) ToCNCFWorkflow(serverlessWorkflow *a
 	if serverlessWorkflow != nil {
 		log = ctrllog.FromContext(k.ctx)
 		newBaseWorkflow := &model.BaseWorkflow{ID: serverlessWorkflow.ObjectMeta.Name,
-			Key:            serverlessWorkflow.ObjectMeta.Annotations[constants.MetadataKeys()("key")],
+			Key:            serverlessWorkflow.ObjectMeta.Annotations[constants.WorkflowMetadataKeys()("key")],
 			Name:           serverlessWorkflow.ObjectMeta.Name,
-			Description:    serverlessWorkflow.ObjectMeta.Annotations[constants.MetadataKeys()("description")],
-			Version:        serverlessWorkflow.ObjectMeta.Annotations[constants.MetadataKeys()("version")],
+			Description:    serverlessWorkflow.ObjectMeta.Annotations[constants.WorkflowMetadataKeys()("description")],
+			Version:        serverlessWorkflow.ObjectMeta.Annotations[constants.WorkflowMetadataKeys()("version")],
 			SpecVersion:    extractSchemaVersion(serverlessWorkflow.APIVersion),
-			ExpressionLang: serverlessWorkflow.ObjectMeta.Annotations[constants.MetadataKeys()("expressionLang")],
+			ExpressionLang: serverlessWorkflow.ObjectMeta.Annotations[constants.WorkflowMetadataKeys()("expressionLang")],
 			KeepActive:     serverlessWorkflow.Spec.KeepActive,
 			AutoRetries:    serverlessWorkflow.Spec.AutoRetries,
 			Start:          retrieveStartState(serverlessWorkflow.Spec.Start)}

@@ -1,6 +1,8 @@
 package v1alpha08
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func (e StateType) String() string {
 	switch e {

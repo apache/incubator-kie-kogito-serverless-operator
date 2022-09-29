@@ -12,8 +12,6 @@ configMapGenerator:
   - Dockerfile=kogito_builder_dockerfile.yaml
   literals:
   - DEFAULT_BUILDER_RESOURCE_NAME=Dockerfile
-  - DEFAULT_KANIKO_SECRET_DEFAULT=regcred
-  - DEFAULT_REGISTRY_REPO=quay.io/kiegroup
   - DEFAULT_WORKFLOW_EXTENSION_KEY=.sw.json
   name: builder-config
 

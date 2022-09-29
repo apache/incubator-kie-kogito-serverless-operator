@@ -6,11 +6,19 @@ metadata:
       [
         {
           "apiVersion": "sw.kogito.kie.org/v1alpha08",
-          "kind": "KogitoServerlessBuild",
+          "kind": "KogitoServerlessPlatform",
           "metadata": {
-            "name": "kogitoserverlessbuild-sample"
+            "name": "greeting-workflow-platform"
           },
-          "spec": null
+          "spec": {
+            "cluster": "kubernetes",
+            "platform": {
+              "registry": {
+                "address": "quay.io/dsalerno",
+                "secret": "regcred"
+              }
+            }
+          }
         },
         {
           "apiVersion": "sw.kogito.kie.org/v1alpha08",
@@ -96,6 +104,12 @@ spec:
       displayName: Kogito Serverless Build
       kind: KogitoServerlessBuild
       name: kogitoserverlessbuilds.sw.kogito.kie.org
+      version: v1alpha08
+    - description: KogitoServerlessPlatform is the Schema for the kogitoserverlessplatforms
+        API
+      displayName: Kogito Serverless Platform
+      kind: KogitoServerlessPlatform
+      name: kogitoserverlessplatforms.sw.kogito.kie.org
       version: v1alpha08
     - description: KogitoServerlessWorkflow is the Schema for the kogitoserverlessworkflows
         API
