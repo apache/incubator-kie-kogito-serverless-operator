@@ -26,4 +26,9 @@ const (
 	DEFAULT_WORKFLOW_EXTENSION_KEY    = "DEFAULT_WORKFLOW_EXTENSION"
 	DEFAULT_REGISTRY_REPO_KEY         = "DEFAULT_REGISTRY_REPO"
 	DEFAULT_KANIKO_SECRET_KEY         = "DEFAULT_KANIKO_SECRET_DEFAULT" // #gitleaks:allow
+
+	//TODO Move this constants into the kogito-builder defaults
+	VERSION = "v0.8"
+
+	DEFAULT_KANIKOCACHE_PVC_NAME = "kogitoKanikoCachePV"
 )

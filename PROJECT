@@ -1,4 +1,4 @@
-domain: kie.org
+domain: kiegroup.org
 layout:
 - go.kubebuilder.io/v3
 plugins:
@@ -23,6 +23,15 @@ resources:
   domain: kie.org
   group: sw.kogito
   kind: KogitoServerlessBuild
+  path: github.com/davidesalerno/kogito-serverless-operator/api/v08
+  version: v08
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kie.org
+  group: sw.kogito
+  kind: KogitoServerlessPlatform
   path: github.com/davidesalerno/kogito-serverless-operator/api/v08
   version: v08
 version: "3"

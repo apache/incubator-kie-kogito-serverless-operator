@@ -1653,8 +1653,6 @@ spec:
                 - start
                 - states
                 type: object
-              conditions:
-                type: string
               deployments:
                 properties:
                   ready:

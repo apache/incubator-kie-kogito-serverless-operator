@@ -1,0 +1,13 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kogito-serverless-operator-leases
+  labels:
+    app: "kogito-serverless-operator"
+subjects:
+  - kind: ServiceAccount
+    name: kogito-serverless-operator
+roleRef:
+  kind: Role
+  name: kogito-serverless-operator-leases
+  apiGroup: rbac.authorization.k8s.io

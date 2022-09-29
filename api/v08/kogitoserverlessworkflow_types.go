@@ -391,11 +391,10 @@ type Endpoint struct {
 
 // KogitoServerlessWorkflowStatus defines the observed state of KogitoServerlessWorkflow
 type KogitoServerlessWorkflowStatus struct {
-	Conditions  BuildStatusCondition         `json:"conditions,omitempty"`
 	Endpoints   []Endpoint                   `json:"endpoints"`
 	Address     duckv1.Addressable           `json:"address,omitempty"`
 	Deployments olm.DeploymentStatus         `json:"deployments"`
-	Phase       ConditionType                `json:"phase,omitempty"`
+	Condition   ConditionType                `json:"phase,omitempty"`
 	Applied     KogitoServerlessWorkflowSpec `json:"applied,omitempty"`
 	Version     string                       `json:"version,omitempty"`
 }
@@ -404,12 +403,26 @@ type KogitoServerlessWorkflowStatus struct {
 type ConditionType string
 
 const (
-	// DeployedConditionType - the kieapp is deployed
+	// NoneConditionType --
+	NoneConditionType ConditionType = ""
+	// DeployedConditionType - the workflow is deployed
 	DeployedConditionType ConditionType = "Deployed"
-	// ProvisioningConditionType - the kieapp is being provisioned
+	// ProvisioningConditionType - the workflow is being provisioned
 	ProvisioningConditionType ConditionType = "Provisioning"
-	// FailedConditionType - the kieapp is in a failed state
+	// FailedConditionType - the workflow is in a failed state
 	FailedConditionType ConditionType = "Failed"
+	// WaitingForPlatformConditionType --
+	WaitingForPlatformConditionType ConditionType = "Waiting For Platform"
+	// InitializationConditionType --
+	InitializationConditionType ConditionType = "Initialization"
+	// BuildingConditionType --
+	BuildingConditionType ConditionType = "Building Workflow"
+	// DeployingConditionType --
+	DeployingConditionType ConditionType = "Deploying"
+	// RunningConditionType --
+	RunningConditionType ConditionType = "Running"
+	// ErrorConditionType --
+	ErrorConditionType ConditionType = "Error"
 )
 
 type BuildStatusCondition string

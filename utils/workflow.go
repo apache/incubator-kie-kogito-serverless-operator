@@ -75,3 +75,13 @@ func GetConfigMap(client client.Client) (corev1.ConfigMap, error) {
 		return existingConfigMap, nil
 	}
 }
+
+func SameOrMatch(build *apiv08.KogitoServerlessBuild, workflow *apiv08.KogitoServerlessWorkflow) (bool, error) {
+	if build.Name == workflow.Name {
+		if build.Namespace == workflow.Namespace {
+			return true, nil
+		}
+		return false, errors.New("Build & Workflow namespaces are not matching")
+	}
+	return false, errors.New("Build & Workflow names are not matching")
+}

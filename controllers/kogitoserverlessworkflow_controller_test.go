@@ -35,18 +35,22 @@ func TestKogitoServerlessWorkflowController(t *testing.T) {
 			namespace = "kogito-serverless-operator-system"
 		)
 		// Create a KogitoServerlessWorkflow object with metadata and spec.
-		ksw, errYaml := utils.GetKogitoServerlessWorkflow("../config/samples/sw.kogito.kie.org__v08_kogitoserverlessworkflow.yaml")
+		ksw, errYaml := utils.GetKogitoServerlessWorkflow("../config/samples/sw.kogito_v08_kogitoserverlessworkflow.yaml")
 		if errYaml != nil {
 			t.Fatalf("Error reading YAML file #%v ", errYaml)
 		}
-		// Objects to track in the fake client.
-		objs := []runtime.Object{ksw}
+		// The Workflow controller needs at least to perform a call for Platforms so we need to add this kind to the known
+		// ones by the fake client
+		kspl := &v08.KogitoServerlessPlatformList{}
+		// Objects to track in the fake Client.
+		objs := []runtime.Object{ksw, kspl}
 
-		// Register operator types with the runtime scheme.
+		// Register operator types with the runtime Scheme.
 		s := scheme.Scheme
 		s.AddKnownTypes(v08.GroupVersion, ksw)
+		s.AddKnownTypes(v08.GroupVersion, kspl)
 
-		// Create a fake client to mock API calls.
+		// Create a fake Client to mock API calls.
 		cl := fake.NewFakeClient(objs...)
 
 		// Create a KogitoServerlessWorkflowReconciler object with the scheme and fake client.
