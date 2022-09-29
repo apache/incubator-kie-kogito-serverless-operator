@@ -18,15 +18,18 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	apiv08 "github.com/davidesalerno/kogito-serverless-operator/api/v08"
 	"github.com/davidesalerno/kogito-serverless-operator/builder"
 	"github.com/davidesalerno/kogito-serverless-operator/converters"
-	"github.com/ghodss/yaml"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // KogitoServerlessWorkflowReconciler reconciles a KogitoServerlessWorkflow object
@@ -73,17 +76,42 @@ func (r *KogitoServerlessWorkflowReconciler) Reconcile(ctx context.Context, req 
 		log.Error(err, "Failed converting KogitoServerlessWorkflow into Workflow")
 		return ctrl.Result{}, err
 	}
-	yamlWorkflow, err := yaml.Marshal(workflow)
+	jsonWorkflow, err := json.Marshal(workflow)
 	if err != nil {
-		log.Error(err, "Failed converting KogitoServerlessWorkflow into YAML")
+		log.Error(err, "Failed converting KogitoServerlessWorkflow into JSON")
 		return ctrl.Result{}, err
 	}
-	log.Info("Converted Workflow CR into Kogito Yaml Workflow", "workflow", yamlWorkflow)
+	log.Info("Converted Workflow CR into Kogito JSON Workflow", "workflow", jsonWorkflow)
 	//TODO Save into Shared Volume
 	//"greetings.sw.json"
 	//TODO KOGITO-7498 Kogito Serverless Workflow Builder Image
 	//[KOGITO-7899]-Integrate Kaniko into SWF Operator
-	builder.BuildImageWithDefaults(workflow.ID, yamlWorkflow)
+	builder := builder.NewBuilder(ctx)
+	_, err = builder.BuildImageWithDefaults(workflow.ID, jsonWorkflow)
+	if err != nil {
+		log.Info("Error building KogitoServerlessWorkflow into Workflow: ", "message", err.Error())
+	}
+	// Check if this Deployment already exists
+	found := &appsv1.Deployment{}
+	err = r.Get(context.TODO(), types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, found)
+	var result *reconcile.Result
+	result, err = r.ensureDeployment(req, instance, r.backendDeployment(instance))
+	if result != nil {
+		log.Error(err, "Deployment Not ready")
+		return *result, err
+	}
+
+	// Check if this Service already exists
+	result, err = r.ensureService(req, instance, r.backendService(instance))
+	if result != nil {
+		log.Error(err, "Service Not ready")
+		return *result, err
+	}
+
+	// Deployment and Service already exists - don't requeue
+	log.Info("Skip reconcile: Deployment and service already exists",
+		"Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
+
 	return ctrl.Result{}, nil
 }
 

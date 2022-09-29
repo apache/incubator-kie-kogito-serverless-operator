@@ -16,11 +16,11 @@
 package constants
 
 const (
-	BUILDER_NAMESPACE_DEFAULT = "kogito-serverless-operator-system"
-	BUILDER_IMG_NAME_DEFAULT  = "Platform"
+	BUILDER_NAMESPACE_DEFAULT = "kogito-builder"
+	BUILDER_IMG_NAME_DEFAULT  = "platform"
 
 	BUILDER_RESOURCE_NAME_DEFAULT = "Dockerfile"
 
-	DEFAULT_REGISTRY_REPO = "quay.io/kiegroup"
+	DEFAULT_REGISTRY_REPO = "quay.io/dsalerno"
 	DEFAULT_KANIKO_SECRET = "regcred"
 )

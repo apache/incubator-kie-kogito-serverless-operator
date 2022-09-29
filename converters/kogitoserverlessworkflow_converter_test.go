@@ -27,6 +27,8 @@ func TestKogitoServerlessWorkflowConverter(t *testing.T) {
 		assert.True(t, out.Description == "Greeting example on k8s!")
 		assert.True(t, out.Functions != nil && len(out.Functions) == 1)
 		assert.True(t, out.States != nil && len(out.States) == 4)
+		//content, _ := json.Marshal(out)
+		//os.WriteFile("/tmp/greeting.sw.json", content, 0644)
 	})
 
 }

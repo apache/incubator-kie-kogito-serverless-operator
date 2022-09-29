@@ -16,6 +16,7 @@
 package builder
 
 import (
+	"context"
 	"fmt"
 	"github.com/davidesalerno/kogito-serverless-operator/constants"
 	"github.com/ricardozanini/kogito-builder/api"
@@ -23,12 +24,22 @@ import (
 	"github.com/ricardozanini/kogito-builder/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"time"
 )
 
-func BuildImageWithDefaults(sourceSwfName string, sourceSwf []byte) (*api.Build, error) {
+type Builder struct {
+	ctx context.Context
+}
+
+// NewBuilder ...
+func NewBuilder(contex context.Context) Builder {
+	return Builder{ctx: contex}
+}
+
+func (b *Builder) BuildImageWithDefaults(sourceSwfName string, sourceSwf []byte) (*api.Build, error) {
 	wd, _ := os.Getwd()
-	dockerFile, _ := os.ReadFile(wd + "/../builder/Dockerfile")
+	dockerFile, _ := os.ReadFile(wd + "/builder/Dockerfile")
 	ib := NewImageBuilder(sourceSwfName, sourceSwf, dockerFile)
 	ib.OnNamespace(constants.BUILDER_NAMESPACE_DEFAULT)
 	ib.WithPodMiddleName(constants.BUILDER_IMG_NAME_DEFAULT)
@@ -37,10 +48,11 @@ func BuildImageWithDefaults(sourceSwfName string, sourceSwf []byte) (*api.Build,
 	ib.WithSecret(constants.DEFAULT_KANIKO_SECRET)
 	ib.WithRegistryAddress(constants.DEFAULT_REGISTRY_REPO)
 	ib.WithTimeout(5 * time.Minute)
-	return BuildImage(ib.Build())
+	return b.BuildImage(ib.Build())
 }
 
-func BuildImage(b KogitoBuilder) (*api.Build, error) {
+func (r *Builder) BuildImage(b KogitoBuilder) (*api.Build, error) {
+	log := ctrllog.FromContext(r.ctx)
 	cli, err := client.NewClient(true)
 	platform := api.PlatformBuild{
 		ObjectReference: api.ObjectReference{
@@ -66,10 +78,22 @@ func BuildImage(b KogitoBuilder) (*api.Build, error) {
 		WithClient(cli).
 		Schedule()
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Error(err, err.Error())
 		return nil, err
 	}
-
+	//FIXME: Remove this  For loop as soon as the KogitoServerlessBuild CR will be availbable
+	// from now the Reconcile method can be called until the build is finished
+	for build.Status.Phase != api.BuildPhaseSucceeded &&
+		build.Status.Phase != api.BuildPhaseError &&
+		build.Status.Phase != api.BuildPhaseFailed {
+		log.Info("Build status is ", "status", build.Status.Phase)
+		build, err = builder.FromBuild(build).WithClient(cli).Reconcile()
+		if err != nil {
+			log.Info("Failed to build")
+			panic(fmt.Errorf("build %v just failed", build))
+		}
+		time.Sleep(10 * time.Second)
+	}
 	return build, err
 }
 
