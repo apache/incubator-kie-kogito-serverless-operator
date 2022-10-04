@@ -17,7 +17,6 @@ limitations under the License.
 package v08
 
 import (
-	"encoding/xml"
 	"github.com/RHsyseng/operator-utils/pkg/olm"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -240,7 +239,7 @@ type FunctionRef struct {
 }
 
 type Action struct {
-	Name               *string           `json:"name,omitempty"`
+	Name               string           `json:"name,omitempty"`
 	FunctionRef        FunctionRef       `json:"functionRef,omitempty"`
 	EventRef           *EventRef         `json:"eventRef,omitempty"`
 	SubFlowRef         *string           `json:"subFlowRef,omitempty"`
