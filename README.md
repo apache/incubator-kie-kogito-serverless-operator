@@ -149,6 +149,37 @@ make manifests
 
 More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
+
+#### Local development on Minikube with internal registry 
+Start the minikube with
+```sh
+minikube start --cpus 4 --memory 4096 --addons enable registry --insecure-registry "localhost:5000"
+```
+In the makefile change
+IMAGE_TAG_BASE to 
+```sh
+IMAGE_TAG_BASE ?= localhost:5000/kiegroup/kogito-serverless-operator
+```
+
+in the kustomization.yaml
+```sh
+DEFAULT_REGISTRY_REPO=<cluster_ip>/kiegroup
+```
+
+images.newName to
+
+```sh
+newName: localhost:5000/kiegroup/kogito-serverless-operator
+```
+
+##### TODO
+In the next iterations the localhost:5000 for the local development will be set at runtime with the ip of the cluster 
+
+DEFAULT_REGISTRY_REPO= in the kustomization.yaml or in the platform will be set using 
+
+https://github.com/ricardozanini/kogito-builder/blob/main/util/minikube/registry.go#L19
+
+
 ## License
 
 Copyright 2022.
