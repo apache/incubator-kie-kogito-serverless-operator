@@ -8,6 +8,11 @@
 * https://github.com/kiegroup/kogito-pipelines/tree/main/dsl/seed/src/main/groovy/org/kie/jenkins/jobdsl.
 */
 
+import org.kie.jenkins.jobdsl.model.Folder
+import org.kie.jenkins.jobdsl.KogitoJobTemplate
+import org.kie.jenkins.jobdsl.KogitoJobUtils
+import org.kie.jenkins.jobdsl.Utils
+
 jenkins_path = '.ci/jenkins'
 
 // Setup branch
