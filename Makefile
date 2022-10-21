@@ -270,3 +270,8 @@ catalog-push: ## Push a catalog image.
 .PHONY: clean
 clean:
 	rm -rf bin/
+
+.PHONY: bump-version
+new_version = ""
+bump-version:
+	./hack/bump-version.sh $(new_version)
