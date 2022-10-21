@@ -130,7 +130,7 @@ More information can be found via the [Kubebuilder Documentation](https://book.k
 
 # Development and Contributions 
 
-[Contributing](./CONTRIBUTING.md)
+Contributing is easy, just take a look at our [contributors](./CONTRIBUTING.md)'guide.
 
 ## License
 

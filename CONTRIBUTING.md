@@ -4,16 +4,11 @@ How can I contribute?
 
 There are many ways you can contribute to Kogito Serverless Workflow Operator, not only software development, as well as with the rest of Kogito community:
 
-    Contribute actively to development (see the section below)
-
-    Use it and report any feedback, improvement or bug you may find via Github, mailing list or chat.
-
-    Contribute by writing missing documentation or blog posts about the features around Kogito
-
-    Tweet, like and socialize Kogito in your preferred social network
-
-    Enjoy the talks that the contributors submit in various conferences around the world
-
+- Contribute actively to development (see the section below)
+- Use it and report any feedback, improvement or bug you may find via Github, mailing list or chat.
+- Contribute by writing missing documentation or blog posts about the features around Kogito
+- Tweet, like and socialize Kogito in your preferred social network
+- Enjoy the talks that the contributors submit in various conferences around the world
 
 # Contributing to the Kogito Serverless Operator codebase
 
@@ -39,7 +34,6 @@ More information about annotations can be found via the [Kubebuilder Documentati
 In order to build the project, you need to comply with the following requirements:
 
 - [operator-sdk-v1.24.0+](https://sdk.operatorframework.io/docs/building-operators/golang/installation/)
-
 - [Go 1.19](https://go.dev/dl/)
 
 
@@ -52,7 +46,7 @@ used to define composite build actions. This should be already installed or avai
 You’ll need a Kubernetes cluster to run against. You can use 
 - [KIND](https://sigs.k8s.io/kind) 
 - [MINIKUBE](https://minikube.sigs.k8s.io)  
-- [CRC](https://console.redhat.com/openshift/create/local) 
+- [Openshift Local](https://console.redhat.com/openshift/create/local) 
 - [Openshift-developer-sandbox-trial](https://www.redhat.com/en/technologies/cloud-computing/openshift/openshift-developer-sandbox-trial)
 
 **Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
@@ -93,7 +87,9 @@ A configmap called kogito-serverless-operator-builder-config will be created und
 - DEFAULT_REGISTRY_REPO = quay.io/kiegroup
 - kogito_builder_dockerfile.yaml = <dockerfile content>
 
-For the local development the DEFAULT_REGISTRY_REPO must be changed
+For the local development the DEFAULT_REGISTRY_REPO must be changed, this operation needs to be performed immediately 
+after the operator deploy (before the first reconcile of the Workflow CR), otherwise to take effects a restart of the 
+operator needs to be performed to have this change applied.
 
 # Customize Builder Image
 At the startup a [Dockerfile](./config/manager/kogito_builder_dockerfile.yaml) is placed in a configmap, this Dockerfile use a base image called [swfbuilder](https://github.com/kiegroup/kogito-images/tree/master/modules/kogito-swf-builder) with:
@@ -109,7 +105,7 @@ A Quarkus project  `/home/kogito/serverless-workflow-project` with the extension
 All the dependencies of quarkus and the extensions are store in the `/home/kogito/.m2` directory. additional scripts in case of need to apply changes like this: 
 
 - add other quarkus extensions,
-- build the project after adding other files/jaav classes
+- build the project after adding other files/java classes
 - create a new project
 
 You can customize your final Image changing the Dockerfile in the configmap
