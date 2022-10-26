@@ -127,7 +127,7 @@ pipeline {
 
         stage('Build Operator') {
             steps {
-                sh "make BUILDER=${env.CONTAINER_ENGINE}"
+                sh "make container-build BUILDER=${env.CONTAINER_ENGINE}"
             }
             post {
                 unsuccessful {

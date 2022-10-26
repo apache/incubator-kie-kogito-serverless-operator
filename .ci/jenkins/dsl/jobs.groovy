@@ -70,8 +70,8 @@ void setupDeployJob(Folder jobFolder) {
     jobParams.env.putAll([
         JENKINS_EMAIL_CREDS_ID: "${JENKINS_EMAIL_CREDS_ID}",
 
-        REPO_NAME: 'serverless-kogito-operator',
-        OPERATOR_IMAGE_NAME: 'serverless-kogito-operator',
+        REPO_NAME: 'kogito-serverless-operator',
+        OPERATOR_IMAGE_NAME: 'kogito-serverless-operator',
         CONTAINER_ENGINE: 'docker',
         CONTAINER_TLS_OPTIONS: '',
         MAX_REGISTRY_RETRIES: 3,
