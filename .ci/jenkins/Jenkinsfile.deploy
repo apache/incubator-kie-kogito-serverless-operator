@@ -13,7 +13,7 @@ pipeline {
     }
 
     options {
-        timeout(time: 24, unit: 'HOURS') // Give the day to be executed (due to the lock)
+        timeout(time: 3, unit: 'HOURS') // Give the day to be executed (due to the lock)
     }
 
     // parameters {

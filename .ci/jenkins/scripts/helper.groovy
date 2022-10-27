@@ -76,7 +76,7 @@ void createRelease() {
         githubscm.removeRemoteTag('origin', getGitTag(), getGitAuthorCredsID())
     }
 
-    def releaseName = "Serverless Kogito Operator ${getGitTag()}"
+    def releaseName = "Kogito Serverless Operator ${getGitTag()}"
     // TODO to update with https://issues.redhat.com/browse/KOGITO-8177
     def description = 'Serverless Kogito Operator is a Kubernetes based operator for Kogito Runtimes\' deployment from the source. Additionally, to facilitate interactions with the operator, we also offer a CLI (Command Line Interface) to deploy Kogito applications.'
     def yamlInstaller = 'kogito-operator.yaml'
