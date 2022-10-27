@@ -9,8 +9,6 @@ pipeline {
 
     // Needed for local build
     tools {
-        maven env.BUILD_MAVEN_TOOL
-        jdk env.BUILD_JDK_TOOL
         go 'golang-1.19' // TODO to setup
     }
 
@@ -26,13 +24,6 @@ pipeline {
         // Static env is defined into ./dsl/jobs.groovy file
 
         KOGITO_CI_EMAIL_TO = credentials("${JENKINS_EMAIL_CREDS_ID}")
-
-        JAVA_HOME = "${GRAALVM_HOME}"
-
-        // Environment required by OLM tests when run from process
-        OP_TEST_CONTAINER_OPT = '-t'
-        OP_TEST_DEBUG = 1
-        OP_TEST_CONTAINER_TOOL = 'docker'
     }
 
     stages {

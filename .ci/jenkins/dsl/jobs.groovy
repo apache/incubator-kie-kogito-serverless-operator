@@ -27,14 +27,13 @@ setupDeployJob(Folder.NIGHTLY)
 
 void createSetupBranchJob() {
     def jobParams = KogitoJobUtils.getBasicJobParams(this, 'kogito-serverless-operator', Folder.SETUP_BRANCH, "${jenkins_path}/Jenkinsfile.setup-branch", 'Kogito Serverless Cloud Operator Setup Branch')
-    KogitoJobUtils.setupJobParamsDefaultMavenConfiguration(this, jobParams)
     jobParams.env.putAll([
         JENKINS_EMAIL_CREDS_ID: "${JENKINS_EMAIL_CREDS_ID}",
 
         REPO_NAME: 'kogito-serverless-operator',
         OPERATOR_IMAGE_NAME: 'kogito-serverless-operator',
-        CONTAINER_ENGINE: 'docker',
-        CONTAINER_TLS_OPTIONS: '',
+        CONTAINER_ENGINE: 'podman',
+        CONTAINER_TLS_OPTIONS: '--tls-verify=false',
         MAX_REGISTRY_RETRIES: 3,
 
         GIT_AUTHOR: "${GIT_AUTHOR_NAME}",
@@ -66,14 +65,13 @@ void createSetupBranchJob() {
 
 void setupDeployJob(Folder jobFolder) {
     def jobParams = KogitoJobUtils.getBasicJobParams(this, 'kogito-serverless-operator-deploy', jobFolder, "${jenkins_path}/Jenkinsfile.deploy", 'Kogito Serverless Cloud Operator Deploy')
-    KogitoJobUtils.setupJobParamsDefaultMavenConfiguration(this, jobParams)
     jobParams.env.putAll([
         JENKINS_EMAIL_CREDS_ID: "${JENKINS_EMAIL_CREDS_ID}",
 
         REPO_NAME: 'kogito-serverless-operator',
         OPERATOR_IMAGE_NAME: 'kogito-serverless-operator',
-        CONTAINER_ENGINE: 'docker',
-        CONTAINER_TLS_OPTIONS: '',
+        CONTAINER_ENGINE: 'podman',
+        CONTAINER_TLS_OPTIONS: '--tls-verify=false',
         MAX_REGISTRY_RETRIES: 3,
         OPENSHIFT_API_KEY: 'OPENSHIFT_API',
         OPENSHIFT_CREDS_KEY: 'OPENSHIFT_CREDS',
