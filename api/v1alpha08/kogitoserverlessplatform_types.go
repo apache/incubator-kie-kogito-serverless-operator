@@ -125,7 +125,7 @@ type KogitoServerlessPlatformStatus struct {
 	Conditions []PlatformCondition `json:"conditions,omitempty"`
 	// Version the Kogito Serverless operator version controlling this Platform
 	Version string `json:"version,omitempty"`
-	// Info generic information related to the build of Kogito Serverless operator software
+	// Info generic information related to the build of Kogito Serverless operator
 	Info map[string]string `json:"info,omitempty"`
 }
 

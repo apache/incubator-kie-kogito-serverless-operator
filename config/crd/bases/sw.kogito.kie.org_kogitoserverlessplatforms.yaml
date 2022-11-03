@@ -324,7 +324,7 @@ spec:
                 additionalProperties:
                   type: string
                 description: Info generic information related to the build of Kogito
-                  Serverless operator software
+                  Serverless operator
                 type: object
               observedGeneration:
                 description: ObservedGeneration is the most recent generation observed

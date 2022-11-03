@@ -71,7 +71,7 @@ func (r *KogitoServerlessBuildReconciler) Reconcile(ctx context.Context, req ctr
 
 	phase := build.Status.BuildPhase
 	if r.commonBuildConf.Data == nil {
-		r.commonBuildConf, err = utils.GetConfigMap(r.Client)
+		r.commonBuildConf, err = utils.GetBuilderCommonConfigMap(r.Client)
 	}
 
 	if err != nil || len(r.commonBuildConf.Data[r.commonBuildConf.Data[constants.DEFAULT_BUILDER_RESOURCE_NAME_KEY]]) == 0 {
@@ -108,7 +108,7 @@ func (r *KogitoServerlessBuildReconciler) Reconcile(ctx context.Context, req ctr
 			buildStatus, err := builder.ScheduleNewBuildWithContainerFile(build.Spec.WorkflowId, workflow)
 			if err == nil {
 				manageStatusUpdate(ctx, buildStatus, build, r, log)
-				return ctrl.Result{RequeueAfter: 1 * time.Second}, nil
+				return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 			}
 		}
 	} else if phase != api.BuildPhaseSucceeded && phase != api.BuildPhaseError && phase != api.BuildPhaseFailed {

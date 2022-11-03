@@ -49,13 +49,13 @@ func (action *warmAction) Handle(ctx context.Context, platform *v08.KogitoServer
 
 	switch pod.Status.Phase {
 	case corev1.PodSucceeded:
-		action.L.Info("Kaniko cache successfully warmed up")
+		action.Logger.Info("Kaniko cache successfully warmed up")
 		platform.Status.Phase = v08.PlatformPhaseCreating
 		return platform, nil
 	case corev1.PodFailed:
 		return nil, errors.New("failed to warm up Kaniko cache")
 	default:
-		action.L.Info("Waiting for Kaniko cache to warm up...")
+		action.Logger.Info("Waiting for Kaniko cache to warm up...")
 		// Requeue
 		return nil, nil
 	}

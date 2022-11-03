@@ -56,13 +56,13 @@ func (action *initializeAction) Handle(ctx context.Context, platform *v08.Kogito
 		//If KanikoCache is enabled
 		if cacheEnabled {
 			// Create the persistent volume claim used by the Kaniko cache
-			action.L.Info("Create persistent volume claim")
+			action.Logger.Info("Create persistent volume claim")
 			err := createPersistentVolumeClaim(ctx, action.client, platform)
 			if err != nil {
 				return nil, err
 			}
-			// Create the Kaniko warmer pod that caches the base image into the Camel K builder volume
-			action.L.Info("Create Kaniko cache warmer pod")
+			// Create the Kaniko warmer pod that caches the base image into the Kogito Serverless builder volume
+			action.Logger.Info("Create Kaniko cache warmer pod")
 			err = createKanikoCacheWarmerPod(ctx, action.client, platform)
 			if err != nil {
 				return nil, err
@@ -100,7 +100,7 @@ func createPersistentVolumeClaim(ctx context.Context, client client.Client, plat
 			Namespace: platform.Namespace,
 			Name:      pvcName,
 			Labels: map[string]string{
-				"app": "camel-k",
+				"app": "kogito-serverless-operator",
 			},
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{

@@ -24,7 +24,7 @@ type Action interface {
 
 type baseAction struct {
 	client client.Client
-	L      log.Logger
+	Logger log.Logger
 }
 
 func (action *baseAction) InjectClient(client client.Client) {
@@ -32,5 +32,5 @@ func (action *baseAction) InjectClient(client client.Client) {
 }
 
 func (action *baseAction) InjectLogger(log log.Logger) {
-	action.L = log
+	action.Logger = log
 }

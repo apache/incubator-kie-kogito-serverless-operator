@@ -27,7 +27,7 @@ func (action *monitorAction) Handle(ctx context.Context, platform *v08.KogitoSer
 	// Just track the version of the operator in the platform resource
 	if platform.Status.Version != constants.VERSION {
 		platform.Status.Version = constants.VERSION
-		action.L.Info("Platform version updated", "version", platform.Status.Version)
+		action.Logger.Info("Platform version updated", "version", platform.Status.Version)
 	}
 
 	// Refresh applied configuration

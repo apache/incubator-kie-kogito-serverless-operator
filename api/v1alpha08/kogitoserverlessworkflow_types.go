@@ -392,7 +392,7 @@ type Endpoint struct {
 type KogitoServerlessWorkflowStatus struct {
 	Endpoints []Endpoint                   `json:"endpoints,omitempty"`
 	Address   duckv1.Addressable           `json:"address,omitempty"`
-	Condition ConditionType                `json:"phase,omitempty"`
+	Condition ConditionType                `json:"condition,omitempty"`
 	Applied   KogitoServerlessWorkflowSpec `json:"applied,omitempty"`
 }
 
@@ -408,7 +408,7 @@ const (
 	ProvisioningConditionType ConditionType = "Provisioning"
 	// FailedConditionType - the workflow is in a failed state
 	FailedConditionType ConditionType = "Failed"
-	// WaitingForPlatformConditionType --
+	// WaitingForPlatformConditionType -- workflow created but we are waiting a platform to deploy it
 	WaitingForPlatformConditionType ConditionType = "Waiting For Platform"
 	// InitializationConditionType --
 	InitializationConditionType ConditionType = "Initialization"

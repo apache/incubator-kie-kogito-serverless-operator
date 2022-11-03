@@ -43,7 +43,7 @@ func createKanikoCacheWarmerPod(ctx context.Context, client client.Client, platf
 			Namespace: platform.Namespace,
 			Name:      platform.Name + "-cache",
 			Labels: map[string]string{
-				"camel.apache.org/component": "kaniko-warmer",
+				"sw.kogito.kie.org/component": "kaniko-warmer",
 			},
 		},
 		Spec: corev1.PodSpec{

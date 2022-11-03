@@ -21,16 +21,8 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"errors"
-	"os"
-
-	"github.com/kiegroup/container-builder/util/log"
 	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/constants"
 	"github.com/kiegroup/kogito-serverless-operator/converters"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -48,35 +40,6 @@ func GetWorkflowFromCR(workflowCR *apiv08.KogitoServerlessWorkflow, ctx context.
 		return nil, err
 	}
 	return jsonWorkflow, nil
-}
-
-func GetConfigMap(client client.Client) (corev1.ConfigMap, error) {
-
-	namespace, found := os.LookupEnv("POD_NAMESPACE")
-
-	if !found {
-		return corev1.ConfigMap{}, errors.New("ConfigMap not found")
-	}
-
-	existingConfigMap := corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      constants.BUILDER_CM_NAME,
-			Namespace: namespace,
-		},
-		Data: map[string]string{},
-	}
-
-	err := client.Get(context.TODO(), types.NamespacedName{Name: constants.BUILDER_CM_NAME, Namespace: namespace}, &existingConfigMap)
-	if err != nil {
-		log.Error(err, "reading configmap")
-		return corev1.ConfigMap{}, err
-	} else {
-		return existingConfigMap, nil
-	}
 }
 
 func SameOrMatch(build *apiv08.KogitoServerlessBuild, workflow *apiv08.KogitoServerlessWorkflow) (bool, error) {

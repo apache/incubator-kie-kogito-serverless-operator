@@ -27,7 +27,7 @@ const (
 	//TODO Move this constants into the kogito-builder defaults
 	VERSION = "v0.8"
 
-	DEFAULT_KANIKOCACHE_PVC_NAME = "kogitoKanikoCachePV"
+	DEFAULT_KANIKOCACHE_PVC_NAME = "kogito-kaniko-cache-pv"
 
 	CUSTOM_NS_KEY          = "build-namespace"
 	CUSTOM_REG_CRED_KEY    = "registry-secret"
