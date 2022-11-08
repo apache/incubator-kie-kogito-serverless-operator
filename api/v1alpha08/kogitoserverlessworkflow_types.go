@@ -422,13 +422,6 @@ const (
 	ErrorConditionType ConditionType = "Error"
 )
 
-type BuildStatusCondition string
-
-const (
-	BuildingStatusCondition BuildStatusCondition = "Building"
-	ReadyStatusCondition    BuildStatusCondition = "Ready"
-)
-
 // KogitoServerlessWorkflow is the Schema for the kogitoserverlessworkflows API
 // +kubebuilder:object:root=true
 // +kubebuilder:object:generate=true

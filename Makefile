@@ -295,3 +295,7 @@ bump-version:
 
 install-operator-sdk:
 	./hack/ci/install-operator-sdk.sh
+
+.PHONY: addheaders
+addheaders:
+	./hack/addheaders.sh

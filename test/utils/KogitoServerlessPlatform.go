@@ -23,20 +23,20 @@ import (
 	"log"
 )
 
-func GetKogitoServerlessWorkflow(path string) (*apiv08.KogitoServerlessWorkflow, error) {
+func GetKogitoServerlessPlatform(path string) (*apiv08.KogitoServerlessPlatform, error) {
 
-	ksw := &apiv08.KogitoServerlessWorkflow{}
+	ksp := &apiv08.KogitoServerlessPlatform{}
 	yamlFile, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatalf("yamlFile.Get err   #%v ", err)
 		return nil, err
 	}
-	// Important: Here we are reading the CR deployment file from a given path and creating a &apiv08.KogitoServerlessWorkflow struct
-	err = yaml.NewYAMLOrJSONDecoder(bytes.NewReader(yamlFile), 100).Decode(ksw)
+	// Important: Here we are reading the CR deployment file from a given path and creating a &apiv08.KogitoServerlessPlatform struct
+	err = yaml.NewYAMLOrJSONDecoder(bytes.NewReader(yamlFile), 100).Decode(ksp)
 	if err != nil {
 		log.Fatalf("Unmarshal: %v", err)
 		return nil, err
 	}
-	log.Printf("Successfully read KSW  #%v ", ksw)
-	return ksw, err
+	log.Printf("Successfully read KSP  #%v ", ksp)
+	return ksp, err
 }

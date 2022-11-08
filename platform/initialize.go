@@ -68,9 +68,8 @@ func (action *initializeAction) Handle(ctx context.Context, platform *v08.Kogito
 	}
 	// nolint: staticcheck
 	if platform.Status.BuildPlatform.PublishStrategy == api.PlatformBuildPublishStrategyKaniko {
-		cacheEnabled := platform.Status.BuildPlatform.IsOptionEnabled(builder.KanikoBuildCacheEnabled)
 		//If KanikoCache is enabled
-		if cacheEnabled {
+		if platform.Status.BuildPlatform.IsOptionEnabled(builder.KanikoBuildCacheEnabled) {
 			// Create the persistent volume claim used by the Kaniko cache
 			action.Logger.Info("Create persistent volume claim")
 			err := createPersistentVolumeClaim(ctx, action.client, platform)
@@ -140,6 +139,7 @@ func createPersistentVolumeClaim(ctx context.Context, client client.Client, plat
 	return nil
 }
 
+// Function to double-check if there is already an active platform on the current context (i.e. namespace)
 func (action *initializeAction) isPrimaryDuplicate(ctx context.Context, thisPlatform *v08.KogitoServerlessPlatform) (bool, error) {
 	if IsSecondary(thisPlatform) {
 		// Always reconcile secondary platforms

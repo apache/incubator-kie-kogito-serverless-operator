@@ -46,7 +46,7 @@ func EnsureDeployment(ctx context.Context, c ctrl.Client,
 	instance *v08.KogitoServerlessWorkflow,
 	registryAddress string,
 ) (*reconcile.Result, error) {
-	dep := backendDeployment(scheme, instance, registryAddress)
+	dep := createDeployment(scheme, instance, registryAddress)
 	// See if deployment already exists and create if it doesn't
 	found := &appsv1.Deployment{}
 	err := c.Get(ctx, types.NamespacedName{
@@ -73,8 +73,8 @@ func EnsureDeployment(ctx context.Context, c ctrl.Client,
 	return nil, nil
 }
 
-// backendDeployment is a code for Creating Deployment
-func backendDeployment(scheme *runtime.Scheme, v *v08.KogitoServerlessWorkflow, registryAddress string) *appsv1.Deployment {
+// createDeployment is a code for Creating Deployment
+func createDeployment(scheme *runtime.Scheme, v *v08.KogitoServerlessWorkflow, registryAddress string) *appsv1.Deployment {
 
 	labels := labels(v, v.Name)
 	size := int32(1)
@@ -116,7 +116,7 @@ func EnsureService(c ctrl.Client,
 	scheme *runtime.Scheme,
 	instance *v08.KogitoServerlessWorkflow,
 ) (*reconcile.Result, error) {
-	service := backendService(scheme, instance)
+	service := createService(scheme, instance)
 	// See if service already exists and create if it doesn't
 	found := &appsv1.Deployment{}
 	err := c.Get(context.TODO(), types.NamespacedName{
@@ -143,8 +143,8 @@ func EnsureService(c ctrl.Client,
 	return nil, nil
 }
 
-// backendService is a code for creating a Service
-func backendService(scheme *runtime.Scheme, v *v08.KogitoServerlessWorkflow) *corev1.Service {
+// createService is a code for creating a Service
+func createService(scheme *runtime.Scheme, v *v08.KogitoServerlessWorkflow) *corev1.Service {
 	labels := labels(v, v.Name)
 
 	service := &corev1.Service{

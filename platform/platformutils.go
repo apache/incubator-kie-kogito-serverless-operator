@@ -43,11 +43,6 @@ const BuilderServiceAccount = "kogito-builder"
 // ResourceCustomizer can be used to inject code that changes the objects before they are created.
 type ResourceCustomizer func(object ctrl.Object) ctrl.Object
 
-// IdentityResourceCustomizer is a ResourceCustomizer that does nothing.
-var IdentityResourceCustomizer = func(object ctrl.Object) ctrl.Object {
-	return object
-}
-
 func ConfigureRegistry(ctx context.Context, c client.Client, p *v08.KogitoServerlessPlatform, verbose bool) error {
 	if p.Status.Cluster == v08.PlatformClusterOpenShift &&
 		p.Status.BuildPlatform.Registry.Address == "" {
