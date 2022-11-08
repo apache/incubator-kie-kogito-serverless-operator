@@ -17,12 +17,15 @@ package constants
 
 const (
 	BUILDER_CM_NAME               = "kogito-serverless-operator-builder-config"
-	BUILDER_IMG_NAME_DEFAULT      = "platform"
 	BUILDER_RESOURCE_NAME_DEFAULT = "Dockerfile"
 	DEFAULT_IMAGES_TAG            = ":latest"
 
 	DEFAULT_BUILDER_RESOURCE_NAME_KEY = "DEFAULT_BUILDER_RESOURCE_NAME"
 	DEFAULT_WORKFLOW_EXTENSION_KEY    = "DEFAULT_WORKFLOW_EXTENSION"
+
+	DEFAULT_KOGITO_EXPLANG = "jq"
+
+	DEFAULT_KAKIKO_PVC_SIZE = "1Gi"
 
 	//TODO Move this constants into the kogito-builder defaults
 	VERSION = "v0.8"

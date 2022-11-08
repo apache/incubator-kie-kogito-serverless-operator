@@ -47,7 +47,7 @@ func (k *KogitoServerlessWorkflowConverter) ToCNCFWorkflow(serverlessWorkflow *a
 			Description:    serverlessWorkflow.ObjectMeta.Annotations[constants.WorkflowMetadataKeys()("description")],
 			Version:        serverlessWorkflow.ObjectMeta.Annotations[constants.WorkflowMetadataKeys()("version")],
 			SpecVersion:    extractSchemaVersion(serverlessWorkflow.APIVersion),
-			ExpressionLang: serverlessWorkflow.ObjectMeta.Annotations[constants.WorkflowMetadataKeys()("expressionLang")],
+			ExpressionLang: extractExpressionLang(serverlessWorkflow.ObjectMeta.Annotations),
 			KeepActive:     serverlessWorkflow.Spec.KeepActive,
 			AutoRetries:    serverlessWorkflow.Spec.AutoRetries,
 			Start:          retrieveStartState(serverlessWorkflow.Spec.Start)}
@@ -56,6 +56,14 @@ func (k *KogitoServerlessWorkflowConverter) ToCNCFWorkflow(serverlessWorkflow *a
 		return newWorkflow, nil
 	}
 	return nil, errors.New(("KogitoServerlessWorkflow is nil"))
+}
+
+func extractExpressionLang(annotations map[string]string) string {
+	expressionLang := annotations[constants.WorkflowMetadataKeys()("expressionLang")]
+	if expressionLang != "" {
+		return expressionLang
+	}
+	return constants.DEFAULT_KOGITO_EXPLANG
 }
 
 // Function to extract from the apiVersion the ServerlessWorkflow schema version

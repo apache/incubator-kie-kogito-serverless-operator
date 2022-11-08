@@ -147,7 +147,7 @@ func (r *KogitoServerlessWorkflowReconciler) Reconcile(ctx context.Context, req 
 			r.performStatusUpdate(ctx, workflow)
 		} else if (build.Status.Builder.Status.Phase == api.BuildPhaseSucceeded || build.Status.Builder.Status.Phase == api.BuildPhaseFailed || build.Status.Builder.Status.Phase == api.BuildPhaseError) && workflow.Status.Condition == apiv08.RunningConditionType {
 			//If we have finished a build and the workflow is running, we have to rebuild it because there was a change in the workflow definition and requeue the request
-			if !utils.Compare(utils.Hash(workflow.Status.Applied), utils.Hash(workflow.Spec)) { // Let's check that the 2 workflow definition are different
+			if !utils.Compare(utils.GetWorkflowSpecHash(workflow.Status.Applied), utils.GetWorkflowSpecHash(workflow.Spec)) { // Let's check that the 2 workflow definition are different
 				workflow.Status.Condition = apiv08.NoneConditionType
 				r.performStatusUpdate(ctx, workflow)
 				return ctrl.Result{Requeue: true}, err

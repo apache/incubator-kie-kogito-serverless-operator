@@ -96,7 +96,7 @@ func (action *initializeAction) Handle(ctx context.Context, platform *v08.Kogito
 }
 
 func createPersistentVolumeClaim(ctx context.Context, client client.Client, platform *v08.KogitoServerlessPlatform) error {
-	volumeSize, err := resource.ParseQuantity("1Gi")
+	volumeSize, err := resource.ParseQuantity(constants.DEFAULT_KAKIKO_PVC_SIZE)
 	if err != nil {
 		return err
 	}

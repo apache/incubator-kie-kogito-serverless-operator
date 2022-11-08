@@ -22,19 +22,19 @@ import (
 	"github.com/pkg/errors"
 )
 
-func GetCustomConfig(platfrom v08.KogitoServerlessPlatform) (map[string]string, error) {
+func GetCustomConfig(platform v08.KogitoServerlessPlatform) (map[string]string, error) {
 	customConfig := make(map[string]string)
-	if platfrom.Namespace == "" {
-		return nil, errors.New(fmt.Sprintf("Unable to retrieve the namespace from platform %s", platfrom.Name))
+	if platform.Namespace == "" {
+		return nil, errors.New(fmt.Sprintf("Unable to retrieve the namespace from platform %s", platform.Name))
 	}
-	customConfig[constants.CUSTOM_NS_KEY] = platfrom.Namespace
-	if platfrom.Spec.BuildPlatform.Registry.Secret == "" {
-		return nil, errors.New(fmt.Sprintf("Unable to retrieve the registry credentials from platform %s", platfrom.Name))
+	customConfig[constants.CUSTOM_NS_KEY] = platform.Namespace
+	if platform.Spec.BuildPlatform.Registry.Secret == "" {
+		return nil, errors.New(fmt.Sprintf("Unable to retrieve the registry credentials from platform %s", platform.Name))
 	}
-	customConfig[constants.CUSTOM_REG_CRED_KEY] = platfrom.Spec.BuildPlatform.Registry.Secret
-	if platfrom.Spec.BuildPlatform.Registry.Address == "" {
-		return nil, errors.New(fmt.Sprintf("Unable to retrieve the registry address from platform %s", platfrom.Name))
+	customConfig[constants.CUSTOM_REG_CRED_KEY] = platform.Spec.BuildPlatform.Registry.Secret
+	if platform.Spec.BuildPlatform.Registry.Address == "" {
+		return nil, errors.New(fmt.Sprintf("Unable to retrieve the registry address from platform %s", platform.Name))
 	}
-	customConfig[constants.CUSTOM_REG_ADDRESS_KEY] = platfrom.Spec.BuildPlatform.Registry.Address
+	customConfig[constants.CUSTOM_REG_ADDRESS_KEY] = platform.Spec.BuildPlatform.Registry.Address
 	return customConfig, nil
 }

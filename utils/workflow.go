@@ -22,10 +22,12 @@ import (
 	"encoding/json"
 	"errors"
 	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/constants"
 	"github.com/kiegroup/kogito-serverless-operator/converters"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+// GetWorkflowFromCR return a Kogito compliant workflow as bytearray give a specific workflow CR
 func GetWorkflowFromCR(workflowCR *apiv08.KogitoServerlessWorkflow, ctx context.Context) ([]byte, error) {
 	log := ctrllog.FromContext(ctx)
 	converter := converters.NewKogitoServerlessWorkflowConverter(ctx)
@@ -42,6 +44,7 @@ func GetWorkflowFromCR(workflowCR *apiv08.KogitoServerlessWorkflow, ctx context.
 	return jsonWorkflow, nil
 }
 
+// SameOrMatch return true if the build it is related to the workflow, false otherwise
 func SameOrMatch(build *apiv08.KogitoServerlessBuild, workflow *apiv08.KogitoServerlessWorkflow) (bool, error) {
 	if build.Name == workflow.Name {
 		if build.Namespace == workflow.Namespace {
@@ -52,8 +55,18 @@ func SameOrMatch(build *apiv08.KogitoServerlessBuild, workflow *apiv08.KogitoSer
 	return false, errors.New("Build & Workflow names are not matching")
 }
 
-func Hash(s apiv08.KogitoServerlessWorkflowSpec) []byte {
+// GetWorkflowSpecHash comute a hash of the workflow definition (hash), useful to compare 2 different definitions
+func GetWorkflowSpecHash(s apiv08.KogitoServerlessWorkflowSpec) []byte {
 	var b bytes.Buffer
 	gob.NewEncoder(&b).Encode(s)
 	return b.Bytes()
+}
+
+// GetWorkflowImageTag retrieve the tag for the image based on the Workflow based annotation, :latest otherwise
+func GetWorkflowImageTag(v *apiv08.KogitoServerlessWorkflow) string {
+	tag := v.Annotations[constants.WorkflowMetadataKeys()("version")]
+	if tag != "" {
+		return ":" + tag
+	}
+	return constants.DEFAULT_IMAGES_TAG
 }

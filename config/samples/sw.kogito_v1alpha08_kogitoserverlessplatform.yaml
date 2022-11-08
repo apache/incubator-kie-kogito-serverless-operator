@@ -1,7 +1,7 @@
 apiVersion: sw.kogito.kie.org/v1alpha08
 kind: KogitoServerlessPlatform
 metadata:
-  name: greeting-workflow-platform
+  name: kogito-workflow-platform
 spec:
   cluster: kubernetes
   platform:

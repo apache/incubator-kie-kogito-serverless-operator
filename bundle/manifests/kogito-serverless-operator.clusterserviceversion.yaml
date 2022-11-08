@@ -14,7 +14,7 @@ metadata:
             "cluster": "kubernetes",
             "platform": {
               "registry": {
-                "address": "quay.io/dsalerno",
+                "address": "quay.io/kiegroup",
                 "secret": "regcred"
               }
             }

@@ -18,6 +18,7 @@ package kubernetes
 import (
 	"context"
 	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/utils"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -68,9 +69,17 @@ func EnsureDeployment(ctx context.Context, c ctrl.Client,
 	} else if err != nil {
 		// Error that isn't due to the deployment not existing
 		return &reconcile.Result{}, err
+	} else {
+		// If the deployment exists already there is an update to do
+		updateErr := c.Update(context.TODO(), dep)
+		if err != nil {
+			// Error that isn't due to the deployment not existing
+			return &reconcile.Result{}, updateErr
+		} else {
+			// Deployment was successful
+			return nil, nil
+		}
 	}
-
-	return nil, nil
 }
 
 // createDeployment is a code for Creating Deployment
@@ -94,7 +103,7 @@ func createDeployment(scheme *runtime.Scheme, v *v08.KogitoServerlessWorkflow, r
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
-						Image:           registryAddress + "/" + v.Name + ":latest",
+						Image:           registryAddress + "/" + v.Name + utils.GetWorkflowImageTag(v),
 						ImagePullPolicy: corev1.PullAlways,
 						Name:            v.Name,
 						Ports: []corev1.ContainerPort{{

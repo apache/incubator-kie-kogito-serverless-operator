@@ -103,9 +103,9 @@ func (r *KogitoServerlessBuildReconciler) Reconcile(ctx context.Context, req ctr
 	builder := builder.NewBuilderWithConfig(ctx, r.commonBuildConf, customConfig)
 
 	if phase == api.BuildPhaseNone {
-		workflow, err := r.retrieveWorkflowFromCR(build.Spec.WorkflowId, ctx, req)
+		workflow, imageTag, err := r.retrieveWorkflowFromCR(build.Spec.WorkflowId, ctx, req)
 		if err == nil {
-			buildStatus, err := builder.ScheduleNewBuildWithContainerFile(build.Spec.WorkflowId, workflow)
+			buildStatus, err := builder.ScheduleNewBuildWithContainerFile(build.Spec.WorkflowId, imageTag, workflow)
 			if err == nil {
 				manageStatusUpdate(ctx, buildStatus, build, r, log)
 				return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
@@ -123,11 +123,12 @@ func (r *KogitoServerlessBuildReconciler) Reconcile(ctx context.Context, req ctr
 	return ctrl.Result{}, nil
 }
 
-func (r *KogitoServerlessBuildReconciler) retrieveWorkflowFromCR(workflowId string, ctx context.Context, req ctrl.Request) ([]byte, error) {
+func (r *KogitoServerlessBuildReconciler) retrieveWorkflowFromCR(workflowId string, ctx context.Context, req ctrl.Request) ([]byte, string, error) {
 	instance := &api08.KogitoServerlessWorkflow{}
 	error := r.Client.Get(ctx, types.NamespacedName{Name: workflowId, Namespace: req.Namespace}, instance)
 	workflowBytes, error := utils.GetWorkflowFromCR(instance, ctx)
-	return workflowBytes, error
+	imageTag := utils.GetWorkflowImageTag(instance)
+	return workflowBytes, imageTag, error
 }
 
 func manageStatusUpdate(ctx context.Context, build *api.Build, instance *api08.KogitoServerlessBuild, r *KogitoServerlessBuildReconciler, log logr.Logger) {
