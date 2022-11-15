@@ -17,10 +17,10 @@ package utils
 
 import (
 	"bytes"
+	"github.com/kiegroup/container-builder/util/log"
 	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"log"
 )
 
 func GetKogitoServerlessPlatform(path string) (*apiv08.KogitoServerlessPlatform, error) {
@@ -28,15 +28,15 @@ func GetKogitoServerlessPlatform(path string) (*apiv08.KogitoServerlessPlatform,
 	ksp := &apiv08.KogitoServerlessPlatform{}
 	yamlFile, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Fatalf("yamlFile.Get err   #%v ", err)
+		log.Errorf(err, "yamlFile.Get err #%v ", err)
 		return nil, err
 	}
 	// Important: Here we are reading the CR deployment file from a given path and creating a &apiv08.KogitoServerlessPlatform struct
 	err = yaml.NewYAMLOrJSONDecoder(bytes.NewReader(yamlFile), 100).Decode(ksp)
 	if err != nil {
-		log.Fatalf("Unmarshal: %v", err)
+		log.Errorf(err, "Unmarshal: %v", err)
 		return nil, err
 	}
-	log.Printf("Successfully read KSP  #%v ", ksp)
+	log.Debugf("Successfully read KSP  #%v ", ksp)
 	return ksp, err
 }

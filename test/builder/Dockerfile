@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM quay.io/mdessi/kogito-swf-builder:latest AS builder
-#FROM quay.io/ricardozanini/kogito-serverless-workflow-base:latest AS builder
+FROM quay.io/kiegroup/kogito-swf-builder-nightly:latest AS builder
 
 # Kogito User
 USER 1001

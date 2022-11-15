@@ -31,13 +31,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func labels(v *v08.KogitoServerlessWorkflow, tier string) map[string]string {
+func labels(v *v08.KogitoServerlessWorkflow) map[string]string {
 	// Fetches and sets labels
 
 	return map[string]string{
-		"app":             "visitors",
-		"visitorssite_cr": v.Name,
-		"tier":            tier,
+		"app": v.Name,
 	}
 }
 
@@ -85,7 +83,7 @@ func EnsureDeployment(ctx context.Context, c ctrl.Client,
 // createDeployment is a code for Creating Deployment
 func createDeployment(scheme *runtime.Scheme, v *v08.KogitoServerlessWorkflow, registryAddress string) *appsv1.Deployment {
 
-	labels := labels(v, v.Name)
+	labels := labels(v)
 	size := int32(1)
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -127,7 +125,7 @@ func EnsureService(c ctrl.Client,
 ) (*reconcile.Result, error) {
 	service := createService(scheme, instance)
 	// See if service already exists and create if it doesn't
-	found := &appsv1.Deployment{}
+	found := &corev1.Service{}
 	err := c.Get(context.TODO(), types.NamespacedName{
 		Name:      service.Name,
 		Namespace: instance.Namespace,
@@ -154,7 +152,7 @@ func EnsureService(c ctrl.Client,
 
 // createService is a code for creating a Service
 func createService(scheme *runtime.Scheme, v *v08.KogitoServerlessWorkflow) *corev1.Service {
-	labels := labels(v, v.Name)
+	labels := labels(v)
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -167,9 +165,7 @@ func createService(scheme *runtime.Scheme, v *v08.KogitoServerlessWorkflow) *cor
 				Protocol:   corev1.ProtocolTCP,
 				Port:       80,
 				TargetPort: intstr.FromInt(8080),
-				NodePort:   30685,
 			}},
-			Type: corev1.ServiceTypeNodePort,
 		},
 	}
 

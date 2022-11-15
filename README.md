@@ -68,6 +68,9 @@ kubectl create namespace kogito-workflows
 ```
 
 3. Create a secret
+
+This secret it will be used by the Operator to push the images built to the desired docker registry.
+
 ```sh
 kubectl create secret docker-registry regcred --docker-server=<registry_url> --docker-username=<registry_username> --docker-password=<registry_password> --docker-email=<registry_email> -n kogito-workflows
 ```

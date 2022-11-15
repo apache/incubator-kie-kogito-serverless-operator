@@ -69,7 +69,7 @@ func (r *KogitoServerlessPlatformReconciler) Reconcile(ctx context.Context, req 
 	if ok, err := platform.IsOperatorAllowedOnNamespace(ctx, r.Reader, req.Namespace); err != nil {
 		return reconcile.Result{}, err
 	} else if !ok {
-		logger.Info("Ignoring request because namespace is locked")
+		logger.Info(fmt.Sprintf("Ignoring request because the operator hasn't got the permissions to work on namespace %s", req.Namespace))
 		return reconcile.Result{}, nil
 	}
 

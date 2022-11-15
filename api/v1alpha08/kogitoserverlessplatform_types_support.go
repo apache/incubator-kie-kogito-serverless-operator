@@ -19,7 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// NewKogitoServerlessPlatformList --
+// NewKogitoServerlessPlatformList returns an empty list of Platform objects
 func NewKogitoServerlessPlatformList() KogitoServerlessPlatformList {
 	return KogitoServerlessPlatformList{
 		TypeMeta: metav1.TypeMeta{
@@ -29,7 +29,7 @@ func NewKogitoServerlessPlatformList() KogitoServerlessPlatformList {
 	}
 }
 
-// NewKogitoServerlessPlatform --
+// NewKogitoServerlessPlatform returns the basic Platform definition
 func NewKogitoServerlessPlatform(namespace string, name string) KogitoServerlessPlatform {
 	return KogitoServerlessPlatform{
 		TypeMeta: metav1.TypeMeta{
@@ -60,7 +60,7 @@ func (in *KogitoServerlessPlatformStatus) GetCondition(condType PlatformConditio
 	return nil
 }
 
-// SetErrorCondition --
+// SetErrorCondition sets the condition error for the given platform
 func (in *KogitoServerlessPlatformStatus) SetErrorCondition(condType PlatformConditionType, reason string, err error) {
 	in.SetConditions(PlatformCondition{
 		Type:               condType,

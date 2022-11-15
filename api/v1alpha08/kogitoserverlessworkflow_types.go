@@ -396,19 +396,19 @@ type KogitoServerlessWorkflowStatus struct {
 	Applied   KogitoServerlessWorkflowSpec `json:"applied,omitempty"`
 }
 
-// ConditionType - type of condition
+// ConditionType type of condition
 type ConditionType string
 
 const (
 	// NoneConditionType --
 	NoneConditionType ConditionType = ""
-	// DeployedConditionType - the workflow is deployed
+	// DeployedConditionType the workflow is deployed
 	DeployedConditionType ConditionType = "Deployed"
-	// ProvisioningConditionType - the workflow is being provisioned
+	// ProvisioningConditionType the workflow is being provisioned
 	ProvisioningConditionType ConditionType = "Provisioning"
-	// FailedConditionType - the workflow is in a failed state
+	// FailedConditionType the workflow is in a failed state
 	FailedConditionType ConditionType = "Failed"
-	// WaitingForPlatformConditionType -- workflow created but we are waiting a platform to deploy it
+	// WaitingForPlatformConditionType workflow created but we are waiting a platform to deploy it
 	WaitingForPlatformConditionType ConditionType = "Waiting For Platform"
 	// InitializationConditionType --
 	InitializationConditionType ConditionType = "Initialization"

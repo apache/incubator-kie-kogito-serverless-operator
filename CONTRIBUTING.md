@@ -103,7 +103,7 @@ All the dependencies of quarkus and the extensions are store in the `/home/kogit
 - build the project after adding other files/java classes
 - create a new project
 
-You can customize your final Image changing the Dockerfile in the configmap
+You can customize your final Image changing the Dockerfile in the configmap kogito-serverless-operator-builder-config accordingly to your specific needs.
 
 # Development status
 ## General notes
