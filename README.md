@@ -69,7 +69,7 @@ kubectl create namespace kogito-workflows
 
 3. Create a secret
 
-This secret it will be used by the Operator to push the images built to the desired docker registry.
+This secret will be used by the Operator to push the images built to the desired docker registry.
 
 ```sh
 kubectl create secret docker-registry regcred --docker-server=<registry_url> --docker-username=<registry_username> --docker-password=<registry_password> --docker-email=<registry_email> -n kogito-workflows
@@ -95,7 +95,7 @@ You can find a basic Platform CR example in the [config](config/samples/sw.kogit
 kubectl apply -f config/samples/sw.kogito_v1alpha08_kogitoserverlessplatform.yaml -n kogito-workflows
 ```
 
-7. Ask to the operator to build and deploy the Greeting workflow:
+7. Build and deploy the Greeting workflow with the Operator
 
 You can find a basic Workflow CR example in the [config](config/samples/sw.kogito_v1alpha08_kogitoserverlessworkflow.yaml) folder.
 ```sh

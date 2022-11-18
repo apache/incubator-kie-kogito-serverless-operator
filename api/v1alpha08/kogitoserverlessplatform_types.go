@@ -71,7 +71,7 @@ type KogitoServerlessPlatformSpec struct {
 	Cluster PlatformCluster `json:"cluster,omitempty"`
 	// Build specify how to build the Workflow
 	Build api.BuildSpec `json:"build,omitempty"`
-	//BuildPlatform specify how it is the platform where we want to build the Workflow
+	// BuildPlatform specify how is the platform where we want to build the Workflow
 	BuildPlatform api.PlatformBuildSpec `json:"platform,omitempty"`
 	// Configuration list of configuration properties to be attached to all the Workflow built from this Platform
 	Configuration ConfigurationSpec `json:"configuration,omitempty"`
