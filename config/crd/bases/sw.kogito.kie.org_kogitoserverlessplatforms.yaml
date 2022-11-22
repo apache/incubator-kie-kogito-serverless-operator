@@ -136,8 +136,8 @@ spec:
                 - value
                 type: object
               platform:
-                description: BuildPlatform specify how it is the platform where we
-                  want to build the Workflow
+                description: BuildPlatform specify how is the platform where we want
+                  to build the Workflow
                 properties:
                   PublishStrategyOptions:
                     additionalProperties:
@@ -335,8 +335,8 @@ spec:
                 description: Phase defines in what phase the Platform is found
                 type: string
               platform:
-                description: BuildPlatform specify how it is the platform where we
-                  want to build the Workflow
+                description: BuildPlatform specify how is the platform where we want
+                  to build the Workflow
                 properties:
                   PublishStrategyOptions:
                     additionalProperties:

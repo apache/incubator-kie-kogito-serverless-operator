@@ -1654,7 +1654,7 @@ spec:
                 - states
                 type: object
               condition:
-                description: ConditionType - type of condition
+                description: ConditionType type of condition
                 type: string
               endpoints:
                 items:
