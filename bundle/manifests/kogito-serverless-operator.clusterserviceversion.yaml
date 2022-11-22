@@ -8,7 +8,7 @@ metadata:
           "apiVersion": "sw.kogito.kie.org/v1alpha08",
           "kind": "KogitoServerlessPlatform",
           "metadata": {
-            "name": "greeting-workflow-platform"
+            "name": "kogito-workflow-platform"
           },
           "spec": {
             "cluster": "kubernetes",
@@ -25,7 +25,8 @@ metadata:
           "kind": "KogitoServerlessWorkflow",
           "metadata": {
             "annotations": {
-              "sw.kogito.kie.org/description": "Greeting example on k8s!"
+              "sw.kogito.kie.org/description": "Greeting example on k8s!",
+              "sw.kogito.kie.org/version": "0.0.1"
             },
             "name": "greeting"
           },
@@ -175,6 +176,33 @@ spec:
           - update
           - watch
         - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - roles
+          - rolebindings
+          verbs:
+          - create
+          - delete
+          - deletecollection
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - create
+          - delete
+          - deletecollection
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
           - sw.kogito.kie.org
           resources:
           - kogitoserverlessbuilds
@@ -190,6 +218,32 @@ spec:
           - sw.kogito.kie.org
           resources:
           - kogitoserverlessbuilds/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - sw.kogito.kie.org
+          resources:
+          - kogitoserverlessplatforms
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - sw.kogito.kie.org
+          resources:
+          - kogitoserverlessplatforms/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - sw.kogito.kie.org
+          resources:
+          - kogitoserverlessplatforms/status
           verbs:
           - get
           - patch
