@@ -25,7 +25,6 @@ import (
 	clientr "github.com/kiegroup/container-builder/client"
 	api08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/builder"
-	"github.com/kiegroup/kogito-serverless-operator/constants"
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -74,7 +73,7 @@ func (r *KogitoServerlessBuildReconciler) Reconcile(ctx context.Context, req ctr
 		r.commonBuildConf, err = utils.GetBuilderCommonConfigMap(r.Client)
 	}
 
-	if err != nil || len(r.commonBuildConf.Data[r.commonBuildConf.Data[constants.DEFAULT_BUILDER_RESOURCE_NAME_KEY]]) == 0 {
+	if err != nil {
 		return ctrl.Result{}, errors.NewNotFound(schema.GroupResource{
 			Resource: "ConfigMap",
 		}, "builder-config")

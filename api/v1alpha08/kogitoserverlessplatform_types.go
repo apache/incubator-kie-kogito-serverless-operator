@@ -22,12 +22,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// ConfigurationSpecType is used to define the enum values of the supported types for ConfigurationSpec
+type ConfigurationSpecType string
+
+const (
+	// PropertyConfigurationSpec
+	PropertyConfigurationSpec ConfigurationSpecType = "property"
+	// ConfigMapConfigurationSpec
+	ConfigMapConfigurationSpec ConfigurationSpecType = "configmap"
+	// SecretConfigurationSpec
+	SecretConfigurationSpec ConfigurationSpecType = "secret"
+)
+
 // ConfigurationSpec represents a generic configuration specification
 type ConfigurationSpec struct {
 	// Type represents the type of configuration, ie: property, configmap, secret, ...
-	Type string `json:"type"`
-	// Value the value to assign to the configuration (syntax may vary depending on the `Type`)
-	Value string `json:"value"`
+	Type ConfigurationSpecType `json:"type"`
+	// Value a reference to the object for this configuration (syntax may vary depending on the `Type`)
+	Value corev1.ObjectReference `json:"value"`
 }
 
 const (

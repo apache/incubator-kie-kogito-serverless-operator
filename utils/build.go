@@ -17,6 +17,7 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"github.com/kiegroup/container-builder/util/log"
 	"github.com/kiegroup/kogito-serverless-operator/constants"
 	"github.com/pkg/errors"
@@ -52,7 +53,34 @@ func GetBuilderCommonConfigMap(client client.Client) (corev1.ConfigMap, error) {
 	if err != nil {
 		log.Error(err, "reading configmap")
 		return corev1.ConfigMap{}, err
-	} else {
-		return existingConfigMap, nil
 	}
+
+	err = isValidBuilderCommonConfigMap(existingConfigMap)
+	if err != nil {
+		log.Error(err, "configmap is not valid")
+		return existingConfigMap, err
+	}
+
+	return existingConfigMap, nil
+
+}
+
+// isValidBuilderCommonConfigMap  function that will verify that in the builder config maps there are the required keys and they aren't empty
+func isValidBuilderCommonConfigMap(configMap corev1.ConfigMap) error {
+
+	// Verifying that the key to hold the extension for the workflow is there and not empty
+	if len(configMap.Data[constants.DEFAULT_WORKFLOW_EXTENSION_KEY]) == 0 {
+		return errors.New(fmt.Sprintf("Unable to find %s key into builder config map", configMap.Data[constants.DEFAULT_WORKFLOW_EXTENSION_KEY]))
+	}
+
+	// Verifying that the key to hold the name of the Dockerfile for building the workflow is there and not empty
+	if len(configMap.Data[constants.DEFAULT_BUILDER_RESOURCE_NAME_KEY]) == 0 {
+		return errors.New(fmt.Sprintf("Unable to find %s key into builder config map", configMap.Data[constants.DEFAULT_BUILDER_RESOURCE_NAME_KEY]))
+	}
+
+	// Verifying that the key to hold the content of the Dockerfile for building the workflow is there and not empty
+	if len(configMap.Data[configMap.Data[constants.DEFAULT_BUILDER_RESOURCE_NAME_KEY]]) == 0 {
+		return errors.New(fmt.Sprintf("Unable to find %s key into builder config map", configMap.Data[constants.DEFAULT_BUILDER_RESOURCE_NAME_KEY]))
+	}
+	return nil
 }
