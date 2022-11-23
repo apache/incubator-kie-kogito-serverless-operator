@@ -111,7 +111,7 @@ You can customize your final Image changing the Dockerfile in the configmap kogi
 - The converter from a KogitoServerlessWorkflow CR to a Kogito compliant JSON ready for the build is supporting only the features that are in the Greeting workflow
 - At the moment we are supporting only deployment of services on Kubernetes
 ### Platform CR
-- The only tested features are the one related to the docker Registry customisation and so:
+- The only tested features are the ones related to the docker Registry customization and so:
 ```
        apiVersion: sw.kogito.kie.org/v1alpha08
         kind: KogitoServerlessPlatform
