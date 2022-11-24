@@ -11,7 +11,6 @@
   - [Cleanup your cluster](#cleanup-your-cluster)
   - [Use local scripts](#use-local-scripts)
   - [Development and Contributions](#development-and-contributions)
-  - [License](#license)
 
 The Kogito Serverless Operator is built in order to help the Kogito Serverless users to build and deploy easily on 
 Kubernetes/Knative/OpenShift a service based on Kogito that will be able to execute a workflow.
@@ -166,20 +165,3 @@ You can find some scripts in the [hack](./hack/local/) folder.
 ## Development and Contributions 
 
 Contributing is easy, just take a look at our [contributors](./CONTRIBUTING.md)'guide.
-
-## License
-
-Copyright 2022.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
