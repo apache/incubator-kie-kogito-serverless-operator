@@ -1,0 +1,58 @@
+name: E2E checks
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore:
+      - "LICENSE"
+      - "**/.gitignore"
+      - "**.md"
+      - "**.adoc"
+      - "*.txt"
+      - "docsimg/**"
+      - ".ci/jenkins/**"
+
+env:
+  GO_VERSION: 1.19
+
+jobs:
+  e2e:
+    concurrency:
+      group: kogito-serverless-operator-e2e-tests-${{ github.head_ref }}
+      cancel-in-progress: true
+    timeout-minutes: 120
+    strategy:
+      matrix:
+        cluster-type: [kind, minikube]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    name: End-to-end tests (${{ matrix.cluster-type }})
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+    
+    - name: Install Go
+      id: go
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: start minikube
+      if: ${{ matrix.cluster-type == 'minikube' }}
+      id: minikube
+      uses: medyagh/setup-minikube@latest
+
+    - name: Setup KIND cluster
+      if: ${{ matrix.cluster-type == 'kind' }}
+      uses: engineerd/setup-kind@v0.5.0
+      # with:
+      #   wait: 300s
+      #   version: v0.11.1
+      #   image: kindest/node:v1.25.3
+
+    - name: Run tests
+      run: |
+        make test-e2e
+      env:
+        CLUSTER_TYPE: ${{ matrix.cluster-type }}
+        # KIND_CLUSTER: 'kind'

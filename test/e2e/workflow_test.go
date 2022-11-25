@@ -55,7 +55,7 @@ var _ = Describe("kogito-serverless", func() {
 			By("labeling all namespaces to warn when we apply the manifest if would violate the PodStandards")
 			cmd = exec.Command("kubectl", "label", "--overwrite", "ns", "--all",
 				"pod-security.kubernetes.io/audit=restricted",
-				"pod-security.kubernetes.io/enforce-version=v1.24",
+				"pod-security.kubernetes.io/enforce-version=v1.18",
 				"pod-security.kubernetes.io/warn=restricted")
 			_, err := utils.Run(cmd)
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
@@ -63,16 +63,15 @@ var _ = Describe("kogito-serverless", func() {
 			By("labeling enforce the namespace where the Operator and Operand(s) will run")
 			cmd = exec.Command("kubectl", "label", "--overwrite", "ns", namespace,
 				"pod-security.kubernetes.io/audit=restricted",
-				"pod-security.kubernetes.io/enforce-version=v1.24",
+				"pod-security.kubernetes.io/enforce-version=v1.18",
 				"pod-security.kubernetes.io/enforce=restricted")
 			_, err = utils.Run(cmd)
 			Expect(err).To(Not(HaveOccurred()))
 		})
 
 		AfterEach(func() {
-
 			By("removing manager namespace")
-			cmd := exec.Command("kubectl", "create", "ns", namespace)
+			cmd := exec.Command("make", "undeploy")
 			_, _ = utils.Run(cmd)
 		})
 
@@ -82,15 +81,15 @@ var _ = Describe("kogito-serverless", func() {
 			projectDir, _ := utils.GetProjectDir()
 
 			// operatorImage store the name of the imahe used in the example
-			const operatorImage = "=quay.io/kiegroup/kogito-serverless-operator:v0.0.1"
+			const operatorImage = "quay.io/kiegroup/kogito-serverless-operator:0.0.1"
 
 			By("building the manager(Operator) image")
-			cmd := exec.Command("make", "docker-build", "IMG=quay.io/kiegroup/kogito-serverless-operator:v0.0.1")
+			cmd := exec.Command("make", "docker-build", "IMG="+operatorImage)
 			_, err = utils.Run(cmd)
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 			By("loading the the manager(Operator) image on Kind")
-			err = utils.LoadImageToKindClusterWithName("=quay.io/kiegroup/kogito-serverless-operator:v0.0.1")
+			err = utils.LoadImageToClusterWithName(operatorImage)
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 			By("installing CRDs")
@@ -101,10 +100,11 @@ var _ = Describe("kogito-serverless", func() {
 			By("deploying the controller-manager")
 			cmd = exec.Command("make", "deploy", fmt.Sprintf("IMG=%s", operatorImage))
 			outputMake, err := utils.Run(cmd)
+			fmt.Println(string(outputMake))
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 			By("validating that manager Pod/container(s) are restricted")
-			ExpectWithOffset(1, outputMake).NotTo(ContainSubstring("Warning: would violate PodSecurity"))
+			ExpectWithOffset(1, string(outputMake)).NotTo(ContainSubstring("Warning: would violate PodSecurity"))
 
 			By("validating that the controller-manager pod is running as expected")
 			verifyControllerUp := func() error {
@@ -116,6 +116,7 @@ var _ = Describe("kogito-serverless", func() {
 					"-n", namespace,
 				)
 				podOutput, err := utils.Run(cmd)
+				fmt.Println(string(podOutput))
 				ExpectWithOffset(2, err).NotTo(HaveOccurred())
 				podNames := utils.GetNonEmptyLines(string(podOutput))
 				if len(podNames) != 1 {
@@ -130,6 +131,7 @@ var _ = Describe("kogito-serverless", func() {
 					"-n", namespace,
 				)
 				status, err := utils.Run(cmd)
+				fmt.Println(string(status))
 				ExpectWithOffset(2, err).NotTo(HaveOccurred())
 				if string(status) != "Running" {
 					return fmt.Errorf("controller pod in %s status", status)

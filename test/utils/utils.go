@@ -51,14 +51,42 @@ func Run(cmd *exec.Cmd) ([]byte, error) {
 	return output, nil
 }
 
-// LoadImageToKindCluster loads a local docker image to the kind cluster
-func LoadImageToKindClusterWithName(name string) error {
+// LoadImageToClusterWithName loads a local docker image to the given cluster. Default is Kind.
+func LoadImageToClusterWithName(name string) error {
 	cluster := "kind"
-	if v, ok := os.LookupEnv("KIND_CLUSTER"); ok {
+	if v, ok := os.LookupEnv("CLUSTER_TYPE"); ok {
 		cluster = v
 	}
-	kindOptions := []string{"load", "docker-image", name, "--name", cluster}
+
+	if cluster == "kind" {
+		return LoadImageToKindClusterWithName(name)
+	} else if cluster == "minikube" {
+		return LoadImageToMinikubeClusterWithName(name)
+	} else {
+		return fmt.Errorf("Unknow cluster type %s", cluster)
+	}
+}
+
+// LoadImageToKindClusterWithName loads a local docker image to the kind cluster
+func LoadImageToKindClusterWithName(name string) error {
+	clusterName := "kind"
+	if v, ok := os.LookupEnv("KIND_CLUSTER"); ok {
+		clusterName = v
+	}
+	kindOptions := []string{"load", "docker-image", name, "--name", clusterName}
 	cmd := exec.Command("kind", kindOptions...)
+	_, err := Run(cmd)
+	return err
+}
+
+// LoadImageToMinikubeClusterWithName loads a local docker image to the minikube cluster
+func LoadImageToMinikubeClusterWithName(name string) error {
+	clusterName := "minikube"
+	if v, ok := os.LookupEnv("MINIKUBE_CLUSTER"); ok {
+		clusterName = v
+	}
+	minikubeOptions := []string{"image", "load", "image", name, "-p", clusterName, "--overwrite", "true"}
+	cmd := exec.Command("minikube", minikubeOptions...)
 	_, err := Run(cmd)
 	return err
 }
