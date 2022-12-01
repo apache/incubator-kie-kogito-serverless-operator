@@ -28,6 +28,13 @@ func warnError(err error) {
 	fmt.Fprintf(GinkgoWriter, "warning: %v\n", err)
 }
 
+func OutputAllPods() error {
+	cmd := exec.Command("kubectl", "get", "pods", "-A")
+	podsOutput, err := Run(cmd)
+	fmt.Println(string(podsOutput))
+	return err
+}
+
 // Run executes the provided command within this context
 func Run(cmd *exec.Cmd) ([]byte, error) {
 	dir, _ := GetProjectDir()
@@ -85,7 +92,7 @@ func LoadImageToMinikubeClusterWithName(name string) error {
 	if v, ok := os.LookupEnv("MINIKUBE_CLUSTER"); ok {
 		clusterName = v
 	}
-	minikubeOptions := []string{"image", "load", "image", name, "-p", clusterName, "--overwrite", "true"}
+	minikubeOptions := []string{"image", "load", name, "-p", clusterName, "--overwrite", "true"}
 	cmd := exec.Command("minikube", minikubeOptions...)
 	_, err := Run(cmd)
 	return err

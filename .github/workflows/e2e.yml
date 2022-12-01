@@ -17,14 +17,14 @@ env:
 jobs:
   e2e:
     concurrency:
-      group: kogito-serverless-operator-e2e-tests-${{ github.head_ref }}
+      group: kogito-serverless-operator-e2e-tests-${{ matrix.cluster-type }}-${{ github.head_ref }}
       cancel-in-progress: true
     timeout-minutes: 120
     strategy:
       matrix:
         cluster-type:
         - kind
-        # - minikube
+        - minikube
       fail-fast: false
     runs-on: ubuntu-latest
     name: End-to-end tests (${{ matrix.cluster-type }})
@@ -39,37 +39,55 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
         cache: true
 
-    # - name: start minikube
-    #   if: ${{ matrix.cluster-type == 'minikube' }}
-    #   id: minikube
-    #   uses: medyagh/setup-minikube@latest
+    - name: start minikube
+      if: ${{ matrix.cluster-type == 'minikube' }}
+      id: minikube
+      uses: medyagh/setup-minikube@latest
 
     - name: Setup KIND cluster
       if: ${{ matrix.cluster-type == 'kind' }}
       uses: container-tools/kind-action@v1
+
+    - name: Check pods
+      run: |
+        kubectl get pods -A
+        sleep 10
+        kubectl get pods -A
+    
+    ### TEST
+    - name: Build img
+      run: |
+        make docker-build IMG=quay.io/kiegroup/kogito-serverless-operator:0.0.1
+    - name: Load kind image
+      if: ${{ matrix.cluster-type == 'kind' }}
+      run: |
+        kind load docker-image quay.io/kiegroup/kogito-serverless-operator:0.0.1
+    - name: Load minikube image
+      if: ${{ matrix.cluster-type == 'minikube' }}
+      run: |
+        minikube image load quay.io/kiegroup/kogito-serverless-operator:0.0.1
+    - name: Run tests
+      run: |
+        kubectl get pods -A
+        make install
+        make deploy IMG=quay.io/kiegroup/kogito-serverless-operator:0.0.1
+        sleep 10s
+        kubectl get pods -A
+        kubectl get deploy kogito-serverless-operator-controller-manager -o yaml -n kogito-serverless-operator-system
+        sleep 10s
+        kubectl get pods -A
+        kubectl get deploy kogito-serverless-operator-controller-manager -o yaml -n kogito-serverless-operator-system
+        sleep 10s
+        kubectl get pods -A
+        kubectl get deploy kogito-serverless-operator-controller-manager -o yaml -n kogito-serverless-operator-system
+        sleep 10s
+        kubectl get pods -A
+        kubectl get deploy kogito-serverless-operator-controller-manager -o yaml -n kogito-serverless-operator-system
+        make undeploy
+    ### TEST
 
     - name: Run tests
       run: |
         make test-e2e
       env:
         CLUSTER_TYPE: ${{ matrix.cluster-type }}
-        # KIND_CLUSTER: 'kind'
-    # - name: Run tests
-    #   run: |
-    #     kubectl get pods -A
-    #     make docker-build IMG=quay.io/kiegroup/kogito-serverless-operator:0.0.1
-    #     kind load docker-image quay.io/kiegroup/kogito-serverless-operator:0.0.1 --name kind
-    #     make install
-    #     make deploy IMG=quay.io/kiegroup/kogito-serverless-operator:0.0.1
-    #     sleep 10s
-    #     kubectl get pods -A
-    #     kubectl get deploy controller-manager -o yaml -n kogito-serverless-operator-system
-    #     sleep 10s
-    #     kubectl get pods -A
-    #     kubectl get deploy controller-manager -o yaml -n kogito-serverless-operator-system
-    #     sleep 10s
-    #     kubectl get pods -A
-    #     kubectl get deploy controller-manager -o yaml -n kogito-serverless-operator-system
-    #     sleep 10s
-    #     kubectl get pods -A
-    #     kubectl get deploy controller-manager -o yaml -n kogito-serverless-operator-system

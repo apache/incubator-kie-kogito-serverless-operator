@@ -22,6 +22,7 @@ import (
 	"github.com/kiegroup/kogito-serverless-operator/test/utils"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	//nolint:golint
@@ -85,12 +86,12 @@ var _ = Describe("kogito-serverless", func() {
 
 			By("building the manager(Operator) image")
 			cmd := exec.Command("make", "docker-build", "IMG="+operatorImage)
-			_, err = utils.Run(cmd)
-			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+			// _, err = utils.Run(cmd)
+			// ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 			By("loading the the manager(Operator) image on Kind")
-			err = utils.LoadImageToClusterWithName(operatorImage)
-			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+			// err = utils.LoadImageToClusterWithName(operatorImage)
+			// ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 			By("installing CRDs")
 			cmd = exec.Command("make", "install")
@@ -103,11 +104,17 @@ var _ = Describe("kogito-serverless", func() {
 			fmt.Println(string(outputMake))
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-			By("validating that manager Pod/container(s) are restricted")
-			ExpectWithOffset(1, string(outputMake)).NotTo(ContainSubstring("Warning: would violate PodSecurity"))
+			By("Applying seccompProfile if Pod/container(s) are restricted")
+			if strings.Contains(string(outputMake), "Warning: would violate PodSecurity") {
+				fmt.Println("Applying")
+				cmd = exec.Command("kubectl", "patch", "deployment", "kogito-serverless-operator-controller-manager", "'\"spec\":{\"securityContext\":{\"seccompProfile\":{\"type\":\"RuntimeDefault\"}}}'")
+			}
 
 			By("validating that the controller-manager pod is running as expected")
 			verifyControllerUp := func() error {
+				var podOutput []byte
+				err := utils.OutputAllPods()
+
 				// Get pod name
 				cmd = exec.Command("kubectl", "get",
 					"pods", "-l", "control-plane=controller-manager",
@@ -115,7 +122,7 @@ var _ = Describe("kogito-serverless", func() {
 						"{{ \"\\n\" }}{{ end }}{{ end }}",
 					"-n", namespace,
 				)
-				podOutput, err := utils.Run(cmd)
+				podOutput, err = utils.Run(cmd)
 				fmt.Println(string(podOutput))
 				ExpectWithOffset(2, err).NotTo(HaveOccurred())
 				podNames := utils.GetNonEmptyLines(string(podOutput))
