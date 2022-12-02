@@ -55,6 +55,7 @@ jobs:
 
     - name: Check pods
       run: |
+        kubectl version
         kubectl get pods -A
 
     - name: Run tests
