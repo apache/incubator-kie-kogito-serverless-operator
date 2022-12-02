@@ -86,12 +86,12 @@ var _ = Describe("kogito-serverless", func() {
 
 			By("building the manager(Operator) image")
 			cmd := exec.Command("make", "docker-build", "IMG="+operatorImage)
-			// _, err = utils.Run(cmd)
-			// ExpectWithOffset(1, err).NotTo(HaveOccurred())
+			_, err = utils.Run(cmd)
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 			By("loading the the manager(Operator) image on Kind")
-			// err = utils.LoadImageToClusterWithName(operatorImage)
-			// ExpectWithOffset(1, err).NotTo(HaveOccurred())
+			err = utils.LoadImageToClusterWithName(operatorImage)
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 			By("installing CRDs")
 			cmd = exec.Command("make", "install")

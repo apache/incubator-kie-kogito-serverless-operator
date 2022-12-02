@@ -39,52 +39,23 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
         cache: true
 
-    - name: start minikube
+    - name: Setup Minikube cluster
       if: ${{ matrix.cluster-type == 'minikube' }}
       id: minikube
       uses: medyagh/setup-minikube@latest
+      with:
+        addons: registry,metrics-server
 
-    - name: Setup KIND cluster
+    - name: Setup KinD cluster
       if: ${{ matrix.cluster-type == 'kind' }}
+      id: kind
       uses: container-tools/kind-action@v1
+      with:
+        wait: 120s
 
     - name: Check pods
       run: |
         kubectl get pods -A
-        sleep 10
-        kubectl get pods -A
-    
-    ### TEST
-    - name: Build img
-      run: |
-        make docker-build IMG=quay.io/kiegroup/kogito-serverless-operator:0.0.1
-    - name: Load kind image
-      if: ${{ matrix.cluster-type == 'kind' }}
-      run: |
-        kind load docker-image quay.io/kiegroup/kogito-serverless-operator:0.0.1
-    - name: Load minikube image
-      if: ${{ matrix.cluster-type == 'minikube' }}
-      run: |
-        minikube image load quay.io/kiegroup/kogito-serverless-operator:0.0.1
-    - name: Run tests
-      run: |
-        kubectl get pods -A
-        make install
-        make deploy IMG=quay.io/kiegroup/kogito-serverless-operator:0.0.1
-        sleep 10s
-        kubectl get pods -A
-        kubectl get deploy kogito-serverless-operator-controller-manager -o yaml -n kogito-serverless-operator-system
-        sleep 10s
-        kubectl get pods -A
-        kubectl get deploy kogito-serverless-operator-controller-manager -o yaml -n kogito-serverless-operator-system
-        sleep 10s
-        kubectl get pods -A
-        kubectl get deploy kogito-serverless-operator-controller-manager -o yaml -n kogito-serverless-operator-system
-        sleep 10s
-        kubectl get pods -A
-        kubectl get deploy kogito-serverless-operator-controller-manager -o yaml -n kogito-serverless-operator-system
-        make undeploy
-    ### TEST
 
     - name: Run tests
       run: |
