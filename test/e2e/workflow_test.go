@@ -124,7 +124,7 @@ var _ = Describe("kogito-serverless", func() {
 
 			if applySeccompProfilePatch {
 				By("Applying seccompProfile")
-				cmd = exec.Command("kubectl", "patch", "deployment", "kogito-serverless-operator-controller-manager", "'\"spec\":{\"securityContext\":{\"seccompProfile\":{\"type\":\"RuntimeDefault\"}}}'")
+				cmd = exec.Command("kubectl", "patch", "deployment", "kogito-serverless-operator-controller-manager", "-p", `{"spec":{"template":{"spec":{"securityContext":{"seccompProfile":{"type":"RuntimeDefault"}}}}}}`, "-n", namespace)
 				_, err := utils.Run(cmd)
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 			}
