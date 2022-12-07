@@ -16,6 +16,7 @@
 package utils
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -120,4 +121,14 @@ func GetProjectDir() (string, error) {
 	}
 	wd = strings.Replace(wd, "/test/e2e", "", -1)
 	return wd, nil
+}
+
+// StringToLines read lines from a string
+func StringToLines(s string) (lines []string, err error) {
+	scanner := bufio.NewScanner(strings.NewReader(s))
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	err = scanner.Err()
+	return
 }

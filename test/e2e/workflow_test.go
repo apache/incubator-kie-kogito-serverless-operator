@@ -56,7 +56,7 @@ var _ = Describe("kogito-serverless", func() {
 			By("labeling all namespaces to warn when we apply the manifest if would violate the PodStandards")
 			cmd = exec.Command("kubectl", "label", "--overwrite", "ns", "--all",
 				"pod-security.kubernetes.io/audit=restricted",
-				"pod-security.kubernetes.io/enforce-version=v1.18",
+				"pod-security.kubernetes.io/enforce-version=v1.23",
 				"pod-security.kubernetes.io/warn=restricted")
 			_, err := utils.Run(cmd)
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
@@ -64,7 +64,7 @@ var _ = Describe("kogito-serverless", func() {
 			By("labeling enforce the namespace where the Operator and Operand(s) will run")
 			cmd = exec.Command("kubectl", "label", "--overwrite", "ns", namespace,
 				"pod-security.kubernetes.io/audit=restricted",
-				"pod-security.kubernetes.io/enforce-version=v1.18",
+				"pod-security.kubernetes.io/enforce-version=v1.23",
 				"pod-security.kubernetes.io/enforce=restricted")
 			_, err = utils.Run(cmd)
 			Expect(err).To(Not(HaveOccurred()))
@@ -104,10 +104,29 @@ var _ = Describe("kogito-serverless", func() {
 			fmt.Println(string(outputMake))
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-			By("Applying seccompProfile if Pod/container(s) are restricted")
-			if strings.Contains(string(outputMake), "Warning: would violate PodSecurity") {
-				fmt.Println("Applying")
+			By("validating that manager Pod/container(s) are restricted")
+			// Get Podsecurity violation lines
+			lines, err := utils.StringToLines(string(outputMake))
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+			var violationLines []string
+			applySeccompProfilePatch := false
+			for _, line := range lines {
+				if strings.Contains(line, "Warning: would violate PodSecurity") {
+					if strings.Contains(line, "must set securityContext.seccompProfile.type to") {
+						// Ignore this violation as it is expected
+						applySeccompProfilePatch = true
+					} else {
+						violationLines = append(violationLines, line)
+					}
+				}
+			}
+			Expect(violationLines).To(BeEmpty())
+
+			if applySeccompProfilePatch {
+				By("Applying seccompProfile")
 				cmd = exec.Command("kubectl", "patch", "deployment", "kogito-serverless-operator-controller-manager", "'\"spec\":{\"securityContext\":{\"seccompProfile\":{\"type\":\"RuntimeDefault\"}}}'")
+				_, err := utils.Run(cmd)
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 			}
 
 			By("validating that the controller-manager pod is running as expected")
