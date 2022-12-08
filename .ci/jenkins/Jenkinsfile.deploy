@@ -9,7 +9,7 @@ pipeline {
 
     // Needed for local build
     tools {
-        go 'golang-1.19' // TODO to setup
+        go 'golang-1.19'
     }
 
     options {

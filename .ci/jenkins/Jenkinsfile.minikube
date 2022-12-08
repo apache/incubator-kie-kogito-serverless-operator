@@ -1,0 +1,73 @@
+@Library('jenkins-pipeline-shared-libraries')_
+
+pipeline {
+    agent {
+        // TODO update node to 16GB
+        label 'kie-rhel8-priority && !built-in'
+    }
+
+    options {
+        timestamps()
+    }
+
+    tools {
+        go 'golang-1.19'
+    }
+
+    environment {
+        MINIKUBE_VERSION = '1.28.0'
+        KUBERNETES_VERSION = '1.23.14'
+        CLUSTER_TYPE = 'minikube'
+        CONTAINER_ENGINE = 'podman' // docker not available on `kie-rhel8`
+    }
+
+    stages {
+        stage('Test') {
+            steps {
+                script {
+                    sh """
+                        sudo yum install -y make
+                        ${CONTAINER_ENGINE} info
+                        kubectl version --client=true
+                        whereis kubectl
+                    """
+
+                    // TODO update memory of minikube
+                    sh """
+                        curl -LO https://github.com/kubernetes/minikube/releases/download/v${MINIKUBE_VERSION}/minikube-${MINIKUBE_VERSION}-0.x86_64.rpm
+
+                        sudo yum localinstall -y minikube-${MINIKUBE_VERSION}-0.x86_64.rpm
+
+                        minikube delete
+                        minikube start --cpus max --memory 4g --install-addons false --driver=${CONTAINER_ENGINE} --kubernetes-version ${KUBERNETES_VERSION}
+                        minikube status
+
+                        kubectl version
+                        kubectl get pods -A
+                    """
+
+                    dir('operator') {
+                        deleteDir()
+                        checkout(githubscm.resolveRepository('kogito-serverless-operator', 'kiegroup', 'main', false))
+                        // need to manually checkout branch since on a detached branch after checkout command
+                        sh "git checkout main"
+
+                        sh 'kubectl get pods -A'
+                        sh 'make test-e2e'
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            script {
+                if (sh(returnStatus: true, script: 'which minikube') == 0) {
+                    sh '''
+                        minikube delete
+                    '''
+                }
+            }
+        }
+    }
+}
