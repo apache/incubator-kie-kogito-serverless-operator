@@ -158,7 +158,7 @@ docker-buildx: test ## Build and push docker image for the manager for cross-pla
 
 .PHONY: podman-push
 podman-push: ## Push container image with the manager.
-	podman push ${IMG}
+	podman push ${PODMAN_PUSH_PARAMS} ${IMG}
 
 .PHONY: container-build
 container-build: test ## Build the container image
@@ -166,7 +166,7 @@ container-build: test ## Build the container image
 
 .PHONY: container-push
 container-push: ## Push the container image
-	$(BUILDER) push ${IMG}
+	$(BUILDER) push ${CONTAINER_PUSH_PARAMS} ${IMG}
 
 ##@ Deployment
 
@@ -305,4 +305,4 @@ generate-all: generate generate-deploy bundle
 
 .PHONY: test-e2e # You will need to have a Minikube/Kind cluster up in running to run this target
 test-e2e: install-operator-sdk
-	go test ./test/e2e/* -v -ginkgo.v
+	CONTAINER_ENGINE=$(BUILDER) go test ./test/e2e/* -v -ginkgo.v

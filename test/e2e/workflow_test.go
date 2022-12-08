@@ -82,15 +82,22 @@ var _ = Describe("kogito-serverless", func() {
 			projectDir, _ := utils.GetProjectDir()
 
 			// operatorImage store the name of the imahe used in the example
-			const operatorImage = "quay.io/kiegroup/kogito-serverless-operator:0.0.1"
+			var operatorImage = utils.GetImageRegistry() + "/kogito-serverless-operator:0.0.1"
 
 			By("building the manager(Operator) image")
-			cmd := exec.Command("make", "docker-build", "IMG="+operatorImage)
+			cmd := exec.Command("make", "container-build", "BUILDER="+utils.GetContainerEngine(), "IMG="+operatorImage)
 			_, err = utils.Run(cmd)
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-			By("loading the the manager(Operator) image on Kind")
-			err = utils.LoadImageToClusterWithName(operatorImage)
+			By("loading the the manager(Operator) image on Cluster")
+			push, err := utils.IsPushImageAfterBuild()
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+			if push {
+				cmd := exec.Command("make", "container-push", "BUILDER="+utils.GetContainerEngine(), "IMG="+operatorImage)
+				_, err = utils.Run(cmd)
+			} else {
+				err = utils.LoadImageToClusterWithName(operatorImage)
+			}
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 			By("installing CRDs")
@@ -126,6 +133,7 @@ var _ = Describe("kogito-serverless", func() {
 				By("Applying seccompProfile")
 				cmd = exec.Command("kubectl", "patch", "deployment", "kogito-serverless-operator-controller-manager", "-p", `{"spec":{"template":{"spec":{"securityContext":{"seccompProfile":{"type":"RuntimeDefault"}}}}}}`, "-n", namespace)
 				_, err := utils.Run(cmd)
+				err = utils.OutputDeployment(namespace, "kogito-serverless-operator-controller-manager")
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 			}
 
@@ -133,6 +141,7 @@ var _ = Describe("kogito-serverless", func() {
 			verifyControllerUp := func() error {
 				var podOutput []byte
 				err := utils.OutputAllPods()
+				err = utils.OutputAllEvents(namespace)
 
 				// Get pod name
 				cmd = exec.Command("kubectl", "get",

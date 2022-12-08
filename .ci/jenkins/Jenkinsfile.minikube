@@ -19,6 +19,7 @@ pipeline {
         KUBERNETES_VERSION = '1.23.14'
         CLUSTER_TYPE = 'minikube'
         CONTAINER_ENGINE = 'podman' // docker not available on `kie-rhel8`
+        DOCKER_REGISTRY_MIRROR = 'ba-docker-registry.usersys.redhat.com:5000'
     }
 
     stages {
@@ -32,28 +33,50 @@ pipeline {
                         whereis kubectl
                     """
 
-                    // TODO update memory of minikube
+                    // TODO update memory of minikube depending on node used in label
+                    def minikubeOpts = [
+                        "--driver=${CONTAINER_ENGINE}",
+                        "--kubernetes-version ${KUBERNETES_VERSION}",
+                        '--cpus max',
+                        '--memory 4g',
+                        '--addons registry',
+                        '--addons metrics-server',
+                        "--registry-mirror http://${DOCKER_REGISTRY_MIRROR}",
+                        "--insecure-registry ${DOCKER_REGISTRY_MIRROR}",
+                        '--insecure-registry "192.168.0.0/16"',
+                        '--insecure-registry "localhost:5000"',
+                    ]
                     sh """
                         curl -LO https://github.com/kubernetes/minikube/releases/download/v${MINIKUBE_VERSION}/minikube-${MINIKUBE_VERSION}-0.x86_64.rpm
 
                         sudo yum localinstall -y minikube-${MINIKUBE_VERSION}-0.x86_64.rpm
 
                         minikube delete
-                        minikube start --cpus max --memory 4g --install-addons false --driver=${CONTAINER_ENGINE} --kubernetes-version ${KUBERNETES_VERSION}
+                        minikube start ${minikubeOpts.join(' ')}
                         minikube status
 
                         kubectl version
                         kubectl get pods -A
+                        sleep 20s
+                        kubectl get pods -A
+                        kubectl get events -n kube-system
                     """
 
                     dir('operator') {
                         deleteDir()
-                        checkout(githubscm.resolveRepository('kogito-serverless-operator', 'kiegroup', 'main', false))
+                        checkout(githubscm.resolveRepository('kogito-serverless-operator', 'radtriste', 'kogito-8337-e2e-nightly', false))
                         // need to manually checkout branch since on a detached branch after checkout command
-                        sh "git checkout main"
+                        sh 'git checkout kogito-8337-e2e-nightly'
 
-                        sh 'kubectl get pods -A'
-                        sh 'make test-e2e'
+                        sh """
+                            export IMAGE_REGISTRY="\$(minikube ip):5000"
+                            export PUSH_IMAGE_AFTER_BUILD=true
+                            export CONTAINER_PUSH_PARAMS='--tls-verify=false'
+                            
+                            echo "IMAGE_REGISTRY=\${IMAGE_REGISTRY}"
+                            make test-e2e BUILDER=${CONTAINER_ENGINE}
+                            kubectl get pods -A
+                        """
                     }
                 }
             }

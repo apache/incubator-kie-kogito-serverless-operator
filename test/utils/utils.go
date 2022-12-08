@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	. "github.com/onsi/ginkgo" //nolint:golint,revive
@@ -31,6 +32,20 @@ func warnError(err error) {
 
 func OutputAllPods() error {
 	cmd := exec.Command("kubectl", "get", "pods", "-A")
+	podsOutput, err := Run(cmd)
+	fmt.Println(string(podsOutput))
+	return err
+}
+
+func OutputAllEvents(namespace string) error {
+	cmd := exec.Command("kubectl", "get", "events", "-n", namespace)
+	podsOutput, err := Run(cmd)
+	fmt.Println(string(podsOutput))
+	return err
+}
+
+func OutputDeployment(namespace, deployName string) error {
+	cmd := exec.Command("kubectl", "get", "deploy", deployName, "-o", "yaml", "-n", namespace)
 	podsOutput, err := Run(cmd)
 	fmt.Println(string(podsOutput))
 	return err
@@ -96,6 +111,14 @@ func LoadImageToMinikubeClusterWithName(name string) error {
 	minikubeOptions := []string{"image", "load", name, "-p", clusterName, "--overwrite", "true"}
 	cmd := exec.Command("minikube", minikubeOptions...)
 	_, err := Run(cmd)
+	if err != nil {
+		return err
+	}
+
+	minikubeOptions = []string{"image", "ls"}
+	cmd = exec.Command("minikube", minikubeOptions...)
+	output, err := Run(cmd)
+	fmt.Println(string(output))
 	return err
 }
 
@@ -131,4 +154,34 @@ func StringToLines(s string) (lines []string, err error) {
 	}
 	err = scanner.Err()
 	return
+}
+
+// GetContainerEngine retrieves the Container Engine from env
+func GetContainerEngine() string {
+	containerEngine := "docker"
+	if v, ok := os.LookupEnv("CONTAINER_ENGINE"); ok {
+		containerEngine = v
+	}
+	return containerEngine
+}
+
+// GetImageRegistry retrieves the Container Engine from env
+func GetImageRegistry() string {
+	containerEngine := "quay.io/kiegroup"
+	if v, ok := os.LookupEnv("IMAGE_REGISTRY"); ok {
+		containerEngine = v
+	}
+	return containerEngine
+}
+
+func IsPushImageAfterBuild() (bool, error) {
+	pushImageAfterBuild := false
+	var err error
+	if v, ok := os.LookupEnv("PUSH_IMAGE_AFTER_BUILD"); ok {
+		pushImageAfterBuild, err = strconv.ParseBool(v)
+		if err != nil {
+			return false, err
+		}
+	}
+	return pushImageAfterBuild, nil
 }

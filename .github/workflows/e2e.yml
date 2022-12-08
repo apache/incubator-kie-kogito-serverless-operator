@@ -71,6 +71,6 @@ jobs:
 
     - name: Run tests
       run: |
-        make test-e2e
+        make test-e2e BUILDER=docker
       env:
         CLUSTER_TYPE: ${{ matrix.cluster-type }}
