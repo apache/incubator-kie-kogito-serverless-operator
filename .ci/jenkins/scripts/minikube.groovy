@@ -49,7 +49,7 @@ void preChecks() {
     sh """
         ${minikubeContainerEngine} info
 
-        if [[ ! \$(command -v minikube) ]] || ; then
+        if [[ ! \$(command -v minikube) ]]; then
             curl -LO https://github.com/kubernetes/minikube/releases/download/v${minikubeVersion}/minikube-${minikubeVersion}-0.x86_64.rpm
             sudo yum localinstall -y minikube-${minikubeVersion}-0.x86_64.rpm
         fi
