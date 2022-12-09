@@ -4,7 +4,8 @@ helper = null
 
 pipeline {
     agent {
-        label 'kogito-operator-node && !built-in'
+        // TODO update node to 16GB
+        label 'kie-rhel8-priority && !built-in'
     }
 
     // Needed for local build
@@ -51,6 +52,9 @@ pipeline {
 
                     // Verify we have the connectivity to Openshift
                     openshift.loginOpenshift()
+
+                    // Fix for rhel8 nodes
+                    sh 'sudo yum install -y make'
                 }
             }
             post {
@@ -130,8 +134,40 @@ pipeline {
             }
         }
 
-        // TODO setup e2e tests here
-        // https://issues.redhat.com/browse/KOGITO-8176
+        stage('Run e2e tests') {
+            when {
+                expression {
+                    return helper.shouldLaunchTests()
+                }
+            }
+            environment {
+                MINIKUBE_VERSION = '1.28.0'
+                KUBERNETES_VERSION = '1.23.14'
+                CLUSTER_TYPE = 'minikube'
+            }
+            steps {
+                script {
+                    // TODO update minikube memory depending on used node (16 GB ?)
+                    minikube.start()
+
+                    sh """
+                        export IMAGE_REGISTRY="\$(minikube ip):5000"
+                        export PUSH_IMAGE_AFTER_BUILD=true
+                        export CONTAINER_PUSH_PARAMS='--tls-verify=false'
+
+                        make test-e2e BUILDER=${minikubeContainerEngine}
+                        kubectl get pods -A
+                    """
+                }
+            }
+            post {
+                always {
+                    script {
+                        minikube.stop()
+                    }
+                }
+            }
+        }
 
         stage('Push to registry') {
             when {
@@ -219,7 +255,7 @@ pipeline {
 
 void sendNotification() {
     if (params.SEND_NOTIFICATION) {
-        mailer.sendMarkdownTestSummaryNotification('Deploy', "[${helper.getBuildBranch()}] Kogito Serverless Operator", [env.KOGITO_CI_EMAIL_TO], "You can find test error logs here: ${BUILD_URL}/artifact/test/logs/error/")
+        mailer.sendMarkdownTestSummaryNotification('Deploy', "[${helper.getBuildBranch()}] Kogito Serverless Operator", [env.KOGITO_CI_EMAIL_TO])
     } else {
         echo 'No notification sent per configuration'
     }
