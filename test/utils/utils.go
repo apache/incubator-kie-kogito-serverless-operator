@@ -74,54 +74,6 @@ func Run(cmd *exec.Cmd) ([]byte, error) {
 	return output, nil
 }
 
-// LoadImageToClusterWithName loads a local docker image to the given cluster. Default is Kind.
-func LoadImageToClusterWithName(name string) error {
-	cluster := "kind"
-	if v, ok := os.LookupEnv("CLUSTER_TYPE"); ok {
-		cluster = v
-	}
-
-	if cluster == "kind" {
-		return LoadImageToKindClusterWithName(name)
-	} else if cluster == "minikube" {
-		return LoadImageToMinikubeClusterWithName(name)
-	} else {
-		return fmt.Errorf("Unknow cluster type %s", cluster)
-	}
-}
-
-// LoadImageToKindClusterWithName loads a local docker image to the kind cluster
-func LoadImageToKindClusterWithName(name string) error {
-	clusterName := "kind"
-	if v, ok := os.LookupEnv("KIND_CLUSTER"); ok {
-		clusterName = v
-	}
-	kindOptions := []string{"load", "docker-image", name, "--name", clusterName}
-	cmd := exec.Command("kind", kindOptions...)
-	_, err := Run(cmd)
-	return err
-}
-
-// LoadImageToMinikubeClusterWithName loads a local docker image to the minikube cluster
-func LoadImageToMinikubeClusterWithName(name string) error {
-	clusterName := "minikube"
-	if v, ok := os.LookupEnv("MINIKUBE_CLUSTER"); ok {
-		clusterName = v
-	}
-	minikubeOptions := []string{"image", "load", name, "-p", clusterName, "--overwrite", "true"}
-	cmd := exec.Command("minikube", minikubeOptions...)
-	_, err := Run(cmd)
-	if err != nil {
-		return err
-	}
-
-	minikubeOptions = []string{"image", "ls"}
-	cmd = exec.Command("minikube", minikubeOptions...)
-	output, err := Run(cmd)
-	fmt.Println(string(output))
-	return err
-}
-
 // GetNonEmptyLines converts given command output string into individual objects
 // according to line breakers, and ignores the empty elements in it.
 func GetNonEmptyLines(output string) []string {
@@ -156,32 +108,21 @@ func StringToLines(s string) (lines []string, err error) {
 	return
 }
 
-// GetContainerEngine retrieves the Container Engine from env
-func GetContainerEngine() string {
-	containerEngine := "docker"
-	if v, ok := os.LookupEnv("CONTAINER_ENGINE"); ok {
-		containerEngine = v
+// GetOperatorImageName retrieves the operator image name to use
+func GetOperatorImageName() (string, error) {
+	if v, ok := os.LookupEnv("OPERATOR_IMAGE_NAME"); ok {
+		return v, nil
+	} else {
+		return "", fmt.Errorf("Cannot find `OPERATOR_IMAGE_NAME` env variable needed for the tests")
 	}
-	return containerEngine
 }
 
-// GetImageRegistry retrieves the Container Engine from env
-func GetImageRegistry() string {
-	containerEngine := "quay.io/kiegroup"
-	if v, ok := os.LookupEnv("IMAGE_REGISTRY"); ok {
-		containerEngine = v
-	}
-	return containerEngine
-}
-
-func IsPushImageAfterBuild() (bool, error) {
-	pushImageAfterBuild := false
-	var err error
-	if v, ok := os.LookupEnv("PUSH_IMAGE_AFTER_BUILD"); ok {
-		pushImageAfterBuild, err = strconv.ParseBool(v)
-		if err != nil {
-			return false, err
+// IsDebugEnabled
+func IsDebugEnabled() bool {
+	if v, ok := os.LookupEnv("DEBUG"); ok {
+		if debug, err := strconv.ParseBool(v); err == nil {
+			return debug
 		}
 	}
-	return pushImageAfterBuild, nil
+	return false
 }

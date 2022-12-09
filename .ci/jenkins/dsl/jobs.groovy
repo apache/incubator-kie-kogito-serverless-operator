@@ -36,8 +36,8 @@ void createSetupBranchJob() {
 
         REPO_NAME: 'kogito-serverless-operator',
         OPERATOR_IMAGE_NAME: 'kogito-serverless-operator',
-        CONTAINER_ENGINE: 'docker',
-        CONTAINER_TLS_OPTIONS: '',
+        CONTAINER_ENGINE: 'podman',
+        CONTAINER_TLS_OPTIONS: '--tls-verify=false',
         MAX_REGISTRY_RETRIES: 3,
 
         GIT_AUTHOR: "${GIT_AUTHOR_NAME}",

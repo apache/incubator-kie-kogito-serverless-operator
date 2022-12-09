@@ -8,7 +8,7 @@ minikubeAddons = [ 'registry', 'metrics-server' ]
 minikubeRegistryMirror = env.DOCKER_REGISTRY_MIRROR ?: ''
 minikubeInsecureRegistries = []
 
-void start(boolean debug = true) {
+void start(boolean debug = false) {
     preChecks()
 
     def minikubeOpts = [
@@ -36,7 +36,7 @@ void start(boolean debug = true) {
 
         kubectl version
         kubectl get pods -A
-        sleep 20s
+        sleep 30s
         kubectl get pods -A
     """
 
@@ -62,6 +62,10 @@ void stop() {
             minikube delete
         '''
     }
+}
+
+String getImageRegistry() {
+    return sh(returnStdout: true, script: 'echo "$(minikube ip):5000"').trim()
 }
 
 return this
