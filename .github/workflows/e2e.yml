@@ -12,7 +12,6 @@ on:
       - ".ci/jenkins/**"
 
 env:
-  OPERATOR_IMAGE_NAME: "gha-local/kogito-serverless-operator:0.0.1"
   GO_VERSION: 1.19
   # Kubernetes version should aligned with OCP LTS, aka OCP 4.10 (k8s 1.23) for now
   # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.23.md
@@ -37,10 +36,6 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
-      - name: Build operator image
-        run: |
-          make container-build BUILDER=docker IMG=${{ env.OPERATOR_IMAGE_NAME }}
-
       - name: Setup Minikube cluster
         uses: medyagh/setup-minikube@latest
         with:
@@ -49,20 +44,20 @@ jobs:
           # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
           cpu: max
           memory: max
+      
+      - name: Retrieve Minikube regsitry
+        run: |
+          minikube_registry="$(minikube ip):5000"
+          echo "MINIKUBE_REGISTRY=${minikube_registry}" >> $GITHUB_ENV
+          echo "OPERATOR_IMAGE_NAME=${minikube_registry}/kogito-serverless-operator:0.0.1" >> $GITHUB_ENV
+      
+      - name: Build operator image
+        run: |
+          make container-build BUILDER=podman IMG=${{ env.OPERATOR_IMAGE_NAME }}
 
       - name: Load image in Minikube
         run: |
-          minikube image load ${{ env.OPERATOR_IMAGE_NAME }}
-
-      # - name: Setup KinD cluster
-      #   if: ${{ matrix.cluster-type == 'kind' }}
-      #   id: kind
-      #   uses: container-tools/kind-action@v2
-      #   with:
-      #     version: v0.17.0
-      #     node_image: kindest/node:${{ env.KUBERNETES_VERSION }}
-      #     kubectl_version: ${{ env.KUBERNETES_VERSION }}
-      #     wait: 120s
+          podman push --tls-verify=false ${{ env.OPERATOR_IMAGE_NAME }}
 
       - name: Check pods
         run: |
