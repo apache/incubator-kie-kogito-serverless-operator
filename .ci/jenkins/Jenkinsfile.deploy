@@ -7,6 +7,11 @@ pipeline {
         label 'kie-rhel8 && kie-mem16g && !built-in'
     }
 
+    options {
+        timeout(time: 120, unit: 'MINUTES')
+        timestamps()
+    }
+
     // Needed for local build
     tools {
         go 'golang-1.19'
