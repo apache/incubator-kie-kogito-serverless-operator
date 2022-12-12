@@ -51,9 +51,6 @@ pipeline {
 
                     // Verify we have the connectivity to Openshift
                     openshift.loginOpenshift()
-
-                    // Fix for rhel8 nodes
-                    sh 'sudo yum install -y make'
                 }
             }
             post {
