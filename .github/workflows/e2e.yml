@@ -17,6 +17,7 @@ env:
   # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.23.md
   # WARNING: kindest/node is not always existing with given version ...
   KUBERNETES_VERSION: v1.23.13
+  DEBUG: true
 
 jobs:
   e2e:

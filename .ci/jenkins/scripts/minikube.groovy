@@ -45,6 +45,32 @@ void start(boolean debug = false) {
     }
 }
 
+void waitForMinikubeStarted() {
+    def minikubeStatus = sh(returnStatus: true, script: '''
+        set -x
+        MINIKUBE_COMPONENTS=(etcd kube-apiserver kube-controller-manager kube-scheduler)
+        for component in "${MINIKUBE_COMPONENTS[@]}"
+        do
+            echo "Check component '${component}' is in 'Running' state"
+            COMPONENT_NAME=${component} timeout 60s bash -c 'kubectl get pods -l tier=control-plane -l component=${COMPONENT_NAME} -n kube-system && while [[ "$(kubectl get pods -l tier=control-plane -l component=${COMPONENT_NAME} -n kube-system -o jsonpath={.items[0].status.phase})" != "Running" ]] ; do sleep 2 &&  kubectl get pods -l tier=control-plane -l component=${COMPONENT_NAME} -n kube-system -o jsonpath={.items[0].status.phase}; done'
+        done
+    ''')
+    if (minikubeStatus != 0) {
+        error 'Error starting Minikube ...'
+    }
+}
+
+void waitForMinikubeRegistry() {
+    def minikubeStatus = sh(returnStatus: true, script: '''
+        set -x
+        kubectl get pods -A
+        timeout 60s bash -c 'kubectl get pods -l kubernetes.io/minikube-addons=registry -l actual-registry=true -n kube-system && while [[ "$(kubectl get pods -l kubernetes.io/minikube-addons=registry -l actual-registry=true -n kube-system -o jsonpath={.items[0].status.phase})" != "Running" ]] ; do sleep 2 && kubectl get pods -l kubernetes.io/minikube-addons=registry -l actual-registry=true -n kube-system -o jsonpath={.items[0].status.phase}; done'
+    ''')
+    if (minikubeStatus != 0) {
+        error 'Error waiting for Minikube registry ...'
+    }
+}
+
 void preChecks() {
     sh """
         ${minikubeContainerEngine} info

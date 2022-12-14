@@ -128,6 +128,9 @@ pipeline {
                     minikube.minikubeMemory = '12g'
                     minikube.start()
 
+                    minikube.waitForMinikubeStarted()
+                    minikube.waitForMinikubeRegistry()
+
                     // Push image to minikube
                     String minikubeImageName = "${minikube.getImageRegistry()}/${env.OPERATOR_IMAGE_NAME}:${getOperatorVersion()}"
                     container.tagImage(getBuiltImage(), minikubeImageName)
