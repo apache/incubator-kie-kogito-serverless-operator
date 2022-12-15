@@ -29,14 +29,13 @@ void start(boolean debug = false) {
         ])
     }
 
+    println "Start minikube with options ${minikubeOpts}"
     sh """
         minikube delete
         minikube start ${minikubeOpts.join(' ')}
         minikube status
 
         kubectl version
-        kubectl get pods -A
-        sleep 30s
         kubectl get pods -A
     """
 
@@ -46,6 +45,7 @@ void start(boolean debug = false) {
 }
 
 void waitForMinikubeStarted() {
+    println 'Wait for Minikube components to be in Running state'
     def minikubeStatus = sh(returnStatus: true, script: '''
         set -x
         MINIKUBE_COMPONENTS=(etcd kube-apiserver kube-controller-manager kube-scheduler)
@@ -61,6 +61,7 @@ void waitForMinikubeStarted() {
 }
 
 void waitForMinikubeRegistry() {
+    println 'Wait for Minikube registry to be in Running state'
     def minikubeStatus = sh(returnStatus: true, script: '''
         set -x
         kubectl get pods -A

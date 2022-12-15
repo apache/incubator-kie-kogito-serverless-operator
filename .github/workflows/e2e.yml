@@ -38,16 +38,20 @@ jobs:
           cache: true
 
       - name: Setup Minikube cluster
-        uses: medyagh/setup-minikube@v0.0.9
+        # Should be set back with correct version once https://github.com/radtriste/setup-minikube/tree/issue_49 is done
+        # uses: medyagh/setup-minikube@v0.0.9
+        uses: radtriste/setup-minikube@issue_49
         with:
           addons: registry,metrics-server
           kubernetes-version: ${{ env.KUBERNETES_VERSION }}
           # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
           cpus: max
           memory: max
+          insecure-registry: localhost:5000,192.168.0.0/16
       
       - name: Wait for Minikube up and running
         run: |
+          minikube ssh cat /lib/systemd/system/docker.service
           kubectl get pods -A
           set -x
           MINIKUBE_COMPONENTS=(etcd kube-apiserver kube-controller-manager kube-scheduler)
