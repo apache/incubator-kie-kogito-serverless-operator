@@ -94,7 +94,7 @@ metadata:
     capabilities: Basic Install
     operators.operatorframework.io/builder: operator-sdk-v1.24.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
-  name: kogito-serverless-operator.v1.32.0
+  name: kogito-serverless-operator.v1.32.1-snapshot
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -347,7 +347,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.namespace
-                image: quay.io/kiegroup/kogito-serverless-operator:1.32.0
+                image: quay.io/kiegroup/kogito-serverless-operator:1.32.1-snapshot
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -431,4 +431,4 @@ spec:
   maturity: alpha
   provider:
     name: kogito-serverlessworkflow-operator
-  version: 1.32.0
+  version: 1.32.1-snapshot
