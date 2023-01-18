@@ -34,6 +34,7 @@ const defaultImageTag = ":latest"
 // GetJSONWorkflow return a Kogito compliant JSON format workflow as bytearray give a specific workflow CR
 func GetJSONWorkflow(workflowCR *operatorapi.KogitoServerlessWorkflow, ctx context.Context) ([]byte, error) {
 	logger := ctrllog.FromContext(ctx)
+	// TODO make sure it still needed.
 	workflow, err := ToCNCFWorkflow(ctx, workflowCR)
 	if err != nil {
 		logger.Error(err, "Failed converting KogitoServerlessWorkflow into Workflow")
