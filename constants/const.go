@@ -35,4 +35,9 @@ const (
 	CUSTOM_NS_KEY          = "build-namespace"
 	CUSTOM_REG_CRED_KEY    = "registry-secret"
 	CUSTOM_REG_ADDRESS_KEY = "registry-address"
+
+	YAML_EXTENSION = "yaml"
+	JSON_EXTENSION = "json"
+
+	SWF_EXTERNAL_RESOURCES_CM_NAME = "workflow-external-resources-config"
 )

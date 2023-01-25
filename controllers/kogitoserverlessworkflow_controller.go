@@ -23,18 +23,22 @@ import (
 	"github.com/kiegroup/container-builder/util/log"
 	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/builder"
+	"github.com/kiegroup/kogito-serverless-operator/constants"
 	"github.com/kiegroup/kogito-serverless-operator/platform"
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 	"github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	"time"
@@ -324,5 +328,18 @@ func (r *KogitoServerlessWorkflowReconciler) SetupWithManager(mgr ctrl.Manager) 
 			}
 			return platformEnqueueRequestsFromMapFunc(mgr.GetClient(), platform)
 		})).
+		WithEventFilter(updateConfigMapPredicate()).
 		Complete(r)
+}
+
+func updateConfigMapPredicate() predicate.Predicate {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			configmap := e.ObjectNew.(*corev1.ConfigMap)
+			if configmap.Name == constants.SWF_EXTERNAL_RESOURCES_CM_NAME && configmap.Namespace == e.ObjectNew.GetNamespace() {
+				return true
+			}
+			return false
+		},
+	}
 }
