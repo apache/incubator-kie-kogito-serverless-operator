@@ -336,6 +336,7 @@ func updateConfigMapPredicate() predicate.Predicate {
 	return predicate.Funcs{
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			configmap := e.ObjectNew.(*corev1.ConfigMap)
+			//@TODO ask if we want a fixed namespace name
 			if configmap.Name == constants.SWF_EXTERNAL_RESOURCES_CM_NAME && configmap.Namespace == e.ObjectNew.GetNamespace() {
 				return true
 			}
