@@ -19,13 +19,15 @@ import (
 	"context"
 	"time"
 
-	"github.com/kiegroup/container-builder/api"
-	builder "github.com/kiegroup/container-builder/builder/kubernetes"
-	"github.com/kiegroup/container-builder/client"
-	"github.com/kiegroup/kogito-serverless-operator/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/kiegroup/container-builder/api"
+	builder "github.com/kiegroup/container-builder/builder/kubernetes"
+	"github.com/kiegroup/container-builder/client"
+
+	"github.com/kiegroup/kogito-serverless-operator/constants"
 )
 
 type Builder struct {

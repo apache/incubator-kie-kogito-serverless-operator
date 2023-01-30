@@ -17,10 +17,13 @@ package utils
 
 import (
 	"bytes"
-	"github.com/kiegroup/container-builder/util/log"
-	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"io/ioutil"
+
 	"k8s.io/apimachinery/pkg/util/yaml"
+
+	"github.com/kiegroup/container-builder/util/log"
+
+	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
 func GetKogitoServerlessPlatform(path string) (*apiv08.KogitoServerlessPlatform, error) {

@@ -17,11 +17,13 @@
 package utils
 
 import (
-	"github.com/kiegroup/kogito-serverless-operator/constants"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"math/rand"
 	"os"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kiegroup/kogito-serverless-operator/constants"
 )
 
 // GetOperatorIDAnnotation to safely get the operator id annotation value.

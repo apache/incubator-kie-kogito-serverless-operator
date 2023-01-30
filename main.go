@@ -18,8 +18,10 @@ package main
 
 import (
 	"flag"
-	"github.com/kiegroup/kogito-serverless-operator/controllers"
 	"os"
+
+	"github.com/kiegroup/kogito-serverless-operator/controllers"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"

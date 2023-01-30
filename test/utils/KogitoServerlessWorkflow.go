@@ -17,10 +17,12 @@ package utils
 
 import (
 	"bytes"
-	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"log"
+
+	"k8s.io/apimachinery/pkg/util/yaml"
+
+	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
 func GetKogitoServerlessWorkflow(path string) (*apiv08.KogitoServerlessWorkflow, error) {

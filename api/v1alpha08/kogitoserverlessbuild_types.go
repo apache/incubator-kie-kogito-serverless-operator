@@ -17,8 +17,9 @@ limitations under the License.
 package v1alpha08
 
 import (
-	"github.com/kiegroup/container-builder/api"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kiegroup/container-builder/api"
 )
 
 // KogitoServerlessBuildSpec defines the desired state of KogitoServerlessBuild

@@ -16,12 +16,14 @@ package converters
 
 import (
 	"context"
-	"github.com/kiegroup/kogito-serverless-operator/test/utils"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	"testing"
+
+	"github.com/kiegroup/kogito-serverless-operator/test/utils"
 )
 
 var cfg *rest.Config

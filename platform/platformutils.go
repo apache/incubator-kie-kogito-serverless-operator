@@ -17,13 +17,10 @@ package platform
 
 import (
 	"context"
-	"github.com/kiegroup/container-builder/api"
-	"github.com/kiegroup/container-builder/client"
-	"github.com/kiegroup/container-builder/util/defaults"
-	"github.com/kiegroup/container-builder/util/log"
-	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/builder"
-	"github.com/kiegroup/kogito-serverless-operator/install"
+	"runtime"
+	"strings"
+	"time"
+
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -31,10 +28,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	k8s "k8s.io/client-go/kubernetes"
-	"runtime"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
+
+	"github.com/kiegroup/container-builder/api"
+	"github.com/kiegroup/container-builder/client"
+	"github.com/kiegroup/container-builder/util/defaults"
+	"github.com/kiegroup/container-builder/util/log"
+
+	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/builder"
+	"github.com/kiegroup/kogito-serverless-operator/install"
 )
 
 // BuilderServiceAccount --.

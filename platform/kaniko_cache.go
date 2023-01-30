@@ -18,15 +18,18 @@ package platform
 import (
 	"context"
 	"fmt"
-	"github.com/kiegroup/container-builder/client"
-	"github.com/kiegroup/container-builder/util/defaults"
-	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/builder"
-	"github.com/kiegroup/kogito-serverless-operator/constants"
+
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kiegroup/container-builder/client"
+	"github.com/kiegroup/container-builder/util/defaults"
+
+	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/builder"
+	"github.com/kiegroup/kogito-serverless-operator/constants"
 )
 
 func createKanikoCacheWarmerPod(ctx context.Context, client client.Client, platform *v08.KogitoServerlessPlatform) error {

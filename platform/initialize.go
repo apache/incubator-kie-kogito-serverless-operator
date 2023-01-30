@@ -18,15 +18,18 @@ package platform
 
 import (
 	"context"
-	"github.com/kiegroup/container-builder/api"
-	"github.com/kiegroup/container-builder/client"
-	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/builder"
-	"github.com/kiegroup/kogito-serverless-operator/constants"
+
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kiegroup/container-builder/api"
+	"github.com/kiegroup/container-builder/client"
+
+	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/builder"
+	"github.com/kiegroup/kogito-serverless-operator/constants"
 )
 
 // NewInitializeAction returns a action that initializes the platform configuration when not provided by the user.

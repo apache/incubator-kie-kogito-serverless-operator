@@ -18,15 +18,18 @@ package platform
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
+
+	coordination "k8s.io/api/coordination/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kiegroup/container-builder/util/log"
+
 	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/constants"
 	"github.com/kiegroup/kogito-serverless-operator/utils"
-	coordination "k8s.io/api/coordination/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	"os"
-	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 const (

@@ -21,10 +21,12 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"errors"
+
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+
 	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/constants"
 	"github.com/kiegroup/kogito-serverless-operator/converters"
-	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // GetWorkflowFromCR return a Kogito compliant workflow as bytearray give a specific workflow CR

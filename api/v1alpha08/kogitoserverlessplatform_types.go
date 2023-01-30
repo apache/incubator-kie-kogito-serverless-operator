@@ -17,9 +17,10 @@
 package v1alpha08
 
 import (
-	"github.com/kiegroup/container-builder/api"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kiegroup/container-builder/api"
 )
 
 // ConfigurationSpecType is used to define the enum values of the supported types for ConfigurationSpec

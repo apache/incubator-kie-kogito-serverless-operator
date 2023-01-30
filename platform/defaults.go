@@ -17,11 +17,14 @@ package platform
 
 import (
 	"context"
+
+	"github.com/pkg/errors"
+
 	"github.com/kiegroup/container-builder/api"
 	"github.com/kiegroup/container-builder/client"
 	"github.com/kiegroup/container-builder/util/log"
+
 	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/pkg/errors"
 )
 
 func ConfigureDefaults(ctx context.Context, c client.Client, p *v08.KogitoServerlessPlatform, verbose bool) error {

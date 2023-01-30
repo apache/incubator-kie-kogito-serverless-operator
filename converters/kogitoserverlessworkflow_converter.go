@@ -17,13 +17,15 @@ package converters
 import (
 	"context"
 	"errors"
+	"path"
+	"strings"
+
 	"github.com/go-logr/logr"
+	"github.com/serverlessworkflow/sdk-go/v2/model"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+
 	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/constants"
-	"github.com/serverlessworkflow/sdk-go/v2/model"
-	"path"
-	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
-	"strings"
 )
 
 var log logr.Logger

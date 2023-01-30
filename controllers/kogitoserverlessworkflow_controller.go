@@ -19,13 +19,8 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/kiegroup/container-builder/api"
-	"github.com/kiegroup/container-builder/util/log"
-	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/builder"
-	"github.com/kiegroup/kogito-serverless-operator/platform"
-	"github.com/kiegroup/kogito-serverless-operator/utils"
-	"github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
+	"time"
+
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,7 +32,15 @@ import (
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	"time"
+
+	"github.com/kiegroup/container-builder/api"
+	"github.com/kiegroup/container-builder/util/log"
+
+	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/builder"
+	"github.com/kiegroup/kogito-serverless-operator/platform"
+	"github.com/kiegroup/kogito-serverless-operator/utils"
+	"github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
 )
 
 // KogitoServerlessWorkflowReconciler reconciles a KogitoServerlessWorkflow object

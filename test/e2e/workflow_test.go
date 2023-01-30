@@ -19,11 +19,12 @@ package e2e
 
 import (
 	"fmt"
-	"github.com/kiegroup/kogito-serverless-operator/test/utils"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/kiegroup/kogito-serverless-operator/test/utils"
 
 	//nolint:golint
 	//nolint:revive

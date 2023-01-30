@@ -16,16 +16,13 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/kiegroup/kogito-serverless-operator/platform"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/kiegroup/kogito-serverless-operator/platform"
+
 	"github.com/go-logr/logr"
-	"github.com/kiegroup/container-builder/api"
-	clientr "github.com/kiegroup/container-builder/client"
-	api08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/builder"
-	"github.com/kiegroup/kogito-serverless-operator/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -35,6 +32,13 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/kiegroup/container-builder/api"
+	clientr "github.com/kiegroup/container-builder/client"
+
+	api08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/builder"
+	"github.com/kiegroup/kogito-serverless-operator/utils"
 )
 
 // KogitoServerlessBuildReconciler reconciles a KogitoServerlessBuild object

@@ -19,9 +19,8 @@ package controllers
 import (
 	"context"
 	"fmt"
-	clientr "github.com/kiegroup/container-builder/client"
-	klog "github.com/kiegroup/container-builder/util/log"
-	"github.com/kiegroup/kogito-serverless-operator/platform"
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,7 +28,11 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"time"
+
+	clientr "github.com/kiegroup/container-builder/client"
+	klog "github.com/kiegroup/container-builder/util/log"
+
+	"github.com/kiegroup/kogito-serverless-operator/platform"
 
 	ctrlrun "sigs.k8s.io/controller-runtime"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"

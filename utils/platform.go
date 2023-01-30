@@ -17,9 +17,11 @@ package utils
 
 import (
 	"fmt"
+
+	"github.com/pkg/errors"
+
 	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/constants"
-	"github.com/pkg/errors"
 )
 
 func GetCustomConfig(platform v08.KogitoServerlessPlatform) (map[string]string, error) {

@@ -18,11 +18,13 @@ package platform
 import (
 	"context"
 	"errors"
-	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
+
+	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
 func NewWarmAction(reader ctrl.Reader) Action {
