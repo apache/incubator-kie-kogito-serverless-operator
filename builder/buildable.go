@@ -23,9 +23,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kiegroup/container-builder/util/log"
-
-	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
 type Buildable struct {
@@ -41,33 +39,28 @@ func NewBuildable(client client.Client,
 	}
 }
 
-func (buildable *Buildable) GetWorkflowBuild(req ctrl.Request, workflowID string) (apiv08.KogitoServerlessBuild, error) {
-	buildInstance := &apiv08.KogitoServerlessBuild{}
+// GetWorkflowBuild gets the required Build associated with the same name/namespaced as defined in the request, nil if not found
+func (buildable *Buildable) GetWorkflowBuild(req ctrl.Request) (*operatorapi.KogitoServerlessBuild, error) {
+	buildInstance := &operatorapi.KogitoServerlessBuild{}
+	error := buildable.Client.Get(buildable.Ctx, req.NamespacedName, buildInstance)
+	if error != nil && k8serrors.IsNotFound(error) {
+		return nil, nil
+	}
+	return buildInstance, error
+}
+
+func (buildable *Buildable) getWorkflowBuild(req ctrl.Request, workflowID string) (*operatorapi.KogitoServerlessBuild, error) {
+	buildInstance := &operatorapi.KogitoServerlessBuild{}
 	buildInstance.Spec.WorkflowId = workflowID
 	error := buildable.Client.Get(buildable.Ctx, req.NamespacedName, buildInstance)
-	return *buildInstance, error
+	return buildInstance, error
 }
 
-func (buildable *Buildable) CreateWorkflowBuild(workflowID string, targetNamespace string) (apiv08.KogitoServerlessBuild, error) {
-	buildInstance := &apiv08.KogitoServerlessBuild{}
-	buildInstance.Spec.WorkflowId = workflowID
+func (buildable *Buildable) CreateWorkflowBuild(workflowName string, targetNamespace string) (*operatorapi.KogitoServerlessBuild, error) {
+	buildInstance := &operatorapi.KogitoServerlessBuild{}
+	buildInstance.Spec.WorkflowId = workflowName
 	buildInstance.ObjectMeta.Namespace = targetNamespace
-	buildInstance.ObjectMeta.Name = workflowID
+	buildInstance.ObjectMeta.Name = workflowName
 	error := buildable.Client.Create(buildable.Ctx, buildInstance)
-	return *buildInstance, error
-}
-
-func (buildable *Buildable) HandleWorkflowBuild(workflowID string, req ctrl.Request) (apiv08.KogitoServerlessBuild, error) {
-	buildInstance, error := buildable.GetWorkflowBuild(req, workflowID)
-	if error != nil {
-		if k8serrors.IsNotFound(error) {
-			return buildable.CreateWorkflowBuild(workflowID, req.Namespace)
-		}
-		// Error reading the object - requeue the request.
-		log.Error(error, "Failed to get KogitoServerlessBuild")
-		return buildInstance, error
-
-	} else {
-		return buildInstance, nil
-	}
+	return buildInstance, error
 }
