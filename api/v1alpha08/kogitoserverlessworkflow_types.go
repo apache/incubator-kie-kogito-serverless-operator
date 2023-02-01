@@ -408,7 +408,7 @@ const (
 	ProvisioningConditionType ConditionType = "Provisioning"
 	// FailedConditionType the workflow is in a failed state
 	FailedConditionType ConditionType = "Failed"
-	// WaitingForPlatformConditionType workflow created but we are waiting a platform to deploy it
+	// WaitingForPlatformConditionType workflow created, but we are waiting a platform to deploy it
 	WaitingForPlatformConditionType ConditionType = "Waiting For Platform"
 	// InitializationConditionType --
 	InitializationConditionType ConditionType = "Initialization"

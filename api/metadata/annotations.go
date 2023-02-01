@@ -27,6 +27,7 @@ const (
 	Metadata                    = domain + "/metadata"
 	Version                     = domain + "/version"
 	Label                       = domain + "/label"
+	Profile                     = domain + "/profile"
 	SecondaryPlatformAnnotation = domain + "/secondary.platform"
 	OperatorIDAnnotation        = domain + "/operator.id"
 	// TODO: is this the right value?

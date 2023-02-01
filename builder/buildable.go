@@ -20,6 +20,7 @@ import (
 	"context"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -40,20 +41,20 @@ func NewBuildable(client client.Client,
 }
 
 // GetWorkflowBuild gets the required Build associated with the same name/namespaced as defined in the request, nil if not found
-func (buildable *Buildable) GetWorkflowBuild(req ctrl.Request) (*operatorapi.KogitoServerlessBuild, error) {
+func (buildable *Buildable) GetWorkflowBuild(name string, namespace string) (*operatorapi.KogitoServerlessBuild, error) {
 	buildInstance := &operatorapi.KogitoServerlessBuild{}
-	error := buildable.Client.Get(buildable.Ctx, req.NamespacedName, buildInstance)
-	if error != nil && k8serrors.IsNotFound(error) {
+	err := buildable.Client.Get(buildable.Ctx, types.NamespacedName{Namespace: namespace, Name: name}, buildInstance)
+	if err != nil && k8serrors.IsNotFound(err) {
 		return nil, nil
 	}
-	return buildInstance, error
+	return buildInstance, err
 }
 
 func (buildable *Buildable) getWorkflowBuild(req ctrl.Request, workflowID string) (*operatorapi.KogitoServerlessBuild, error) {
 	buildInstance := &operatorapi.KogitoServerlessBuild{}
 	buildInstance.Spec.WorkflowId = workflowID
-	error := buildable.Client.Get(buildable.Ctx, req.NamespacedName, buildInstance)
-	return buildInstance, error
+	err := buildable.Client.Get(buildable.Ctx, req.NamespacedName, buildInstance)
+	return buildInstance, err
 }
 
 func (buildable *Buildable) CreateWorkflowBuild(workflowName string, targetNamespace string) (*operatorapi.KogitoServerlessBuild, error) {
@@ -61,6 +62,6 @@ func (buildable *Buildable) CreateWorkflowBuild(workflowName string, targetNames
 	buildInstance.Spec.WorkflowId = workflowName
 	buildInstance.ObjectMeta.Namespace = targetNamespace
 	buildInstance.ObjectMeta.Name = workflowName
-	error := buildable.Client.Create(buildable.Ctx, buildInstance)
-	return buildInstance, error
+	err := buildable.Client.Create(buildable.Ctx, buildInstance)
+	return buildInstance, err
 }
