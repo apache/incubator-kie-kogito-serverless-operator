@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package utils
 
 import (
@@ -24,13 +25,16 @@ import (
 
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/constants"
+	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
+
+	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/converters"
 )
 
+const defaultImageTag = ":latest"
+
 // GetWorkflowFromCR return a Kogito compliant workflow as bytearray give a specific workflow CR
-func GetWorkflowFromCR(workflowCR *apiv08.KogitoServerlessWorkflow, ctx context.Context) ([]byte, error) {
+func GetWorkflowFromCR(workflowCR *operatorapi.KogitoServerlessWorkflow, ctx context.Context) ([]byte, error) {
 	log := ctrllog.FromContext(ctx)
 	converter := converters.NewKogitoServerlessWorkflowConverter(ctx)
 	workflow, err := converter.ToCNCFWorkflow(workflowCR)
@@ -47,7 +51,7 @@ func GetWorkflowFromCR(workflowCR *apiv08.KogitoServerlessWorkflow, ctx context.
 }
 
 // SameOrMatch return true if the build it is related to the workflow, false otherwise
-func SameOrMatch(build *apiv08.KogitoServerlessBuild, workflow *apiv08.KogitoServerlessWorkflow) (bool, error) {
+func SameOrMatch(build *operatorapi.KogitoServerlessBuild, workflow *operatorapi.KogitoServerlessWorkflow) (bool, error) {
 	if build.Name == workflow.Name {
 		if build.Namespace == workflow.Namespace {
 			return true, nil
@@ -58,17 +62,17 @@ func SameOrMatch(build *apiv08.KogitoServerlessBuild, workflow *apiv08.KogitoSer
 }
 
 // GetWorkflowSpecHash comute a hash of the workflow definition (hash), useful to compare 2 different definitions
-func GetWorkflowSpecHash(s apiv08.KogitoServerlessWorkflowSpec) []byte {
+func GetWorkflowSpecHash(s operatorapi.KogitoServerlessWorkflowSpec) []byte {
 	var b bytes.Buffer
 	gob.NewEncoder(&b).Encode(s)
 	return b.Bytes()
 }
 
 // GetWorkflowImageTag retrieve the tag for the image based on the Workflow based annotation, :latest otherwise
-func GetWorkflowImageTag(v *apiv08.KogitoServerlessWorkflow) string {
-	tag := v.Annotations[constants.WorkflowMetadataKeys()("version")]
+func GetWorkflowImageTag(v *operatorapi.KogitoServerlessWorkflow) string {
+	tag := v.Annotations[metadata.Version]
 	if tag != "" {
 		return ":" + tag
 	}
-	return constants.DEFAULT_IMAGES_TAG
+	return defaultImageTag
 }

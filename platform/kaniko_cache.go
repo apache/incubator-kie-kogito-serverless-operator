@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package platform
 
 import (
@@ -29,7 +30,6 @@ import (
 
 	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/builder"
-	"github.com/kiegroup/kogito-serverless-operator/constants"
 )
 
 func createKanikoCacheWarmerPod(ctx context.Context, client client.Client, platform *v08.KogitoServerlessPlatform) error {
@@ -40,7 +40,7 @@ func createKanikoCacheWarmerPod(ctx context.Context, client client.Client, platf
 	// - https://kubernetes.io/docs/concepts/storage/persistent-volumes/#node-affinity
 	// - https://kubernetes.io/docs/concepts/storage/volumes/#local
 	// nolint: staticcheck
-	pvcName := constants.DEFAULT_KANIKOCACHE_PVC_NAME
+	pvcName := defaultKanikoCachePVCName
 	if persistentVolumeClaim, found := platform.Status.BuildPlatform.PublishStrategyOptions[builder.KanikoPVCName]; found {
 		pvcName = persistentVolumeClaim
 	}

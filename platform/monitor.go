@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package platform
 
 import (
 	"context"
 
-	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/constants"
+	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
+	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
 // NewMonitorAction returns an action that monitors the build platform after it's fully initialized.
@@ -35,14 +36,14 @@ func (action *monitorAction) Name() string {
 	return "monitor"
 }
 
-func (action *monitorAction) CanHandle(platform *v08.KogitoServerlessPlatform) bool {
-	return platform.Status.Phase == v08.PlatformPhaseReady
+func (action *monitorAction) CanHandle(platform *operatorapi.KogitoServerlessPlatform) bool {
+	return platform.Status.Phase == operatorapi.PlatformPhaseReady
 }
 
-func (action *monitorAction) Handle(ctx context.Context, platform *v08.KogitoServerlessPlatform) (*v08.KogitoServerlessPlatform, error) {
+func (action *monitorAction) Handle(ctx context.Context, platform *operatorapi.KogitoServerlessPlatform) (*operatorapi.KogitoServerlessPlatform, error) {
 	// Just track the version of the operator in the platform resource
-	if platform.Status.Version != constants.VERSION {
-		platform.Status.Version = constants.VERSION
+	if platform.Status.Version != metadata.SpecVersion {
+		platform.Status.Version = metadata.SpecVersion
 		action.Logger.Info("Platform version updated", "version", platform.Status.Version)
 	}
 

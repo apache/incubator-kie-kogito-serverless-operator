@@ -27,11 +27,11 @@ import (
 type ConfigurationSpecType string
 
 const (
-	// PropertyConfigurationSpec
+	// PropertyConfigurationSpec ...
 	PropertyConfigurationSpec ConfigurationSpecType = "property"
-	// ConfigMapConfigurationSpec
+	// ConfigMapConfigurationSpec ...
 	ConfigMapConfigurationSpec ConfigurationSpecType = "configmap"
-	// SecretConfigurationSpec
+	// SecretConfigurationSpec ...
 	SecretConfigurationSpec ConfigurationSpecType = "secret"
 )
 

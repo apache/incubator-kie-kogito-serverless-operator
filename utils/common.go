@@ -23,7 +23,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kiegroup/kogito-serverless-operator/constants"
+	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
 )
 
 // GetOperatorIDAnnotation to safely get the operator id annotation value.
@@ -32,7 +32,7 @@ func GetOperatorIDAnnotation(obj metav1.Object) string {
 		return ""
 	}
 
-	if operatorId, ok := obj.GetAnnotations()[constants.PlatformAnnotation()("OperatorIDAnnotation")]; ok {
+	if operatorId, ok := obj.GetAnnotations()[metadata.OperatorIDAnnotation]; ok {
 		return operatorId
 	}
 
@@ -40,6 +40,7 @@ func GetOperatorIDAnnotation(obj metav1.Object) string {
 }
 
 func OperatorID() string {
+	// TODO: what's this KAMEL_ ?
 	return envOrDefault("", "KAMEL_OPERATOR_ID", "OPERATOR_ID")
 }
 

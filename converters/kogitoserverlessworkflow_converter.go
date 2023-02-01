@@ -24,8 +24,9 @@ import (
 	"github.com/serverlessworkflow/sdk-go/v2/model"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/constants"
+	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
+
+	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
 var log logr.Logger
@@ -39,15 +40,15 @@ func NewKogitoServerlessWorkflowConverter(contex context.Context) KogitoServerle
 	return KogitoServerlessWorkflowConverter{ctx: contex}
 }
 
-// Function to convert a KogitoServerlessWorkflow object to a model.Workflow one in order to be able to convert it to a YAML/Json
-func (k *KogitoServerlessWorkflowConverter) ToCNCFWorkflow(serverlessWorkflow *apiv08.KogitoServerlessWorkflow) (*model.Workflow, error) {
+// ToCNCFWorkflow converts a KogitoServerlessWorkflow object to a model.Workflow one in order to be able to convert it to a YAML/Json
+func (k *KogitoServerlessWorkflowConverter) ToCNCFWorkflow(serverlessWorkflow *operatorapi.KogitoServerlessWorkflow) (*model.Workflow, error) {
 	if serverlessWorkflow != nil {
 		log = ctrllog.FromContext(k.ctx)
 		newBaseWorkflow := &model.BaseWorkflow{ID: serverlessWorkflow.ObjectMeta.Name,
-			Key:            serverlessWorkflow.ObjectMeta.Annotations[constants.WorkflowMetadataKeys()("key")],
+			Key:            serverlessWorkflow.ObjectMeta.Annotations[metadata.Key],
 			Name:           serverlessWorkflow.ObjectMeta.Name,
-			Description:    serverlessWorkflow.ObjectMeta.Annotations[constants.WorkflowMetadataKeys()("description")],
-			Version:        serverlessWorkflow.ObjectMeta.Annotations[constants.WorkflowMetadataKeys()("version")],
+			Description:    serverlessWorkflow.ObjectMeta.Annotations[metadata.Description],
+			Version:        serverlessWorkflow.ObjectMeta.Annotations[metadata.Version],
 			SpecVersion:    extractSchemaVersion(serverlessWorkflow.APIVersion),
 			ExpressionLang: extractExpressionLang(serverlessWorkflow.ObjectMeta.Annotations),
 			KeepActive:     serverlessWorkflow.Spec.KeepActive,
@@ -61,15 +62,15 @@ func (k *KogitoServerlessWorkflowConverter) ToCNCFWorkflow(serverlessWorkflow *a
 }
 
 func extractExpressionLang(annotations map[string]string) string {
-	expressionLang := annotations[constants.WorkflowMetadataKeys()("expressionLang")]
+	expressionLang := annotations[metadata.ExpressionLang]
 	if expressionLang != "" {
 		return expressionLang
 	}
-	return constants.DEFAULT_KOGITO_EXPLANG
+	return metadata.DefaultExpressionLang
 }
 
 // Function to extract from the apiVersion the ServerlessWorkflow schema version
-// For example given sw.kogito.kie.org/apiv08 we would like to extract v0.8
+// For example given sw.kogito.kie.org/operatorapi we would like to extract v0.8
 func extractSchemaVersion(version string) string {
 	schemaVersion := path.Base(version)
 	strings.Replace(schemaVersion, "v0", "v0.", 1)
@@ -83,7 +84,7 @@ func retrieveStartState(name string) *model.Start {
 }
 
 // Function to retrieve a list of states coming from an array of v08.State objects
-func retrieveStates(incomingStates []apiv08.State) []model.State {
+func retrieveStates(incomingStates []operatorapi.State) []model.State {
 	states := make([]model.State, len(incomingStates))
 	log.Info("States: ", "states", incomingStates)
 	for i, s := range incomingStates {
@@ -171,7 +172,7 @@ func getArguments(arguments map[string]string) map[string]interface{} {
 }
 
 // Function to retrieve a list of model.Function coming from an array of v08.Function objects
-func retrieveFunctions(incomingFunctions []apiv08.Function) []model.Function {
+func retrieveFunctions(incomingFunctions []operatorapi.Function) []model.Function {
 	functions := make([]model.Function, len(incomingFunctions))
 	for i, f := range incomingFunctions {
 		switch ftype := f.Type; ftype {
