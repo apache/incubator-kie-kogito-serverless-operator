@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	github.com/go-logr/logr v1.2.3
-	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/onsi/gomega v1.22.1
 	github.com/pkg/errors v0.9.1
@@ -24,7 +23,7 @@ require (
 
 require (
 	github.com/RHsyseng/operator-utils v1.4.11
-	github.com/kiegroup/container-builder v0.0.0-20221215132240-f70d743ccd41
+	github.com/kiegroup/container-builder v0.0.0-20230131205716-bc25e59e2f13
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20211209135129-c58d9f695577
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.1
@@ -64,6 +63,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
