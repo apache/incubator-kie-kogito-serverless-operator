@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -42,12 +43,13 @@ type productionProfile struct {
 	baseReconciler
 }
 
-func newProductionProfile(client client.Client, scheme *runtime.Scheme, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
+func newProductionProfile(client client.Client, logger logr.Logger, scheme *runtime.Scheme, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
 	return &productionProfile{
 		baseReconciler{
 			workflow: workflow,
 			scheme:   scheme,
 			client:   client,
+			logger:   logger,
 		},
 	}
 }
@@ -57,10 +59,6 @@ func (p productionProfile) GetProfile() Profile {
 }
 
 func (p productionProfile) Reconcile(ctx context.Context) (ctrl.Result, error) {
-	if err := p.initLogger(ctx); err != nil {
-		return ctrl.Result{}, err
-	}
-
 	buildable := builder.NewBuildable(p.client, ctx)
 
 	switch p.workflow.Status.Condition {

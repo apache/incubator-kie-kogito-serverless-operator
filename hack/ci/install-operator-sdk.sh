@@ -37,9 +37,16 @@ else
 fi
 
 if [ "${should_install}" = "true" ]; then
-  echo "---> Installing operator-sdk in \$GOPATH/bin/"
+  # get the arch and os
+  arch=$(uname -m)
+  case $(uname -m) in
+    "x86_64") arch="amd64"; ;;
+    "aarch64") arch="arm64"; ;;
+  esac
+  os=$(uname | awk '{print tolower($0)}')
+  echo "---> Installing operator-sdk (OS ${os} Architecture ${arch} in \$GOPATH/bin/"
   mkdir -p "$GOPATH"/bin
-  curl -L https://github.com/operator-framework/operator-sdk/releases/download/$OPERATOR_SDK_VERSION/operator-sdk_linux_amd64 -o "$GOPATH"/bin/operator-sdk
+  curl -L https://github.com/operator-framework/operator-sdk/releases/download/"${OPERATOR_SDK_VERSION}"/operator-sdk_"${os}"_"${arch}" -o "$GOPATH"/bin/operator-sdk
   chmod +x "$GOPATH"/bin/operator-sdk
 fi
 

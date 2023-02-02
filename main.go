@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -44,7 +44,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(apiv08.AddToScheme(scheme))
+	utilruntime.Must(operatorapi.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

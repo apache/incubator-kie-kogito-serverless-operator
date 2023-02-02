@@ -19,6 +19,7 @@ package profiles
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,12 +33,13 @@ type developmentProfile struct {
 	baseReconciler
 }
 
-func newDevProfile(client client.Client, scheme *runtime.Scheme, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
+func newDevProfile(client client.Client, logger logr.Logger, scheme *runtime.Scheme, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
 	return &productionProfile{
 		baseReconciler{
 			workflow: workflow,
 			scheme:   scheme,
 			client:   client,
+			logger:   logger,
 		},
 	}
 }
@@ -47,9 +49,6 @@ func (d developmentProfile) GetProfile() Profile {
 }
 
 func (d developmentProfile) Reconcile(ctx context.Context) (ctrl.Result, error) {
-	if err := d.initLogger(ctx); err != nil {
-		return ctrl.Result{}, err
-	}
 	//TODO implement me
 	panic("implement me")
 }

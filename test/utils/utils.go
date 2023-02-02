@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package utils
 
 import (
@@ -117,7 +118,7 @@ func GetOperatorImageName() (string, error) {
 	}
 }
 
-// IsDebugEnabled
+// IsDebugEnabled ...
 func IsDebugEnabled() bool {
 	if v, ok := os.LookupEnv("DEBUG"); ok {
 		if debug, err := strconv.ParseBool(v); err == nil {

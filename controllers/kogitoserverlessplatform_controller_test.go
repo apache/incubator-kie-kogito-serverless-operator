@@ -23,13 +23,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/kiegroup/kogito-serverless-operator/test"
+
 	"github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/test/utils"
 )
 
 func TestKogitoServerlessPlatformController(t *testing.T) {
@@ -39,23 +38,15 @@ func TestKogitoServerlessPlatformController(t *testing.T) {
 			namespace = "kogito-serverless-operator-system"
 		)
 		// Create a KogitoServerlessPlatform object with metadata and spec.
-		ksp, errYaml := utils.GetKogitoServerlessPlatform("../config/samples/sw.kogito_v1alpha08_kogitoserverlessplatform.yaml")
-		if errYaml != nil {
-			t.Fatalf("Error reading YAML file #%v ", errYaml)
-		}
+		ksp := test.GetKogitoServerlessPlatform("../config/samples/sw.kogito_v1alpha08_kogitoserverlessplatform.yaml")
 		kspl := &v1alpha08.KogitoServerlessPlatformList{}
 		// Objects to track in the fake Client.
 		objs := []runtime.Object{ksp, kspl}
 
-		// Register operator types with the runtime scheme.
-		s := scheme.Scheme
-		s.AddKnownTypes(v1alpha08.GroupVersion, ksp)
-		s.AddKnownTypes(v1alpha08.GroupVersion, kspl)
 		// Create a fake client to mock API calls.
-		cl := fake.NewFakeClient(objs...)
-
+		cl := test.NewKogitoClientBuilder().WithRuntimeObjects(objs...).Build()
 		// Create a KogitoServerlessPlatformReconciler object with the scheme and fake client.
-		r := &KogitoServerlessPlatformReconciler{cl, cl, s, cfg, &record.FakeRecorder{}}
+		r := &KogitoServerlessPlatformReconciler{cl, cl, nil, cfg, &record.FakeRecorder{}}
 
 		// Mock request to simulate Reconcile() being called on an event for a
 		// watched resource .

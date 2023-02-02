@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package test
 
 import (
@@ -35,7 +36,7 @@ import (
 	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
-var log = logs.GetLogger("kieapp.test")
+var logger = logs.GetLogger("kieapp.test")
 
 type MockPlatformService struct {
 	Client          clientv1.Client
@@ -113,7 +114,7 @@ func MockServiceWithExtraScheme(objs ...runtime.Object) *MockPlatformService {
 		}
 	}
 	client := fake.NewFakeClientWithScheme(scheme)
-	log.Debugf("Fake client created as %v", client)
+	logger.Debugf("Fake client created as %v", client)
 	return &MockPlatformService{
 		Client: client,
 		scheme: scheme,

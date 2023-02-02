@@ -50,10 +50,10 @@ type ProfileReconciler interface {
 	GetProfile() Profile
 }
 
-type reconcilerBuilder func(client client.Client, scheme *runtime.Scheme, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler
+type reconcilerBuilder func(client client.Client, logger logr.Logger, scheme *runtime.Scheme, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler
 
-func NewReconciler(client client.Client, scheme *runtime.Scheme, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
-	return profileBuilder(workflow)(client, scheme, workflow)
+func NewReconciler(client client.Client, logger logr.Logger, scheme *runtime.Scheme, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
+	return profileBuilder(workflow)(client, logger, scheme, workflow)
 }
 
 func profileBuilder(workflow *operatorapi.KogitoServerlessWorkflow) reconcilerBuilder {
@@ -72,12 +72,6 @@ type baseReconciler struct {
 	scheme   *runtime.Scheme
 	client   client.Client
 	logger   logr.Logger
-}
-
-func (b baseReconciler) initLogger(ctx context.Context) error {
-	var err error
-	b.logger, err = logr.FromContext(ctx)
-	return err
 }
 
 func (b baseReconciler) performStatusUpdate(ctx context.Context) (bool, error) {

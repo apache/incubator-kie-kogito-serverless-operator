@@ -22,55 +22,49 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/kiegroup/kogito-serverless-operator/test"
+
 	"github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/test/utils"
 )
 
 func TestKogitoServerlessWorkflowController(t *testing.T) {
 	t.Run("verify that a basic reconcile is performed without error", func(t *testing.T) {
-		var (
-			name      = "kogito-serverless-operator"
-			namespace = "kogito-serverless-operator-system"
-		)
+		namespace := t.Name()
 		// Create a KogitoServerlessWorkflow object with metadata and spec.
-		ksw, errYaml := utils.GetKogitoServerlessWorkflow("../config/samples/sw.kogito_v1alpha08_kogitoserverlessworkflow.yaml")
-		if errYaml != nil {
-			t.Fatalf("Error reading YAML file #%v ", errYaml)
-		}
-		// The Workflow controller needs at least to perform a call for Platforms so we need to add this kind to the known
+		ksw := test.GetKogitoServerlessWorkflow("../config/samples/sw.kogito_v1alpha08_kogitoserverlessworkflow.yaml", namespace)
+		// The Workflow controller needs at least to perform a call for Platforms, so we need to add this kind to the known
 		// ones by the fake client
-		kspl := &v1alpha08.KogitoServerlessPlatformList{}
+		ksp := test.GetKogitoServerlessPlatformInReadyPhase("../config/samples/sw.kogito_v1alpha08_kogitoserverlessplatform_withCacheAndCustomization.yaml", namespace)
 		// Objects to track in the fake Client.
-		objs := []runtime.Object{ksw, kspl}
+		objs := []runtime.Object{ksw, ksp}
 
-		// Register operator types with the runtime scheme.
-		s := scheme.Scheme
-		s.AddKnownTypes(v1alpha08.GroupVersion, ksw)
-		s.AddKnownTypes(v1alpha08.GroupVersion, kspl)
 		// Create a fake client to mock API calls.
-		cl := fake.NewFakeClient(objs...)
-
+		cl := test.NewKogitoClientBuilder().WithRuntimeObjects(objs...).Build()
 		// Create a KogitoServerlessWorkflowReconciler object with the scheme and fake client.
-		r := &KogitoServerlessWorkflowReconciler{cl, s, nil}
+		r := &KogitoServerlessWorkflowReconciler{Client: cl, Scheme: cl.Scheme()}
 
 		// Mock request to simulate Reconcile() being called on an event for a
 		// watched resource .
 		req := reconcile.Request{
 			NamespacedName: types.NamespacedName{
-				Name:      name,
-				Namespace: namespace,
+				Name:      ksw.Name,
+				Namespace: ksw.Namespace,
 			},
 		}
 		_, err := r.Reconcile(context.TODO(), req)
 		if err != nil {
 			t.Fatalf("reconcile: (%v)", err)
 		}
+		afterReconcileWorkflow := &v1alpha08.KogitoServerlessWorkflow{}
+		if err := cl.Get(context.TODO(), req.NamespacedName, afterReconcileWorkflow); err != nil {
+			t.Fatalf("Failed to fetch supposed to exist workflow %v", err)
+		}
 		// Perform some checks on the created CR
-		assert.True(t, ksw.Spec.Start == "ChooseOnLanguage")
-		assert.True(t, len(ksw.Spec.States) == 4)
+		assert.True(t, afterReconcileWorkflow.Spec.Start == "ChooseOnLanguage")
+		// We create the initial build and return
+		assert.Equal(t, v1alpha08.BuildingConditionType, afterReconcileWorkflow.Status.Condition)
+		assert.True(t, len(afterReconcileWorkflow.Spec.States) == 4)
 	})
 }
