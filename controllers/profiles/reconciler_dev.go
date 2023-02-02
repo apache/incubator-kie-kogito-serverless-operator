@@ -17,11 +17,8 @@
 package profiles
 
 import (
-	"context"
-
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
@@ -38,17 +35,10 @@ func newDevProfile(client client.Client, logger logr.Logger, scheme *runtime.Sch
 		baseReconciler{
 			workflow: workflow,
 			scheme:   scheme,
-			client:   client,
-			logger:   logger,
 		},
 	}
 }
 
 func (d developmentProfile) GetProfile() Profile {
 	return Development
-}
-
-func (d developmentProfile) Reconcile(ctx context.Context) (ctrl.Result, error) {
-	//TODO implement me
-	panic("implement me")
 }

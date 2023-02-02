@@ -37,20 +37,14 @@ const (
 	defaultHTTPServicePort  = 80
 )
 
-var _ serviceHandler = &defaultServiceHandler{}
-
-type serviceHandler interface {
-	EnsureService() (*reconcile.Result, error)
-}
-
 type defaultServiceHandler struct {
 	workflow *operatorapi.KogitoServerlessWorkflow
 	scheme   *runtime.Scheme
 	client   client.Client
 }
 
-func (d defaultServiceHandler) EnsureService() (*reconcile.Result, error) {
-	service := d.createService()
+func (d defaultServiceHandler) ensureServiceObject() (*reconcile.Result, error) {
+	service := d.createServiceObject()
 	// See if service already exists and create if it doesn't
 	found := &corev1.Service{}
 	err := d.client.Get(context.TODO(), types.NamespacedName{
@@ -77,8 +71,8 @@ func (d defaultServiceHandler) EnsureService() (*reconcile.Result, error) {
 	return nil, nil
 }
 
-// createService is a code for creating a Service
-func (d defaultServiceHandler) createService() *corev1.Service {
+// createServiceObject is a code for creating a Service
+func (d defaultServiceHandler) createServiceObject() *corev1.Service {
 	lbl := labels(d.workflow)
 
 	service := &corev1.Service{

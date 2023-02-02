@@ -19,6 +19,7 @@ package profiles
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -32,10 +33,6 @@ import (
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
-type deploymentHandler interface {
-	EnsureDeployment(ctx context.Context, image string) (*reconcile.Result, error)
-}
-
 func labels(v *operatorapi.KogitoServerlessWorkflow) map[string]string {
 	// Fetches and sets labels
 	return map[string]string{
@@ -47,10 +44,11 @@ type defaultDeploymentHandler struct {
 	workflow *operatorapi.KogitoServerlessWorkflow
 	scheme   *runtime.Scheme
 	client   client.Client
+	logger   logr.Logger
 }
 
-func (d defaultDeploymentHandler) EnsureDeployment(ctx context.Context, image string) (*reconcile.Result, error) {
-	dep := d.createDeployment(image)
+func (d defaultDeploymentHandler) ensureDeploymentObject(ctx context.Context, image string) (*reconcile.Result, error) {
+	dep := d.createDeploymentObject(image)
 	// See if deployment already exists and create if it doesn't
 	found := &appsv1.Deployment{}
 	err := d.client.Get(ctx, types.NamespacedName{
@@ -84,8 +82,7 @@ func (d defaultDeploymentHandler) EnsureDeployment(ctx context.Context, image st
 	}
 }
 
-// createDeployment is a code for Creating Deployment
-func (d defaultDeploymentHandler) createDeployment(image string) *appsv1.Deployment {
+func (d defaultDeploymentHandler) createDeploymentObject(image string) *appsv1.Deployment {
 	lbl := labels(d.workflow)
 	size := int32(1)
 	deployment := &appsv1.Deployment{
