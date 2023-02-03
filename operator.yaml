@@ -95,6 +95,54 @@ spec:
                             of the task should be configured to represent the specific
                             task chosen.
                           properties:
+                            buildah:
+                              description: a BuildahTask, for Buildah strategy
+                              properties:
+                                baseImage:
+                                  description: base image layer
+                                  type: string
+                                contextDir:
+                                  description: can be useful to share info with other
+                                    tasks
+                                  type: string
+                                executorImage:
+                                  description: docker image to use
+                                  type: string
+                                image:
+                                  description: final image name
+                                  type: string
+                                name:
+                                  description: name of the task
+                                  type: string
+                                platform:
+                                  description: The platform of build image
+                                  type: string
+                                registry:
+                                  description: where to publish the final image
+                                  properties:
+                                    address:
+                                      description: the URI to access
+                                      type: string
+                                    ca:
+                                      description: the configmap which stores the
+                                        Certificate Authority
+                                      type: string
+                                    insecure:
+                                      description: if the container registry is insecure
+                                        (ie, http only)
+                                      type: boolean
+                                    organization:
+                                      description: the registry organization
+                                      type: string
+                                    secret:
+                                      description: the secret where credentials are
+                                        stored
+                                      type: string
+                                  type: object
+                                verbose:
+                                  description: log more information
+                                  type: boolean
+                              type: object
                             kaniko:
                               description: a KanikoTask, for Kaniko strategy
                               properties:
@@ -306,9 +354,6 @@ spec:
                         type: string
                     type: object
                 type: object
-              workflowId:
-                description: Workflow's unique identifier
-                type: string
             type: object
         type: object
     served: true
@@ -371,6 +416,53 @@ spec:
                         the task should be configured to represent the specific task
                         chosen.
                       properties:
+                        buildah:
+                          description: a BuildahTask, for Buildah strategy
+                          properties:
+                            baseImage:
+                              description: base image layer
+                              type: string
+                            contextDir:
+                              description: can be useful to share info with other
+                                tasks
+                              type: string
+                            executorImage:
+                              description: docker image to use
+                              type: string
+                            image:
+                              description: final image name
+                              type: string
+                            name:
+                              description: name of the task
+                              type: string
+                            platform:
+                              description: The platform of build image
+                              type: string
+                            registry:
+                              description: where to publish the final image
+                              properties:
+                                address:
+                                  description: the URI to access
+                                  type: string
+                                ca:
+                                  description: the configmap which stores the Certificate
+                                    Authority
+                                  type: string
+                                insecure:
+                                  description: if the container registry is insecure
+                                    (ie, http only)
+                                  type: boolean
+                                organization:
+                                  description: the registry organization
+                                  type: string
+                                secret:
+                                  description: the secret where credentials are stored
+                                  type: string
+                              type: object
+                            verbose:
+                              description: log more information
+                              type: boolean
+                          type: object
                         kaniko:
                           description: a KanikoTask, for Kaniko strategy
                           properties:
@@ -590,6 +682,53 @@ spec:
                         the task should be configured to represent the specific task
                         chosen.
                       properties:
+                        buildah:
+                          description: a BuildahTask, for Buildah strategy
+                          properties:
+                            baseImage:
+                              description: base image layer
+                              type: string
+                            contextDir:
+                              description: can be useful to share info with other
+                                tasks
+                              type: string
+                            executorImage:
+                              description: docker image to use
+                              type: string
+                            image:
+                              description: final image name
+                              type: string
+                            name:
+                              description: name of the task
+                              type: string
+                            platform:
+                              description: The platform of build image
+                              type: string
+                            registry:
+                              description: where to publish the final image
+                              properties:
+                                address:
+                                  description: the URI to access
+                                  type: string
+                                ca:
+                                  description: the configmap which stores the Certificate
+                                    Authority
+                                  type: string
+                                insecure:
+                                  description: if the container registry is insecure
+                                    (ie, http only)
+                                  type: boolean
+                                organization:
+                                  description: the registry organization
+                                  type: string
+                                secret:
+                                  description: the secret where credentials are stored
+                                  type: string
+                              type: object
+                            verbose:
+                              description: log more information
+                              type: boolean
+                          type: object
                         kaniko:
                           description: a KanikoTask, for Kaniko strategy
                           properties:
@@ -2673,6 +2812,12 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - sw.kogito.kie.org
+  resources:
+  - kogitoserverlessbuilds/finalizers
+  verbs:
+  - update
 - apiGroups:
   - sw.kogito.kie.org
   resources:

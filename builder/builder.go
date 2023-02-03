@@ -81,9 +81,10 @@ func (b *Builder) ScheduleNewBuild(workflowName string, imageTag string, workflo
 	return b.BuildImage(ib.Build())
 }
 
-func (b *Builder) ScheduleNewBuildWithContainerFile(workflowName string, imageTag string, workflowDefinition []byte) (*api.Build, error) {
+func (b *Builder) ScheduleNewBuildWithContainerFile(workflowName string, imageTag string, workflowDefinition []byte, platformBuildStrategy api.PlatformBuildPublishStrategy) (*api.Build, error) {
 	ib := b.getImageBuilder(workflowName, imageTag, workflowDefinition)
 	ib.WithTimeout(5 * time.Minute)
+	ib.WithPlatformBuildPublishStrategy(platformBuildStrategy)
 	return b.BuildImage(ib.Build())
 }
 
@@ -92,7 +93,6 @@ func (b *Builder) ScheduleNewKanikoBuildWithContainerFile(workflowName string, i
 	ib := b.getImageBuilderForKaniko(workflowName, imageTag, workflowDefinition, task)
 	ib.WithTimeout(5 * time.Minute)
 	return b.BuildImage(ib.Build())
-
 }
 
 func findKanikoTask(tasks []api.Task) *api.KanikoTask {
@@ -122,7 +122,7 @@ func (b *Builder) BuildImage(kb KogitoBuilder) (*api.Build, error) {
 		},
 		Spec: api.PlatformBuildSpec{
 			BuildStrategy:   api.BuildStrategyPod,
-			PublishStrategy: api.PlatformBuildPublishStrategyKaniko,
+			PublishStrategy: kb.PlatformBuildPublishStrategy,
 			Registry: api.RegistrySpec{
 				Insecure: kb.InsecureRegistry,
 				Address:  kb.RegistryAddress,
@@ -152,7 +152,7 @@ func (b *Builder) ScheduleBuild(kb KogitoBuilder) (*api.Build, error) {
 		},
 		Spec: api.PlatformBuildSpec{
 			BuildStrategy:   api.BuildStrategyPod,
-			PublishStrategy: api.PlatformBuildPublishStrategyKaniko,
+			PublishStrategy: kb.PlatformBuildPublishStrategy,
 			Registry: api.RegistrySpec{
 				Insecure: kb.InsecureRegistry,
 				Address:  kb.RegistryAddress,
@@ -185,20 +185,21 @@ func newBuild(kb KogitoBuilder, platform api.PlatformBuild, b *Builder, cli clie
 
 // Fluent API section
 type KogitoBuilder struct {
-	WorkflowID           string
-	WorkflowDefinition   []byte
-	ContainerFile        []byte
-	Namespace            string
-	InsecureRegistry     bool
-	Timeout              time.Duration
-	ImageName            string
-	PodMiddleName        string
-	RegistryAddress      string
-	RegistryOrganization string
-	Secret               string
-	Cache                api.KanikoTaskCache
-	Resources            corev1.ResourceRequirements
-	AdditionalFlags      []string
+	WorkflowID                   string
+	WorkflowDefinition           []byte
+	ContainerFile                []byte
+	PlatformBuildPublishStrategy api.PlatformBuildPublishStrategy
+	Namespace                    string
+	InsecureRegistry             bool
+	Timeout                      time.Duration
+	ImageName                    string
+	PodMiddleName                string
+	RegistryAddress              string
+	RegistryOrganization         string
+	Secret                       string
+	Cache                        api.KanikoTaskCache
+	Resources                    corev1.ResourceRequirements
+	AdditionalFlags              []string
 }
 
 type ImageBuilder struct {
@@ -255,6 +256,11 @@ func (ib *ImageBuilder) WithResources(resources corev1.ResourceRequirements) *Im
 
 func (ib *ImageBuilder) WithAdditionalFlags(flags []string) *ImageBuilder {
 	ib.KogitoBuilder.AdditionalFlags = flags
+	return ib
+}
+
+func (ib *ImageBuilder) WithPlatformBuildPublishStrategy(platformBuildStrategy api.PlatformBuildPublishStrategy) *ImageBuilder {
+	ib.KogitoBuilder.PlatformBuildPublishStrategy = platformBuildStrategy
 	return ib
 }
 

@@ -35,8 +35,6 @@ type KogitoServerlessBuildSpec struct {
 
 // KogitoServerlessBuildStatus defines the observed state of KogitoServerlessBuild
 type KogitoServerlessBuildStatus struct {
-	// Workflow's unique identifier
-	WorkflowId string `json:"workflowId,omitempty"`
 	// Current kaniko buildphase
 	BuildPhase api.BuildPhase `json:"buildPhase,omitempty"`
 	// Kaniko's build, used to ping the build to update the buildphase
@@ -47,6 +45,7 @@ type KogitoServerlessBuildStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:object:generate=true
 // +kubebuilder:subresource:status
+// +k8s:openapi-gen=true
 // KogitoServerlessBuild is the Schema for the kogitoserverlessbuilds API
 type KogitoServerlessBuild struct {
 	metav1.TypeMeta   `json:",inline"`

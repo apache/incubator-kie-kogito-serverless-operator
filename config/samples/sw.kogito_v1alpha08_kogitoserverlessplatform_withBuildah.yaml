@@ -5,7 +5,8 @@ metadata:
 spec:
   cluster: kubernetes
   platform:
-    publishStrategy: "Kaniko"
+    publishStrategy: "Buildah"
     registry:
-      address: quay.io/kiegroup
+      address: quay.io/dsalerno
       secret: regcred
+      insecure: true

@@ -13,6 +13,7 @@ metadata:
           "spec": {
             "cluster": "kubernetes",
             "platform": {
+              "publishStrategy": "Kaniko",
               "registry": {
                 "address": "quay.io/kiegroup",
                 "secret": "regcred"
@@ -214,6 +215,12 @@ spec:
           - patch
           - update
           - watch
+        - apiGroups:
+          - sw.kogito.kie.org
+          resources:
+          - kogitoserverlessbuilds/finalizers
+          verbs:
+          - update
         - apiGroups:
           - sw.kogito.kie.org
           resources:
