@@ -23,11 +23,13 @@ import (
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kiegroup/container-builder/api"
@@ -44,23 +46,29 @@ type productionProfile struct {
 }
 
 func newProductionProfile(client client.Client, logger logr.Logger, scheme *runtime.Scheme, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
-	ctx := &reconcilerSupport{
+	support := &reconcilerSupport{
 		logger: logger,
 		client: client,
 	}
 	// the reconciliation state machine
 	handler := newReconciliationHandlersDelegate(
 		logger,
-		&newBuilderReconciliationHandler{reconcilerSupport: ctx},
-		&ensureBuilderReconciliationHandler{reconcilerSupport: ctx},
-		&followBuildStatusReconciliationHandler{reconcilerSupport: ctx},
-		&deployWorkflowReconciliationHandler{reconcilerSupport: ctx},
+		&newBuilderReconciliationHandler{reconcilerSupport: support},
+		&ensureBuilderReconciliationHandler{reconcilerSupport: support},
+		&followBuildStatusReconciliationHandler{reconcilerSupport: support},
+		&deployWorkflowReconciliationHandler{
+			reconcilerSupport: support,
+			ensurers: &productionEnsurers{
+				deployment: newObjectEnsurer(scheme, client, logger, defaultCreators.deployment),
+				service:    newObjectEnsurer(scheme, client, logger, defaultCreators.service),
+			},
+		},
 	)
 	reconciler := &productionProfile{
 		baseReconciler{
 			workflow:          workflow,
 			scheme:            scheme,
-			reconcilerSupport: ctx,
+			reconcilerSupport: support,
 			reconcilerHandler: handler,
 		},
 	}
@@ -72,6 +80,11 @@ func (p productionProfile) GetProfile() Profile {
 	return Production
 }
 
+type productionEnsurers struct {
+	deployment *objectEnsurer
+	service    *objectEnsurer
+}
+
 type newBuilderReconciliationHandler struct {
 	*reconcilerSupport
 }
@@ -81,26 +94,26 @@ func (h *newBuilderReconciliationHandler) CanReconcile(workflow *operatorapi.Kog
 		workflow.Status.Condition == operatorapi.WaitingForPlatformConditionType
 }
 
-func (h *newBuilderReconciliationHandler) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, error) {
+func (h *newBuilderReconciliationHandler) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	buildable := builder.NewBuildable(h.client, ctx)
 	_, err := platform.GetActivePlatform(ctx, h.client, workflow.Namespace)
 	if err != nil {
 		h.logger.Error(err, "No active Platform for namespace %s so the workflow cannot be built. Waiting for an active platform")
 		workflow.Status.Condition = operatorapi.WaitingForPlatformConditionType
 		_, err = h.performStatusUpdate(ctx, workflow)
-		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil, err
 	}
 	// If there is an active platform we have got all the information to build but...
 	// ...let's check before if we have got already a build!
 	build, err := buildable.GetWorkflowBuild(workflow.Name, workflow.Namespace)
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, nil, err
 	}
 	if build == nil {
 		//If there isn't a build let's create and start the first one!
 		build, err = buildable.CreateWorkflowBuild(workflow.Name, workflow.Namespace)
 		if err != nil {
-			return ctrl.Result{}, err
+			return ctrl.Result{}, nil, err
 		}
 	}
 	//If there is a build, let's ask to restart it
@@ -108,11 +121,11 @@ func (h *newBuilderReconciliationHandler) Do(ctx context.Context, workflow *oper
 	build.Status.Builder.Status = api.BuildStatus{}
 	if err = h.client.Status().Update(ctx, build); err != nil {
 		h.logger.Error(err, fmt.Sprintf("Failed to update Build status for Workflow %s", workflow.Name))
-		return ctrl.Result{}, err
+		return ctrl.Result{}, nil, err
 	}
 	workflow.Status.Condition = operatorapi.BuildingConditionType
 	_, err = h.performStatusUpdate(ctx, workflow)
-	return ctrl.Result{}, err
+	return ctrl.Result{}, nil, err
 }
 
 type ensureBuilderReconciliationHandler struct {
@@ -123,7 +136,7 @@ func (h *ensureBuilderReconciliationHandler) CanReconcile(workflow *operatorapi.
 	return workflow.Status.Condition == operatorapi.RunningConditionType
 }
 
-func (h *ensureBuilderReconciliationHandler) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, error) {
+func (h *ensureBuilderReconciliationHandler) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	buildable := builder.NewBuildable(h.client, ctx)
 	build, err := buildable.GetWorkflowBuild(workflow.Name, workflow.Namespace)
 	if build != nil &&
@@ -134,10 +147,10 @@ func (h *ensureBuilderReconciliationHandler) Do(ctx context.Context, workflow *o
 		if !utils.Compare(utils.GetWorkflowSpecHash(workflow.Status.Applied), utils.GetWorkflowSpecHash(workflow.Spec)) { // Let's check that the 2 workflow definition are different
 			workflow.Status.Condition = operatorapi.NoneConditionType
 			_, err = h.performStatusUpdate(ctx, workflow)
-			return ctrl.Result{Requeue: true}, err
+			return ctrl.Result{Requeue: true}, nil, err
 		}
 	}
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, nil, nil
 }
 
 type followBuildStatusReconciliationHandler struct {
@@ -148,16 +161,16 @@ func (h *followBuildStatusReconciliationHandler) CanReconcile(workflow *operator
 	return workflow.Status.Condition == operatorapi.BuildingConditionType
 }
 
-func (h *followBuildStatusReconciliationHandler) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, error) {
+func (h *followBuildStatusReconciliationHandler) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	// Let's retrieve the build to check the status
 	build := &operatorapi.KogitoServerlessBuild{}
 	err := h.client.Get(ctx, types.NamespacedName{Namespace: workflow.Namespace, Name: workflow.Name}, build)
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			return ctrl.Result{}, err
+			return ctrl.Result{}, nil, err
 		}
 		h.logger.Error(err, "Build not found for this workflow", "Workflow", workflow.Name)
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, nil, nil
 	}
 
 	if build.Status.Builder.Status.Phase == api.BuildPhaseSucceeded {
@@ -174,12 +187,12 @@ func (h *followBuildStatusReconciliationHandler) Do(ctx context.Context, workflo
 			_, err = h.performStatusUpdate(ctx, workflow)
 		}
 	}
-	return ctrl.Result{}, err
+	return ctrl.Result{}, nil, err
 }
 
 type deployWorkflowReconciliationHandler struct {
 	*reconcilerSupport
-	ensurers []ObjectEnsurer
+	ensurers *productionEnsurers
 }
 
 func (h *deployWorkflowReconciliationHandler) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
@@ -187,73 +200,81 @@ func (h *deployWorkflowReconciliationHandler) CanReconcile(workflow *operatorapi
 		workflow.Status.Condition == operatorapi.DeployingConditionType
 }
 
-func (h *deployWorkflowReconciliationHandler) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, error) {
+func (h *deployWorkflowReconciliationHandler) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	pl, err := platform.GetActivePlatform(ctx, h.client, workflow.Namespace)
 	if err != nil {
 		h.logger.Error(err, "No active Platform for namespace %s so the workflow cannot be deployed. Waiting for an active platform")
-		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil, err
 	}
 	image := pl.Spec.BuildPlatform.Registry.Address + "/" + workflow.Name + utils.GetWorkflowImageTag(workflow)
-	return h.handleDeployment(ctx, workflow, image)
+	return h.handleObjects(ctx, workflow, image)
 }
 
-func (h *deployWorkflowReconciliationHandler) handleDeployment(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow, image string) (reconcile.Result, error) {
+func (h *deployWorkflowReconciliationHandler) handleObjects(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow, image string) (reconcile.Result, []client.Object, error) {
 	// Check if this Deployment already exists
-	found := &appsv1.Deployment{}
-	err := h.client.Get(ctx, types.NamespacedName{Name: workflow.Name, Namespace: workflow.Namespace}, found)
-	var result *reconcile.Result
-	// TODO: h.ensurers.deployment.Ensure(ctx)
-	deploymentHandler := &defaultDeploymentHandler{
-		workflow: workflow,
-		scheme:   h.client.Scheme(),
-		client:   h.client,
-		logger:   h.logger,
-	}
-	result, err = deploymentHandler.ensureDeploymentObject(ctx, image)
-	if result != nil {
-		h.logger.Error(err, "Deployment Not ready")
+	existingDeployment := &appsv1.Deployment{}
+	requeue := false
+	if err := h.client.Get(ctx, client.ObjectKeyFromObject(workflow), existingDeployment); err != nil {
+		if !errors.IsNotFound(err) {
+			return reconcile.Result{Requeue: false}, nil, err
+		}
+		deployment, _, err := h.ensurers.deployment.ensure(ctx, workflow, prodDeploymentImage(image))
+		if err != nil {
+			return reconcile.Result{}, nil, err
+		}
 		if workflow.Status.Condition != operatorapi.DeployingConditionType {
 			workflow.Status.Condition = operatorapi.DeployingConditionType
 			if _, err := h.performStatusUpdate(ctx, workflow); err != nil {
-				return *result, err
+				return reconcile.Result{Requeue: false}, nil, err
 			}
 		}
-		result.RequeueAfter = 5 * time.Second
-		return *result, err
+		existingDeployment, _ = deployment.(*appsv1.Deployment)
+		requeue = true
 	}
+	// TODO: verify if deployment is ready
 
-	// Check if this Service already exists
-	// TODO: h.ensurers.service.Ensure(ctx)
-	serviceHandler := &defaultServiceHandler{
-		workflow: workflow,
-		scheme:   h.client.Scheme(),
-		client:   h.client,
-	}
-	result, err = serviceHandler.ensureServiceObject()
-	if result != nil {
-		h.logger.Error(err, "Service Not ready")
+	existingService := &v1.Service{}
+	if err := h.client.Get(ctx, client.ObjectKeyFromObject(workflow), existingService); err != nil {
+		if !errors.IsNotFound(err) {
+			return reconcile.Result{Requeue: false}, nil, err
+		}
+		service, _, err := h.ensurers.service.ensure(ctx, workflow, emptyMutateHandler)
+		if err != nil {
+			return reconcile.Result{}, nil, err
+		}
 		if workflow.Status.Condition != operatorapi.DeployingConditionType {
 			workflow.Status.Condition = operatorapi.DeployingConditionType
 			if _, err := h.performStatusUpdate(ctx, workflow); err != nil {
-				return *result, err
+				return reconcile.Result{Requeue: false}, nil, err
 			}
 		}
-		result.RequeueAfter = 5 * time.Second
-		return *result, err
+		existingService, _ = service.(*v1.Service)
+		requeue = true
 	}
+	// TODO: verify if service is ready
 
-	// Deployment and Service already exists - don't requeue
-	h.logger.Info("Skip reconcile: Deployment and service already exists",
-		"Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
+	objs := []client.Object{existingDeployment, existingService}
 
+	if !requeue {
+		h.logger.Info("Skip reconcile: Deployment and service already exists",
+			"Deployment.Namespace", existingDeployment.Namespace, "Deployment.Name", existingDeployment.Name)
+		return reconcile.Result{Requeue: false}, objs, nil
+	}
 	//We can now update the workflow status to running
 	if workflow.Status.Condition != operatorapi.RunningConditionType {
 		workflow.Status.Condition = operatorapi.RunningConditionType
 		if _, err := h.performStatusUpdate(ctx, workflow); err != nil {
-			return *result, err
+			return reconcile.Result{Requeue: false}, nil, err
 		}
-		return reconcile.Result{Requeue: false}, err
 	}
+	return reconcile.Result{Requeue: true, RequeueAfter: 10 * time.Second}, objs, nil
+}
 
-	return reconcile.Result{Requeue: false}, err
+func prodDeploymentImage(image string) mutateHandler {
+	return func(object client.Object) controllerutil.MutateFn {
+		return func() error {
+			object.(*appsv1.Deployment).Spec.Template.Spec.Containers[0].Image = image
+			return nil
+		}
+	}
 }

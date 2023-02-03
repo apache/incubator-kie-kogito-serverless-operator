@@ -38,9 +38,6 @@ type ProfileReconciler interface {
 type reconcilerSupport struct {
 	logger logr.Logger
 	client client.Client
-	// reconciledObjects are the objects manipulated by the reconciliation algorithm.
-	// can be fetched in the end of the reconciliation process to perform any other operation if needed.
-	reconciledObjects []client.Object
 }
 
 // performStatusUpdate updates the KogitoServerlessWorkflow Status conditions
@@ -60,17 +57,26 @@ type baseReconciler struct {
 	workflow          *operatorapi.KogitoServerlessWorkflow
 	scheme            *runtime.Scheme
 	reconcilerHandler *reconciliationHandlersDelegate
+	objects           []client.Object
 }
 
 // Reconcile does the actual reconciliation algorithm based on a set of ReconciliationHandler
 func (b baseReconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
-	return b.reconcilerHandler.do(ctx, b.workflow)
+	result, objects, err := b.reconcilerHandler.do(ctx, b.workflow)
+	if err != nil {
+		return result, err
+	}
+	b.objects = objects
+	return result, err
 }
 
 // ReconciliationHandler is an interface implemented internally by various elements to perform the adequate logic for a given workflow profile
 type ReconciliationHandler interface {
+	// CanReconcile checks if this handler can perform its reconciliation task
 	CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool
-	Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, error)
+	// Do perform the reconciliation task. It returns the controller result, the objects updated, and an error if any.
+	// Objects can be nil if the reconciliation task doesn't perform any updates in any Kubernetes object.
+	Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error)
 }
 
 // newReconciliationHandlersDelegate builder for the reconciliationHandlersDelegate
@@ -88,14 +94,14 @@ type reconciliationHandlersDelegate struct {
 	logger   logr.Logger
 }
 
-func (r *reconciliationHandlersDelegate) do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, error) {
+func (r *reconciliationHandlersDelegate) do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	for _, h := range r.handlers {
 		if h.CanReconcile(workflow) {
 			return h.Do(ctx, workflow)
 		}
 	}
 	r.logger.Info(fmt.Sprintf("Workflow %s is in status %s but at the moment we are not supporting it!", workflow.Name, workflow.Status.Condition))
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, nil, nil
 }
 
 // NewReconciler creates a new ProfileReconciler based on the given workflow and context.

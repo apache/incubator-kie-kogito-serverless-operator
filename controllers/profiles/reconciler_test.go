@@ -17,12 +17,13 @@ package profiles
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
-// ObjectEnsurer provides the interface for a ReconciliationHandler that needs to create or update a given Kubernetes object during the reconciliation cycle.
-type ObjectEnsurer interface {
-	Ensure(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error)
+func fakeReconcilerSupport(client client.Client) *reconcilerSupport {
+	return &reconcilerSupport{
+		logger: logr.FromContextOrDiscard(context.TODO()),
+		client: client,
+	}
 }

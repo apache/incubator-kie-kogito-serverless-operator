@@ -25,6 +25,11 @@ import (
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
+const (
+	KogitoServerlessWorkflowSampleYamlCR    = "sw.kogito_v1alpha08_kogitoserverlessworkflow.yaml"
+	KogitoServerlessPlatformWithCacheYamlCR = "sw.kogito_v1alpha08_kogitoserverlessplatform_withCacheAndCustomization.yaml"
+)
+
 func GetKogitoServerlessWorkflow(path string, namespace string) *operatorapi.KogitoServerlessWorkflow {
 	ksw := &operatorapi.KogitoServerlessWorkflow{}
 	yamlFile, err := os.ReadFile(path)
