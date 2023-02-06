@@ -29,21 +29,12 @@ import (
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
-var log logr.Logger
-
-type KogitoServerlessWorkflowConverter struct {
-	ctx context.Context
-}
-
-// NewKogitoServerlessWorkflowConverter ...
-func NewKogitoServerlessWorkflowConverter(contex context.Context) KogitoServerlessWorkflowConverter {
-	return KogitoServerlessWorkflowConverter{ctx: contex}
-}
+var logger logr.Logger
 
 // ToCNCFWorkflow converts a KogitoServerlessWorkflow object to a model.Workflow one in order to be able to convert it to a YAML/Json
-func (k *KogitoServerlessWorkflowConverter) ToCNCFWorkflow(serverlessWorkflow *operatorapi.KogitoServerlessWorkflow) (*model.Workflow, error) {
+func ToCNCFWorkflow(ctx context.Context, serverlessWorkflow *operatorapi.KogitoServerlessWorkflow) (*model.Workflow, error) {
 	if serverlessWorkflow != nil {
-		log = ctrllog.FromContext(k.ctx)
+		logger = ctrllog.FromContext(ctx)
 		newBaseWorkflow := &model.BaseWorkflow{ID: serverlessWorkflow.ObjectMeta.Name,
 			Key:            serverlessWorkflow.ObjectMeta.Annotations[metadata.Key],
 			Name:           serverlessWorkflow.ObjectMeta.Name,
@@ -54,11 +45,11 @@ func (k *KogitoServerlessWorkflowConverter) ToCNCFWorkflow(serverlessWorkflow *o
 			KeepActive:     serverlessWorkflow.Spec.KeepActive,
 			AutoRetries:    serverlessWorkflow.Spec.AutoRetries,
 			Start:          retrieveStartState(serverlessWorkflow.Spec.Start)}
-		log.Info("Created new Base Workflow with name", "name", newBaseWorkflow.Name)
+		logger.Info("Created new Base Workflow with name", "name", newBaseWorkflow.Name)
 		newWorkflow := &model.Workflow{BaseWorkflow: *newBaseWorkflow, Functions: retrieveFunctions(serverlessWorkflow.Spec.Functions), States: retrieveStates(serverlessWorkflow.Spec.States)}
 		return newWorkflow, nil
 	}
-	return nil, errors.New(("KogitoServerlessWorkflow is nil"))
+	return nil, errors.New("kogitoServerlessWorkflow is nil")
 }
 
 func extractExpressionLang(annotations map[string]string) string {
@@ -86,7 +77,7 @@ func retrieveStartState(name string) *model.Start {
 // Function to retrieve a list of states coming from an array of v08.State objects
 func retrieveStates(incomingStates []operatorapi.State) []model.State {
 	states := make([]model.State, len(incomingStates))
-	log.Info("States: ", "states", incomingStates)
+	logger.Info("States: ", "states", incomingStates)
 	for i, s := range incomingStates {
 		stateT := model.StateType(s.Type.String())
 		newBaseState := &model.BaseState{Name: s.Name, Type: stateT}
@@ -149,7 +140,7 @@ func retrieveStates(incomingStates []operatorapi.State) []model.State {
 			}
 			states[i] = &model.OperationState{BaseState: *newBaseState, Actions: actions}
 		default:
-			log.Info("Unable to create a CNCF State from incoming state type ", "type", sType)
+			logger.Info("Unable to create a CNCF State from incoming state type ", "type", sType)
 		}
 	}
 	return states

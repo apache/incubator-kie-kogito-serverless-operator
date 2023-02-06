@@ -1,18 +1,16 @@
-/*
- * Copyright 2023 Red Hat, Inc. and/or its affiliates.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Copyright 2023 Red Hat, Inc. and/or its affiliates
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package profiles
 
@@ -21,27 +19,26 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
-// ProfileReconciler is the public interface to have access to this package and perform the actual reconciliation
+// ProfileReconciler is the public interface to have access to this package and perform the actual reconciliation flow
 type ProfileReconciler interface {
 	Reconcile(ctx context.Context) (ctrl.Result, error)
 	GetProfile() Profile
 }
 
-// reconcilerSupport is the shared structure with common accessors used throughout the whole reconciliation profiles
-type reconcilerSupport struct {
+// stateSupport is the shared structure with common accessors used throughout the whole reconciliation profiles
+type stateSupport struct {
 	logger logr.Logger
 	client client.Client
 }
 
 // performStatusUpdate updates the KogitoServerlessWorkflow Status conditions
-func (s reconcilerSupport) performStatusUpdate(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (bool, error) {
+func (s stateSupport) performStatusUpdate(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (bool, error) {
 	var err error
 	workflow.Status.Applied = workflow.Spec
 	if err = s.client.Status().Update(ctx, workflow); err != nil {
@@ -51,16 +48,24 @@ func (s reconcilerSupport) performStatusUpdate(ctx context.Context, workflow *op
 	return true, err
 }
 
-// baseReconciler is the base structure used by every reconciliation profile
+// baseReconciler is the base structure used by every reconciliation profile.
+// Use newBaseProfileReconciler to build a new reference.
 type baseReconciler struct {
-	*reconcilerSupport
+	*stateSupport
 	workflow          *operatorapi.KogitoServerlessWorkflow
-	scheme            *runtime.Scheme
-	reconcilerHandler *reconciliationHandlersDelegate
+	reconcilerHandler *reconciliationStateMachine
 	objects           []client.Object
 }
 
-// Reconcile does the actual reconciliation algorithm based on a set of ReconciliationHandler
+func newBaseProfileReconciler(support *stateSupport, handler *reconciliationStateMachine, workflow *operatorapi.KogitoServerlessWorkflow) baseReconciler {
+	return baseReconciler{
+		stateSupport:      support,
+		workflow:          workflow,
+		reconcilerHandler: handler,
+	}
+}
+
+// Reconcile does the actual reconciliation algorithm based on a set of ReconciliationState
 func (b baseReconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 	result, objects, err := b.reconcilerHandler.do(ctx, b.workflow)
 	if err != nil {
@@ -70,8 +75,8 @@ func (b baseReconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
 	return result, err
 }
 
-// ReconciliationHandler is an interface implemented internally by various elements to perform the adequate logic for a given workflow profile
-type ReconciliationHandler interface {
+// ReconciliationState is an interface implemented internally by different states to perform the adequate logic for a given workflow profile
+type ReconciliationState interface {
 	// CanReconcile checks if this handler can perform its reconciliation task
 	CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool
 	// Do perform the reconciliation task. It returns the controller result, the objects updated, and an error if any.
@@ -79,23 +84,25 @@ type ReconciliationHandler interface {
 	Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error)
 }
 
-// newReconciliationHandlersDelegate builder for the reconciliationHandlersDelegate
-func newReconciliationHandlersDelegate(logger logr.Logger, handlers ...ReconciliationHandler) *reconciliationHandlersDelegate {
-	return &reconciliationHandlersDelegate{
-		handlers: handlers,
-		logger:   logger,
+// newReconciliationStateMachine builder for the reconciliationStateMachine
+func newReconciliationStateMachine(logger logr.Logger, states ...ReconciliationState) *reconciliationStateMachine {
+	return &reconciliationStateMachine{
+		states: states,
+		logger: logger,
 	}
 }
 
-// reconciliationHandlersDelegate implements (sort of) the command pattern and delegate to a chain of ReconciliationHandler
+// reconciliationStateMachine implements (sort of) the command pattern and delegate to a chain of ReconciliationState
 // the actual task to reconcile in a given workflow condition
-type reconciliationHandlersDelegate struct {
-	handlers []ReconciliationHandler
-	logger   logr.Logger
+//
+// TODO: implement state transition, so based on a given condition we do the status update which actively transition the object state
+type reconciliationStateMachine struct {
+	states []ReconciliationState
+	logger logr.Logger
 }
 
-func (r *reconciliationHandlersDelegate) do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
-	for _, h := range r.handlers {
+func (r *reconciliationStateMachine) do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
+	for _, h := range r.states {
 		if h.CanReconcile(workflow) {
 			return h.Do(ctx, workflow)
 		}
@@ -105,6 +112,6 @@ func (r *reconciliationHandlersDelegate) do(ctx context.Context, workflow *opera
 }
 
 // NewReconciler creates a new ProfileReconciler based on the given workflow and context.
-func NewReconciler(client client.Client, logger logr.Logger, scheme *runtime.Scheme, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
-	return profileBuilder(workflow)(client, logger, scheme, workflow)
+func NewReconciler(client client.Client, logger logr.Logger, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
+	return profileBuilder(workflow)(client, logger, workflow)
 }

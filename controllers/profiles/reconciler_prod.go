@@ -1,18 +1,16 @@
-/*
- * Copyright 2023 Red Hat, Inc. and/or its affiliates.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Copyright 2023 Red Hat, Inc. and/or its affiliates
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package profiles
 
@@ -25,11 +23,9 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kiegroup/container-builder/api"
@@ -45,32 +41,36 @@ type productionProfile struct {
 	baseReconciler
 }
 
-func newProductionProfile(client client.Client, logger logr.Logger, scheme *runtime.Scheme, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
-	support := &reconcilerSupport{
+// productionObjectEnsurers is a struct for the objects that ReconciliationState needs to create in the platform for the Production profile.
+// ReconciliationState that needs access to it must include this struct as an attribute and initialize it in the profile builder.
+// Use newProductionObjectEnsurers to facilitate building this struct
+type productionObjectEnsurers struct {
+	deployment *objectEnsurer
+	service    *objectEnsurer
+}
+
+func newProductionObjectEnsurers(support *stateSupport) *productionObjectEnsurers {
+	return &productionObjectEnsurers{
+		deployment: newObjectEnsurer(support.client, support.logger, defaultDeploymentCreator, defaultDeploymentMutator),
+		service:    newObjectEnsurer(support.client, support.logger, defaultServiceCreator, immutableObject(defaultServiceCreator)),
+	}
+}
+
+func newProductionProfile(client client.Client, logger logr.Logger, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
+	support := &stateSupport{
 		logger: logger,
 		client: client,
 	}
 	// the reconciliation state machine
-	handler := newReconciliationHandlersDelegate(
+	stateMachine := newReconciliationStateMachine(
 		logger,
-		&newBuilderReconciliationHandler{reconcilerSupport: support},
-		&ensureBuilderReconciliationHandler{reconcilerSupport: support},
-		&followBuildStatusReconciliationHandler{reconcilerSupport: support},
-		&deployWorkflowReconciliationHandler{
-			reconcilerSupport: support,
-			ensurers: &productionEnsurers{
-				deployment: newObjectEnsurer(scheme, client, logger, defaultCreators.deployment),
-				service:    newObjectEnsurer(scheme, client, logger, defaultCreators.service),
-			},
-		},
+		&newBuilderReconciliationState{stateSupport: support},
+		&ensureBuilderReconciliationState{stateSupport: support},
+		&followBuildStatusReconciliationState{stateSupport: support},
+		&deployWorkflowReconciliationState{stateSupport: support, ensurers: newProductionObjectEnsurers(support)},
 	)
 	reconciler := &productionProfile{
-		baseReconciler{
-			workflow:          workflow,
-			scheme:            scheme,
-			reconcilerSupport: support,
-			reconcilerHandler: handler,
-		},
+		baseReconciler: newBaseProfileReconciler(support, stateMachine, workflow),
 	}
 
 	return reconciler
@@ -80,21 +80,16 @@ func (p productionProfile) GetProfile() Profile {
 	return Production
 }
 
-type productionEnsurers struct {
-	deployment *objectEnsurer
-	service    *objectEnsurer
+type newBuilderReconciliationState struct {
+	*stateSupport
 }
 
-type newBuilderReconciliationHandler struct {
-	*reconcilerSupport
-}
-
-func (h *newBuilderReconciliationHandler) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
+func (h *newBuilderReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
 	return workflow.Status.Condition == operatorapi.NoneConditionType ||
 		workflow.Status.Condition == operatorapi.WaitingForPlatformConditionType
 }
 
-func (h *newBuilderReconciliationHandler) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
+func (h *newBuilderReconciliationState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	buildable := builder.NewBuildable(h.client, ctx)
 	_, err := platform.GetActivePlatform(ctx, h.client, workflow.Namespace)
 	if err != nil {
@@ -128,15 +123,15 @@ func (h *newBuilderReconciliationHandler) Do(ctx context.Context, workflow *oper
 	return ctrl.Result{}, nil, err
 }
 
-type ensureBuilderReconciliationHandler struct {
-	*reconcilerSupport
+type ensureBuilderReconciliationState struct {
+	*stateSupport
 }
 
-func (h *ensureBuilderReconciliationHandler) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
+func (h *ensureBuilderReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
 	return workflow.Status.Condition == operatorapi.RunningConditionType
 }
 
-func (h *ensureBuilderReconciliationHandler) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
+func (h *ensureBuilderReconciliationState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	buildable := builder.NewBuildable(h.client, ctx)
 	build, err := buildable.GetWorkflowBuild(workflow.Name, workflow.Namespace)
 	if build != nil &&
@@ -153,15 +148,15 @@ func (h *ensureBuilderReconciliationHandler) Do(ctx context.Context, workflow *o
 	return ctrl.Result{}, nil, nil
 }
 
-type followBuildStatusReconciliationHandler struct {
-	*reconcilerSupport
+type followBuildStatusReconciliationState struct {
+	*stateSupport
 }
 
-func (h *followBuildStatusReconciliationHandler) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
+func (h *followBuildStatusReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
 	return workflow.Status.Condition == operatorapi.BuildingConditionType
 }
 
-func (h *followBuildStatusReconciliationHandler) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
+func (h *followBuildStatusReconciliationState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	// Let's retrieve the build to check the status
 	build := &operatorapi.KogitoServerlessBuild{}
 	err := h.client.Get(ctx, types.NamespacedName{Namespace: workflow.Namespace, Name: workflow.Name}, build)
@@ -190,17 +185,17 @@ func (h *followBuildStatusReconciliationHandler) Do(ctx context.Context, workflo
 	return ctrl.Result{}, nil, err
 }
 
-type deployWorkflowReconciliationHandler struct {
-	*reconcilerSupport
-	ensurers *productionEnsurers
+type deployWorkflowReconciliationState struct {
+	*stateSupport
+	ensurers *productionObjectEnsurers
 }
 
-func (h *deployWorkflowReconciliationHandler) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
+func (h *deployWorkflowReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
 	return workflow.Status.Condition == operatorapi.ProvisioningConditionType ||
 		workflow.Status.Condition == operatorapi.DeployingConditionType
 }
 
-func (h *deployWorkflowReconciliationHandler) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
+func (h *deployWorkflowReconciliationState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	pl, err := platform.GetActivePlatform(ctx, h.client, workflow.Namespace)
 	if err != nil {
 		h.logger.Error(err, "No active Platform for namespace %s so the workflow cannot be deployed. Waiting for an active platform")
@@ -210,7 +205,7 @@ func (h *deployWorkflowReconciliationHandler) Do(ctx context.Context, workflow *
 	return h.handleObjects(ctx, workflow, image)
 }
 
-func (h *deployWorkflowReconciliationHandler) handleObjects(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow, image string) (reconcile.Result, []client.Object, error) {
+func (h *deployWorkflowReconciliationState) handleObjects(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow, image string) (reconcile.Result, []client.Object, error) {
 	// Check if this Deployment already exists
 	existingDeployment := &appsv1.Deployment{}
 	requeue := false
@@ -218,7 +213,7 @@ func (h *deployWorkflowReconciliationHandler) handleObjects(ctx context.Context,
 		if !errors.IsNotFound(err) {
 			return reconcile.Result{Requeue: false}, nil, err
 		}
-		deployment, _, err := h.ensurers.deployment.ensure(ctx, workflow, prodDeploymentImage(image))
+		deployment, _, err := h.ensurers.deployment.ensure(ctx, workflow, naiveApplyImageDeploymentMutateVisitor(image))
 		if err != nil {
 			return reconcile.Result{}, nil, err
 		}
@@ -238,7 +233,7 @@ func (h *deployWorkflowReconciliationHandler) handleObjects(ctx context.Context,
 		if !errors.IsNotFound(err) {
 			return reconcile.Result{Requeue: false}, nil, err
 		}
-		service, _, err := h.ensurers.service.ensure(ctx, workflow, emptyMutateHandler)
+		service, _, err := h.ensurers.service.ensure(ctx, workflow)
 		if err != nil {
 			return reconcile.Result{}, nil, err
 		}
@@ -268,13 +263,4 @@ func (h *deployWorkflowReconciliationHandler) handleObjects(ctx context.Context,
 		}
 	}
 	return reconcile.Result{Requeue: true, RequeueAfter: 10 * time.Second}, objs, nil
-}
-
-func prodDeploymentImage(image string) mutateHandler {
-	return func(object client.Object) controllerutil.MutateFn {
-		return func() error {
-			object.(*appsv1.Deployment).Spec.Template.Spec.Containers[0].Image = image
-			return nil
-		}
-	}
 }

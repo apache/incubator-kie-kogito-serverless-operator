@@ -90,7 +90,7 @@ type KogitoServerlessPlatformSpec struct {
 	Configuration ConfigurationSpec `json:"configuration,omitempty"`
 }
 
-// PlatformPhase is the phase of an Platform
+// PlatformPhase is the phase of a Platform
 type PlatformPhase string
 
 const (

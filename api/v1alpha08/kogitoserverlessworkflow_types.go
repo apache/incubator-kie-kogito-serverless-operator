@@ -390,9 +390,11 @@ type Endpoint struct {
 
 // KogitoServerlessWorkflowStatus defines the observed state of KogitoServerlessWorkflow
 type KogitoServerlessWorkflowStatus struct {
-	Endpoints []Endpoint                   `json:"endpoints,omitempty"`
-	Address   duckv1.Addressable           `json:"address,omitempty"`
+	Endpoints []Endpoint         `json:"endpoints,omitempty"`
+	Address   duckv1.Addressable `json:"address,omitempty"`
+	// TODO: Conditions MUST be an array and follow Kubernetes conventions!!!! https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
 	Condition ConditionType                `json:"condition,omitempty"`
+	Reason    string                       `json:"reason,omitempty"`
 	Applied   KogitoServerlessWorkflowSpec `json:"applied,omitempty"`
 }
 
@@ -400,26 +402,20 @@ type KogitoServerlessWorkflowStatus struct {
 type ConditionType string
 
 const (
-	// NoneConditionType --
+	// NoneConditionType initial condition of a just created object
 	NoneConditionType ConditionType = ""
-	// DeployedConditionType the workflow is deployed
-	DeployedConditionType ConditionType = "Deployed"
 	// ProvisioningConditionType the workflow is being provisioned
 	ProvisioningConditionType ConditionType = "Provisioning"
 	// FailedConditionType the workflow is in a failed state
 	FailedConditionType ConditionType = "Failed"
 	// WaitingForPlatformConditionType workflow created, but we are waiting a platform to deploy it
 	WaitingForPlatformConditionType ConditionType = "Waiting For Platform"
-	// InitializationConditionType --
-	InitializationConditionType ConditionType = "Initialization"
 	// BuildingConditionType --
 	BuildingConditionType ConditionType = "Building Workflow"
 	// DeployingConditionType --
 	DeployingConditionType ConditionType = "Deploying"
 	// RunningConditionType --
 	RunningConditionType ConditionType = "Running"
-	// ErrorConditionType --
-	ErrorConditionType ConditionType = "Error"
 )
 
 // KogitoServerlessWorkflow is the Schema for the kogitoserverlessworkflows API

@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"k8s.io/apimachinery/pkg/util/runtime"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
@@ -33,18 +34,17 @@ import (
 
 const defaultImageTag = ":latest"
 
-// GetWorkflowFromCR return a Kogito compliant workflow as bytearray give a specific workflow CR
-func GetWorkflowFromCR(workflowCR *operatorapi.KogitoServerlessWorkflow, ctx context.Context) ([]byte, error) {
-	log := ctrllog.FromContext(ctx)
-	converter := converters.NewKogitoServerlessWorkflowConverter(ctx)
-	workflow, err := converter.ToCNCFWorkflow(workflowCR)
+// GetJSONWorkflow return a Kogito compliant JSON format workflow as bytearray give a specific workflow CR
+func GetJSONWorkflow(workflowCR *operatorapi.KogitoServerlessWorkflow, ctx context.Context) ([]byte, error) {
+	logger := ctrllog.FromContext(ctx)
+	workflow, err := converters.ToCNCFWorkflow(ctx, workflowCR)
 	if err != nil {
-		log.Error(err, "Failed converting KogitoServerlessWorkflow into Workflow")
+		logger.Error(err, "Failed converting KogitoServerlessWorkflow into Workflow")
 		return nil, err
 	}
 	jsonWorkflow, err := json.Marshal(workflow)
 	if err != nil {
-		log.Error(err, "Failed converting KogitoServerlessWorkflow into JSON")
+		logger.Error(err, "Failed converting KogitoServerlessWorkflow into JSON")
 		return nil, err
 	}
 	return jsonWorkflow, nil
@@ -56,15 +56,15 @@ func SameOrMatch(build *operatorapi.KogitoServerlessBuild, workflow *operatorapi
 		if build.Namespace == workflow.Namespace {
 			return true, nil
 		}
-		return false, errors.New("Build & Workflow namespaces are not matching")
+		return false, errors.New("build & Workflow namespaces are not matching")
 	}
-	return false, errors.New("Build & Workflow names are not matching")
+	return false, errors.New("build & Workflow names are not matching")
 }
 
 // GetWorkflowSpecHash comute a hash of the workflow definition (hash), useful to compare 2 different definitions
 func GetWorkflowSpecHash(s operatorapi.KogitoServerlessWorkflowSpec) []byte {
 	var b bytes.Buffer
-	gob.NewEncoder(&b).Encode(s)
+	runtime.Must(gob.NewEncoder(&b).Encode(s))
 	return b.Bytes()
 }
 

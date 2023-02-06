@@ -39,7 +39,7 @@ import (
 	"github.com/kiegroup/container-builder/api"
 	clientr "github.com/kiegroup/container-builder/client"
 
-	api08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/builder"
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 )
@@ -65,7 +65,7 @@ type KogitoServerlessBuildReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.12.1/pkg/reconcile
 func (r *KogitoServerlessBuildReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
-	build := &api08.KogitoServerlessBuild{}
+	build := &operatorapi.KogitoServerlessBuild{}
 	err := r.Client.Get(ctx, req.NamespacedName, build)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -130,14 +130,14 @@ func (r *KogitoServerlessBuildReconciler) Reconcile(ctx context.Context, req ctr
 }
 
 func (r *KogitoServerlessBuildReconciler) retrieveWorkflowFromCR(workflowId string, ctx context.Context, req ctrl.Request) ([]byte, string, error) {
-	instance := &api08.KogitoServerlessWorkflow{}
-	error := r.Client.Get(ctx, types.NamespacedName{Name: workflowId, Namespace: req.Namespace}, instance)
-	workflowBytes, error := utils.GetWorkflowFromCR(instance, ctx)
+	instance := &operatorapi.KogitoServerlessWorkflow{}
+	err := r.Client.Get(ctx, types.NamespacedName{Name: workflowId, Namespace: req.Namespace}, instance)
+	workflowBytes, err := utils.GetJSONWorkflow(instance, ctx)
 	imageTag := utils.GetWorkflowImageTag(instance)
-	return workflowBytes, imageTag, error
+	return workflowBytes, imageTag, err
 }
 
-func manageStatusUpdate(ctx context.Context, build *api.Build, instance *api08.KogitoServerlessBuild, r *KogitoServerlessBuildReconciler, log logr.Logger) {
+func manageStatusUpdate(ctx context.Context, build *api.Build, instance *operatorapi.KogitoServerlessBuild, r *KogitoServerlessBuildReconciler, log logr.Logger) {
 	if build.Status.Phase != instance.Status.BuildPhase {
 		instance.Status.Builder = *build
 		instance.Status.BuildPhase = build.Status.Phase
@@ -151,6 +151,6 @@ func manageStatusUpdate(ctx context.Context, build *api.Build, instance *api08.K
 // SetupWithManager sets up the controller with the Manager.
 func (r *KogitoServerlessBuildReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&api08.KogitoServerlessBuild{}).
+		For(&operatorapi.KogitoServerlessBuild{}).
 		Complete(r)
 }

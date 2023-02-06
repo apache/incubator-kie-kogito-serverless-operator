@@ -17,13 +17,13 @@ package profiles
 import (
 	"context"
 
-	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func fakeReconcilerSupport(client client.Client) *reconcilerSupport {
-	return &reconcilerSupport{
-		logger: logr.FromContextOrDiscard(context.TODO()),
+func fakeReconcilerSupport(client client.Client) *stateSupport {
+	return &stateSupport{
+		logger: ctrllog.FromContext(context.TODO()),
 		client: client,
 	}
 }

@@ -19,24 +19,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/kiegroup/kogito-serverless-operator/test"
 )
 
-var cfg *rest.Config
-var k8sClient client.Client
-var testEnv *envtest.Environment
-
 func TestKogitoServerlessWorkflowConverter(t *testing.T) {
 	t.Run("verify that when KogitoServerlessWorkflow CR is nil an error is returned", func(t *testing.T) {
-		context := context.TODO()
 		// Create a KogitoServerlessWorkflow object with metadata and spec.
 		ksw := test.GetKogitoServerlessWorkflow("../config/samples/sw.kogito_v1alpha08_kogitoserverlessworkflow.yaml", t.Name())
-		converterToTest := NewKogitoServerlessWorkflowConverter(context)
-		out, err := converterToTest.ToCNCFWorkflow(ksw)
+		out, err := ToCNCFWorkflow(context.TODO(), ksw)
 		assert.NoError(t, err)
 		assert.True(t, out != nil)
 		assert.True(t, out.Name == "greeting")
