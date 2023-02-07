@@ -33,7 +33,7 @@ type ProfileReconciler interface {
 
 // stateSupport is the shared structure with common accessors used throughout the whole reconciliation profiles
 type stateSupport struct {
-	logger logr.Logger
+	logger *logr.Logger
 	client client.Client
 }
 
@@ -85,7 +85,7 @@ type ReconciliationState interface {
 }
 
 // newReconciliationStateMachine builder for the reconciliationStateMachine
-func newReconciliationStateMachine(logger logr.Logger, states ...ReconciliationState) *reconciliationStateMachine {
+func newReconciliationStateMachine(logger *logr.Logger, states ...ReconciliationState) *reconciliationStateMachine {
 	return &reconciliationStateMachine{
 		states: states,
 		logger: logger,
@@ -98,7 +98,7 @@ func newReconciliationStateMachine(logger logr.Logger, states ...ReconciliationS
 // TODO: implement state transition, so based on a given condition we do the status update which actively transition the object state
 type reconciliationStateMachine struct {
 	states []ReconciliationState
-	logger logr.Logger
+	logger *logr.Logger
 }
 
 func (r *reconciliationStateMachine) do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
@@ -112,6 +112,6 @@ func (r *reconciliationStateMachine) do(ctx context.Context, workflow *operatora
 }
 
 // NewReconciler creates a new ProfileReconciler based on the given workflow and context.
-func NewReconciler(client client.Client, logger logr.Logger, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
+func NewReconciler(client client.Client, logger *logr.Logger, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
 	return profileBuilder(workflow)(client, logger, workflow)
 }

@@ -15,8 +15,15 @@
 package test
 
 import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
@@ -27,4 +34,25 @@ func NewKogitoClientBuilder() *fake.ClientBuilder {
 	s := scheme.Scheme
 	utilruntime.Must(v1alpha08.AddToScheme(s))
 	return fake.NewClientBuilder().WithScheme(s)
+}
+
+func MustGetDeployment(t *testing.T, client ctrl.WithWatch, workflow *v1alpha08.KogitoServerlessWorkflow) *appsv1.Deployment {
+	deployment := &appsv1.Deployment{}
+	return mustGet(t, client, workflow, deployment).(*appsv1.Deployment)
+}
+
+func MustGetService(t *testing.T, client ctrl.WithWatch, workflow *v1alpha08.KogitoServerlessWorkflow) *v1.Service {
+	svc := &v1.Service{}
+	return mustGet(t, client, workflow, svc).(*v1.Service)
+}
+
+func MustGetConfigMap(t *testing.T, client ctrl.WithWatch, workflow *v1alpha08.KogitoServerlessWorkflow) *v1.ConfigMap {
+	cm := &v1.ConfigMap{}
+	return mustGet(t, client, workflow, cm).(*v1.ConfigMap)
+}
+
+func mustGet(t *testing.T, client ctrl.WithWatch, workflow *v1alpha08.KogitoServerlessWorkflow, obj ctrl.Object) ctrl.Object {
+	err := client.Get(context.TODO(), ctrl.ObjectKeyFromObject(workflow), obj)
+	assert.NoError(t, err)
+	return obj
 }

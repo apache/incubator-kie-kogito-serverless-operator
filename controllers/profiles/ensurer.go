@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	appsv1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -26,25 +25,19 @@ import (
 )
 
 // newObjectEnsurer see objectEnsurer
-func newObjectEnsurer(client client.Client, logger logr.Logger, creator objectCreator, mutator objectEnforcer) *objectEnsurer {
+func newObjectEnsurer(client client.Client, logger *logr.Logger, creator objectCreator) *objectEnsurer {
 	return &objectEnsurer{
-		client:   client,
-		logger:   logger,
-		creator:  creator,
-		enforcer: mutator,
+		client:  client,
+		logger:  logger,
+		creator: creator,
 	}
 }
 
 // objectEnsurer provides the engine for a ReconciliationState that needs to create or update a given Kubernetes object during the reconciliation cycle.
 type objectEnsurer struct {
-	client client.Client
-	logger logr.Logger
-	// creator is the func that creates the initial reference object, if the object doesn't exist in the cluster, this one is created.
-	// Can be used as a reference to keep the object immutable
+	client  client.Client
+	logger  *logr.Logger
 	creator objectCreator
-	// enforcer is called before updating the object, so any attributes in the given object that MUST be guaranteed by the controller should be updated here.
-	// If the object is immutable, use the immutableObject func reference.
-	enforcer objectEnforcer
 }
 
 // mutateVisitor is a visitor function that mutates the given object before performing any updates in the cluster.
@@ -57,17 +50,7 @@ type objectEnsurer struct {
 // Example: `object.(*appsv1.Deployment).Spec.Template.Name="myApp"` to change the pod's name.
 type mutateVisitor func(object client.Object) controllerutil.MutateFn
 
-// naiveApplyImageDeploymentMutateVisitor creates a visitor that mutates a vanilla Kubernetes Deployment to apply the given image in the first container
-func naiveApplyImageDeploymentMutateVisitor(image string) mutateVisitor {
-	return func(object client.Object) controllerutil.MutateFn {
-		return func() error {
-			object.(*appsv1.Deployment).Spec.Template.Spec.Containers[0].Image = image
-			return nil
-		}
-	}
-}
-
-func (d objectEnsurer) ensure(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow, visitors ...mutateVisitor) (client.Object, controllerutil.OperationResult, error) {
+func (d *objectEnsurer) ensure(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow, visitors ...mutateVisitor) (client.Object, controllerutil.OperationResult, error) {
 	result := controllerutil.OperationResultNone
 	object, err := d.creator(workflow)
 	if err != nil {
@@ -78,11 +61,6 @@ func (d objectEnsurer) ensure(ctx context.Context, workflow *operatorapi.KogitoS
 	}
 	if result, err = controllerutil.CreateOrPatch(ctx, d.client, object,
 		func() error {
-			if d.enforcer != nil {
-				if mutateErr := d.enforcer(workflow, object); mutateErr != nil {
-					return mutateErr
-				}
-			}
 			for _, v := range visitors {
 				if visitorErr := v(object)(); visitorErr != nil {
 					return visitorErr

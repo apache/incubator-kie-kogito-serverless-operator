@@ -89,7 +89,7 @@ func (r *KogitoServerlessWorkflowReconciler) Reconcile(ctx context.Context, req 
 		return reconcile.Result{}, nil
 	}
 
-	return profiles.NewReconciler(r.Client, logger, workflow).Reconcile(ctx)
+	return profiles.NewReconciler(r.Client, &logger, workflow).Reconcile(ctx)
 }
 
 func buildEnqueueRequestsFromMapFunc(c client.Client, build *operatorapi.KogitoServerlessBuild) []reconcile.Request {

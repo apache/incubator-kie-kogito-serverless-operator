@@ -42,21 +42,11 @@ type developmentProfile struct {
 	baseReconciler
 }
 
-type developmentObjectEnsurers struct {
-	deployment        *objectEnsurer
-	service           *objectEnsurer
-	workflowConfigMap *objectEnsurer
+func (d developmentProfile) GetProfile() Profile {
+	return Development
 }
 
-func newDevelopmentObjectEnsurers(support *stateSupport) *developmentObjectEnsurers {
-	return &developmentObjectEnsurers{
-		deployment:        newObjectEnsurer(support.client, support.logger, defaultDeploymentCreator, defaultDeploymentMutator),
-		service:           newObjectEnsurer(support.client, support.logger, defaultServiceCreator, immutableObject(defaultDeploymentCreator)),
-		workflowConfigMap: newObjectEnsurer(support.client, support.logger, workflowSpecConfigMapCreator, immutableObject(workflowSpecConfigMapCreator)),
-	}
-}
-
-func newDevProfile(client client.Client, logger logr.Logger, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
+func newDevProfileReconciler(client client.Client, logger *logr.Logger, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
 	support := &stateSupport{
 		logger: logger,
 		client: client,
@@ -64,8 +54,8 @@ func newDevProfile(client client.Client, logger logr.Logger, workflow *operatora
 	ensurers := newDevelopmentObjectEnsurers(support)
 
 	handler := newReconciliationStateMachine(logger,
-		&ensureDeployDevWorkflowReconcilerState{stateSupport: support, ensurers: ensurers},
-		&verifyDeployDevWorkflowReconcilerState{stateSupport: support})
+		&ensureRunningDevWorkflowReconcilerState{stateSupport: support, ensurers: ensurers},
+		&followDeployDevWorkflowReconcilerState{stateSupport: support})
 	// TODO: recover from failure state (try catch)
 
 	profile := &developmentProfile{
@@ -74,30 +64,41 @@ func newDevProfile(client client.Client, logger logr.Logger, workflow *operatora
 	return profile
 }
 
-func (d developmentProfile) GetProfile() Profile {
-	return Development
+func newDevelopmentObjectEnsurers(support *stateSupport) *developmentObjectEnsurers {
+	return &developmentObjectEnsurers{
+		deployment:        newObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
+		service:           newObjectEnsurer(support.client, support.logger, defaultServiceCreator),
+		workflowConfigMap: newObjectEnsurer(support.client, support.logger, workflowSpecConfigMapCreator),
+	}
 }
 
-type ensureDeployDevWorkflowReconcilerState struct {
+type developmentObjectEnsurers struct {
+	deployment        *objectEnsurer
+	service           *objectEnsurer
+	workflowConfigMap *objectEnsurer
+}
+
+type ensureRunningDevWorkflowReconcilerState struct {
 	*stateSupport
 	ensurers *developmentObjectEnsurers
 }
 
-func (d ensureDeployDevWorkflowReconcilerState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
+func (d ensureRunningDevWorkflowReconcilerState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
 	return workflow.Status.Condition == operatorapi.NoneConditionType ||
 		workflow.Status.Condition == operatorapi.RunningConditionType
 }
 
-func (d ensureDeployDevWorkflowReconcilerState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
+func (d ensureRunningDevWorkflowReconcilerState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	var objs []client.Object
 
-	configMap, _, err := d.ensurers.workflowConfigMap.ensure(ctx, workflow)
+	configMap, _, err := d.ensurers.workflowConfigMap.ensure(ctx, workflow, ensureWorkflowSpecConfigMapMutator(workflow))
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
 	}
 	objs = append(objs, configMap)
 
 	deployment, _, err := d.ensurers.deployment.ensure(ctx, workflow,
+		defaultDeploymentMutateVisitor(workflow),
 		naiveApplyImageDeploymentMutateVisitor(defaultKogitoServerlessWorkflowDevImage),
 		mountWorkflowDefConfigMapMutateVisitor(configMap.(*v1.ConfigMap)))
 	if err != nil {
@@ -105,13 +106,14 @@ func (d ensureDeployDevWorkflowReconcilerState) Do(ctx context.Context, workflow
 	}
 	objs = append(objs, deployment)
 
-	service, _, err := d.ensurers.service.ensure(ctx, workflow)
+	service, _, err := d.ensurers.service.ensure(ctx, workflow, defaultServiceMutateVisitor(workflow))
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
 	}
 	objs = append(objs, service)
 
-	// TODO: this should be done by the "onExit" handler in the state machine given that each state would have to transition
+	// TODO: these should be done by the "onExit" handler in the state machine given that each state would have to transition
+
 	if workflow.Status.Condition == operatorapi.NoneConditionType {
 		workflow.Status.Condition = operatorapi.DeployingConditionType
 		if _, err = d.performStatusUpdate(ctx, workflow); err != nil {
@@ -119,28 +121,31 @@ func (d ensureDeployDevWorkflowReconcilerState) Do(ctx context.Context, workflow
 		}
 		return ctrl.Result{Requeue: false}, objs, nil
 	}
-	// let's make sure that the deployment is still running
-	reflectDeployment := deployment.(*appsv1.Deployment)
-	if !kubeutil.IsDeploymentAvailable(reflectDeployment) {
-		workflow.Status.Reason = getDeploymentFailureReasonOrDefaultReason(reflectDeployment)
-		workflow.Status.Condition = operatorapi.FailedConditionType
-		if _, err = d.performStatusUpdate(ctx, workflow); err != nil {
-			return ctrl.Result{Requeue: false}, objs, err
+	// This conditional is not necessary since the reconciliation state guarantees that, but it's here to make the code easier to understand.
+	if workflow.Status.Condition == operatorapi.RunningConditionType {
+		// let's make sure that the deployment is still running
+		reflectDeployment := deployment.(*appsv1.Deployment)
+		if !kubeutil.IsDeploymentAvailable(reflectDeployment) {
+			workflow.Status.Reason = getDeploymentFailureReasonOrDefaultReason(reflectDeployment)
+			workflow.Status.Condition = operatorapi.FailedConditionType
+			if _, err = d.performStatusUpdate(ctx, workflow); err != nil {
+				return ctrl.Result{Requeue: false}, objs, err
+			}
 		}
 	}
 
 	return ctrl.Result{Requeue: false}, objs, nil
 }
 
-type verifyDeployDevWorkflowReconcilerState struct {
+type followDeployDevWorkflowReconcilerState struct {
 	*stateSupport
 }
 
-func (v verifyDeployDevWorkflowReconcilerState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
+func (v followDeployDevWorkflowReconcilerState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
 	return workflow.Status.Condition == operatorapi.DeployingConditionType
 }
 
-func (v verifyDeployDevWorkflowReconcilerState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
+func (v followDeployDevWorkflowReconcilerState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	deployment := &appsv1.Deployment{}
 	if err := v.client.Get(ctx, client.ObjectKeyFromObject(workflow), deployment); err != nil {
 		// we should have the deployment by this time, so even if the error above is not found, we should halt.
@@ -172,19 +177,20 @@ func (v verifyDeployDevWorkflowReconcilerState) Do(ctx context.Context, workflow
 	}
 
 	return ctrl.Result{Requeue: false}, nil, nil
-
 }
 
-// getDeploymentFailureReasonOrDefaultReason for some reason the deployment is not available, but the replica failure state is false, so no apparent reason.
+// getDeploymentFailureReasonOrDefaultReason gets the replica failure reason.
+// MUST be called after checking that the Deployment is NOT available.
+// If it's no reason, the Deployment state has no apparent reason to be in failed state.
 func getDeploymentFailureReasonOrDefaultReason(deployment *appsv1.Deployment) string {
 	failure := kubeutil.GetDeploymentUnavailabilityReason(deployment)
 	if len(failure) == 0 {
-		failure = fmt.Sprintf("Workflow Deployment %s is unavailble for unknown reasons", deployment.Name)
+		failure = fmt.Sprintf("Workflow Deployment %s is unavailable for unknown reasons", deployment.Name)
 	}
 	return failure
 }
 
-// mountWorkflowDefConfigMapMutateVisitor mounts the given workflows definitions in the ConfigMap into the dev container
+// mountWorkflowDefConfigMapMutateVisitor mounts the given ConfigMap workflows definitions into the dev container
 func mountWorkflowDefConfigMapMutateVisitor(cm *v1.ConfigMap) mutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {

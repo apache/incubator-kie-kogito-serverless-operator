@@ -22,14 +22,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	kubeutil "github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 )
-
-type objectCreator func(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error)
-
-type objectEnforcer func(workflow *operatorapi.KogitoServerlessWorkflow, fetched client.Object) error
 
 const (
 	defaultHTTPWorkflowPort = 8080
@@ -38,12 +37,9 @@ const (
 	jsonFileType            = ".json"
 )
 
-func immutableObject(creator objectCreator) objectEnforcer {
-	return func(workflow *operatorapi.KogitoServerlessWorkflow, fetched client.Object) error {
-		fetched, err := creator(workflow)
-		return err
-	}
-}
+// objectCreator is the func that creates the initial reference object, if the object doesn't exist in the cluster, this one is created.
+// Can be used as a reference to keep the object immutable
+type objectCreator func(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error)
 
 func labels(v *operatorapi.KogitoServerlessWorkflow) map[string]string {
 	// Fetches and sets labels
@@ -89,13 +85,35 @@ func defaultDeploymentCreator(workflow *operatorapi.KogitoServerlessWorkflow) (c
 	return deployment, nil
 }
 
-func defaultDeploymentMutator(workflow *operatorapi.KogitoServerlessWorkflow, fetched client.Object) error {
-	lbl := labels(workflow)
-	fetched.(*appsv1.Deployment).Labels = lbl
-	// TODO ensure the actual arrays (container and ports)
-	fetched.(*appsv1.Deployment).Spec.Template.Spec.Containers[0].Ports[0].ContainerPort = defaultHTTPWorkflowPort
-	fetched.(*appsv1.Deployment).Spec.Template.Labels = lbl
-	return nil
+// naiveApplyImageDeploymentMutateVisitor creates a visitor that mutates a vanilla Kubernetes Deployment to apply the given image in the first container
+func naiveApplyImageDeploymentMutateVisitor(image string) mutateVisitor {
+	return func(object client.Object) controllerutil.MutateFn {
+		return func() error {
+			object.(*appsv1.Deployment).Spec.Template.Spec.Containers[0].Image = image
+			return nil
+		}
+	}
+}
+
+func defaultDeploymentMutateVisitor(workflow *operatorapi.KogitoServerlessWorkflow) mutateVisitor {
+	return func(object client.Object) controllerutil.MutateFn {
+		return func() error {
+			if kubeutil.IsObjectNew(object) {
+				return nil
+			}
+			original, err := defaultDeploymentCreator(workflow)
+			if err != nil {
+				return err
+			}
+			object.(*appsv1.Deployment).Spec.Template.Spec.Volumes = make([]corev1.Volume, 0)
+			object.(*appsv1.Deployment).Spec.Template.Spec.Volumes = original.(*appsv1.Deployment).Spec.Template.Spec.Volumes
+			object.(*appsv1.Deployment).Spec.Template.Spec.Containers = make([]corev1.Container, 0)
+			object.(*appsv1.Deployment).Spec.Template.Spec.Containers = original.(*appsv1.Deployment).Spec.Template.Spec.Containers
+			object.(*appsv1.Deployment).Spec.Replicas = original.(*appsv1.Deployment).Spec.Replicas
+			object.(*appsv1.Deployment).Labels = original.GetLabels()
+			return nil
+		}
+	}
 }
 
 // defaultServiceCreator is an objectCreator for a basic Service aiming a vanilla Kubernetes Deployment.
@@ -121,6 +139,23 @@ func defaultServiceCreator(workflow *operatorapi.KogitoServerlessWorkflow) (clie
 	return service, nil
 }
 
+func defaultServiceMutateVisitor(workflow *operatorapi.KogitoServerlessWorkflow) mutateVisitor {
+	return func(object client.Object) controllerutil.MutateFn {
+		return func() error {
+			if kubeutil.IsObjectNew(object) {
+				return nil
+			}
+			original, err := defaultServiceCreator(workflow)
+			if err != nil {
+				return err
+			}
+			object.(*corev1.Service).Spec.Ports = original.(*corev1.Service).Spec.Ports
+			object.(*corev1.Service).Labels = original.GetLabels()
+			return nil
+		}
+	}
+}
+
 // workflowSpecConfigMapCreator creates a new ConfigMap that holds the definition of a workflow specification.
 func workflowSpecConfigMapCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
 	workflowDef, err := utils.GetJSONWorkflow(workflow, context.TODO())
@@ -137,4 +172,21 @@ func workflowSpecConfigMapCreator(workflow *operatorapi.KogitoServerlessWorkflow
 		Data: map[string]string{workflow.Name + jsonFileType: string(workflowDef)},
 	}
 	return configMap, nil
+}
+
+func ensureWorkflowSpecConfigMapMutator(workflow *operatorapi.KogitoServerlessWorkflow) mutateVisitor {
+	return func(object client.Object) controllerutil.MutateFn {
+		return func() error {
+			if kubeutil.IsObjectNew(object) {
+				return nil
+			}
+			original, err := workflowSpecConfigMapCreator(workflow)
+			if err != nil {
+				return err
+			}
+			object.(*corev1.ConfigMap).Data = original.(*corev1.ConfigMap).Data
+			object.(*corev1.ConfigMap).Labels = original.GetLabels()
+			return nil
+		}
+	}
 }

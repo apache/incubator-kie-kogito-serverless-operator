@@ -35,28 +35,28 @@ import (
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 )
 
-var _ ProfileReconciler = &productionProfile{}
+var _ ProfileReconciler = &prodProfile{}
 
-type productionProfile struct {
+type prodProfile struct {
 	baseReconciler
 }
 
-// productionObjectEnsurers is a struct for the objects that ReconciliationState needs to create in the platform for the Production profile.
+// prodObjectEnsurers is a struct for the objects that ReconciliationState needs to create in the platform for the Production profile.
 // ReconciliationState that needs access to it must include this struct as an attribute and initialize it in the profile builder.
-// Use newProductionObjectEnsurers to facilitate building this struct
-type productionObjectEnsurers struct {
+// Use newProdObjectEnsurers to facilitate building this struct
+type prodObjectEnsurers struct {
 	deployment *objectEnsurer
 	service    *objectEnsurer
 }
 
-func newProductionObjectEnsurers(support *stateSupport) *productionObjectEnsurers {
-	return &productionObjectEnsurers{
-		deployment: newObjectEnsurer(support.client, support.logger, defaultDeploymentCreator, defaultDeploymentMutator),
-		service:    newObjectEnsurer(support.client, support.logger, defaultServiceCreator, immutableObject(defaultServiceCreator)),
+func newProdObjectEnsurers(support *stateSupport) *prodObjectEnsurers {
+	return &prodObjectEnsurers{
+		deployment: newObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
+		service:    newObjectEnsurer(support.client, support.logger, defaultServiceCreator),
 	}
 }
 
-func newProductionProfile(client client.Client, logger logr.Logger, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
+func newProdProfileReconciler(client client.Client, logger *logr.Logger, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
 	support := &stateSupport{
 		logger: logger,
 		client: client,
@@ -67,16 +67,16 @@ func newProductionProfile(client client.Client, logger logr.Logger, workflow *op
 		&newBuilderReconciliationState{stateSupport: support},
 		&ensureBuilderReconciliationState{stateSupport: support},
 		&followBuildStatusReconciliationState{stateSupport: support},
-		&deployWorkflowReconciliationState{stateSupport: support, ensurers: newProductionObjectEnsurers(support)},
+		&deployWorkflowReconciliationState{stateSupport: support, ensurers: newProdObjectEnsurers(support)},
 	)
-	reconciler := &productionProfile{
+	reconciler := &prodProfile{
 		baseReconciler: newBaseProfileReconciler(support, stateMachine, workflow),
 	}
 
 	return reconciler
 }
 
-func (p productionProfile) GetProfile() Profile {
+func (p prodProfile) GetProfile() Profile {
 	return Production
 }
 
@@ -187,7 +187,7 @@ func (h *followBuildStatusReconciliationState) Do(ctx context.Context, workflow 
 
 type deployWorkflowReconciliationState struct {
 	*stateSupport
-	ensurers *productionObjectEnsurers
+	ensurers *prodObjectEnsurers
 }
 
 func (h *deployWorkflowReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
@@ -213,7 +213,7 @@ func (h *deployWorkflowReconciliationState) handleObjects(ctx context.Context, w
 		if !errors.IsNotFound(err) {
 			return reconcile.Result{Requeue: false}, nil, err
 		}
-		deployment, _, err := h.ensurers.deployment.ensure(ctx, workflow, naiveApplyImageDeploymentMutateVisitor(image))
+		deployment, _, err := h.ensurers.deployment.ensure(ctx, workflow, defaultDeploymentMutateVisitor(workflow), naiveApplyImageDeploymentMutateVisitor(image))
 		if err != nil {
 			return reconcile.Result{}, nil, err
 		}
@@ -233,7 +233,7 @@ func (h *deployWorkflowReconciliationState) handleObjects(ctx context.Context, w
 		if !errors.IsNotFound(err) {
 			return reconcile.Result{Requeue: false}, nil, err
 		}
-		service, _, err := h.ensurers.service.ensure(ctx, workflow)
+		service, _, err := h.ensurers.service.ensure(ctx, workflow, defaultServiceMutateVisitor(workflow))
 		if err != nil {
 			return reconcile.Result{}, nil, err
 		}

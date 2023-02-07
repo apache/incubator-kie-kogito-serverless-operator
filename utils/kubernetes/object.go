@@ -12,19 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package profiles
+package kubernetes
 
-import (
-	"context"
+import ctrl "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
-)
-
-func fakeReconcilerSupport(client client.Client) *stateSupport {
-	logger := ctrllog.FromContext(context.TODO())
-	return &stateSupport{
-		logger: &logger,
-		client: client,
-	}
+// IsObjectNew verifies if the given object hasn't been created in the cluster
+func IsObjectNew(object ctrl.Object) bool {
+	// UID should be enough, but we check for resourceVersion because the Fake client won't set UIDs, failing our tests
+	return len(object.GetUID()) == 0 && len(object.GetResourceVersion()) == 0
 }

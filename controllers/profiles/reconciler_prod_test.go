@@ -34,7 +34,7 @@ func Test_deployWorkflowReconciliationHandler_handleObjects(t *testing.T) {
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow, platform).Build()
 	handler := &deployWorkflowReconciliationState{
 		stateSupport: fakeReconcilerSupport(client),
-		ensurers:     newProductionObjectEnsurers(&stateSupport{logger: logger, client: client}),
+		ensurers:     newProdObjectEnsurers(&stateSupport{logger: &logger, client: client}),
 	}
 	result, objects, err := handler.Do(context.TODO(), workflow)
 	assert.True(t, result.Requeue)
