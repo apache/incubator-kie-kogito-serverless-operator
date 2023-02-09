@@ -23,6 +23,7 @@ import (
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -43,6 +44,10 @@ const (
 	requeueAfterFailure                     = 3 * time.Minute
 	requeueAfterFollowDeployment            = 10 * time.Second
 	requeueAfterIsRunning                   = 3 * time.Minute
+	// recoverDeploymentErrorRetries how many times the operator should try to recover from a failure before giving up
+	recoverDeploymentErrorRetries = 3
+	// recoverDeploymentErrorInterval interval between recovering from failures
+	recoverDeploymentErrorInterval = 5 * time.Minute
 )
 
 type developmentProfile struct {
@@ -53,50 +58,50 @@ func (d developmentProfile) GetProfile() Profile {
 	return Development
 }
 
-func newDevProfileReconciler(client client.Client, logger *logr.Logger, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
+func newDevProfileReconciler(client client.Client, logger *logr.Logger) ProfileReconciler {
 	support := &stateSupport{
 		logger: logger,
 		client: client,
 	}
 	ensurers := newDevelopmentObjectEnsurers(support)
 
-	handler := newReconciliationStateMachine(logger,
-		&ensureRunningDevWorkflowReconcilerState{stateSupport: support, ensurers: ensurers},
-		&followDeployDevWorkflowReconcilerState{stateSupport: support})
-	// TODO: recover from failure state (try catch)
+	stateMachine := newReconciliationStateMachine(logger,
+		&ensureRunningDevWorkflowReconciliationState{stateSupport: support, ensurers: ensurers},
+		&followDeployDevWorkflowReconciliationState{stateSupport: support},
+		&recoverFromFailureDevReconciliationState{stateSupport: support})
 
 	profile := &developmentProfile{
-		baseReconciler: newBaseProfileReconciler(support, handler, workflow),
+		baseReconciler: newBaseProfileReconciler(support, stateMachine),
 	}
 	logger.Info("Reconciling in", "profile", profile.GetProfile())
 	return profile
 }
 
-func newDevelopmentObjectEnsurers(support *stateSupport) *developmentObjectEnsurers {
-	return &developmentObjectEnsurers{
+func newDevelopmentObjectEnsurers(support *stateSupport) *devProfileObjectEnsurers {
+	return &devProfileObjectEnsurers{
 		deployment:        newObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
 		service:           newObjectEnsurer(support.client, support.logger, defaultServiceCreator),
 		workflowConfigMap: newObjectEnsurer(support.client, support.logger, workflowSpecConfigMapCreator),
 	}
 }
 
-type developmentObjectEnsurers struct {
+type devProfileObjectEnsurers struct {
 	deployment        *objectEnsurer
 	service           *objectEnsurer
 	workflowConfigMap *objectEnsurer
 }
 
-type ensureRunningDevWorkflowReconcilerState struct {
+type ensureRunningDevWorkflowReconciliationState struct {
 	*stateSupport
-	ensurers *developmentObjectEnsurers
+	ensurers *devProfileObjectEnsurers
 }
 
-func (e *ensureRunningDevWorkflowReconcilerState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
+func (e *ensureRunningDevWorkflowReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
 	return workflow.Status.Condition == operatorapi.NoneConditionType ||
 		workflow.Status.Condition == operatorapi.RunningConditionType
 }
 
-func (e *ensureRunningDevWorkflowReconcilerState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
+func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	var objs []client.Object
 
 	configMap, cmResult, err := e.ensurers.workflowConfigMap.ensure(ctx, workflow, ensureWorkflowSpecConfigMapMutator(workflow))
@@ -146,15 +151,15 @@ func (e *ensureRunningDevWorkflowReconcilerState) Do(ctx context.Context, workfl
 	return ctrl.Result{RequeueAfter: requeueAfterIsRunning}, objs, nil
 }
 
-type followDeployDevWorkflowReconcilerState struct {
+type followDeployDevWorkflowReconciliationState struct {
 	*stateSupport
 }
 
-func (f *followDeployDevWorkflowReconcilerState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
+func (f *followDeployDevWorkflowReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
 	return workflow.Status.Condition == operatorapi.DeployingConditionType
 }
 
-func (f *followDeployDevWorkflowReconcilerState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
+func (f *followDeployDevWorkflowReconciliationState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	deployment := &appsv1.Deployment{}
 	if err := f.client.Get(ctx, client.ObjectKeyFromObject(workflow), deployment); err != nil {
 		// we should have the deployment by this time, so even if the error above is not found, we should halt.
@@ -185,6 +190,61 @@ func (f *followDeployDevWorkflowReconcilerState) Do(ctx context.Context, workflo
 	workflow.Status.Reason = getDeploymentFailureReasonOrDefaultReason(deployment)
 	_, err := f.performStatusUpdate(ctx, workflow)
 	return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
+}
+
+type recoverFromFailureDevReconciliationState struct {
+	*stateSupport
+}
+
+func (r *recoverFromFailureDevReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
+	return workflow.Status.Condition == operatorapi.FailedConditionType
+}
+
+func (r *recoverFromFailureDevReconciliationState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
+	if workflow.Status.RecoverFailureAttempts > recoverDeploymentErrorRetries {
+		r.logger.Info("Can't recover workflow from failure after maximum attempts", "attempts", workflow.Status.RecoverFailureAttempts)
+		return ctrl.Result{Requeue: false}, nil, nil
+	}
+
+	// for now, a very basic attempt to recover by rolling out the deployment
+	deployment := &appsv1.Deployment{}
+	if err := r.client.Get(ctx, client.ObjectKeyFromObject(workflow), deployment); err != nil {
+		// if the deployment is not there, let's try to reset the status condition and make the reconciliation fix the objects
+		if errors.IsNotFound(err) {
+			r.logger.Info("Tried to recover from failed state, no deployment found, trying to reset the workflow conditions")
+			workflow.Status.RecoverFailureAttempts = 0
+			workflow.Status.Condition = operatorapi.NoneConditionType
+			if _, updateErr := r.performStatusUpdate(ctx, workflow); updateErr != nil {
+				return ctrl.Result{Requeue: false}, nil, updateErr
+			}
+			return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, nil
+		}
+		return ctrl.Result{Requeue: false}, nil, err
+	}
+
+	// if the deployment is progressing we might have good news
+	if kubeutil.IsDeploymentAvailable(deployment) {
+		workflow.Status.RecoverFailureAttempts = 0
+		workflow.Status.Condition = operatorapi.RunningConditionType
+		if _, updateErr := r.performStatusUpdate(ctx, workflow); updateErr != nil {
+			return ctrl.Result{Requeue: false}, nil, updateErr
+		}
+		return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, nil
+	}
+
+	// let's try rolling out the deployment
+	if err := kubeutil.MarkDeploymentToRollout(deployment); err != nil {
+		return ctrl.Result{Requeue: false}, nil, err
+	}
+	if err := r.client.Update(ctx, deployment); err != nil {
+		return ctrl.Result{Requeue: false}, nil, err
+	}
+
+	workflow.Status.RecoverFailureAttempts += 1
+	if _, err := r.performStatusUpdate(ctx, workflow); err != nil {
+		return ctrl.Result{Requeue: false}, nil, err
+	}
+	return ctrl.Result{RequeueAfter: recoverDeploymentErrorInterval}, nil, nil
 }
 
 // getDeploymentFailureReasonOrDefaultReason gets the replica failure reason.
@@ -244,6 +304,7 @@ func mountWorkflowDefConfigMapMutateVisitor(cm *v1.ConfigMap) mutateVisitor {
 	}
 }
 
+// rolloutDeploymentIfCMChangedMutateVisitor forces a pod refresh if the workflow definition ConfigMap suffered any changes
 func rolloutDeploymentIfCMChangedMutateVisitor(cmOperationResult controllerutil.OperationResult) mutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {

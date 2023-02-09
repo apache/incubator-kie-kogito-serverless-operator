@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,6 +50,13 @@ func MustGetService(t *testing.T, client ctrl.WithWatch, workflow *v1alpha08.Kog
 func MustGetConfigMap(t *testing.T, client ctrl.WithWatch, workflow *v1alpha08.KogitoServerlessWorkflow) *v1.ConfigMap {
 	cm := &v1.ConfigMap{}
 	return mustGet(t, client, workflow, cm).(*v1.ConfigMap)
+}
+
+func MustGetWorkflow(t *testing.T, client ctrl.WithWatch, name types.NamespacedName) *v1alpha08.KogitoServerlessWorkflow {
+	workflow := &v1alpha08.KogitoServerlessWorkflow{}
+	workflow.Name = name.Name
+	workflow.Namespace = name.Namespace
+	return mustGet(t, client, workflow, workflow).(*v1alpha08.KogitoServerlessWorkflow)
 }
 
 func mustGet(t *testing.T, client ctrl.WithWatch, workflow *v1alpha08.KogitoServerlessWorkflow, obj ctrl.Object) ctrl.Object {

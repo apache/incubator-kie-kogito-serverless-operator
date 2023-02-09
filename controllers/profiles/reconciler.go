@@ -27,7 +27,7 @@ import (
 
 // ProfileReconciler is the public interface to have access to this package and perform the actual reconciliation flow
 type ProfileReconciler interface {
-	Reconcile(ctx context.Context) (ctrl.Result, error)
+	Reconcile(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, error)
 	GetProfile() Profile
 }
 
@@ -52,22 +52,20 @@ func (s stateSupport) performStatusUpdate(ctx context.Context, workflow *operato
 // Use newBaseProfileReconciler to build a new reference.
 type baseReconciler struct {
 	*stateSupport
-	workflow          *operatorapi.KogitoServerlessWorkflow
-	reconcilerHandler *reconciliationStateMachine
-	objects           []client.Object
+	reconciliationStateMachine *reconciliationStateMachine
+	objects                    []client.Object
 }
 
-func newBaseProfileReconciler(support *stateSupport, handler *reconciliationStateMachine, workflow *operatorapi.KogitoServerlessWorkflow) baseReconciler {
+func newBaseProfileReconciler(support *stateSupport, stateMachine *reconciliationStateMachine) baseReconciler {
 	return baseReconciler{
-		stateSupport:      support,
-		workflow:          workflow,
-		reconcilerHandler: handler,
+		stateSupport:               support,
+		reconciliationStateMachine: stateMachine,
 	}
 }
 
 // Reconcile does the actual reconciliation algorithm based on a set of ReconciliationState
-func (b baseReconciler) Reconcile(ctx context.Context) (ctrl.Result, error) {
-	result, objects, err := b.reconcilerHandler.do(ctx, b.workflow)
+func (b baseReconciler) Reconcile(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, error) {
+	result, objects, err := b.reconciliationStateMachine.do(ctx, workflow)
 	if err != nil {
 		return result, err
 	}
@@ -113,5 +111,5 @@ func (r *reconciliationStateMachine) do(ctx context.Context, workflow *operatora
 
 // NewReconciler creates a new ProfileReconciler based on the given workflow and context.
 func NewReconciler(client client.Client, logger *logr.Logger, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
-	return profileBuilder(workflow)(client, logger, workflow)
+	return profileBuilder(workflow)(client, logger)
 }

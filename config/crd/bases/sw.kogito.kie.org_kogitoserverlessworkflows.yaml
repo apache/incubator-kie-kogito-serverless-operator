@@ -1673,8 +1673,7 @@ spec:
                 - states
                 type: object
               condition:
-                description: 'TODO: Conditions MUST be an array and follow Kubernetes
-                  conventions!!!! https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties'
+                description: ConditionType type of condition
                 type: string
               endpoints:
                 items:
@@ -1691,6 +1690,10 @@ spec:
                 type: array
               reason:
                 type: string
+              recoverFailureAttempts:
+                description: keeps track of how many failure recovers a given workflow
+                  had so far
+                type: integer
             type: object
         type: object
     served: true

@@ -30,7 +30,7 @@ const (
 	defaultProfile         = Production
 )
 
-type reconcilerBuilder func(client client.Client, logger *logr.Logger, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler
+type reconcilerBuilder func(client client.Client, logger *logr.Logger) ProfileReconciler
 
 var profileBuilders = map[Profile]reconcilerBuilder{
 	Production:  newProdProfileReconciler,

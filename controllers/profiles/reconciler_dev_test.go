@@ -20,19 +20,64 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	clientruntime "sigs.k8s.io/controller-runtime/pkg/client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/test"
 )
 
+func Test_recoverFromFailureNoDeployment(t *testing.T) {
+	logger := ctrllog.FromContext(context.TODO())
+	workflow := test.GetKogitoServerlessWorkflow("../../config/samples/"+test.KogitoServerlessWorkflowSampleYamlCR, t.Name())
+	workflowID := clientruntime.ObjectKeyFromObject(workflow)
+
+	workflow.Status.Condition = operatorapi.FailedConditionType
+	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).Build()
+
+	reconciler := newDevProfileReconciler(client, &logger)
+
+	// we are in failed state and have no objects
+	result, err := reconciler.Reconcile(context.TODO(), workflow)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+
+	// the recover state tried to clear the conditions of our workflow, so we can try reconciling it again
+	workflow = test.MustGetWorkflow(t, client, workflowID)
+	assert.Equal(t, operatorapi.NoneConditionType, workflow.Status.Condition)
+	result, err = reconciler.Reconcile(context.TODO(), workflow)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+
+	// the deployment should be there
+	_ = test.MustGetDeployment(t, client, workflow)
+
+	// we failed again, but now we have the deployment
+	workflow = test.MustGetWorkflow(t, client, workflowID)
+	workflow.Status.Condition = operatorapi.FailedConditionType
+	err = client.Status().Update(context.TODO(), workflow)
+	assert.NoError(t, err)
+	// the fake client won't update the deployment status condition since we don't have a deployment controller
+	// our state will think that we don't have a deployment available yet, so it will try to reset the pods
+	result, err = reconciler.Reconcile(context.TODO(), workflow)
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+
+	workflow = test.MustGetWorkflow(t, client, workflowID)
+	assert.Equal(t, operatorapi.FailedConditionType, workflow.Status.Condition)
+	assert.Equal(t, 1, workflow.Status.RecoverFailureAttempts)
+
+	deployment := test.MustGetDeployment(t, client, workflow)
+	assert.NotEmpty(t, deployment.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"])
+}
+
 func Test_newDevProfile(t *testing.T) {
 	logger := ctrllog.FromContext(context.TODO())
 	workflow := test.GetKogitoServerlessWorkflow("../../config/samples/"+test.KogitoServerlessWorkflowSampleYamlCR, t.Name())
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).Build()
-	devReconciler := newDevProfileReconciler(client, &logger, workflow)
+	devReconciler := newDevProfileReconciler(client, &logger)
 
-	result, err := devReconciler.Reconcile(context.TODO())
+	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -57,7 +102,7 @@ func Test_newDevProfile(t *testing.T) {
 	assert.NoError(t, err)
 
 	// reconcile again
-	result, err = devReconciler.Reconcile(context.TODO())
+	result, err = devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -75,11 +120,10 @@ func Test_newDevProfile(t *testing.T) {
 	workflow.Status.Condition = operatorapi.RunningConditionType
 	err = client.Update(context.TODO(), workflow)
 	assert.NoError(t, err)
-	result, err = devReconciler.Reconcile(context.TODO())
+	result, err = devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
 	deployment = test.MustGetDeployment(t, client, workflow)
 	assert.Equal(t, defaultKogitoServerlessWorkflowDevImage, deployment.Spec.Template.Spec.Containers[0].Image)
-
 }

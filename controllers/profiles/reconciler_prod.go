@@ -56,7 +56,7 @@ func newProdObjectEnsurers(support *stateSupport) *prodObjectEnsurers {
 	}
 }
 
-func newProdProfileReconciler(client client.Client, logger *logr.Logger, workflow *operatorapi.KogitoServerlessWorkflow) ProfileReconciler {
+func newProdProfileReconciler(client client.Client, logger *logr.Logger) ProfileReconciler {
 	support := &stateSupport{
 		logger: logger,
 		client: client,
@@ -70,7 +70,7 @@ func newProdProfileReconciler(client client.Client, logger *logr.Logger, workflo
 		&deployWorkflowReconciliationState{stateSupport: support, ensurers: newProdObjectEnsurers(support)},
 	)
 	reconciler := &prodProfile{
-		baseReconciler: newBaseProfileReconciler(support, stateMachine, workflow),
+		baseReconciler: newBaseProfileReconciler(support, stateMachine),
 	}
 
 	return reconciler
@@ -138,6 +138,7 @@ func (h *ensureBuilderReconciliationState) Do(ctx context.Context, workflow *ope
 		(build.Status.Builder.Status.Phase == api.BuildPhaseSucceeded ||
 			build.Status.Builder.Status.Phase == api.BuildPhaseFailed ||
 			build.Status.Builder.Status.Phase == api.BuildPhaseError) {
+		// TODO: make sure that we handle this differently and not a copy of the spec in the status attribute, this can potentially make the status field unreadable
 		//If we have finished a build and the workflow is running, we have to rebuild it because there was a change in the workflow definition and requeue the request
 		if !utils.Compare(utils.GetWorkflowSpecHash(workflow.Status.Applied), utils.GetWorkflowSpecHash(workflow.Spec)) { // Let's check that the 2 workflow definition are different
 			workflow.Status.Condition = operatorapi.NoneConditionType

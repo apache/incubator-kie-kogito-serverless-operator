@@ -386,14 +386,17 @@ type Endpoint struct {
 	Protocol string `json:"protocol,omitempty"` // "TCP" or "UDP"; never empty
 }
 
+// TODO: Conditions MUST be an array and follow Kubernetes conventions!!!! https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
+
 // KogitoServerlessWorkflowStatus defines the observed state of KogitoServerlessWorkflow
 type KogitoServerlessWorkflowStatus struct {
-	Endpoints []Endpoint         `json:"endpoints,omitempty"`
-	Address   duckv1.Addressable `json:"address,omitempty"`
-	// TODO: Conditions MUST be an array and follow Kubernetes conventions!!!! https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
+	Endpoints []Endpoint                   `json:"endpoints,omitempty"`
+	Address   duckv1.Addressable           `json:"address,omitempty"`
 	Condition ConditionType                `json:"condition,omitempty"`
 	Reason    string                       `json:"reason,omitempty"`
 	Applied   KogitoServerlessWorkflowSpec `json:"applied,omitempty"`
+	// keeps track of how many failure recovers a given workflow had so far
+	RecoverFailureAttempts int `json:"recoverFailureAttempts,omitempty"`
 }
 
 // ConditionType type of condition
