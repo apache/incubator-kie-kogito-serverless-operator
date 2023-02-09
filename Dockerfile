@@ -14,7 +14,6 @@ COPY main.go main.go
 COPY api/ api/
 COPY builder/ builder/
 COPY controllers/ controllers/
-COPY converters/ converters/
 COPY install/ install/
 COPY platform/ platform/
 COPY resources/ resources/

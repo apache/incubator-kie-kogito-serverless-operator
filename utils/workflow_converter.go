@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package converters
+package utils
 
 import (
 	"context"
@@ -45,7 +45,7 @@ func ToCNCFWorkflow(ctx context.Context, serverlessWorkflow *operatorapi.KogitoS
 			KeepActive:     serverlessWorkflow.Spec.KeepActive,
 			AutoRetries:    serverlessWorkflow.Spec.AutoRetries,
 			Start:          retrieveStartState(serverlessWorkflow.Spec.Start)}
-		logger.Info("Created new Base Workflow with name", "name", newBaseWorkflow.Name)
+		logger.V(DebugV).Info("Created new Base Workflow with name", "name", newBaseWorkflow.Name)
 		newWorkflow := &model.Workflow{BaseWorkflow: *newBaseWorkflow, Functions: retrieveFunctions(serverlessWorkflow.Spec.Functions), States: retrieveStates(serverlessWorkflow.Spec.States)}
 		return newWorkflow, nil
 	}
@@ -77,7 +77,7 @@ func retrieveStartState(name string) *model.Start {
 // Function to retrieve a list of states coming from an array of v08.State objects
 func retrieveStates(incomingStates []operatorapi.State) []model.State {
 	states := make([]model.State, len(incomingStates))
-	logger.Info("States: ", "states", incomingStates)
+	logger.V(DebugV).Info("States: ", "states", incomingStates)
 	for i, s := range incomingStates {
 		stateT := model.StateType(s.Type.String())
 		newBaseState := &model.BaseState{Name: s.Name, Type: stateT}

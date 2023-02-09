@@ -29,7 +29,6 @@ import (
 	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/converters"
 )
 
 const defaultImageTag = ":latest"
@@ -37,7 +36,7 @@ const defaultImageTag = ":latest"
 // GetJSONWorkflow return a Kogito compliant JSON format workflow as bytearray give a specific workflow CR
 func GetJSONWorkflow(workflowCR *operatorapi.KogitoServerlessWorkflow, ctx context.Context) ([]byte, error) {
 	logger := ctrllog.FromContext(ctx)
-	workflow, err := converters.ToCNCFWorkflow(ctx, workflowCR)
+	workflow, err := ToCNCFWorkflow(ctx, workflowCR)
 	if err != nil {
 		logger.Error(err, "Failed converting KogitoServerlessWorkflow into Workflow")
 		return nil, err

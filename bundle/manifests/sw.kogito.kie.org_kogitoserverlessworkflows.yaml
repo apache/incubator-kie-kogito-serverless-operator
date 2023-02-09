@@ -11,10 +11,29 @@ spec:
     kind: KogitoServerlessWorkflow
     listKind: KogitoServerlessWorkflowList
     plural: kogitoserverlessworkflows
+    shortNames:
+    - ksw
+    - workflow
     singular: kogitoserverlessworkflow
   scope: Namespaced
   versions:
-  - name: v1alpha08
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.annotations.sw\.kogito\.kie\.org\/profile
+      name: Profile
+      type: string
+    - jsonPath: .metadata.annotations.sw\.kogito\.kie\.org\/version
+      name: Version
+      type: string
+    - jsonPath: .status.address.url
+      name: Address
+      type: string
+    - jsonPath: .status.condition
+      name: Condition
+      type: string
+    - jsonPath: .status.reason
+      name: Reason
+      type: string
+    name: v1alpha08
     schema:
       openAPIV3Schema:
         description: KogitoServerlessWorkflow is the Schema for the kogitoserverlessworkflows

@@ -26,6 +26,11 @@ import (
 	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
 )
 
+const (
+	// DebugV is the default verbosity for the debugger logger
+	DebugV = 2
+)
+
 // GetOperatorIDAnnotation to safely get the operator id annotation value.
 func GetOperatorIDAnnotation(obj metav1.Object) string {
 	if obj == nil || obj.GetAnnotations() == nil {

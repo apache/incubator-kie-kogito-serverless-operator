@@ -31,10 +31,10 @@ import (
 )
 
 const (
-	defaultHTTPWorkflowPort = 8080
-	defaultHTTPServicePort  = 80
-	labelApp                = "app"
-	jsonFileType            = ".json"
+	defaultHTTPWorkflowPort   = 8080
+	defaultHTTPServicePort    = 80
+	labelApp                  = "app"
+	kogitoWorkflowJSONFileExt = ".sw.json"
 )
 
 // objectCreator is the func that creates the initial reference object, if the object doesn't exist in the cluster, this one is created.
@@ -169,7 +169,7 @@ func workflowSpecConfigMapCreator(workflow *operatorapi.KogitoServerlessWorkflow
 			Namespace: workflow.Namespace,
 			Labels:    lbl,
 		},
-		Data: map[string]string{workflow.Name + jsonFileType: string(workflowDef)},
+		Data: map[string]string{workflow.Name + kogitoWorkflowJSONFileExt: string(workflowDef)},
 	}
 	return configMap, nil
 }

@@ -15,7 +15,9 @@
 package kubernetes
 
 import (
+	"errors"
 	"fmt"
+	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -60,4 +62,17 @@ func GetDeploymentUnavailabilityReason(deployment *appsv1.Deployment) string {
 		}
 	}
 	return ""
+}
+
+// MarkDeploymentToRollout marks the given Deployment to restart now. The object must be updated.
+// Code adapted from here: https://github.com/kubernetes/kubectl/blob/release-1.26/pkg/polymorphichelpers/objectrestarter.go#L44
+func MarkDeploymentToRollout(deployment *appsv1.Deployment) error {
+	if deployment.Spec.Paused {
+		return errors.New("can't restart paused deployment (run rollout resume first)")
+	}
+	if deployment.Spec.Template.ObjectMeta.Annotations == nil {
+		deployment.Spec.Template.ObjectMeta.Annotations = make(map[string]string)
+	}
+	deployment.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().Format(time.RFC3339)
+	return nil
 }

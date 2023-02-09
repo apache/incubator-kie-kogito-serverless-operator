@@ -17,6 +17,8 @@ package profiles
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -26,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/utils"
 	kubeutil "github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
 )
 
@@ -34,8 +37,11 @@ var _ ProfileReconciler = &developmentProfile{}
 const (
 	// TODO: read from the platform config, open a JIRA to track it down. Default tag MUST align with the current operator's version
 	defaultKogitoServerlessWorkflowDevImage = "quay.io/kiegroup/kogito-swf-builder-nightly:latest"
-	configMapWorkflowDefVolumeName          = "workflow_definition"
+	configMapWorkflowDefVolumeNamePrefix    = "wd"
 	configMapWorkflowDefMountPath           = "/home/kogito/serverless-workflow-project/src/main/resources/workflows"
+	requeueAfterFailure                     = 3 * time.Minute
+	requeueAfterFollowDeployment            = 10 * time.Second
+	requeueAfterIsRunning                   = 3 * time.Minute
 )
 
 type developmentProfile struct {
@@ -83,32 +89,33 @@ type ensureRunningDevWorkflowReconcilerState struct {
 	ensurers *developmentObjectEnsurers
 }
 
-func (d ensureRunningDevWorkflowReconcilerState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
+func (e *ensureRunningDevWorkflowReconcilerState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
 	return workflow.Status.Condition == operatorapi.NoneConditionType ||
 		workflow.Status.Condition == operatorapi.RunningConditionType
 }
 
-func (d ensureRunningDevWorkflowReconcilerState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
+func (e *ensureRunningDevWorkflowReconcilerState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	var objs []client.Object
 
-	configMap, _, err := d.ensurers.workflowConfigMap.ensure(ctx, workflow, ensureWorkflowSpecConfigMapMutator(workflow))
+	configMap, cmResult, err := e.ensurers.workflowConfigMap.ensure(ctx, workflow, ensureWorkflowSpecConfigMapMutator(workflow))
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
 	}
 	objs = append(objs, configMap)
 
-	deployment, _, err := d.ensurers.deployment.ensure(ctx, workflow,
+	deployment, _, err := e.ensurers.deployment.ensure(ctx, workflow,
 		defaultDeploymentMutateVisitor(workflow),
 		naiveApplyImageDeploymentMutateVisitor(defaultKogitoServerlessWorkflowDevImage),
-		mountWorkflowDefConfigMapMutateVisitor(configMap.(*v1.ConfigMap)))
+		mountWorkflowDefConfigMapMutateVisitor(configMap.(*v1.ConfigMap)),
+		rolloutDeploymentIfCMChangedMutateVisitor(cmResult))
 	if err != nil {
-		return ctrl.Result{Requeue: false}, objs, err
+		return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 	}
 	objs = append(objs, deployment)
 
-	service, _, err := d.ensurers.service.ensure(ctx, workflow, defaultServiceMutateVisitor(workflow))
+	service, _, err := e.ensurers.service.ensure(ctx, workflow, defaultServiceMutateVisitor(workflow))
 	if err != nil {
-		return ctrl.Result{Requeue: false}, objs, err
+		return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 	}
 	objs = append(objs, service)
 
@@ -116,10 +123,10 @@ func (d ensureRunningDevWorkflowReconcilerState) Do(ctx context.Context, workflo
 
 	if workflow.Status.Condition == operatorapi.NoneConditionType {
 		workflow.Status.Condition = operatorapi.DeployingConditionType
-		if _, err = d.performStatusUpdate(ctx, workflow); err != nil {
-			return ctrl.Result{Requeue: false}, objs, err
+		if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
+			return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 		}
-		return ctrl.Result{Requeue: false}, objs, nil
+		return ctrl.Result{RequeueAfter: requeueAfterFollowDeployment}, objs, nil
 	}
 	// This conditional is not necessary since the reconciliation state guarantees that, but it's here to make the code easier to understand.
 	if workflow.Status.Condition == operatorapi.RunningConditionType {
@@ -128,55 +135,54 @@ func (d ensureRunningDevWorkflowReconcilerState) Do(ctx context.Context, workflo
 		if !kubeutil.IsDeploymentAvailable(reflectDeployment) {
 			workflow.Status.Reason = getDeploymentFailureReasonOrDefaultReason(reflectDeployment)
 			workflow.Status.Condition = operatorapi.FailedConditionType
-			if _, err = d.performStatusUpdate(ctx, workflow); err != nil {
-				return ctrl.Result{Requeue: false}, objs, err
+			if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
+				return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 			}
 		}
 	}
 
-	return ctrl.Result{Requeue: false}, objs, nil
+	return ctrl.Result{RequeueAfter: requeueAfterIsRunning}, objs, nil
 }
 
 type followDeployDevWorkflowReconcilerState struct {
 	*stateSupport
 }
 
-func (v followDeployDevWorkflowReconcilerState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
+func (f *followDeployDevWorkflowReconcilerState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
 	return workflow.Status.Condition == operatorapi.DeployingConditionType
 }
 
-func (v followDeployDevWorkflowReconcilerState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
+func (f *followDeployDevWorkflowReconcilerState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	deployment := &appsv1.Deployment{}
-	if err := v.client.Get(ctx, client.ObjectKeyFromObject(workflow), deployment); err != nil {
+	if err := f.client.Get(ctx, client.ObjectKeyFromObject(workflow), deployment); err != nil {
 		// we should have the deployment by this time, so even if the error above is not found, we should halt.
-		return ctrl.Result{Requeue: false}, nil, err
+		return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
 	}
 
 	if kubeutil.IsDeploymentAvailable(deployment) {
-		var err error
 		if workflow.Status.Condition != operatorapi.RunningConditionType {
 			workflow.Status.Condition = operatorapi.RunningConditionType
-			_, err = v.performStatusUpdate(ctx, workflow)
+			if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
+				return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
+			}
 		}
-		return ctrl.Result{Requeue: false}, nil, err
+		return ctrl.Result{}, nil, nil
 	}
 
 	if kubeutil.IsDeploymentProgressing(deployment) {
-		var err error
 		if workflow.Status.Condition != operatorapi.DeployingConditionType {
 			workflow.Status.Condition = operatorapi.DeployingConditionType
-			_, err = v.performStatusUpdate(ctx, workflow)
+			if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
+				return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
+			}
 		}
-		return ctrl.Result{Requeue: false}, nil, err
+		return ctrl.Result{RequeueAfter: requeueAfterFollowDeployment}, nil, nil
 	}
 
 	workflow.Status.Condition = operatorapi.FailedConditionType
 	workflow.Status.Reason = getDeploymentFailureReasonOrDefaultReason(deployment)
-	if _, err := v.performStatusUpdate(ctx, workflow); err != nil {
-		return ctrl.Result{Requeue: false}, nil, err
-	}
-
-	return ctrl.Result{Requeue: false}, nil, nil
+	_, err := f.performStatusUpdate(ctx, workflow)
+	return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
 }
 
 // getDeploymentFailureReasonOrDefaultReason gets the replica failure reason.
@@ -195,19 +201,57 @@ func mountWorkflowDefConfigMapMutateVisitor(cm *v1.ConfigMap) mutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			deployment := object.(*appsv1.Deployment)
-			deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v1.Volume{
-				Name: configMapWorkflowDefVolumeName,
-				VolumeSource: v1.VolumeSource{
-					ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: cm.Name}},
-				},
-			})
-			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(deployment.Spec.Template.Spec.Containers[0].VolumeMounts,
-				v1.VolumeMount{
-					Name:      configMapWorkflowDefVolumeName,
-					ReadOnly:  false,
-					MountPath: configMapWorkflowDefMountPath,
-				},
-			)
+			volumes := make([]v1.Volume, 0)
+			volumeMounts := make([]v1.VolumeMount, 0)
+			permission := kubeutil.ConfigMapAllPermissions
+
+			for file := range cm.Data {
+				if !strings.HasSuffix(file, kogitoWorkflowJSONFileExt) {
+					break
+				}
+				volumeName := configMapWorkflowDefVolumeNamePrefix + "-" + utils.RemoveKnownExtension(file, kogitoWorkflowJSONFileExt)
+				volumes = append(volumes, v1.Volume{
+					Name: volumeName,
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{Name: cm.Name},
+							Items: []v1.KeyToPath{{
+								Key:  file,
+								Path: file,
+							}},
+							DefaultMode: &permission,
+						},
+					},
+				})
+				volumeMounts = append(volumeMounts,
+					v1.VolumeMount{
+						Name:      volumeName,
+						ReadOnly:  false,
+						MountPath: configMapWorkflowDefMountPath + "/" + file,
+						SubPath:   file,
+					},
+				)
+			}
+
+			deployment.Spec.Template.Spec.Volumes = make([]v1.Volume, 0)
+			deployment.Spec.Template.Spec.Volumes = volumes
+			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = make([]v1.VolumeMount, 0)
+			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumeMounts
+
+			return nil
+		}
+	}
+}
+
+func rolloutDeploymentIfCMChangedMutateVisitor(cmOperationResult controllerutil.OperationResult) mutateVisitor {
+	return func(object client.Object) controllerutil.MutateFn {
+		return func() error {
+			if cmOperationResult == controllerutil.OperationResultUpdated {
+				deployment := object.(*appsv1.Deployment)
+				//logger.Info("Workflow definition changed, deployment must restart to reflect changes", "deployment", deployment.Name, "namespace", deployment.Namespace)
+				err := kubeutil.MarkDeploymentToRollout(deployment)
+				return err
+			}
 			return nil
 		}
 	}

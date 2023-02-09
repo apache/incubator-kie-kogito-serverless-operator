@@ -41,7 +41,8 @@ func Test_newDevProfile(t *testing.T) {
 	assert.Equal(t, defaultKogitoServerlessWorkflowDevImage, deployment.Spec.Template.Spec.Containers[0].Image)
 
 	cm := test.MustGetConfigMap(t, client, workflow)
-	assert.NotEmpty(t, cm.Data[workflow.Name+jsonFileType])
+	assert.NotEmpty(t, cm.Data[workflow.Name+kogitoWorkflowJSONFileExt])
+	assert.Equal(t, workflow.Name+kogitoWorkflowJSONFileExt, deployment.Spec.Template.Spec.Containers[0].VolumeMounts[0].SubPath)
 
 	service := test.MustGetService(t, client, workflow)
 	assert.Equal(t, int32(defaultHTTPWorkflowPort), service.Spec.Ports[0].TargetPort.IntVal)
