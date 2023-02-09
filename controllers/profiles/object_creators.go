@@ -71,6 +71,17 @@ func defaultDeploymentCreator(workflow *operatorapi.KogitoServerlessWorkflow) (c
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
+						SecurityContext: &corev1.SecurityContext{
+							AllowPrivilegeEscalation: utils.Pbool(false),
+							Privileged:               utils.Pbool(false),
+							RunAsNonRoot:             utils.Pbool(true),
+							Capabilities: &corev1.Capabilities{
+								Drop: []corev1.Capability{corev1.Capability("ALL")},
+							},
+							SeccompProfile: &corev1.SeccompProfile{
+								Type: corev1.SeccompProfileTypeRuntimeDefault,
+							},
+						},
 						ImagePullPolicy: corev1.PullAlways,
 						Name:            workflow.Name,
 						Ports: []corev1.ContainerPort{{

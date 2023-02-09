@@ -27,8 +27,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/utils"
+
+	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	kubeutil "github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
 )
 
@@ -67,6 +68,7 @@ func newDevProfileReconciler(client client.Client, logger *logr.Logger, workflow
 	profile := &developmentProfile{
 		baseReconciler: newBaseProfileReconciler(support, handler, workflow),
 	}
+	logger.Info("Reconciling in", "profile", profile.GetProfile())
 	return profile
 }
 
@@ -203,8 +205,8 @@ func mountWorkflowDefConfigMapMutateVisitor(cm *v1.ConfigMap) mutateVisitor {
 			deployment := object.(*appsv1.Deployment)
 			volumes := make([]v1.Volume, 0)
 			volumeMounts := make([]v1.VolumeMount, 0)
-			permission := kubeutil.ConfigMapAllPermissions
 
+			// TODO change this to regular mount once https://issues.redhat.com/browse/KOGITO-8634 is fixed
 			for file := range cm.Data {
 				if !strings.HasSuffix(file, kogitoWorkflowJSONFileExt) {
 					break
@@ -219,14 +221,13 @@ func mountWorkflowDefConfigMapMutateVisitor(cm *v1.ConfigMap) mutateVisitor {
 								Key:  file,
 								Path: file,
 							}},
-							DefaultMode: &permission,
 						},
 					},
 				})
 				volumeMounts = append(volumeMounts,
 					v1.VolumeMount{
 						Name:      volumeName,
-						ReadOnly:  false,
+						ReadOnly:  true,
 						MountPath: configMapWorkflowDefMountPath + "/" + file,
 						SubPath:   file,
 					},
@@ -248,7 +249,6 @@ func rolloutDeploymentIfCMChangedMutateVisitor(cmOperationResult controllerutil.
 		return func() error {
 			if cmOperationResult == controllerutil.OperationResultUpdated {
 				deployment := object.(*appsv1.Deployment)
-				//logger.Info("Workflow definition changed, deployment must restart to reflect changes", "deployment", deployment.Name, "namespace", deployment.Namespace)
 				err := kubeutil.MarkDeploymentToRollout(deployment)
 				return err
 			}
