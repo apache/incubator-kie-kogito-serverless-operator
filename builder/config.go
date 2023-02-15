@@ -43,15 +43,15 @@ const (
 func NewCustomConfig(platform operatorapi.KogitoServerlessPlatform) (map[string]string, error) {
 	customConfig := make(map[string]string)
 	if platform.Namespace == "" {
-		return nil, errors.New(fmt.Sprintf("Unable to retrieve the namespace from platform %s", platform.Name))
+		return nil, fmt.Errorf("unable to retrieve the namespace from platform %s", platform.Name)
 	}
 	customConfig[configKeyBuildNamespace] = platform.Namespace
 	if platform.Spec.BuildPlatform.Registry.Secret == "" {
-		return nil, errors.New(fmt.Sprintf("Unable to retrieve the registry credentials from platform %s", platform.Name))
+		return nil, fmt.Errorf("unable to retrieve the registry credentials from platform %s", platform.Name)
 	}
 	customConfig[configKeyRegistrySecret] = platform.Spec.BuildPlatform.Registry.Secret
 	if platform.Spec.BuildPlatform.Registry.Address == "" {
-		return nil, errors.New(fmt.Sprintf("Unable to retrieve the registry address from platform %s", platform.Name))
+		return nil, fmt.Errorf("unable to retrieve the registry address from platform %s", platform.Name)
 	}
 	customConfig[configKeyRegistryAddress] = platform.Spec.BuildPlatform.Registry.Address
 	return customConfig, nil
@@ -99,17 +99,17 @@ func isValidBuilderCommonConfigMap(configMap corev1.ConfigMap) error {
 
 	// Verifying that the key to hold the extension for the workflow is there and not empty
 	if len(configMap.Data[configKeyDefaultExtension]) == 0 {
-		return errors.New(fmt.Sprintf("Unable to find %s key into builder config map", configMap.Data[configKeyDefaultExtension]))
+		return fmt.Errorf("unable to find %s key into builder config map", configMap.Data[configKeyDefaultExtension])
 	}
 
 	// Verifying that the key to hold the name of the Dockerfile for building the workflow is there and not empty
 	if len(configMap.Data[configKeyDefaultBuilderResourceName]) == 0 {
-		return errors.New(fmt.Sprintf("Unable to find %s key into builder config map", configMap.Data[configKeyDefaultBuilderResourceName]))
+		return fmt.Errorf("unable to find %s key into builder config map", configMap.Data[configKeyDefaultBuilderResourceName])
 	}
 
 	// Verifying that the key to hold the content of the Dockerfile for building the workflow is there and not empty
 	if len(configMap.Data[configMap.Data[configKeyDefaultBuilderResourceName]]) == 0 {
-		return errors.New(fmt.Sprintf("Unable to find %s key into builder config map", configMap.Data[configKeyDefaultBuilderResourceName]))
+		return fmt.Errorf("unable to find %s key into builder config map", configMap.Data[configKeyDefaultBuilderResourceName])
 	}
 	return nil
 }

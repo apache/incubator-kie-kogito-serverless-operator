@@ -245,7 +245,7 @@ func (r *recoverFromFailureDevReconciliationState) Do(ctx context.Context, workf
 
 // getDeploymentFailureReasonOrDefaultReason gets the replica failure reason.
 // MUST be called after checking that the Deployment is NOT available.
-// If it's no reason, the Deployment state has no apparent reason to be in failed state.
+// If there's no reason, the Deployment state has no apparent reason to be in failed state.
 func getDeploymentFailureReasonOrDefaultReason(deployment *appsv1.Deployment) string {
 	failure := kubeutil.GetDeploymentUnavailabilityReason(deployment)
 	if len(failure) == 0 {

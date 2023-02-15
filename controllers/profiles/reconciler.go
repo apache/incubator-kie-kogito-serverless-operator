@@ -38,7 +38,8 @@ import (
 // Each part of the reconciliation algorithm is a ReconciliationState that will be executed based on the ReconciliationState.CanReconcile call.
 //
 // 4. ReconciliationState: is where your business code should be focused on. Each state should react to a specific operatorapi.ConditionType.
-// The last conditions your state handles, the better. It can provide specific code that will only be triggered if the workflow is in that specific condition.
+// The least conditions your state handles, the better.
+// The ReconciliationState can provide specific code that will only be triggered if the workflow is in that specific condition.
 //
 // 5. objectCreator: are functions to create a specific Kubernetes object based on a given workflow instance. This function should return the desired default state.
 //
