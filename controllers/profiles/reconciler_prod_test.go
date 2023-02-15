@@ -52,7 +52,7 @@ func Test_deployWorkflowReconciliationHandler_handleObjects(t *testing.T) {
 	assert.Equal(t, v1alpha08.RunningConditionType, workflow.Status.Condition)
 
 	// let's mess with the deployment
-	/* TODO open a JIRA to fix this, the state should be able to enforce
+	/* TODO the state should be able to enforce: https://issues.redhat.com/browse/KOGITO-8524
 	deployment.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort = 9090
 	err = client.Update(context.TODO(), deployment)
 	assert.NoError(t, err)

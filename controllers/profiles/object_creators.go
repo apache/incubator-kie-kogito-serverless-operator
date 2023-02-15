@@ -50,7 +50,8 @@ func labels(v *operatorapi.KogitoServerlessWorkflow) map[string]string {
 
 // defaultDeploymentCreator is an objectCreator for a base Kubernetes Deployments for profiles that need to deploy the workflow on a vanilla deployment.
 // It serves as a basis for a basic Quarkus Java application, expected to listen on http 8080.
-// TODO: add probes to check the default port or the quarkus health check!
+//
+// TODO: add probes to check the default port or the quarkus health check: https://issues.redhat.com/browse/KOGITO-8642
 func defaultDeploymentCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
 	lbl := labels(workflow)
 	size := int32(1)

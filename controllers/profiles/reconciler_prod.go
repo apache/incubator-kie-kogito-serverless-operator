@@ -138,7 +138,7 @@ func (h *ensureBuilderReconciliationState) Do(ctx context.Context, workflow *ope
 		(build.Status.Builder.Status.Phase == api.BuildPhaseSucceeded ||
 			build.Status.Builder.Status.Phase == api.BuildPhaseFailed ||
 			build.Status.Builder.Status.Phase == api.BuildPhaseError) {
-		// TODO: make sure that we handle this differently and not a copy of the spec in the status attribute, this can potentially make the status field unreadable
+		// TODO: make sure that we handle this differently and not a copy of the spec in the status attribute, this can potentially make the status field unreadable. See: https://issues.redhat.com/browse/KOGITO-8644
 		//If we have finished a build and the workflow is running, we have to rebuild it because there was a change in the workflow definition and requeue the request
 		if !utils.Compare(utils.GetWorkflowSpecHash(workflow.Status.Applied), utils.GetWorkflowSpecHash(workflow.Spec)) { // Let's check that the 2 workflow definition are different
 			workflow.Status.Condition = operatorapi.NoneConditionType
@@ -227,7 +227,7 @@ func (h *deployWorkflowReconciliationState) handleObjects(ctx context.Context, w
 		existingDeployment, _ = deployment.(*appsv1.Deployment)
 		requeue = true
 	}
-	// TODO: verify if deployment is ready
+	// TODO: verify if deployment is ready. See https://issues.redhat.com/browse/KOGITO-8524
 
 	existingService := &v1.Service{}
 	if err := h.client.Get(ctx, client.ObjectKeyFromObject(workflow), existingService); err != nil {
@@ -247,7 +247,7 @@ func (h *deployWorkflowReconciliationState) handleObjects(ctx context.Context, w
 		existingService, _ = service.(*v1.Service)
 		requeue = true
 	}
-	// TODO: verify if service is ready
+	// TODO: verify if service is ready. See https://issues.redhat.com/browse/KOGITO-8524
 
 	objs := []client.Object{existingDeployment, existingService}
 

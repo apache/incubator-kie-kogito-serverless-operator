@@ -17,7 +17,6 @@ package profiles
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -28,8 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kiegroup/kogito-serverless-operator/utils"
-
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	kubeutil "github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
 )
@@ -37,7 +34,7 @@ import (
 var _ ProfileReconciler = &developmentProfile{}
 
 const (
-	// TODO: read from the platform config, open a JIRA to track it down. Default tag MUST align with the current operator's version
+	// TODO: read from the platform config, open a JIRA to track it down. Default tag MUST align with the current operator's version. See: https://issues.redhat.com/browse/KOGITO-8675
 	defaultKogitoServerlessWorkflowDevImage = "quay.io/kiegroup/kogito-swf-builder-nightly:latest"
 	configMapWorkflowDefVolumeNamePrefix    = "wd"
 	configMapWorkflowDefMountPath           = "/home/kogito/serverless-workflow-project/src/main/resources/workflows"
@@ -104,7 +101,7 @@ func (e *ensureRunningDevWorkflowReconciliationState) CanReconcile(workflow *ope
 func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	var objs []client.Object
 
-	configMap, cmResult, err := e.ensurers.workflowConfigMap.ensure(ctx, workflow, ensureWorkflowSpecConfigMapMutator(workflow))
+	configMap, _, err := e.ensurers.workflowConfigMap.ensure(ctx, workflow, ensureWorkflowSpecConfigMapMutator(workflow))
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
 	}
@@ -113,8 +110,7 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 	deployment, _, err := e.ensurers.deployment.ensure(ctx, workflow,
 		defaultDeploymentMutateVisitor(workflow),
 		naiveApplyImageDeploymentMutateVisitor(defaultKogitoServerlessWorkflowDevImage),
-		mountWorkflowDefConfigMapMutateVisitor(configMap.(*v1.ConfigMap)),
-		rolloutDeploymentIfCMChangedMutateVisitor(cmResult))
+		mountWorkflowDefConfigMapMutateVisitor(configMap.(*v1.ConfigMap)))
 	if err != nil {
 		return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 	}
@@ -126,7 +122,7 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 	}
 	objs = append(objs, service)
 
-	// TODO: these should be done by the "onExit" handler in the state machine given that each state would have to transition
+	// TODO (once we mature the implementation): these should be done by the "onExit" handler in the state machine given that each state would have to transition
 
 	if workflow.Status.Condition == operatorapi.NoneConditionType {
 		workflow.Status.Condition = operatorapi.DeployingConditionType
@@ -266,33 +262,21 @@ func mountWorkflowDefConfigMapMutateVisitor(cm *v1.ConfigMap) mutateVisitor {
 			volumes := make([]v1.Volume, 0)
 			volumeMounts := make([]v1.VolumeMount, 0)
 
-			// TODO change this to regular mount once https://issues.redhat.com/browse/KOGITO-8634 is fixed
-			for file := range cm.Data {
-				if !strings.HasSuffix(file, kogitoWorkflowJSONFileExt) {
-					break
-				}
-				volumeName := configMapWorkflowDefVolumeNamePrefix + "-" + utils.RemoveKnownExtension(file, kogitoWorkflowJSONFileExt)
-				volumes = append(volumes, v1.Volume{
-					Name: volumeName,
-					VolumeSource: v1.VolumeSource{
-						ConfigMap: &v1.ConfigMapVolumeSource{
-							LocalObjectReference: v1.LocalObjectReference{Name: cm.Name},
-							Items: []v1.KeyToPath{{
-								Key:  file,
-								Path: file,
-							}},
-						},
+			volumes = append(volumes, v1.Volume{
+				Name: configMapWorkflowDefVolumeNamePrefix,
+				VolumeSource: v1.VolumeSource{
+					ConfigMap: &v1.ConfigMapVolumeSource{
+						LocalObjectReference: v1.LocalObjectReference{Name: cm.Name},
 					},
-				})
-				volumeMounts = append(volumeMounts,
-					v1.VolumeMount{
-						Name:      volumeName,
-						ReadOnly:  true,
-						MountPath: configMapWorkflowDefMountPath + "/" + file,
-						SubPath:   file,
-					},
-				)
-			}
+				},
+			})
+			volumeMounts = append(volumeMounts,
+				v1.VolumeMount{
+					Name:      configMapWorkflowDefVolumeNamePrefix,
+					ReadOnly:  true,
+					MountPath: configMapWorkflowDefMountPath,
+				},
+			)
 
 			deployment.Spec.Template.Spec.Volumes = make([]v1.Volume, 0)
 			deployment.Spec.Template.Spec.Volumes = volumes
@@ -304,7 +288,10 @@ func mountWorkflowDefConfigMapMutateVisitor(cm *v1.ConfigMap) mutateVisitor {
 	}
 }
 
-// rolloutDeploymentIfCMChangedMutateVisitor forces a pod refresh if the workflow definition ConfigMap suffered any changes
+// rolloutDeploymentIfCMChangedMutateVisitor forces a pod refresh if the workflow definition suffered any changes.
+// This method can be used as an alternative to the Kubernetes ConfigMap refresher.
+//
+// See: https://kubernetes.io/docs/concepts/configuration/configmap/#mounted-configmaps-are-updated-automatically
 func rolloutDeploymentIfCMChangedMutateVisitor(cmOperationResult controllerutil.OperationResult) mutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
