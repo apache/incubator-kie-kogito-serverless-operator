@@ -42,6 +42,21 @@ const (
 
 	workflowConfigMapNameSuffix      = "-props"
 	configMapWorkflowPropsVolumeName = "workflow-properties"
+
+	// Quarkus Health Check Probe configuration.
+	// See: https://quarkus.io/guides/smallrye-health#running-the-health-check
+
+	quarkusHealthPathStarted = "/q/health/started"
+	quarkusHealthPathReady   = "/q/health/ready"
+	quarkusHealthPathLive    = "/q/health/live"
+
+	// Default deployment health check configuration
+	// See: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+
+	healthTimeoutSeconds             = 3
+	healthStartedFailureThreshold    = 5
+	healthStartedPeriodSeconds       = 15
+	healthStartedInitialDelaySeconds = 10
 )
 
 var defaultApplicationProperties = "quarkus.http.port=" + strconv.Itoa(defaultHTTPWorkflowPort) + "\n" +
@@ -60,8 +75,6 @@ func labels(v *operatorapi.KogitoServerlessWorkflow) map[string]string {
 
 // defaultDeploymentCreator is an objectCreator for a base Kubernetes Deployments for profiles that need to deploy the workflow on a vanilla deployment.
 // It serves as a basis for a basic Quarkus Java application, expected to listen on http 8080.
-//
-// TODO: add probes to check the default port or the quarkus health check: https://issues.redhat.com/browse/KOGITO-8642
 func defaultDeploymentCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
 	lbl := labels(workflow)
 	size := int32(1)
@@ -82,6 +95,42 @@ func defaultDeploymentCreator(workflow *operatorapi.KogitoServerlessWorkflow) (c
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
+						Name: workflow.Name,
+						Ports: []corev1.ContainerPort{{
+							ContainerPort: defaultHTTPWorkflowPort,
+							Name:          "http",
+						}},
+						LivenessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								HTTPGet: &corev1.HTTPGetAction{
+									Path: quarkusHealthPathLive,
+									Port: intstr.FromInt(defaultHTTPWorkflowPort),
+								},
+							},
+							TimeoutSeconds: healthTimeoutSeconds,
+						},
+						ReadinessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								HTTPGet: &corev1.HTTPGetAction{
+									Path: quarkusHealthPathReady,
+									Port: intstr.FromInt(defaultHTTPWorkflowPort),
+								},
+							},
+							TimeoutSeconds: healthTimeoutSeconds,
+						},
+						StartupProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								HTTPGet: &corev1.HTTPGetAction{
+									Path: quarkusHealthPathStarted,
+									Port: intstr.FromInt(defaultHTTPWorkflowPort),
+								},
+							},
+							InitialDelaySeconds: healthStartedInitialDelaySeconds,
+							TimeoutSeconds:      healthTimeoutSeconds,
+							FailureThreshold:    healthStartedFailureThreshold,
+							PeriodSeconds:       healthStartedPeriodSeconds,
+						},
+						ImagePullPolicy: corev1.PullAlways,
 						SecurityContext: &corev1.SecurityContext{
 							AllowPrivilegeEscalation: utils.Pbool(false),
 							Privileged:               utils.Pbool(false),
@@ -93,12 +142,6 @@ func defaultDeploymentCreator(workflow *operatorapi.KogitoServerlessWorkflow) (c
 								Type: corev1.SeccompProfileTypeRuntimeDefault,
 							},
 						},
-						ImagePullPolicy: corev1.PullAlways,
-						Name:            workflow.Name,
-						Ports: []corev1.ContainerPort{{
-							ContainerPort: defaultHTTPWorkflowPort,
-							Name:          "http",
-						}},
 					}},
 				},
 			},
@@ -117,6 +160,7 @@ func naiveApplyImageDeploymentMutateVisitor(image string) mutateVisitor {
 	}
 }
 
+// defaultDeploymentMutateVisitor guarantees the state of the default Deployment object
 func defaultDeploymentMutateVisitor(workflow *operatorapi.KogitoServerlessWorkflow) mutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
