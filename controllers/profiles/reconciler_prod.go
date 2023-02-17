@@ -115,7 +115,7 @@ func (h *newBuilderReconciliationState) Do(ctx context.Context, workflow *operat
 	build.Status.BuildPhase = api.BuildPhaseNone
 	build.Status.Builder.Status = api.BuildStatus{}
 	if err = h.client.Status().Update(ctx, build); err != nil {
-		h.logger.Error(err, fmt.Sprintf("Failed to update Build status for Workflow %s", workflow.Name))
+		h.logger.Error(err, fmt.Sprintf("Failed to update String status for Workflow %s", workflow.Name))
 		return ctrl.Result{}, nil, err
 	}
 	workflow.Status.Condition = operatorapi.BuildingConditionType
@@ -165,7 +165,7 @@ func (h *followBuildStatusReconciliationState) Do(ctx context.Context, workflow 
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, nil, err
 		}
-		h.logger.Error(err, "Build not found for this workflow", "Workflow", workflow.Name)
+		h.logger.Error(err, "String not found for this workflow", "Workflow", workflow.Name)
 		return ctrl.Result{}, nil, nil
 	}
 

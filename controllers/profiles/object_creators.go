@@ -16,6 +16,7 @@ package profiles
 
 import (
 	"context"
+	"strconv"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -35,6 +36,11 @@ const (
 	defaultHTTPServicePort    = 80
 	labelApp                  = "app"
 	kogitoWorkflowJSONFileExt = ".sw.json"
+
+	quarkusConfigFileName = "application.properties"
+
+	workflowConfigMapNameSuffix      = "-props"
+	configMapWorkflowPropsVolumeName = "workflow-properties"
 )
 
 // objectCreator is the func that creates the initial reference object, if the object doesn't exist in the cluster, this one is created.
@@ -168,8 +174,8 @@ func defaultServiceMutateVisitor(workflow *operatorapi.KogitoServerlessWorkflow)
 	}
 }
 
-// workflowSpecConfigMapCreator creates a new ConfigMap that holds the definition of a workflow specification.
-func workflowSpecConfigMapCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
+// workflowDefConfigMapCreator creates a new ConfigMap that holds the definition of a workflow specification.
+func workflowDefConfigMapCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
 	workflowDef, err := utils.GetJSONWorkflow(workflow, context.TODO())
 	if err != nil {
 		return nil, err
@@ -192,12 +198,63 @@ func ensureWorkflowSpecConfigMapMutator(workflow *operatorapi.KogitoServerlessWo
 			if kubeutil.IsObjectNew(object) {
 				return nil
 			}
-			original, err := workflowSpecConfigMapCreator(workflow)
+			original, err := workflowDefConfigMapCreator(workflow)
 			if err != nil {
 				return err
 			}
 			object.(*corev1.ConfigMap).Data = original.(*corev1.ConfigMap).Data
 			object.(*corev1.ConfigMap).Labels = original.GetLabels()
+			return nil
+		}
+	}
+}
+
+// workflowPropsConfigMapCreator creates a ConfigMap to hold the external application properties
+func workflowPropsConfigMapCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      getWorkflowPropertiesConfigMapName(workflow),
+			Namespace: workflow.Namespace,
+			Labels:    labels(workflow),
+		},
+		// we could use utils.NewJavaProperties, but this way is faster
+		Data: map[string]string{
+			quarkusConfigFileName: "# Immutable Workflow Properties \n" +
+				"quarkus.http.port=" + strconv.Itoa(defaultHTTPWorkflowPort) + "\n" +
+				"quarkus.http.host=0.0.0.0\n",
+		},
+	}, nil
+}
+
+func getWorkflowPropertiesConfigMapName(workflow *operatorapi.KogitoServerlessWorkflow) string {
+	return workflow.Name + workflowConfigMapNameSuffix
+}
+
+func ensureWorkflowPropertiesConfigMapMutator(workflow *operatorapi.KogitoServerlessWorkflow) mutateVisitor {
+	return func(object client.Object) controllerutil.MutateFn {
+		return func() error {
+			if kubeutil.IsObjectNew(object) {
+				return nil
+			}
+			original, err := workflowPropsConfigMapCreator(workflow)
+			if err != nil {
+				return err
+			}
+			cm := object.(*corev1.ConfigMap)
+			cm.Labels = original.GetLabels()
+
+			_, hasKey := cm.Data[quarkusConfigFileName]
+			if !hasKey {
+				cm.Data = make(map[string]string, 1)
+				cm.Data[quarkusConfigFileName] = original.(*corev1.ConfigMap).Data[quarkusConfigFileName]
+			} else {
+				// The original replaces the current if it was already there
+				cm.Data[quarkusConfigFileName] =
+					utils.NewJavaProperties(cm.Data[quarkusConfigFileName]).
+						With(original.(*corev1.ConfigMap).Data[quarkusConfigFileName]).
+						String()
+			}
+
 			return nil
 		}
 	}

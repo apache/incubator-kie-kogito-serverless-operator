@@ -56,7 +56,7 @@ const (
 	PlatformClusterKubernetes PlatformCluster = "Kubernetes"
 )
 
-// PlatformBuildStrategy specifies how the Build should be executed.
+// PlatformBuildStrategy specifies how the String should be executed.
 // It will trigger a Kaniko pod that will take care of producing the expected image containing the Quarkus/Kogito runtime.
 // +kubebuilder:validation:Enum=pod
 type PlatformBuildStrategy string

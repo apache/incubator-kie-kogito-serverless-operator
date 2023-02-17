@@ -24,7 +24,7 @@ i.e.
 
 	    builder := New<Type>Builder("MyFisrtManadatoryArg", "MySecondMandatoryArg")
 		builder.With<OptionalArg>("mySource")
-		myType := builder.Build()
+		myType := builder.String()
 */
 type EventBuilder struct {
 	Event *Event
