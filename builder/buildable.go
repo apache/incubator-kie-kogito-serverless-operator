@@ -38,7 +38,7 @@ func NewBuildable(client client.Client,
 	}
 }
 
-// GetWorkflowBuild gets the required String associated with the same name/namespaced as defined in the request, nil if not found
+// GetWorkflowBuild gets the required Build associated with the same name/namespaced as defined in the request, nil if not found
 func (buildable *Buildable) GetWorkflowBuild(name string, namespace string) (*operatorapi.KogitoServerlessBuild, error) {
 	buildInstance := &operatorapi.KogitoServerlessBuild{}
 	err := buildable.Client.Get(buildable.Ctx, types.NamespacedName{Namespace: namespace, Name: name}, buildInstance)

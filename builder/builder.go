@@ -175,7 +175,7 @@ func (b *Builder) ScheduleBuild(kb KogitoBuilder) (*api.Build, error) {
 	return build, err
 }
 
-// Helper function to create a new container-builder String and schedule it
+// Helper function to create a new container-builder Build and schedule it
 func newBuild(kb KogitoBuilder, platform api.PlatformBuild, b *Builder, cli client.Client) (*api.Build, error) {
 	buildInfo := builder.BuilderInfo{FinalImageName: kb.ImageName, BuildUniqueName: kb.PodMiddleName, Platform: platform}
 

@@ -120,7 +120,7 @@ func buildEnqueueRequestsFromMapFunc(c client.Client, build *operatorapi.KogitoS
 		}
 
 		if workflow.Status.Condition == operatorapi.BuildingConditionType || workflow.Status.Condition == operatorapi.RunningConditionType {
-			log.Infof("String %s ready, notify workflow: %s in condition %s", build.Name, workflow.Name, workflow.Status.Condition)
+			log.Infof("Build %s ready, notify workflow: %s in condition %s", build.Name, workflow.Name, workflow.Status.Condition)
 			requests = append(requests, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: workflow.Namespace,

@@ -132,7 +132,7 @@ func SetPlatformDefaults(p *v08.KogitoServerlessPlatform, verbose bool) error {
 		d := p.Status.BuildPlatform.GetTimeout().Duration.Truncate(time.Second)
 
 		if verbose && p.Status.BuildPlatform.GetTimeout().Duration != d {
-			log.Log.Infof("String timeout minimum unit is sec (configured: %s, truncated: %s)", p.Status.BuildPlatform.GetTimeout().Duration, d)
+			log.Log.Infof("Build timeout minimum unit is sec (configured: %s, truncated: %s)", p.Status.BuildPlatform.GetTimeout().Duration, d)
 		}
 
 		log.Debugf("Kogito Serverless Platform [%s]: setting build timeout", p.Namespace)
