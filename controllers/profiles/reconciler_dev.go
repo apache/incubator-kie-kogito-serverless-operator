@@ -34,8 +34,8 @@ import (
 var _ ProfileReconciler = &developmentProfile{}
 
 const (
-	// TODO: read from the platform config, open a JIRA to track it down. Default tag MUST align with the current operator's version. See: https://issues.redhat.com/browse/KOGITO-8675
-	defaultKogitoServerlessWorkflowDevImage = "quay.io/ricardozanini/kogito-swf-builder:latest"
+	// TODO: read from the platform config. Default tag MUST align with the current operator's version. See: https://issues.redhat.com/browse/KOGITO-8675
+	defaultKogitoServerlessWorkflowDevImage = "quay.io/kiegroup/kogito-swf-builder-nightly:latest"
 	configMapWorkflowDefVolumeName          = "workflow-definition"
 	configMapWorkflowDefMountPath           = "/home/kogito/serverless-workflow-project/src/main/resources/workflows"
 	// quarkusDevConfigMountPath mount path for application properties file in the Workflow Quarkus Application
