@@ -16,7 +16,6 @@ package profiles
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -37,7 +36,7 @@ import (
 // 3. reconciliationStateMachine: is a struct within the ProfileReconciler that do the actual reconciliation.
 // Each part of the reconciliation algorithm is a ReconciliationState that will be executed based on the ReconciliationState.CanReconcile call.
 //
-// 4. ReconciliationState: is where your business code should be focused on. Each state should react to a specific operatorapi.ConditionType.
+// 4. ReconciliationState: is where your business code should be focused on. Each state should react to a specific operatorapi.KogitoServerlessWorkflowConditionType.
 // The least conditions your state handles, the better.
 // The ReconciliationState can provide specific code that will only be triggered if the workflow is in that specific condition.
 //
@@ -92,6 +91,7 @@ func newBaseProfileReconciler(support *stateSupport, stateMachine *reconciliatio
 
 // Reconcile does the actual reconciliation algorithm based on a set of ReconciliationState
 func (b baseReconciler) Reconcile(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, error) {
+	workflow.Status.Manager().InitializeConditions()
 	result, objects, err := b.reconciliationStateMachine.do(ctx, workflow)
 	if err != nil {
 		return result, err
@@ -132,7 +132,6 @@ func (r *reconciliationStateMachine) do(ctx context.Context, workflow *operatora
 			return h.Do(ctx, workflow)
 		}
 	}
-	r.logger.Info(fmt.Sprintf("Workflow %s is in status %s but at the moment we are not supporting it!", workflow.Name, workflow.Status.Condition))
 	return ctrl.Result{}, nil, nil
 }
 

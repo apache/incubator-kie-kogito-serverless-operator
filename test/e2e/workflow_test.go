@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/api"
 	"github.com/kiegroup/kogito-serverless-operator/test"
 	"github.com/kiegroup/kogito-serverless-operator/test/utils"
 
@@ -198,7 +198,7 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 					println(fmt.Errorf("failed to check if greeting workflow is running: %v", err))
 					return false
 				} else {
-					return operatorapi.ConditionType(response) == operatorapi.RunningConditionType
+					return api.ConditionType(response) == api.RunningConditionType
 				}
 			}, time.Minute, time.Second).Should(BeTrue())
 			EventuallyWithOffset(1, func() error {

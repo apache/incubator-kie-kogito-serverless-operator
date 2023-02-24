@@ -27,6 +27,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kiegroup/kogito-serverless-operator/api"
+
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	kubeutil "github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
 )
@@ -100,8 +102,7 @@ type ensureRunningDevWorkflowReconciliationState struct {
 }
 
 func (e *ensureRunningDevWorkflowReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
-	return workflow.Status.Condition == operatorapi.NoneConditionType ||
-		workflow.Status.Condition == operatorapi.RunningConditionType
+	return workflow.Status.IsReady() || workflow.Status.GetTopLevelCondition().IsUnknown()
 }
 
 func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
@@ -134,25 +135,21 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 	}
 	objs = append(objs, service)
 
-	// TODO (once we mature the implementation): these should be done by the "onExit" handler in the state machine given that each state would have to transition
-
-	if workflow.Status.Condition == operatorapi.NoneConditionType {
-		workflow.Status.Condition = operatorapi.DeployingConditionType
+	// First time reconciling this object, mark as wait for deployment
+	if workflow.Status.GetTopLevelCondition().IsUnknown() {
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
 		if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 		}
-		return ctrl.Result{RequeueAfter: requeueAfterFollowDeployment}, objs, nil
+		return ctrl.Result{RequeueAfter: requeueAfterIsRunning}, objs, nil
 	}
-	// This conditional is not necessary since the reconciliation state guarantees that, but it's here to make the code easier to understand.
-	if workflow.Status.Condition == operatorapi.RunningConditionType {
-		// let's make sure that the deployment is still running
-		reflectDeployment := deployment.(*appsv1.Deployment)
-		if !kubeutil.IsDeploymentAvailable(reflectDeployment) {
-			workflow.Status.Reason = getDeploymentFailureReasonOrDefaultReason(reflectDeployment)
-			workflow.Status.Condition = operatorapi.FailedConditionType
-			if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
-				return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
-			}
+
+	// Is the deployment still available?
+	convertedDeployment := deployment.(*appsv1.Deployment)
+	if !kubeutil.IsDeploymentAvailable(convertedDeployment) {
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, getDeploymentFailureMessage(convertedDeployment))
+		if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
+			return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 		}
 	}
 
@@ -164,7 +161,7 @@ type followDeployDevWorkflowReconciliationState struct {
 }
 
 func (f *followDeployDevWorkflowReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
-	return workflow.Status.Condition == operatorapi.DeployingConditionType
+	return workflow.Status.IsWaitingForDeployment()
 }
 
 func (f *followDeployDevWorkflowReconciliationState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
@@ -175,27 +172,22 @@ func (f *followDeployDevWorkflowReconciliationState) Do(ctx context.Context, wor
 	}
 
 	if kubeutil.IsDeploymentAvailable(deployment) {
-		if workflow.Status.Condition != operatorapi.RunningConditionType {
-			workflow.Status.Condition = operatorapi.RunningConditionType
-			if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
-				return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
-			}
+		workflow.Status.Manager().MarkTrue(api.RunningConditionType)
+		if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
+			return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
 		}
 		return ctrl.Result{}, nil, nil
 	}
 
 	if kubeutil.IsDeploymentProgressing(deployment) {
-		if workflow.Status.Condition != operatorapi.DeployingConditionType {
-			workflow.Status.Condition = operatorapi.DeployingConditionType
-			if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
-				return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
-			}
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
+		if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
+			return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
 		}
 		return ctrl.Result{RequeueAfter: requeueAfterFollowDeployment}, nil, nil
 	}
 
-	workflow.Status.Condition = operatorapi.FailedConditionType
-	workflow.Status.Reason = getDeploymentFailureReasonOrDefaultReason(deployment)
+	workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentFailureReason, getDeploymentFailureMessage(deployment))
 	_, err := f.performStatusUpdate(ctx, workflow)
 	return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
 }
@@ -205,12 +197,16 @@ type recoverFromFailureDevReconciliationState struct {
 }
 
 func (r *recoverFromFailureDevReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
-	return workflow.Status.Condition == operatorapi.FailedConditionType
+	return workflow.Status.GetCondition(api.RunningConditionType).IsFalse()
 }
 
 func (r *recoverFromFailureDevReconciliationState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	if workflow.Status.RecoverFailureAttempts > recoverDeploymentErrorRetries {
-		r.logger.Info("Can't recover workflow from failure after maximum attempts", "attempts", workflow.Status.RecoverFailureAttempts)
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.RedeploymentExhaustedReason,
+			"Can't recover workflow from failure after maximum attempts: %d", workflow.Status.RecoverFailureAttempts)
+		if _, updateErr := r.performStatusUpdate(ctx, workflow); updateErr != nil {
+			return ctrl.Result{Requeue: false}, nil, updateErr
+		}
 		return ctrl.Result{Requeue: false}, nil, nil
 	}
 
@@ -221,7 +217,7 @@ func (r *recoverFromFailureDevReconciliationState) Do(ctx context.Context, workf
 		if errors.IsNotFound(err) {
 			r.logger.Info("Tried to recover from failed state, no deployment found, trying to reset the workflow conditions")
 			workflow.Status.RecoverFailureAttempts = 0
-			workflow.Status.Condition = operatorapi.NoneConditionType
+			workflow.Status.Manager().MarkUnknown(api.RunningConditionType, "", "")
 			if _, updateErr := r.performStatusUpdate(ctx, workflow); updateErr != nil {
 				return ctrl.Result{Requeue: false}, nil, updateErr
 			}
@@ -232,8 +228,7 @@ func (r *recoverFromFailureDevReconciliationState) Do(ctx context.Context, workf
 
 	// if the deployment is progressing we might have good news
 	if kubeutil.IsDeploymentAvailable(deployment) {
-		workflow.Status.RecoverFailureAttempts = 0
-		workflow.Status.Condition = operatorapi.RunningConditionType
+		workflow.Status.Manager().MarkTrue(api.RunningConditionType)
 		if _, updateErr := r.performStatusUpdate(ctx, workflow); updateErr != nil {
 			return ctrl.Result{Requeue: false}, nil, updateErr
 		}
@@ -255,13 +250,13 @@ func (r *recoverFromFailureDevReconciliationState) Do(ctx context.Context, workf
 	return ctrl.Result{RequeueAfter: recoverDeploymentErrorInterval}, nil, nil
 }
 
-// getDeploymentFailureReasonOrDefaultReason gets the replica failure reason.
+// getDeploymentFailureMessage gets the replica failure reason.
 // MUST be called after checking that the Deployment is NOT available.
 // If there's no reason, the Deployment state has no apparent reason to be in failed state.
-func getDeploymentFailureReasonOrDefaultReason(deployment *appsv1.Deployment) string {
-	failure := kubeutil.GetDeploymentUnavailabilityReason(deployment)
+func getDeploymentFailureMessage(deployment *appsv1.Deployment) string {
+	failure := kubeutil.GetDeploymentUnavailabilityMessage(deployment)
 	if len(failure) == 0 {
-		failure = fmt.Sprintf("Workflow Deployment %s is unavailable for unknown reasons", deployment.Name)
+		failure = fmt.Sprintf("Workflow Deployment %s is unavailable", deployment.Name)
 	}
 	return failure
 }

@@ -23,7 +23,8 @@ import (
 	clientruntime "sigs.k8s.io/controller-runtime/pkg/client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/api"
+
 	"github.com/kiegroup/kogito-serverless-operator/test"
 )
 
@@ -49,7 +50,8 @@ func Test_deployWorkflowReconciliationHandler_handleObjects(t *testing.T) {
 
 	err = client.Get(context.TODO(), clientruntime.ObjectKeyFromObject(workflow), workflow)
 	assert.NoError(t, err)
-	assert.Equal(t, v1alpha08.RunningConditionType, workflow.Status.Condition)
+	assert.False(t, workflow.Status.IsReady())
+	assert.Equal(t, api.WaitingForDeploymentReason, workflow.Status.GetTopLevelCondition().Reason)
 
 	// let's mess with the deployment
 	/* TODO the state should be able to enforce: https://issues.redhat.com/browse/KOGITO-8524
