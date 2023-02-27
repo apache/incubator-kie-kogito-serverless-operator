@@ -27,7 +27,7 @@ spec:
     - jsonPath: .status.address.url
       name: Address
       type: string
-    - jsonPath: .status.condition
+    - jsonPath: .status.conditions[?(@.type=='Running')].status
       name: Condition
       type: string
     - jsonPath: .status.reason

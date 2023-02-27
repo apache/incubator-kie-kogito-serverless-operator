@@ -38,7 +38,7 @@ type KogitoServerlessWorkflowSpec struct {
 	States      []State      `json:"states"`
 }
 
-var _ api.ConditionAccessor = &KogitoServerlessWorkflowStatus{}
+var _ api.ConditionsReader = &KogitoServerlessWorkflowStatus{}
 
 // KogitoServerlessWorkflowStatus defines the observed state of KogitoServerlessWorkflow
 type KogitoServerlessWorkflowStatus struct {
@@ -62,7 +62,7 @@ func (s *KogitoServerlessWorkflowStatus) GetTopLevelCondition() *api.Condition {
 	return s.GetCondition(s.GetTopLevelConditionType())
 }
 
-func (s *KogitoServerlessWorkflowStatus) Manager() api.ConditionManager {
+func (s *KogitoServerlessWorkflowStatus) Manager() api.ConditionsManager {
 	return api.NewConditionManager(s, api.BuiltConditionType)
 }
 
@@ -95,7 +95,7 @@ func (s *KogitoServerlessWorkflowStatus) IsBuildRunning() bool {
 // +kubebuilder:printcolumn:name="Profile",type=string,JSONPath=`.metadata.annotations.sw\.kogito\.kie\.org\/profile`
 // +kubebuilder:printcolumn:name="Version",type=string,JSONPath=`.metadata.annotations.sw\.kogito\.kie\.org\/version`
 // +kubebuilder:printcolumn:name="Address",type=string,JSONPath=`.status.address.url`
-// +kubebuilder:printcolumn:name="Condition",type=string,JSONPath=`.status.condition`
+// +kubebuilder:printcolumn:name="Condition",type=string,JSONPath=`.status.conditions[?(@.type=='Running')].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.reason`
 type KogitoServerlessWorkflow struct {
 	metav1.TypeMeta   `json:",inline"`

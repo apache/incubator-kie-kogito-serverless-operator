@@ -39,21 +39,8 @@ type Status struct {
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
-type ConditionAccessor interface {
-	GetConditions() Conditions
-	SetConditions(c Conditions)
-	GetCondition(t ConditionType) *Condition
-	GetTopLevelConditionType() ConditionType
-	IsReady() bool
-	GetTopLevelCondition() *Condition
-}
-
 func (s *Status) GetConditions() Conditions {
 	return s.Conditions
-}
-
-func (s *Status) SetConditions(c Conditions) {
-	s.Conditions = c
 }
 
 // GetCondition finds and returns the Condition that matches the ConditionType
@@ -67,7 +54,28 @@ func (s *Status) GetCondition(t ConditionType) *Condition {
 	return nil
 }
 
-type ConditionManager interface {
+func (s *Status) setConditions(c Conditions) {
+	s.Conditions = c
+}
+
+// ConditionsReader gives read capability to Conditions.
+type ConditionsReader interface {
+	GetConditions() Conditions
+	GetCondition(t ConditionType) *Condition
+	// setConditions overwrite the conditions in the Status instance.
+	// Private to not expose to client code. Writing to the conditions should be done via ConditionsManager
+	setConditions(c Conditions)
+}
+
+// ConditionsAccessor describes access methods that every Status based struct implements.
+type ConditionsAccessor interface {
+	ConditionsReader
+	GetTopLevelConditionType() ConditionType
+	IsReady() bool
+	GetTopLevelCondition() *Condition
+}
+
+type ConditionsManager interface {
 	ClearCondition(t ConditionType) error
 	MarkTrue(t ConditionType)
 	MarkTrueWithReason(t ConditionType, reason, messageFormat string, messageA ...interface{})
@@ -76,17 +84,17 @@ type ConditionManager interface {
 	InitializeConditions()
 }
 
-var _ ConditionManager = &conditionManager{}
+var _ ConditionsManager = &conditionManager{}
 
 type conditionManager struct {
-	accessor   ConditionAccessor
+	reader     ConditionsReader
 	ready      ConditionType
 	dependents []ConditionType
 }
 
-func NewConditionManager(accessor ConditionAccessor, ready ConditionType, dependents ...ConditionType) ConditionManager {
+func NewConditionManager(accessor ConditionsReader, ready ConditionType, dependents ...ConditionType) ConditionsManager {
 	return &conditionManager{
-		accessor:   accessor,
+		reader:     accessor,
 		ready:      ready,
 		dependents: dependents,
 	}
@@ -95,12 +103,12 @@ func NewConditionManager(accessor ConditionAccessor, ready ConditionType, depend
 // setCondition sets or updates the Condition on Conditions for Condition.Type.
 // If there is an update, Conditions are stored back sorted.
 func (s *conditionManager) setCondition(cond Condition) {
-	if s.accessor == nil {
+	if s.reader == nil {
 		return
 	}
 	t := cond.Type
 	var conditions Conditions
-	for _, c := range s.accessor.GetConditions() {
+	for _, c := range s.reader.GetConditions() {
 		if c.Type != t {
 			conditions = append(conditions, c)
 		} else {
@@ -115,7 +123,7 @@ func (s *conditionManager) setCondition(cond Condition) {
 	conditions = append(conditions, cond)
 	// Sorted for convenience of the consumer, i.e. kubectl.
 	sort.Slice(conditions, func(i, j int) bool { return conditions[i].Type < conditions[j].Type })
-	s.accessor.SetConditions(conditions)
+	s.reader.setConditions(conditions)
 }
 
 func (s *conditionManager) isTerminal(t ConditionType) bool {
@@ -132,18 +140,18 @@ func (s *conditionManager) isTerminal(t ConditionType) bool {
 func (s *conditionManager) ClearCondition(t ConditionType) error {
 	var conditions Conditions
 
-	if s.accessor == nil {
+	if s.reader == nil {
 		return nil
 	}
 	// Terminal conditions are not handled as they can't be nil
 	if s.isTerminal(t) {
 		return fmt.Errorf("clearing terminal conditions not implemented")
 	}
-	cond := s.accessor.GetCondition(t)
+	cond := s.reader.GetCondition(t)
 	if cond == nil {
 		return nil
 	}
-	for _, c := range s.accessor.GetConditions() {
+	for _, c := range s.reader.GetConditions() {
 		if c.Type != t {
 			conditions = append(conditions, c)
 		}
@@ -151,7 +159,7 @@ func (s *conditionManager) ClearCondition(t ConditionType) error {
 
 	// Sorted for convenience of the consumer, i.e. kubectl.
 	sort.Slice(conditions, func(i, j int) bool { return conditions[i].Type < conditions[j].Type })
-	s.accessor.SetConditions(conditions)
+	s.reader.setConditions(conditions)
 
 	return nil
 }
@@ -199,7 +207,7 @@ func (s *conditionManager) recomputeReadiness(t ConditionType) {
 
 func (s *conditionManager) findUnreadyDependent() *Condition {
 	// Do not modify the accessors condition order.
-	conditions := s.accessor.GetConditions().DeepCopy()
+	conditions := s.reader.GetConditions().DeepCopy()
 
 	// Filter based on terminal status.
 	n := 0
@@ -255,11 +263,11 @@ func (s *conditionManager) MarkUnknown(t ConditionType, reason, messageFormat st
 	// check the dependents.
 	isDependent := false
 	for _, cond := range s.dependents {
-		c := s.accessor.GetCondition(cond)
+		c := s.reader.GetCondition(cond)
 		// Failed conditions trump Unknown conditions
 		if c.IsFalse() {
 			// Double check that the ready condition is also false.
-			ready := s.accessor.GetCondition(s.ready)
+			ready := s.reader.GetCondition(s.ready)
 			if !ready.IsFalse() {
 				s.MarkFalse(s.ready, reason, messageFormat, messageA...)
 			}
@@ -303,7 +311,7 @@ func (s *conditionManager) MarkFalse(t ConditionType, reason, messageFormat stri
 // InitializeConditions updates all Conditions in the ConditionSet to Unknown
 // if not set.
 func (s *conditionManager) InitializeConditions() {
-	ready := s.accessor.GetCondition(s.ready)
+	ready := s.reader.GetCondition(s.ready)
 	if ready == nil {
 		ready = &Condition{
 			Type:   s.ready,
@@ -325,7 +333,7 @@ func (s *conditionManager) InitializeConditions() {
 
 // initializeTerminalCondition initializes a Condition to the given status if unset.
 func (s *conditionManager) initializeTerminalCondition(t ConditionType, status corev1.ConditionStatus) *Condition {
-	if c := s.accessor.GetCondition(t); c != nil {
+	if c := s.reader.GetCondition(t); c != nil {
 		return c
 	}
 	c := Condition{
