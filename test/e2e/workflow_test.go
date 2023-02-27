@@ -195,16 +195,19 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 			EventuallyWithOffset(1, func() bool {
 				cmd := exec.Command("kubectl", "get", "workflow", "greeting", "-n", namespace, "-o", "jsonpath=\"{.status.conditions[?(@.type=='Running')].status}\"")
 				if response, err := utils.Run(cmd); err != nil {
-					println(fmt.Errorf("failed to check if greeting workflow is running: %v", err))
+					GinkgoWriter.Println(fmt.Errorf("failed to check if greeting workflow is running: %v", err))
 					return false
 				} else {
-					println(fmt.Sprintf("Got response %s", response))
-					status, err := strconv.ParseBool(string(response))
-					if err != nil {
-						println(fmt.Errorf("failed to parse result %v", err))
-						return false
+					GinkgoWriter.Println(fmt.Sprintf("Got response %s", response))
+					if len(strings.TrimSpace(string(response))) > 0 {
+						status, err := strconv.ParseBool(string(response))
+						if err != nil {
+							GinkgoWriter.Println(fmt.Errorf("failed to parse result %v", err))
+							return false
+						}
+						return status
 					}
-					return status
+					return false
 				}
 			}, time.Minute, time.Second).Should(BeTrue())
 			EventuallyWithOffset(1, func() error {
