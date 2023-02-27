@@ -288,7 +288,7 @@ func mountDevConfigMapsMutateVisitor(flowDefCM, propsCM *v1.ConfigMap) mutateVis
 					VolumeSource: v1.VolumeSource{
 						ConfigMap: &v1.ConfigMapVolumeSource{
 							LocalObjectReference: v1.LocalObjectReference{Name: propsCM.Name},
-							Items:                []v1.KeyToPath{{Key: quarkusConfigFileName, Path: quarkusConfigFileName}},
+							Items:                []v1.KeyToPath{{Key: applicationPropertiesFileName, Path: applicationPropertiesFileName}},
 						},
 					},
 				})

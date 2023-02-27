@@ -93,9 +93,9 @@ func Test_newDevProfile(t *testing.T) {
 
 	propCM := &v1.ConfigMap{}
 	_ = client.Get(context.TODO(), types.NamespacedName{Namespace: workflow.Namespace, Name: getWorkflowPropertiesConfigMapName(workflow)}, propCM)
-	assert.NotEmpty(t, propCM.Data[quarkusConfigFileName])
+	assert.NotEmpty(t, propCM.Data[applicationPropertiesFileName])
 	assert.Equal(t, quarkusDevConfigMountPath, deployment.Spec.Template.Spec.Containers[0].VolumeMounts[1].MountPath)
-	assert.Contains(t, propCM.Data[quarkusConfigFileName], "quarkus.http.port")
+	assert.Contains(t, propCM.Data[applicationPropertiesFileName], "quarkus.http.port")
 
 	service := test.MustGetService(t, client, workflow)
 	assert.Equal(t, int32(defaultHTTPWorkflowPort), service.Spec.Ports[0].TargetPort.IntVal)
@@ -126,8 +126,8 @@ func Test_newDevProfile(t *testing.T) {
 
 	propCM = &v1.ConfigMap{}
 	_ = client.Get(context.TODO(), types.NamespacedName{Namespace: workflow.Namespace, Name: getWorkflowPropertiesConfigMapName(workflow)}, propCM)
-	assert.NotEmpty(t, propCM.Data[quarkusConfigFileName])
-	assert.Contains(t, propCM.Data[quarkusConfigFileName], "quarkus.http.port")
+	assert.NotEmpty(t, propCM.Data[applicationPropertiesFileName])
+	assert.Contains(t, propCM.Data[applicationPropertiesFileName], "quarkus.http.port")
 
 	// reconcile
 	workflow.Status.Condition = operatorapi.RunningConditionType

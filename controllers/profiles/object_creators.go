@@ -18,6 +18,7 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/magiconair/properties"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,11 +38,14 @@ const (
 	labelApp                  = "app"
 	kogitoWorkflowJSONFileExt = ".sw.json"
 
-	quarkusConfigFileName = "application.properties"
+	applicationPropertiesFileName = "application.properties"
 
 	workflowConfigMapNameSuffix      = "-props"
 	configMapWorkflowPropsVolumeName = "workflow-properties"
 )
+
+var defaultApplicationProperties = "quarkus.http.port=" + strconv.Itoa(defaultHTTPWorkflowPort) + "\n" +
+	"quarkus.http.host=0.0.0.0\n"
 
 // objectCreator is the func that creates the initial reference object, if the object doesn't exist in the cluster, this one is created.
 // Can be used as a reference to keep the object immutable
@@ -218,11 +222,7 @@ func workflowPropsConfigMapCreator(workflow *operatorapi.KogitoServerlessWorkflo
 			Labels:    labels(workflow),
 		},
 		// we could use utils.NewJavaProperties, but this way is faster
-		Data: map[string]string{
-			quarkusConfigFileName: "# Immutable Workflow Properties \n" +
-				"quarkus.http.port=" + strconv.Itoa(defaultHTTPWorkflowPort) + "\n" +
-				"quarkus.http.host=0.0.0.0\n",
-		},
+		Data: map[string]string{applicationPropertiesFileName: defaultApplicationProperties},
 	}, nil
 }
 
@@ -243,16 +243,21 @@ func ensureWorkflowPropertiesConfigMapMutator(workflow *operatorapi.KogitoServer
 			cm := object.(*corev1.ConfigMap)
 			cm.Labels = original.GetLabels()
 
-			_, hasKey := cm.Data[quarkusConfigFileName]
+			_, hasKey := cm.Data[applicationPropertiesFileName]
 			if !hasKey {
 				cm.Data = make(map[string]string, 1)
-				cm.Data[quarkusConfigFileName] = original.(*corev1.ConfigMap).Data[quarkusConfigFileName]
+				cm.Data[applicationPropertiesFileName] = defaultApplicationProperties
 			} else {
-				// The original replaces the current if it was already there
-				cm.Data[quarkusConfigFileName] =
-					utils.NewJavaProperties(cm.Data[quarkusConfigFileName]).
-						With(original.(*corev1.ConfigMap).Data[quarkusConfigFileName]).
-						String()
+				props, propErr := properties.LoadString(cm.Data[applicationPropertiesFileName])
+				if propErr != nil {
+					// can't load user's properties, replace with default
+					cm.Data[applicationPropertiesFileName] = defaultApplicationProperties
+					return nil
+				}
+				originalProps := properties.MustLoadString(original.(*corev1.ConfigMap).Data[applicationPropertiesFileName])
+				// we overwrite with the defaults
+				props.Merge(originalProps)
+				cm.Data[applicationPropertiesFileName] = props.String()
 			}
 
 			return nil
