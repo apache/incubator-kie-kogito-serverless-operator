@@ -170,6 +170,10 @@ func (f *followDeployDevWorkflowReconciliationState) Do(ctx context.Context, wor
 	deployment := &appsv1.Deployment{}
 	if err := f.client.Get(ctx, client.ObjectKeyFromObject(workflow), deployment); err != nil {
 		// we should have the deployment by this time, so even if the error above is not found, we should halt.
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, "Couldn't find deployment anymore while waiting for the deploy")
+		if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
+			return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
+		}
 		return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
 	}
 
@@ -237,18 +241,22 @@ func (r *recoverFromFailureDevReconciliationState) Do(ctx context.Context, workf
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.RedeploymentExhaustedReason,
 			"Can't recover workflow from failure after maximum attempts: %d", workflow.Status.RecoverFailureAttempts)
 		if _, updateErr := r.performStatusUpdate(ctx, workflow); updateErr != nil {
-			return ctrl.Result{Requeue: false}, nil, updateErr
+			return ctrl.Result{}, nil, updateErr
 		}
 		return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, nil
 	}
 
 	// let's try rolling out the deployment
-	// TODO we should implement a channel to wait for this rollout before returning the handler to the reconciliation manager. And future reconciliations should not call this method again. See https://issues.redhat.com/browse/KOGITO-8748
 	if err := kubeutil.MarkDeploymentToRollout(deployment); err != nil {
-		return ctrl.Result{Requeue: false}, nil, err
+		return ctrl.Result{}, nil, err
 	}
 	if err := r.client.Update(ctx, deployment); err != nil {
-		return ctrl.Result{Requeue: false}, nil, err
+		// TODO we should implement a channel to wait for this rollout before returning the handler to the reconciliation manager. And future reconciliations should not call this method again. See https://issues.redhat.com/browse/KOGITO-8748
+		if errors.IsConflict(err) {
+			r.logger.Info("Deployment just got updated, waiting to rollout again")
+			return ctrl.Result{RequeueAfter: recoverDeploymentErrorInterval}, nil, nil
+		}
+		return ctrl.Result{}, nil, err
 	}
 
 	workflow.Status.RecoverFailureAttempts += 1

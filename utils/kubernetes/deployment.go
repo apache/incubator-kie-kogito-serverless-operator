@@ -56,8 +56,8 @@ func IsDeploymentProgressing(deployment *appsv1.Deployment) bool {
 // Note that the Deployment might be available, but a second replica failed to scale. Always check IsDeploymentAvailable.
 func GetDeploymentUnavailabilityMessage(deployment *appsv1.Deployment) string {
 	for _, condition := range deployment.Status.Conditions {
-		if condition.Type == appsv1.DeploymentReplicaFailure &&
-			condition.Status == v1.ConditionTrue {
+		if condition.Type == appsv1.DeploymentAvailable &&
+			condition.Status == v1.ConditionFalse {
 			return fmt.Sprintf("deployment %s unavailable: reason %s, message %s", deployment.Name, condition.Reason, condition.Message)
 		}
 	}

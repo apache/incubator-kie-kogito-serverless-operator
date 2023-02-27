@@ -1,7 +1,7 @@
 apiVersion: sw.kogito.kie.org/v1alpha08
 kind: KogitoServerlessWorkflow
 metadata:
-  name: greeting
+  name: greeting2
   annotations:
     sw.kogito.kie.org/description: Greeting example on k8s!
     sw.kogito.kie.org/version: 0.0.1

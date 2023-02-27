@@ -18,10 +18,10 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/kiegroup/kogito-serverless-operator/api"
 	"github.com/kiegroup/kogito-serverless-operator/test"
 	"github.com/kiegroup/kogito-serverless-operator/test/utils"
 
@@ -193,12 +193,18 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 
 			By("check the workflow is in running state")
 			EventuallyWithOffset(1, func() bool {
-				cmd := exec.Command("kubectl", "get", "workflow", "greeting", "-n", namespace, "-o=jsonpath={.status.conditions[?(@.type=='Running')].status}")
+				cmd := exec.Command("kubectl", "get", "workflow", "greeting", "-n", namespace, "-o", "jsonpath=\"{.status.conditions[?(@.type=='Running')].status}\"")
 				if response, err := utils.Run(cmd); err != nil {
 					println(fmt.Errorf("failed to check if greeting workflow is running: %v", err))
 					return false
 				} else {
-					return api.ConditionType(response) == api.RunningConditionType
+					println(fmt.Sprintf("Got response %s", response))
+					status, err := strconv.ParseBool(string(response))
+					if err != nil {
+						println(fmt.Errorf("failed to parse result %v", err))
+						return false
+					}
+					return status
 				}
 			}, time.Minute, time.Second).Should(BeTrue())
 			EventuallyWithOffset(1, func() error {
