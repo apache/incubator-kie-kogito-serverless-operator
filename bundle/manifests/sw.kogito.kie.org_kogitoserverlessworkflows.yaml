@@ -27,6 +27,9 @@ spec:
     - jsonPath: .status.address.url
       name: Address
       type: string
+    - jsonPath: .status.endpoints[?(@.portName == "NodePort")].port
+      name: Port
+      type: string
     - jsonPath: .status.conditions[?(@.type=='Running')].status
       name: Ready
       type: string

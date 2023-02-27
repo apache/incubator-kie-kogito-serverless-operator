@@ -47,3 +47,12 @@ func profileBuilder(workflow *operatorapi.KogitoServerlessWorkflow) reconcilerBu
 	}
 	return profileBuilders[Profile(profile)]
 }
+
+// Function to dectect if the workflow is using the Dev profile or not
+func IsDevProfile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
+	profile := workflow.Annotations[metadata.Profile]
+	if len(profile) == 0 {
+		return false
+	}
+	return Profile(profile) == Development
+}

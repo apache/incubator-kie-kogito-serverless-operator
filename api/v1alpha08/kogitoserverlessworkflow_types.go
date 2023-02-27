@@ -95,6 +95,7 @@ func (s *KogitoServerlessWorkflowStatus) IsBuildRunning() bool {
 // +kubebuilder:printcolumn:name="Profile",type=string,JSONPath=`.metadata.annotations.sw\.kogito\.kie\.org\/profile`
 // +kubebuilder:printcolumn:name="Version",type=string,JSONPath=`.metadata.annotations.sw\.kogito\.kie\.org\/version`
 // +kubebuilder:printcolumn:name="Address",type=string,JSONPath=`.status.address.url`
+// +kubebuilder:printcolumn:name="Port",type=string,JSONPath=`.status.endpoints[?(@.portName == "NodePort")].port`
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=='Running')].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=='Running')].reason`
 type KogitoServerlessWorkflow struct {

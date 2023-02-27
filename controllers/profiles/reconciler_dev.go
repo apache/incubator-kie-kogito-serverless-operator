@@ -123,7 +123,8 @@ func newDevProfileReconciler(client client.Client, logger *logr.Logger) ProfileR
 func newDevelopmentObjectEnsurers(support *stateSupport) *devProfileObjectEnsurers {
 	return &devProfileObjectEnsurers{
 		deployment:          newObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
-		service:             newObjectEnsurer(support.client, support.logger, defaultServiceCreator),
+		service:             newObjectEnsurer(support.client, support.logger, devServiceCreator),
+		route:               newObjectEnsurer(support.client, support.logger, devRouteCreator),
 		definitionConfigMap: newObjectEnsurer(support.client, support.logger, workflowDefConfigMapCreator),
 		propertiesConfigMap: newObjectEnsurer(support.client, support.logger, workflowDevPropsConfigMapCreator),
 	}
@@ -132,6 +133,7 @@ func newDevelopmentObjectEnsurers(support *stateSupport) *devProfileObjectEnsure
 type devProfileObjectEnsurers struct {
 	deployment          *objectEnsurer
 	service             *objectEnsurer
+	route               *objectEnsurer
 	definitionConfigMap *objectEnsurer
 	propertiesConfigMap *objectEnsurer
 }
@@ -211,6 +213,25 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, getDeploymentFailureMessage(convertedDeployment))
 		if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
+		}
+
+		//If the workflow Status hasn't got a NodePort Endpoint, we are ensuring it will be set
+		if findNodePortFromEndpoint(workflow.Status.Endpoints) == 0 {
+			reflectService := service.(*v1.Service)
+			//If the service has got a Port that is a nodePort we have to use it to create the workflow's NodePort Endpoint
+			if reflectService.Spec.Ports != nil && len(reflectService.Spec.Ports) > 0 {
+				if port := findNodePortFromPorts(reflectService.Spec.Ports); port > 0 {
+					newEndpoint := operatorapi.Endpoint{
+						Port:     port,
+						PortName: "NodePort",
+					}
+					workflow.Status.Endpoints = append(workflow.Status.Endpoints, newEndpoint)
+					if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
+						return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
+					}
+				}
+			}
+
 		}
 	}
 
@@ -417,4 +438,30 @@ func rolloutDeploymentIfCMChangedMutateVisitor(cmOperationResult controllerutil.
 			return nil
 		}
 	}
+}
+
+// Function to return the first NodePort in the array of Endpoint
+func findNodePortFromEndpoint(endpoints []operatorapi.Endpoint) int {
+	if endpoints != nil && len(endpoints) > 0 {
+		for _, v := range endpoints {
+			if v.PortName == "NodePort" {
+				return v.Port
+			}
+		}
+	}
+	//If we are not able to find a NodePort let's return the zero value
+	return 0
+}
+
+// Function to return the first Port in an array of ServicePort
+func findNodePortFromPorts(ports []v1.ServicePort) int {
+	if ports != nil && len(ports) > 0 {
+		for _, p := range ports {
+			if p.NodePort != 0 {
+				return int(p.NodePort)
+			}
+		}
+	}
+	//If we are not able to find a NodePort let's return the zero value
+	return 0
 }

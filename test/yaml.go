@@ -29,6 +29,7 @@ const (
 	KogitoServerlessWorkflowSampleYamlCR                            = "sw.kogito_v1alpha08_kogitoserverlessworkflow.yaml"
 	KogitoServerlessWorkflowSampleDevModeYamlCR                     = "sw.kogito_v1alpha08_kogitoserverlessworkflow_devmode.yaml"
 	KogitoServerlessWorkflowSampleDevModeWithExternalResourceYamlCR = "sw.kogito_v1alpha08_kogitoserverlessworkflow_devmodeWithExternalResource.yaml"
+	KogitoServerlessWorkflowProdProfileSampleYamlCR
 	KogitoServerlessPlatformWithCacheYamlCR                         = "sw.kogito_v1alpha08_kogitoserverlessplatform_withCacheAndCustomization.yaml"
 	KogitoServerlessPlatformWithCacheMinikubeYamlCR                 = "sw.kogito_v1alpha08_kogitoserverlessplatform_withCache_minikube.yaml"
     KogitoServerlessPlatformYamlCR                  = "sw.kogito_v1alpha08_kogitoserverlessplatform.yaml"
