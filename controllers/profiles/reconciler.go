@@ -16,6 +16,7 @@ package profiles
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -67,6 +68,7 @@ type stateSupport struct {
 func (s stateSupport) performStatusUpdate(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (bool, error) {
 	var err error
 	workflow.Status.Applied = workflow.Spec
+	workflow.Status.ObservedGeneration = workflow.Generation
 	if err = s.client.Status().Update(ctx, workflow); err != nil {
 		s.logger.Error(err, "Failed to update Workflow status")
 		return false, err
@@ -97,6 +99,7 @@ func (b baseReconciler) Reconcile(ctx context.Context, workflow *operatorapi.Kog
 		return result, err
 	}
 	b.objects = objects
+	b.logger.Info("Returning from reconciliation", "Result", result)
 	return result, err
 }
 
@@ -129,10 +132,11 @@ type reconciliationStateMachine struct {
 func (r *reconciliationStateMachine) do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
 	for _, h := range r.states {
 		if h.CanReconcile(workflow) {
+			r.logger.Info("Found a condition to reconcile.", "Conditions", workflow.Status.Conditions)
 			return h.Do(ctx, workflow)
 		}
 	}
-	return ctrl.Result{}, nil, nil
+	return ctrl.Result{}, nil, fmt.Errorf("the workflow %s in the namespace %s is in an unknown state condition. Can't reconcilie. Status is: %v", workflow.Name, workflow.Namespace, workflow.Status)
 }
 
 // NewReconciler creates a new ProfileReconciler based on the given workflow and context.

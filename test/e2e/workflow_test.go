@@ -193,7 +193,7 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 
 			By("check the workflow is in running state")
 			EventuallyWithOffset(1, func() bool {
-				cmd := exec.Command("kubectl", "get", "workflow", "greeting", "-n", namespace, "-o=jsonpath={.status.condition}")
+				cmd := exec.Command("kubectl", "get", "workflow", "greeting", "-n", namespace, "-o=jsonpath={.status.conditions[?(@.type=='Running')].status}")
 				if response, err := utils.Run(cmd); err != nil {
 					println(fmt.Errorf("failed to check if greeting workflow is running: %v", err))
 					return false
