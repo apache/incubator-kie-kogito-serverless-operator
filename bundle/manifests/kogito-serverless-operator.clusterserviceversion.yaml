@@ -336,8 +336,6 @@ spec:
                   capabilities:
                     drop:
                     - ALL
-                  seccompProfile:
-                    type: RuntimeDefault
               - args:
                 - --health-probe-bind-address=:8081
                 - --metrics-bind-address=127.0.0.1:8080
@@ -375,8 +373,6 @@ spec:
                   capabilities:
                     drop:
                     - ALL
-                  seccompProfile:
-                    type: RuntimeDefault
               securityContext:
                 runAsNonRoot: true
               serviceAccountName: kogito-serverless-operator-controller-manager

@@ -89,9 +89,6 @@ func defaultDeploymentCreator(workflow *operatorapi.KogitoServerlessWorkflow) (c
 							Capabilities: &corev1.Capabilities{
 								Drop: []corev1.Capability{corev1.Capability("ALL")},
 							},
-							SeccompProfile: &corev1.SeccompProfile{
-								Type: corev1.SeccompProfileTypeRuntimeDefault,
-							},
 						},
 						ImagePullPolicy: corev1.PullAlways,
 						Name:            workflow.Name,

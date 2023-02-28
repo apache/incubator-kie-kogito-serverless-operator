@@ -34,8 +34,6 @@ spec:
         image: controller:latest
         name: manager
         securityContext:
-          seccompProfile:
-            type: RuntimeDefault
           allowPrivilegeEscalation: false
           capabilities:
             drop:
