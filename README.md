@@ -154,6 +154,24 @@ kubectl delete namespace kogito-workflows
 make undeploy
 ```
 
+## DevMode
+In the devmode a user can edit and reload the files using the quarkus devmode
+The external files that can be edited during the dev mode
+must be saved in a configmap per type, currently CamelRoute, OpenAPI and Async API are supported,
+to reference the configmaps in the labels section must be added using the following keys and your preferred name as values,
+the same label must be added on the configmap. 
+Currently the SWF app handle Camel, OpenAPI and AsyncAPI, to handle other type is up to the user add the dependencies to handle other types
+
+```
+labels:
+.. 
+  sw.kogito.kie.org/resource-camel: mycamel-configmap
+  sw.kogito.kie.org/resource-openapi: myopenapi-configmap
+  sw.kogito.kie.org/resource-asyncapi: myasyncapi-configmap
+  sw.kogito.kie.org/resource-generic: mygeneric-configmap
+```
+Every entry in these configmaps will be turned into a file inside /src/main/resources/<type specific folder> and using the key as file name
+
 ## Use local scripts
 
 You can find some scripts in the [hack](./hack/local/) folder.

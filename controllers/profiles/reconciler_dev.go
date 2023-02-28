@@ -17,7 +17,13 @@ package profiles
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kiegroup/container-builder/util/log"
 
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -42,6 +48,10 @@ const (
 	//
 	// See: https://quarkus.io/guides/config-reference#application-properties-file
 	quarkusDevConfigMountPath    = "/home/kogito/serverless-workflow-project/src/main/resources"
+	camelDevConfigMountPath      = "/home/kogito/serverless-workflow-project/src/main/resources/routes"
+	genericDevConfigMountPath    = "/home/kogito/serverless-workflow-project/src/main/resources/generic"
+	openApiDevConfigMountPath    = "/home/kogito/serverless-workflow-project/src/main/resources/specs"
+	asyncApiDevConfigMountPath   = "/home/kogito/serverless-workflow-project/src/main/resources/templates" //@TODO
 	requeueAfterFailure          = 3 * time.Minute
 	requeueAfterFollowDeployment = 10 * time.Second
 	requeueAfterIsRunning        = 3 * time.Minute
@@ -49,6 +59,11 @@ const (
 	recoverDeploymentErrorRetries = 3
 	// recoverDeploymentErrorInterval interval between recovering from failures
 	recoverDeploymentErrorInterval = 5 * time.Minute
+	extResPrefix                   = "sw.kogito.kie.org/resource-"
+	extResCamelSuffix              = "resource-camel"
+	extResGenericSuffix            = "resource-generic"
+	extResOpenAPISuffix            = "resource-openapi"
+	extResAsyncAPISuffix           = "resource-asyncapi"
 )
 
 type developmentProfile struct {
@@ -122,7 +137,7 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 	deployment, _, err := e.ensurers.deployment.ensure(ctx, workflow,
 		defaultDeploymentMutateVisitor(workflow),
 		naiveApplyImageDeploymentMutateVisitor(defaultKogitoServerlessWorkflowDevImage),
-		mountDevConfigMapsMutateVisitor(flowDefCM.(*v1.ConfigMap), propsCM.(*v1.ConfigMap)))
+		mountDevConfigMapsMutateVisitor(flowDefCM.(*v1.ConfigMap), propsCM.(*v1.ConfigMap), loadExternalResourcesConfigMaps(e.stateSupport, workflow)))
 	if err != nil {
 		return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 	}
@@ -267,7 +282,7 @@ func getDeploymentFailureReasonOrDefaultReason(deployment *appsv1.Deployment) st
 }
 
 // mountDevConfigMapsMutateVisitor mounts the required configMaps in the Workflow Dev Deployment
-func mountDevConfigMapsMutateVisitor(flowDefCM, propsCM *v1.ConfigMap) mutateVisitor {
+func mountDevConfigMapsMutateVisitor(flowDefCM, propsCM *v1.ConfigMap, externalResourceConfigMaps map[string]v1.ConfigMap) mutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			deployment := object.(*appsv1.Deployment)
@@ -311,9 +326,95 @@ func mountDevConfigMapsMutateVisitor(flowDefCM, propsCM *v1.ConfigMap) mutateVis
 			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = make([]v1.VolumeMount, 0)
 			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumeMounts
 
+			for keycm, cm := range externalResourceConfigMaps {
+				for fileName, _ := range cm.Data {
+					if !isContained(fileName, deployment.Spec.Template.Spec.Volumes) {
+
+						deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes,
+							v1.Volume{
+								Name: fileName,
+								VolumeSource: v1.VolumeSource{
+									ConfigMap: &v1.ConfigMapVolumeSource{
+										LocalObjectReference: v1.LocalObjectReference{Name: fileName},
+									},
+								},
+							})
+
+						deployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(deployment.Spec.Template.Spec.Containers[0].VolumeMounts,
+							v1.VolumeMount{
+								Name:      fileName,
+								ReadOnly:  true,
+								MountPath: getMountPath(keycm),
+							})
+					}
+				}
+			}
 			return nil
 		}
 	}
+}
+
+func getMountPath(name string) string {
+	var mountPath = quarkusDevConfigMountPath
+	if strings.HasSuffix(name, extResCamelSuffix) {
+		return camelDevConfigMountPath
+	}
+	if strings.HasSuffix(name, extResGenericSuffix) {
+		return genericDevConfigMountPath
+	}
+	if strings.HasSuffix(name, extResAsyncAPISuffix) {
+		return asyncApiDevConfigMountPath
+	}
+	if strings.HasSuffix(name, extResOpenAPISuffix) {
+		return openApiDevConfigMountPath
+	}
+	return mountPath
+}
+
+func loadExternalResourcesConfigMaps(support *stateSupport, workflow *operatorapi.KogitoServerlessWorkflow) map[string]v1.ConfigMap {
+	externalConfigMaps := make(map[string]v1.ConfigMap, 0)
+	for k, val := range workflow.Labels {
+		if strings.HasPrefix(k, extResPrefix) {
+			cm, err := getGenericConfigMap(val, workflow.Namespace, support)
+			if err != nil {
+				log.Errorf(err, "ConfigMap not found %s", val)
+			} else {
+				externalConfigMaps[k] = cm
+			}
+		}
+	}
+	return externalConfigMaps
+}
+
+func getGenericConfigMap(configMapName string, namespace string, support *stateSupport) (v1.ConfigMap, error) {
+
+	existingConfigMap := v1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: namespace,
+		},
+		Data: map[string]string{},
+	}
+
+	err := support.client.Get(context.TODO(), types.NamespacedName{Name: configMapName, Namespace: namespace}, &existingConfigMap)
+	if err != nil {
+		log.Error(err, "reading configmap")
+		return v1.ConfigMap{}, err
+	}
+	return existingConfigMap, nil
+}
+
+func isContained(valueToFind string, volumes []v1.Volume) bool {
+	for _, val := range volumes {
+		if val.ConfigMap.Name == valueToFind {
+			return true
+		}
+	}
+	return false
 }
 
 // rolloutDeploymentIfCMChangedMutateVisitor forces a pod refresh if the workflow definition suffered any changes.
