@@ -60,7 +60,8 @@ const (
 )
 
 var defaultApplicationProperties = "quarkus.http.port=" + strconv.Itoa(defaultHTTPWorkflowPort) + "\n" +
-	"quarkus.http.host=0.0.0.0\n"
+	"quarkus.http.host=0.0.0.0\n" +
+	"org.kie.kogito.addons.knative.health-enabled=false\n"
 
 // objectCreator is the func that creates the initial reference object, if the object doesn't exist in the cluster, this one is created.
 // Can be used as a reference to keep the object immutable

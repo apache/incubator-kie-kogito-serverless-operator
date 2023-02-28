@@ -122,8 +122,7 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 	deployment, _, err := e.ensurers.deployment.ensure(ctx, workflow,
 		defaultDeploymentMutateVisitor(workflow),
 		naiveApplyImageDeploymentMutateVisitor(defaultKogitoServerlessWorkflowDevImage),
-		mountDevConfigMapsMutateVisitor(flowDefCM.(*v1.ConfigMap), propsCM.(*v1.ConfigMap)),
-		disableKnativeEventingHealthCheckMutateVisitor())
+		mountDevConfigMapsMutateVisitor(flowDefCM.(*v1.ConfigMap), propsCM.(*v1.ConfigMap)))
 	if err != nil {
 		return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 	}
@@ -329,20 +328,6 @@ func rolloutDeploymentIfCMChangedMutateVisitor(cmOperationResult controllerutil.
 				err := kubeutil.MarkDeploymentToRollout(deployment)
 				return err
 			}
-			return nil
-		}
-	}
-}
-
-// disableKnativeEventingHealthCheckMutateVisitor injects the EnvVar to disable the Knative Eventing Addon Health Check
-//
-// See: https://kiegroup.github.io/kogito-docs/serverlessworkflow/latest/eventing/consume-produce-events-with-knative-eventing.html#ref-knative-eventing-add-on-source-configuration
-// TODO: once we implement (https://issues.redhat.com/browse/KOGITO-8649), we should be able to manage a few configuration properties in the managed CM. This property should be there.
-func disableKnativeEventingHealthCheckMutateVisitor() mutateVisitor {
-	return func(object client.Object) controllerutil.MutateFn {
-		return func() error {
-			deployment := object.(*appsv1.Deployment)
-			kubeutil.CreateOrReplaceEnv(&deployment.Spec.Template.Spec.Containers[0], "ORG_KIE_KOGITO_ADDONS_KNATIVE_HEALTH_ENABLED", "false")
 			return nil
 		}
 	}
