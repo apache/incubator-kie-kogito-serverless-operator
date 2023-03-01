@@ -59,8 +59,10 @@ const (
 	healthStartedInitialDelaySeconds = 10
 )
 
-var defaultApplicationProperties = "quarkus.http.port=" + strconv.Itoa(defaultHTTPWorkflowPort) + "\n" +
+var defaultDevApplicationProperties = "quarkus.http.port=" + strconv.Itoa(defaultHTTPWorkflowPort) + "\n" +
 	"quarkus.http.host=0.0.0.0\n" +
+	// We disable the Knative health checks to not block the dev pod to run if Knative objects are not available
+	// See: https://kiegroup.github.io/kogito-docs/serverlessworkflow/latest/eventing/consume-produce-events-with-knative-eventing.html#ref-knative-eventing-add-on-source-configuration
 	"org.kie.kogito.addons.knative.health-enabled=false\n"
 
 // objectCreator is the func that creates the initial reference object, if the object doesn't exist in the cluster, this one is created.
@@ -258,8 +260,8 @@ func ensureWorkflowSpecConfigMapMutator(workflow *operatorapi.KogitoServerlessWo
 	}
 }
 
-// workflowPropsConfigMapCreator creates a ConfigMap to hold the external application properties
-func workflowPropsConfigMapCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
+// workflowDevPropsConfigMapCreator creates a ConfigMap to hold the external application properties
+func workflowDevPropsConfigMapCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      getWorkflowPropertiesConfigMapName(workflow),
@@ -267,7 +269,7 @@ func workflowPropsConfigMapCreator(workflow *operatorapi.KogitoServerlessWorkflo
 			Labels:    labels(workflow),
 		},
 		// we could use utils.NewJavaProperties, but this way is faster
-		Data: map[string]string{applicationPropertiesFileName: defaultApplicationProperties},
+		Data: map[string]string{applicationPropertiesFileName: defaultDevApplicationProperties},
 	}, nil
 }
 
@@ -275,13 +277,13 @@ func getWorkflowPropertiesConfigMapName(workflow *operatorapi.KogitoServerlessWo
 	return workflow.Name + workflowConfigMapNameSuffix
 }
 
-func ensureWorkflowPropertiesConfigMapMutator(workflow *operatorapi.KogitoServerlessWorkflow) mutateVisitor {
+func ensureWorkflowDevPropertiesConfigMapMutator(workflow *operatorapi.KogitoServerlessWorkflow) mutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			if kubeutil.IsObjectNew(object) {
 				return nil
 			}
-			original, err := workflowPropsConfigMapCreator(workflow)
+			original, err := workflowDevPropsConfigMapCreator(workflow)
 			if err != nil {
 				return err
 			}
@@ -291,12 +293,12 @@ func ensureWorkflowPropertiesConfigMapMutator(workflow *operatorapi.KogitoServer
 			_, hasKey := cm.Data[applicationPropertiesFileName]
 			if !hasKey {
 				cm.Data = make(map[string]string, 1)
-				cm.Data[applicationPropertiesFileName] = defaultApplicationProperties
+				cm.Data[applicationPropertiesFileName] = defaultDevApplicationProperties
 			} else {
 				props, propErr := properties.LoadString(cm.Data[applicationPropertiesFileName])
 				if propErr != nil {
 					// can't load user's properties, replace with default
-					cm.Data[applicationPropertiesFileName] = defaultApplicationProperties
+					cm.Data[applicationPropertiesFileName] = defaultDevApplicationProperties
 					return nil
 				}
 				originalProps := properties.MustLoadString(original.(*corev1.ConfigMap).Data[applicationPropertiesFileName])
