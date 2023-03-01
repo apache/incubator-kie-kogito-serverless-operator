@@ -31,7 +31,7 @@ spec:
     - jsonPath: .status.conditions[?(@.type=='Running')].status
       name: Condition
       type: string
-    - jsonPath: .status.reason
+    - jsonPath: .status.conditions[?(@.type=='Running')].reason
       name: Reason
       type: string
     name: v1alpha08

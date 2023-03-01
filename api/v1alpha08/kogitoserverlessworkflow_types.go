@@ -96,7 +96,7 @@ func (s *KogitoServerlessWorkflowStatus) IsBuildRunning() bool {
 // +kubebuilder:printcolumn:name="Version",type=string,JSONPath=`.metadata.annotations.sw\.kogito\.kie\.org\/version`
 // +kubebuilder:printcolumn:name="Address",type=string,JSONPath=`.status.address.url`
 // +kubebuilder:printcolumn:name="Condition",type=string,JSONPath=`.status.conditions[?(@.type=='Running')].status`
-// +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.reason`
+// +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=='Running')].reason`
 type KogitoServerlessWorkflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
