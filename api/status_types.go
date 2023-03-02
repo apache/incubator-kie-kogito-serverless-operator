@@ -171,7 +171,6 @@ func (s *conditionManager) MarkTrue(t ConditionType) {
 		Type:   t,
 		Status: corev1.ConditionTrue,
 	})
-	s.recomputeReadiness(t)
 }
 
 // MarkTrueWithReason sets the status of t to true with the reason
@@ -183,26 +182,6 @@ func (s *conditionManager) MarkTrueWithReason(t ConditionType, reason, messageFo
 		Reason:  reason,
 		Message: fmt.Sprintf(messageFormat, messageA...),
 	})
-	s.recomputeReadiness(t)
-}
-
-// recomputeReadiness marks the ready condition to true if all other dependents are also true.
-func (s *conditionManager) recomputeReadiness(t ConditionType) {
-	if c := s.findUnreadyDependent(); c != nil {
-		// Propagate unhappy dependent to happy condition.
-		s.setCondition(Condition{
-			Type:    s.ready,
-			Status:  c.Status,
-			Reason:  c.Reason,
-			Message: c.Message,
-		})
-	} else if t != s.ready {
-		// Set the happy condition to true.
-		s.setCondition(Condition{
-			Type:   s.ready,
-			Status: corev1.ConditionTrue,
-		})
-	}
 }
 
 func (s *conditionManager) findUnreadyDependent() *Condition {

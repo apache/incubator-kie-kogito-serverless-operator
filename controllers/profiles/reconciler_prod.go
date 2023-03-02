@@ -87,8 +87,7 @@ type newBuilderReconciliationState struct {
 }
 
 func (h *newBuilderReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
-	return workflow.Status.GetTopLevelCondition().IsUnknown() ||
-		(workflow.Status.IsWaitingForPlatform() && workflow.Status.GetCondition(api.BuiltConditionType).Status != v1.ConditionTrue)
+	return workflow.Status.GetTopLevelCondition().IsUnknown() || workflow.Status.IsWaitingForPlatform()
 }
 
 func (h *newBuilderReconciliationState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
@@ -136,7 +135,7 @@ type ensureBuilderReconciliationState struct {
 }
 
 func (h *ensureBuilderReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
-	return workflow.Status.GetTopLevelCondition().IsTrue()
+	return workflow.Status.IsWaitingForBuild()
 }
 
 func (h *ensureBuilderReconciliationState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
@@ -155,7 +154,7 @@ func (h *ensureBuilderReconciliationState) Do(ctx context.Context, workflow *ope
 			return ctrl.Result{Requeue: true}, nil, err
 		}
 	}
-	return ctrl.Result{}, nil, nil
+	return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil, nil
 }
 
 type followBuildStatusReconciliationState struct {
@@ -181,6 +180,7 @@ func (h *followBuildStatusReconciliationState) Do(ctx context.Context, workflow 
 	if build.Status.Builder.Status.Phase == builderapi.BuildPhaseSucceeded {
 		//If we have finished a build and the workflow is not running, we will start the provisioning phase
 		workflow.Status.Manager().MarkTrue(api.BuiltConditionType)
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForBuildReason, "")
 		_, err = h.performStatusUpdate(ctx, workflow)
 	} else if build.Status.Builder.Status.Phase == builderapi.BuildPhaseFailed || build.Status.Builder.Status.Phase == builderapi.BuildPhaseError {
 		// TODO: we should handle build failures
@@ -192,7 +192,7 @@ func (h *followBuildStatusReconciliationState) Do(ctx context.Context, workflow 
 		workflow.Status.Manager().MarkFalse(api.BuiltConditionType, "", "")
 		_, err = h.performStatusUpdate(ctx, workflow)
 	}
-	return ctrl.Result{}, nil, err
+	return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil, err
 }
 
 type deployWorkflowReconciliationState struct {

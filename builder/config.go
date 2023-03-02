@@ -58,11 +58,14 @@ func NewCustomConfig(platform operatorapi.KogitoServerlessPlatform) (map[string]
 }
 
 // GetCommonConfigMap retrieves the config map with the builder common configuration information
-func GetCommonConfigMap(client client.Client) (corev1.ConfigMap, error) {
+func GetCommonConfigMap(client client.Client, fallbackNS string) (corev1.ConfigMap, error) {
 
 	namespace, found := os.LookupEnv(envVarPodNamespaceName)
-
 	if !found {
+		namespace = fallbackNS
+	}
+
+	if !found && len(namespace) == 0 {
 		return corev1.ConfigMap{}, errors.Errorf("Can't find current context namespace, make sure that %s env is set", envVarPodNamespaceName)
 	}
 
@@ -80,18 +83,17 @@ func GetCommonConfigMap(client client.Client) (corev1.ConfigMap, error) {
 
 	err := client.Get(context.TODO(), types.NamespacedName{Name: ConfigMapName, Namespace: namespace}, &existingConfigMap)
 	if err != nil {
-		log.Error(err, "reading configmap")
+		log.Error(err, "fetching configmap "+ConfigMapName)
 		return corev1.ConfigMap{}, err
 	}
 
 	err = isValidBuilderCommonConfigMap(existingConfigMap)
 	if err != nil {
-		log.Error(err, "configmap is not valid")
+		log.Error(err, "configmap "+ConfigMapName+" is not valid")
 		return existingConfigMap, err
 	}
 
 	return existingConfigMap, nil
-
 }
 
 // isValidBuilderCommonConfigMap  function that will verify that in the builder config maps there are the required keys, and they aren't empty

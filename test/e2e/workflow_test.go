@@ -53,8 +53,7 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 		// and that the namespace where the Operator and Operand will run are enforced as
 		// restricted so that we can ensure that both can be admitted and run with the enforcement
 
-		/* Disabling sec enforcement since it can break older OCP versions
-
+		// See: https://kubernetes.io/docs/tutorials/security/seccomp/
 
 		By("labeling all namespaces to warn when we apply the manifest if would violate the PodStandards")
 		cmd = exec.Command("kubectl", "label", "--overwrite", "ns", "--all",
@@ -71,7 +70,6 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 			"pod-security.kubernetes.io/enforce=restricted")
 		_, err = utils.Run(cmd)
 		Expect(err).To(Not(HaveOccurred()))
-		*/
 
 		var controllerPodName string
 		operatorImageName, err := utils.GetOperatorImageName()
@@ -87,8 +85,6 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 		outputMake, err := utils.Run(cmd)
 		fmt.Println(string(outputMake))
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-		/* Disabling sec enforcement since it can break older OCP versions
 
 		By("validating that manager Pod/container(s) are restricted")
 		// Get Podsecurity violation lines
@@ -117,7 +113,6 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 			}
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		}
-		*/
 
 		By("validating that the controller-manager pod is running as expected")
 		verifyControllerUp := func() error {

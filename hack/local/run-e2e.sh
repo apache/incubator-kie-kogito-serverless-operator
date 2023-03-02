@@ -16,23 +16,10 @@
 # runs the e2e locally
 # You must have minikube installed
 
-os=$(uname | awk '{print tolower($0)}')
-minikube_ip=$(minikube ip)
-
-if [ "${os}" == 'darwin' ]; then
-    echo "Make sure to run in a separate terminal 'docker run --rm -it --network=host alpine ash -c \"apk add socat && socat TCP-LISTEN:5000,reuseaddr,fork TCP:\$(minikube ip):5000\"'"
-    minikube_ip="localhost"
-fi
-
-minikube_registry="${minikube_ip}:5000"
-export OPERATOR_IMAGE_NAME=${minikube_registry}/kogito-serverless-operator:0.0.1
-
+export OPERATOR_IMAGE_NAME=localhost/kogito-serverless-operator:0.0.1
+eval "$(minikube -p minikube docker-env)"
 make container-build BUILDER=docker IMG="${OPERATOR_IMAGE_NAME}"
 
-if ! docker push "${OPERATOR_IMAGE_NAME}"; then
-  echo "Failed to push image. Stopping test."
-  exit 1
-fi
 
 
 make test-e2e

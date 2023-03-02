@@ -19,4 +19,4 @@ kubectl apply -f ./bundle/manifests/sw.kogito.kie.org_kogitoserverlessplatforms.
 kubectl apply -f ./bundle/manifests/sw.kogito.kie.org_kogitoserverlessbuilds.yaml
 kubectl apply -f ./bundle/manifests/sw.kogito.kie.org_kogitoserverlessworkflows.yaml
 
-go run main.go
+make debug
