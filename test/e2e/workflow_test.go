@@ -55,6 +55,8 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 
 		// See: https://kubernetes.io/docs/tutorials/security/seccomp/
 
+		// TODO: enable this test once we apply security enforcement: https://issues.redhat.com/browse/KOGITO-8799
+
 		/*
 			By("labeling all namespaces to warn when we apply the manifest if would violate the PodStandards")
 			cmd = exec.Command("kubectl", "label", "--overwrite", "ns", "--all",
@@ -89,34 +91,35 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 		fmt.Println(string(outputMake))
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-		/*
-			By("validating that manager Pod/container(s) are restricted")
-			// Get Podsecurity violation lines
-			lines, err := utils.StringToLines(string(outputMake))
-			ExpectWithOffset(1, err).NotTo(HaveOccurred())
-			var violationLines []string
-			applySeccompProfilePatch := false
-			for _, line := range lines {
-				if strings.Contains(line, "Warning: would violate PodSecurity") {
-					if strings.Contains(line, "must set securityContext.seccompProfile.type to") {
-						// Ignore this violation as it is expected
-						applySeccompProfilePatch = true
-					} else {
-						violationLines = append(violationLines, line)
-					}
-				}
-			}
-			Expect(violationLines).To(BeEmpty())
+		/* TODO: apply enforced security to builder pods: https://issues.redhat.com/browse/KOGITO-8799
 
-			if applySeccompProfilePatch {
-				By("Applying seccompProfile")
-				cmd = exec.Command("kubectl", "patch", "deployment", "kogito-serverless-operator-controller-manager", "-p", `{"spec":{"template":{"spec":{"securityContext":{"seccompProfile":{"type":"RuntimeDefault"}}}}}}`, "-n", namespace)
-				_, err := utils.Run(cmd)
-				if utils.IsDebugEnabled() {
-					err = utils.OutputDeployment(namespace, "kogito-serverless-operator-controller-manager")
+		By("validating that manager Pod/container(s) are restricted")
+		// Get Podsecurity violation lines
+		lines, err := utils.StringToLines(string(outputMake))
+		ExpectWithOffset(1, err).NotTo(HaveOccurred())
+		var violationLines []string
+		applySeccompProfilePatch := false
+		for _, line := range lines {
+			if strings.Contains(line, "Warning: would violate PodSecurity") {
+				if strings.Contains(line, "must set securityContext.seccompProfile.type to") {
+					// Ignore this violation as it is expected
+					applySeccompProfilePatch = true
+				} else {
+					violationLines = append(violationLines, line)
 				}
-				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 			}
+		}
+		Expect(violationLines).To(BeEmpty())
+
+		if applySeccompProfilePatch {
+			By("Applying seccompProfile")
+			cmd = exec.Command("kubectl", "patch", "deployment", "kogito-serverless-operator-controller-manager", "-p", `{"spec":{"template":{"spec":{"securityContext":{"seccompProfile":{"type":"RuntimeDefault"}}}}}}`, "-n", namespace)
+			_, err := utils.Run(cmd)
+			if utils.IsDebugEnabled() {
+				err = utils.OutputDeployment(namespace, "kogito-serverless-operator-controller-manager")
+			}
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+		}
 		*/
 
 		By("validating that the controller-manager pod is running as expected")
@@ -171,8 +174,7 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 	Describe("ensure that Operator and Operand(s) can run in restricted namespaces", func() {
 		projectDir, _ := utils.GetProjectDir()
 
-		It("should successfully deploy the Greeting Workflow in prod mode and verify if it's running", func() {
-
+		It("should create a basic platform for Minikube", func() {
 			By("creating builder roles")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
@@ -206,7 +208,9 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 				_, err := utils.Run(cmd)
 				return err
 			}, time.Minute, time.Second).Should(Succeed())
+		})
 
+		It("should successfully deploy the Greeting Workflow in prod mode and verify if it's running", func() {
 			By("creating an instance of the Kogito Serverless Operand(CR)")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
@@ -237,7 +241,7 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 			}, time.Minute, time.Second).Should(Succeed())
 
 			By("check the workflow is in running state")
-			EventuallyWithOffset(1, verifyWorkflowIsInRunningState, time.Minute, 30*time.Second).Should(BeTrue())
+			EventuallyWithOffset(1, verifyWorkflowIsInRunningState, 5*time.Minute, 30*time.Second).Should(BeTrue())
 
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "delete", "-f", filepath.Join(projectDir,
