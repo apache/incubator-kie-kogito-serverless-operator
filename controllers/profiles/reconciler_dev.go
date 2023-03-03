@@ -123,8 +123,8 @@ func newDevProfileReconciler(client client.Client, logger *logr.Logger) ProfileR
 func newDevelopmentObjectEnsurers(support *stateSupport) *devProfileObjectEnsurers {
 	return &devProfileObjectEnsurers{
 		deployment:          newObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
-		service:             newObjectEnsurer(support.client, support.logger, devServiceCreator),
-		route:               newObjectEnsurer(support.client, support.logger, devRouteCreator),
+		service:             newObjectEnsurer(support.client, support.logger, defaultServiceCreator),
+		route:               newConditionedObjectEnsurer(support.client, support.logger, defaultRouteCreator, onlyForOpenShiftClusters),
 		definitionConfigMap: newObjectEnsurer(support.client, support.logger, workflowDefConfigMapCreator),
 		propertiesConfigMap: newObjectEnsurer(support.client, support.logger, workflowDevPropsConfigMapCreator),
 	}
@@ -190,7 +190,7 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 	}
 	objs = append(objs, deployment)
 
-	service, _, err := e.ensurers.service.ensure(ctx, workflow, defaultServiceMutateVisitor(workflow))
+	service, _, err := e.ensurers.service.ensure(ctx, workflow, defaultServiceMutateVisitor(workflow), devProfileServiceMutateVisitor(ctx, e.client, workflow))
 	if err != nil {
 		return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 	}

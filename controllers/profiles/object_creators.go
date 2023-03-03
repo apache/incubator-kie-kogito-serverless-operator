@@ -16,8 +16,9 @@ package profiles
 
 import (
 	"context"
-	v1 "github.com/openshift/api/route/v1"
 	"strconv"
+
+	v1 "github.com/openshift/api/route/v1"
 
 	"github.com/magiconair/properties"
 
@@ -201,27 +202,26 @@ func defaultServiceCreator(workflow *operatorapi.KogitoServerlessWorkflow) (clie
 	return service, nil
 }
 
-// devServiceCreator is an objectCreator for a basic Service for a workflow using dev profile
-// aiming a vanilla Kubernetes Deployment.
-// It maps the default HTTP port (80) to the target Java application webserver on port 8080.
-// It configures the Service as a NodePort type service, in this way it will be easier for a developer access the service
-func devServiceCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
-	object, _ := defaultServiceCreator(workflow)
-	service := object.(*corev1.Service)
-	// Let's double-check that the workflow is using the Dev Profile we would like to expose it via NodePort
-	if IsDevProfile(workflow) {
-		service.Spec.Type = corev1.ServiceTypeNodePort
-	}
-	return service, nil
-}
-
-// devRouteCreator is an objectCreator for a basic Route for a workflow using dev profile
+// defaultRouteCreator is an objectCreator for a basic Route for a workflow using dev profile
 // running on OpenShift.
 // It enables the exposition of the dev service using an OpenShift Route.
 // See: https://github.com/openshift/api/blob/d170fcdc0fa638b664e4f35f2daf753cb4afe36b/route/v1/route.crd.yaml
-func devRouteCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
-	// FIXME: Create a working Route
-	return &v1.Route{}, nil
+func defaultRouteCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
+	lbl := labels(workflow)
+	route := &v1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workflow.Name,
+			Namespace: workflow.Namespace,
+			Labels:    lbl,
+		},
+		Spec: v1.RouteSpec{
+			To: v1.RouteTargetReference{
+				Kind: "Service",
+				Name: workflow.Name,
+			},
+		},
+	}
+	return route, nil
 }
 
 func defaultServiceMutateVisitor(workflow *operatorapi.KogitoServerlessWorkflow) mutateVisitor {

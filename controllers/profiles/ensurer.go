@@ -33,11 +33,22 @@ func newObjectEnsurer(client client.Client, logger *logr.Logger, creator objectC
 	}
 }
 
+// newConditionedObjectEnsurer see objectEnsurer
+func newConditionedObjectEnsurer(client client.Client, logger *logr.Logger, creator objectCreator, conditions ...objectCreationCondition) *objectEnsurer {
+	return &objectEnsurer{
+		client:     client,
+		logger:     logger,
+		creator:    creator,
+		conditions: conditions,
+	}
+}
+
 // objectEnsurer provides the engine for a ReconciliationState that needs to create or update a given Kubernetes object during the reconciliation cycle.
 type objectEnsurer struct {
-	client  client.Client
-	logger  *logr.Logger
-	creator objectCreator
+	client     client.Client
+	logger     *logr.Logger
+	creator    objectCreator
+	conditions []objectCreationCondition
 }
 
 // mutateVisitor is a visitor function that mutates the given object before performing any updates in the cluster.
@@ -52,6 +63,12 @@ type mutateVisitor func(object client.Object) controllerutil.MutateFn
 
 func (d *objectEnsurer) ensure(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow, visitors ...mutateVisitor) (client.Object, controllerutil.OperationResult, error) {
 	result := controllerutil.OperationResultNone
+	for _, condition := range d.conditions {
+		if ok, err := condition(ctx, d.client, workflow); !ok {
+			d.logger.Info("Object operation skipped due to condition not verified")
+			return nil, result, err
+		}
+	}
 	object, err := d.creator(workflow)
 	if err != nil {
 		return nil, result, err
