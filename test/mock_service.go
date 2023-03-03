@@ -113,31 +113,6 @@ func MockServiceWithExtraScheme(objs ...runtime.Object) *MockPlatformService {
 	}
 	client := fake.NewFakeClientWithScheme(scheme)
 	logger.Debugf("Fake client created as %v", client)
-	return getMockedPlatformService(client, scheme)
-}
-
-func MockServiceWithInitObjects(initObjs ...runtime.Object) *MockPlatformService {
-	registerObjs := []runtime.Object{
-		&apiv08.KogitoServerlessWorkflow{},
-		&apiv08.KogitoServerlessWorkflowList{},
-		&apiv08.KogitoServerlessPlatform{},
-		&apiv08.KogitoServerlessPlatformList{},
-		&apiv08.KogitoServerlessBuild{},
-		&apiv08.KogitoServerlessBuildList{}}
-	registerObjs = append(registerObjs)
-	apiv08.SchemeBuilder.Register(registerObjs...)
-	scheme, _ := apiv08.SchemeBuilder.Build()
-	for gv, types := range knownTypes {
-		for _, t := range types {
-			scheme.AddKnownTypes(gv, t)
-		}
-	}
-	client := fake.NewFakeClientWithScheme(scheme, initObjs...)
-	logger.Debugf("Fake client created as %v", client)
-	return getMockedPlatformService(client, scheme)
-}
-
-func getMockedPlatformService(client clientv1.WithWatch, scheme *runtime.Scheme) *MockPlatformService {
 	return &MockPlatformService{
 		Client: client,
 		scheme: scheme,

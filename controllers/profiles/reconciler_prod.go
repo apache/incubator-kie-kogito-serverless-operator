@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/client-go/rest"
+
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -53,21 +55,22 @@ const (
 // ReconciliationState that needs access to it must include this struct as an attribute and initialize it in the profile builder.
 // Use newProdObjectEnsurers to facilitate building this struct
 type prodObjectEnsurers struct {
-	deployment *objectEnsurer
-	service    *objectEnsurer
+	deployment ObjectEnsurer
+	service    ObjectEnsurer
 }
 
 func newProdObjectEnsurers(support *stateSupport) *prodObjectEnsurers {
 	return &prodObjectEnsurers{
-		deployment: newObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
-		service:    newObjectEnsurer(support.client, support.logger, defaultServiceCreator),
+		deployment: newDefualtObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
+		service:    newDefualtObjectEnsurer(support.client, support.logger, defaultServiceCreator),
 	}
 }
 
-func newProdProfileReconciler(client client.Client, logger *logr.Logger) ProfileReconciler {
+func newProdProfileReconciler(client client.Client, config *rest.Config, logger *logr.Logger) ProfileReconciler {
 	support := &stateSupport{
 		logger: logger,
 		client: client,
+		config: config,
 	}
 	// the reconciliation state machine
 	stateMachine := newReconciliationStateMachine(

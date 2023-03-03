@@ -15,13 +15,11 @@
 package profiles
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 
-	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/test"
 )
 
@@ -33,14 +31,7 @@ func Test_ensureWorkflowDevServiceIsExposed(t *testing.T) {
 	service.SetUID("1")
 	service.SetResourceVersion("1")
 
-	k8sCluster := test.GetKogitoServerlessPlatform("../../config/samples/" + test.KogitoServerlessPlatformYamlCR)
-	k8sCluster.Spec.Cluster = operatorapi.PlatformClusterKubernetes
-	k8sCluster.Namespace = "Test_ensureWorkflowDevServiceIsExposed"
-	k8sCluster.Status.Phase = operatorapi.PlatformPhaseReady
-
-	mockedApi := test.MockServiceWithInitObjects(k8sCluster)
-
-	visitor := devProfileServiceMutateVisitor(context.TODO(), mockedApi.Client, workflow)
+	visitor := devProfileServiceMutateVisitor(workflow)
 
 	mutateFn := visitor(service)
 
@@ -50,26 +41,4 @@ func Test_ensureWorkflowDevServiceIsExposed(t *testing.T) {
 	assert.NotNil(t, reflectService.Spec.Type)
 	assert.NotEmpty(t, reflectService.Spec.Type)
 	assert.Equal(t, reflectService.Spec.Type, v1.ServiceTypeNodePort)
-
-	//On OpenShift we don't want the service exposed in Dev with NodePort we will use a route!
-	service, _ = defaultServiceCreator(workflow)
-	service.SetUID("1")
-	service.SetResourceVersion("1")
-
-	openshiftCluster := test.GetKogitoServerlessPlatform("../../config/samples/" + test.KogitoServerlessPlatformYamlCR)
-	openshiftCluster.Spec.Cluster = operatorapi.PlatformClusterOpenShift
-	openshiftCluster.Namespace = "Test_ensureWorkflowDevServiceIsExposed"
-	openshiftCluster.Status.Phase = operatorapi.PlatformPhaseReady
-
-	mockedApi = test.MockServiceWithInitObjects(openshiftCluster)
-
-	visitor = devProfileServiceMutateVisitor(context.TODO(), mockedApi.Client, workflow)
-
-	mutateFn = visitor(service)
-
-	reflectService = service.(*v1.Service)
-	assert.NoError(t, mutateFn())
-	assert.NotNil(t, reflectService)
-	assert.NotNil(t, reflectService.Spec.Type)
-	assert.Empty(t, reflectService.Spec.Type)
 }

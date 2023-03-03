@@ -18,10 +18,8 @@ import (
 	"context"
 	"strconv"
 
-	v1 "github.com/openshift/api/route/v1"
-
 	"github.com/magiconair/properties"
-
+	v1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,10 +27,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	kubeutil "github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
-
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/utils"
+	kubeutil "github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
 )
 
 const (
@@ -202,11 +199,11 @@ func defaultServiceCreator(workflow *operatorapi.KogitoServerlessWorkflow) (clie
 	return service, nil
 }
 
-// defaultRouteCreator is an objectCreator for a basic Route for a workflow using dev profile
+// defaultNetworkCreator is an objectCreator for a basic Route for a workflow using dev profile
 // running on OpenShift.
 // It enables the exposition of the dev service using an OpenShift Route.
 // See: https://github.com/openshift/api/blob/d170fcdc0fa638b664e4f35f2daf753cb4afe36b/route/v1/route.crd.yaml
-func defaultRouteCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
+func defaultNetworkCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
 	lbl := labels(workflow)
 	route := &v1.Route{
 		ObjectMeta: metav1.ObjectMeta{

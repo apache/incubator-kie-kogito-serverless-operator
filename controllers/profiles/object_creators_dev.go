@@ -15,13 +15,11 @@
 package profiles
 
 import (
-	"context"
+	kubeutil "github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
 
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	kubeutil "github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
@@ -40,12 +38,9 @@ func devServiceCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.O
 	return service, nil
 }
 
-func devProfileServiceMutateVisitor(ctx context.Context, c client.Client, workflow *operatorapi.KogitoServerlessWorkflow) mutateVisitor {
+func devProfileServiceMutateVisitor(workflow *operatorapi.KogitoServerlessWorkflow) mutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
-			if ok, _ := onlyForKubernetesClusters(ctx, c, workflow); !ok {
-				return nil
-			}
 			if kubeutil.IsObjectNew(object) {
 				return nil
 			}

@@ -17,10 +17,12 @@ package profiles
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 
 	"github.com/kiegroup/kogito-serverless-operator/version"
@@ -28,6 +30,7 @@ import (
 	"github.com/kiegroup/kogito-serverless-operator/platform"
 
 	"github.com/go-logr/logr"
+	openshiftv1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -101,43 +104,80 @@ func (d developmentProfile) GetProfile() Profile {
 	return Development
 }
 
-func newDevProfileReconciler(client client.Client, logger *logr.Logger) ProfileReconciler {
+func newDevProfileReconciler(client client.Client, config *rest.Config, logger *logr.Logger) ProfileReconciler {
 	support := &stateSupport{
 		logger: logger,
 		client: client,
+		config: config,
 	}
-	ensurers := newDevelopmentObjectEnsurers(support)
+
+	var ensurers *devProfileObjectEnsurers
+	var enrichers *devProfileObjectEnrichers
+	if isOpenShift(client) {
+		ensurers = newDevelopmentObjectEnsurersForOpenShift(support)
+		enrichers = newDevelopmentObjectEnrichersForOpenShift(support)
+	} else {
+		ensurers = newDevelopmentObjectEnsurers(support)
+		enrichers = newDevelopmentObjectEnrichers(support)
+	}
 
 	stateMachine := newReconciliationStateMachine(logger,
 		&ensureRunningDevWorkflowReconciliationState{stateSupport: support, ensurers: ensurers},
-		&followDeployDevWorkflowReconciliationState{stateSupport: support},
+		&followDeployDevWorkflowReconciliationState{stateSupport: support, enrichers: enrichers},
 		&recoverFromFailureDevReconciliationState{stateSupport: support})
 
 	profile := &developmentProfile{
 		baseReconciler: newBaseProfileReconciler(support, stateMachine),
 	}
+
 	logger.Info("Reconciling in", "profile", profile.GetProfile())
 	return profile
 }
 
 func newDevelopmentObjectEnsurers(support *stateSupport) *devProfileObjectEnsurers {
 	return &devProfileObjectEnsurers{
-		deployment:          newObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
-		service:             newObjectEnsurer(support.client, support.logger, defaultServiceCreator),
-		route:               newConditionedObjectEnsurer(support.client, support.logger, defaultRouteCreator, onlyForOpenShiftClusters),
-		definitionConfigMap: newObjectEnsurer(support.client, support.logger, workflowDefConfigMapCreator),
-		propertiesConfigMap: newObjectEnsurer(support.client, support.logger, workflowDevPropsConfigMapCreator),
+		deployment:          newDefualtObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
+		service:             newDefualtObjectEnsurer(support.client, support.logger, devServiceCreator),
+		network:             newDummyObjectEnsurer(),
+		definitionConfigMap: newDefualtObjectEnsurer(support.client, support.logger, workflowDefConfigMapCreator),
+		propertiesConfigMap: newDefualtObjectEnsurer(support.client, support.logger, workflowDevPropsConfigMapCreator),
+	}
+}
+
+func newDevelopmentObjectEnsurersForOpenShift(support *stateSupport) *devProfileObjectEnsurers {
+	return &devProfileObjectEnsurers{
+		deployment:          newDefualtObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
+		service:             newDefualtObjectEnsurer(support.client, support.logger, defaultServiceCreator),
+		network:             newDefualtObjectEnsurer(support.client, support.logger, defaultNetworkCreator),
+		definitionConfigMap: newDefualtObjectEnsurer(support.client, support.logger, workflowDefConfigMapCreator),
+		propertiesConfigMap: newDefualtObjectEnsurer(support.client, support.logger, workflowDevPropsConfigMapCreator),
+	}
+}
+
+func newDevelopmentObjectEnrichers(support *stateSupport) *devProfileObjectEnrichers {
+	return &devProfileObjectEnrichers{
+		networkInfo: newStatusEnricher(support.client, support.config, support.logger, defaultDevStatusEnricher),
+	}
+}
+
+func newDevelopmentObjectEnrichersForOpenShift(support *stateSupport) *devProfileObjectEnrichers {
+	return &devProfileObjectEnrichers{
+		networkInfo: newStatusEnricher(support.client, support.config, support.logger, devStatusEnricherForOpenShift),
 	}
 }
 
 type devProfileObjectEnsurers struct {
-	deployment          *objectEnsurer
-	service             *objectEnsurer
-	route               *objectEnsurer
-	definitionConfigMap *objectEnsurer
-	propertiesConfigMap *objectEnsurer
+	deployment          ObjectEnsurer
+	service             ObjectEnsurer
+	network             ObjectEnsurer
+	definitionConfigMap ObjectEnsurer
+	propertiesConfigMap ObjectEnsurer
 }
 
+type devProfileObjectEnrichers struct {
+	networkInfo *statusEnricher
+	//Here we can add more enrichers if we need in future to enrich objects with more info coming from reconciliation
+}
 type ensureRunningDevWorkflowReconciliationState struct {
 	*stateSupport
 	ensurers *devProfileObjectEnsurers
@@ -190,11 +230,17 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 	}
 	objs = append(objs, deployment)
 
-	service, _, err := e.ensurers.service.ensure(ctx, workflow, defaultServiceMutateVisitor(workflow), devProfileServiceMutateVisitor(ctx, e.client, workflow))
+	service, _, err := e.ensurers.service.ensure(ctx, workflow, defaultServiceMutateVisitor(workflow), devProfileServiceMutateVisitor(workflow))
 	if err != nil {
 		return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 	}
 	objs = append(objs, service)
+
+	route, _, err := e.ensurers.network.ensure(ctx, workflow)
+	if err != nil {
+		return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
+	}
+	objs = append(objs, route)
 
 	// First time reconciling this object, mark as wait for deployment
 	if workflow.Status.GetTopLevelCondition().IsUnknown() {
@@ -214,25 +260,6 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 		if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 		}
-
-		//If the workflow Status hasn't got a NodePort Endpoint, we are ensuring it will be set
-		if findNodePortFromEndpoint(workflow.Status.Endpoints) == 0 {
-			reflectService := service.(*v1.Service)
-			//If the service has got a Port that is a nodePort we have to use it to create the workflow's NodePort Endpoint
-			if reflectService.Spec.Ports != nil && len(reflectService.Spec.Ports) > 0 {
-				if port := findNodePortFromPorts(reflectService.Spec.Ports); port > 0 {
-					newEndpoint := operatorapi.Endpoint{
-						Port:     port,
-						PortName: "NodePort",
-					}
-					workflow.Status.Endpoints = append(workflow.Status.Endpoints, newEndpoint)
-					if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
-						return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
-					}
-				}
-			}
-
-		}
 	}
 
 	return ctrl.Result{RequeueAfter: requeueAfterIsRunning}, objs, nil
@@ -244,6 +271,7 @@ func isSnapshot(operatorVersion string) bool {
 
 type followDeployDevWorkflowReconciliationState struct {
 	*stateSupport
+	enrichers *devProfileObjectEnrichers
 }
 
 func (f *followDeployDevWorkflowReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
@@ -266,6 +294,7 @@ func (f *followDeployDevWorkflowReconciliationState) Do(ctx context.Context, wor
 		f.logger.Info("Workflow is in Running Condition")
 		if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
+
 		}
 		return ctrl.Result{RequeueAfter: requeueAfterIsRunning}, nil, nil
 	}
@@ -284,6 +313,21 @@ func (f *followDeployDevWorkflowReconciliationState) Do(ctx context.Context, wor
 	f.logger.Info("Workflow deployment failed", "Reason Message", failedReason)
 	_, err := f.performStatusUpdate(ctx, workflow)
 	return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
+}
+
+func (f *followDeployDevWorkflowReconciliationState) PostReconcile(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) error {
+	deployment := &appsv1.Deployment{}
+	if err := f.client.Get(ctx, client.ObjectKeyFromObject(workflow), deployment); err != nil {
+		return err
+	}
+	if deployment != nil && kubeutil.IsDeploymentAvailable(deployment) {
+		// Enriching Workflow CR status with needed network info
+		f.enrichers.networkInfo.Enrich(ctx, workflow)
+		if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type recoverFromFailureDevReconciliationState struct {
@@ -440,19 +484,6 @@ func rolloutDeploymentIfCMChangedMutateVisitor(cmOperationResult controllerutil.
 	}
 }
 
-// Function to return the first NodePort in the array of Endpoint
-func findNodePortFromEndpoint(endpoints []operatorapi.Endpoint) int {
-	if endpoints != nil && len(endpoints) > 0 {
-		for _, v := range endpoints {
-			if v.PortName == "NodePort" {
-				return v.Port
-			}
-		}
-	}
-	//If we are not able to find a NodePort let's return the zero value
-	return 0
-}
-
 // Function to return the first Port in an array of ServicePort
 func findNodePortFromPorts(ports []v1.ServicePort) int {
 	if ports != nil && len(ports) > 0 {
@@ -464,4 +495,15 @@ func findNodePortFromPorts(ports []v1.ServicePort) int {
 	}
 	//If we are not able to find a NodePort let's return the zero value
 	return 0
+}
+
+// Function that verifies if we are on OpenShift checking if the Route CRD exists
+func isOpenShift(client client.Client) bool {
+	routeKind := reflect.TypeOf(openshiftv1.Route{})
+	for groupVersionKind, _ := range client.Scheme().AllKnownTypes() {
+		if groupVersionKind.Kind == routeKind.Name() && groupVersionKind.Group == openshiftv1.GroupVersion.Group && groupVersionKind.Version == openshiftv1.GroupVersion.Version {
+			return true
+		}
+	}
+	return false
 }

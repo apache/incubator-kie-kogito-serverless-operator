@@ -17,3 +17,4 @@
 # shellcheck disable=SC2155
 export GOROOT=$(go env GOROOT)
 export GOPATH=$(go env GOPATH)
+export PATH=$GOROOT:$GOPATH/bin:$PATH

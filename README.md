@@ -28,7 +28,7 @@ You’ll need a Kubernetes cluster to run against. You can use:
 
 - [KIND](https://sigs.k8s.io/kind)
 - [MINIKUBE](https://minikube.sigs.k8s.io/)
-- [CRC](https://console.redhat.com/openshift/create/local)
+- [Openshift Local](https://console.redhat.com/openshift/create/local)
 
 to get a local cluster for testing, or run against a remote cluster.
 
@@ -70,6 +70,13 @@ make deploy IMG=<some-registry>/kogito-serverless-operator:tag
 ```
 
 This will deploy the operator into the `kogito-serverless-operator-system` namespace.
+
+**Note:** If you would like to deploy the operator OpenShift Local you need to add the `TARGET_CLUSTER_KIND` parameter
+with the `openshift` value and so:
+
+```sh
+make deploy IMG=<some-registry>/kogito-serverless-operator:tag TARGET_CLUSTER_KIND=openshift
+```
 
 ## Test the Greeting workflow
 
