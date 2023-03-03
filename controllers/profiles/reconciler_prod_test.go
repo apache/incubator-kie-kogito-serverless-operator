@@ -31,6 +31,8 @@ import (
 func Test_deployWorkflowReconciliationHandler_handleObjects(t *testing.T) {
 	logger := ctrllog.FromContext(context.TODO())
 	workflow := test.GetKogitoServerlessWorkflow("../../config/samples/"+test.KogitoServerlessWorkflowSampleYamlCR, t.Name())
+	// make sure that the workflow won't trigger a change
+	workflow.Status.Applied = workflow.Spec
 	platform := test.GetKogitoServerlessPlatformInReadyPhase("../../config/samples/"+test.KogitoServerlessPlatformWithCacheYamlCR, t.Name())
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow, platform).Build()
 	handler := &deployWorkflowReconciliationState{

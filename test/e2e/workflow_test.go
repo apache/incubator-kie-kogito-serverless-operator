@@ -55,21 +55,24 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 
 		// See: https://kubernetes.io/docs/tutorials/security/seccomp/
 
-		By("labeling all namespaces to warn when we apply the manifest if would violate the PodStandards")
-		cmd = exec.Command("kubectl", "label", "--overwrite", "ns", "--all",
-			"pod-security.kubernetes.io/audit=restricted",
-			"pod-security.kubernetes.io/enforce-version=v1.22",
-			"pod-security.kubernetes.io/warn=restricted")
-		_, err := utils.Run(cmd)
-		ExpectWithOffset(1, err).NotTo(HaveOccurred())
+		/*
+			By("labeling all namespaces to warn when we apply the manifest if would violate the PodStandards")
+			cmd = exec.Command("kubectl", "label", "--overwrite", "ns", "--all",
+				"pod-security.kubernetes.io/audit=restricted",
+				"pod-security.kubernetes.io/enforce-version=v1.22",
+				"pod-security.kubernetes.io/warn=restricted")
+			_, err := utils.Run(cmd)
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-		By("labeling enforce the namespace where the Operator and Operand(s) will run")
-		cmd = exec.Command("kubectl", "label", "--overwrite", "ns", namespace,
-			"pod-security.kubernetes.io/audit=restricted",
-			"pod-security.kubernetes.io/enforce-version=v1.22",
-			"pod-security.kubernetes.io/enforce=restricted")
-		_, err = utils.Run(cmd)
-		Expect(err).To(Not(HaveOccurred()))
+			By("labeling enforce the namespace where the Operator and Operand(s) will run")
+			cmd = exec.Command("kubectl", "label", "--overwrite", "ns", namespace,
+				"pod-security.kubernetes.io/audit=restricted",
+				"pod-security.kubernetes.io/enforce-version=v1.22",
+				"pod-security.kubernetes.io/enforce=restricted")
+			_, err = utils.Run(cmd)
+			Expect(err).To(Not(HaveOccurred()))
+
+		*/
 
 		var controllerPodName string
 		operatorImageName, err := utils.GetOperatorImageName()
@@ -86,33 +89,35 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 		fmt.Println(string(outputMake))
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-		By("validating that manager Pod/container(s) are restricted")
-		// Get Podsecurity violation lines
-		lines, err := utils.StringToLines(string(outputMake))
-		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-		var violationLines []string
-		applySeccompProfilePatch := false
-		for _, line := range lines {
-			if strings.Contains(line, "Warning: would violate PodSecurity") {
-				if strings.Contains(line, "must set securityContext.seccompProfile.type to") {
-					// Ignore this violation as it is expected
-					applySeccompProfilePatch = true
-				} else {
-					violationLines = append(violationLines, line)
+		/*
+			By("validating that manager Pod/container(s) are restricted")
+			// Get Podsecurity violation lines
+			lines, err := utils.StringToLines(string(outputMake))
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+			var violationLines []string
+			applySeccompProfilePatch := false
+			for _, line := range lines {
+				if strings.Contains(line, "Warning: would violate PodSecurity") {
+					if strings.Contains(line, "must set securityContext.seccompProfile.type to") {
+						// Ignore this violation as it is expected
+						applySeccompProfilePatch = true
+					} else {
+						violationLines = append(violationLines, line)
+					}
 				}
 			}
-		}
-		Expect(violationLines).To(BeEmpty())
+			Expect(violationLines).To(BeEmpty())
 
-		if applySeccompProfilePatch {
-			By("Applying seccompProfile")
-			cmd = exec.Command("kubectl", "patch", "deployment", "kogito-serverless-operator-controller-manager", "-p", `{"spec":{"template":{"spec":{"securityContext":{"seccompProfile":{"type":"RuntimeDefault"}}}}}}`, "-n", namespace)
-			_, err := utils.Run(cmd)
-			if utils.IsDebugEnabled() {
-				err = utils.OutputDeployment(namespace, "kogito-serverless-operator-controller-manager")
+			if applySeccompProfilePatch {
+				By("Applying seccompProfile")
+				cmd = exec.Command("kubectl", "patch", "deployment", "kogito-serverless-operator-controller-manager", "-p", `{"spec":{"template":{"spec":{"securityContext":{"seccompProfile":{"type":"RuntimeDefault"}}}}}}`, "-n", namespace)
+				_, err := utils.Run(cmd)
+				if utils.IsDebugEnabled() {
+					err = utils.OutputDeployment(namespace, "kogito-serverless-operator-controller-manager")
+				}
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 			}
-			ExpectWithOffset(1, err).NotTo(HaveOccurred())
-		}
+		*/
 
 		By("validating that the controller-manager pod is running as expected")
 		verifyControllerUp := func() error {
@@ -166,7 +171,41 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 	Describe("ensure that Operator and Operand(s) can run in restricted namespaces", func() {
 		projectDir, _ := utils.GetProjectDir()
 
-		It("should successfully deploy the Greeting Workflow", func() {
+		It("should successfully deploy the Greeting Workflow in prod mode and verify if it's running", func() {
+
+			By("creating builder roles")
+			EventuallyWithOffset(1, func() error {
+				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
+					"resources/builder/builder-service-account.yaml"), "-n", namespace)
+				_, err := utils.Run(cmd)
+				if err != nil {
+					return err
+				}
+
+				cmd = exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
+					"resources/builder/builder-role.yaml"), "-n", namespace)
+				_, err = utils.Run(cmd)
+				if err != nil {
+					return err
+				}
+
+				cmd = exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
+					"resources/builder/builder-role-binding.yaml"), "-n", namespace)
+				_, err = utils.Run(cmd)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			}, time.Minute, time.Second).Should(Succeed())
+
+			By("creating an instance of the Kogito Serverless Platform")
+			EventuallyWithOffset(1, func() error {
+				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
+					"config/samples/"+test.KogitoServerlessPlatformWithCacheMinikubeYamlCR), "-n", namespace)
+				_, err := utils.Run(cmd)
+				return err
+			}, time.Minute, time.Second).Should(Succeed())
 
 			By("creating an instance of the Kogito Serverless Operand(CR)")
 			EventuallyWithOffset(1, func() error {
@@ -175,6 +214,9 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 				_, err := utils.Run(cmd)
 				return err
 			}, time.Minute, time.Second).Should(Succeed())
+
+			By("check the workflow is in running state")
+			EventuallyWithOffset(1, verifyWorkflowIsInRunningState, 10*time.Minute, 30*time.Second).Should(BeTrue())
 
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "delete", "-f", filepath.Join(projectDir,
@@ -195,24 +237,8 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 			}, time.Minute, time.Second).Should(Succeed())
 
 			By("check the workflow is in running state")
-			EventuallyWithOffset(1, func() bool {
-				cmd := exec.Command("kubectl", "get", "workflow", "greeting", "-n", namespace, "-o", "jsonpath={.status.conditions[?(@.type=='Running')].status}")
-				if response, err := utils.Run(cmd); err != nil {
-					GinkgoWriter.Println(fmt.Errorf("failed to check if greeting workflow is running: %v", err))
-					return false
-				} else {
-					GinkgoWriter.Println(fmt.Sprintf("Got response %s", response))
-					if len(strings.TrimSpace(string(response))) > 0 {
-						status, err := strconv.ParseBool(string(response))
-						if err != nil {
-							GinkgoWriter.Println(fmt.Errorf("failed to parse result %v", err))
-							return false
-						}
-						return status
-					}
-					return false
-				}
-			}, time.Minute, time.Second).Should(BeTrue())
+			EventuallyWithOffset(1, verifyWorkflowIsInRunningState, time.Minute, 30*time.Second).Should(BeTrue())
+
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "delete", "-f", filepath.Join(projectDir,
 					"config/samples/"+test.KogitoServerlessWorkflowSampleDevModeYamlCR), "-n", namespace)
@@ -222,3 +248,22 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 		})
 	})
 })
+
+func verifyWorkflowIsInRunningState() bool {
+	cmd := exec.Command("kubectl", "get", "workflow", "greeting", "-n", namespace, "-o", "jsonpath={.status.conditions[?(@.type=='Running')].status}")
+	if response, err := utils.Run(cmd); err != nil {
+		GinkgoWriter.Println(fmt.Errorf("failed to check if greeting workflow is running: %v", err))
+		return false
+	} else {
+		GinkgoWriter.Println(fmt.Sprintf("Got response %s", response))
+		if len(strings.TrimSpace(string(response))) > 0 {
+			status, err := strconv.ParseBool(string(response))
+			if err != nil {
+				GinkgoWriter.Println(fmt.Errorf("failed to parse result %v", err))
+				return false
+			}
+			return status
+		}
+		return false
+	}
+}

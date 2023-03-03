@@ -43,6 +43,10 @@ type prodProfile struct {
 	baseReconciler
 }
 
+const (
+	requeueAfterStartingBuild = 3 * time.Minute
+)
+
 // prodObjectEnsurers is a struct for the objects that ReconciliationState needs to create in the platform for the Production profile.
 // ReconciliationState that needs access to it must include this struct as an attribute and initialize it in the profile builder.
 // Use newProdObjectEnsurers to facilitate building this struct
@@ -67,7 +71,6 @@ func newProdProfileReconciler(client client.Client, logger *logr.Logger) Profile
 	stateMachine := newReconciliationStateMachine(
 		logger,
 		&newBuilderReconciliationState{stateSupport: support},
-		&ensureBuilderReconciliationState{stateSupport: support},
 		&followBuildStatusReconciliationState{stateSupport: support},
 		&deployWorkflowReconciliationState{stateSupport: support, ensurers: newProdObjectEnsurers(support)},
 	)
@@ -123,38 +126,11 @@ func (h *newBuilderReconciliationState) Do(ctx context.Context, workflow *operat
 		h.logger.Error(err, fmt.Sprintf("Failed to update Build status for Workflow %s", workflow.Name))
 		return ctrl.Result{}, nil, err
 	}
-	workflow.Status.Manager().MarkFalse(api.BuiltConditionType, "", "")
+	workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.BuildIsRunningReason, "")
 	workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForBuildReason, "")
 
 	_, err = h.performStatusUpdate(ctx, workflow)
-	return ctrl.Result{}, nil, err
-}
-
-type ensureBuilderReconciliationState struct {
-	*stateSupport
-}
-
-func (h *ensureBuilderReconciliationState) CanReconcile(workflow *operatorapi.KogitoServerlessWorkflow) bool {
-	return workflow.Status.IsWaitingForBuild()
-}
-
-func (h *ensureBuilderReconciliationState) Do(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) (ctrl.Result, []client.Object, error) {
-	buildable := builder.NewBuildable(h.client, ctx)
-	build, err := buildable.GetWorkflowBuild(workflow.Name, workflow.Namespace)
-	if build != nil &&
-		(build.Status.Builder.Status.Phase == builderapi.BuildPhaseSucceeded ||
-			build.Status.Builder.Status.Phase == builderapi.BuildPhaseFailed ||
-			build.Status.Builder.Status.Phase == builderapi.BuildPhaseError) {
-		// TODO: make sure that we handle this differently and not a copy of the spec in the status attribute, this can potentially make the status field unreadable. See: https://issues.redhat.com/browse/KOGITO-8644
-		//If we have finished a build and the workflow is running, we have to rebuild it because there was a change in the workflow definition and requeue the request
-		if !utils.Compare(utils.GetWorkflowSpecHash(workflow.Status.Applied), utils.GetWorkflowSpecHash(workflow.Spec)) { // Let's check that the 2 workflow definition are different
-			// TODO: handle this as a failure state and have a proper state to handle it
-			workflow.Status.Manager().MarkUnknown(api.RunningConditionType, "", "")
-			_, err = h.performStatusUpdate(ctx, workflow)
-			return ctrl.Result{Requeue: true}, nil, err
-		}
-	}
-	return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil, nil
+	return ctrl.Result{RequeueAfter: requeueAfterStartingBuild}, nil, err
 }
 
 type followBuildStatusReconciliationState struct {
@@ -173,26 +149,29 @@ func (h *followBuildStatusReconciliationState) Do(ctx context.Context, workflow 
 		if !errors.IsNotFound(err) {
 			return ctrl.Result{}, nil, err
 		}
-		h.logger.Error(err, "Build not found for this workflow", "Workflow", workflow.Name)
-		return ctrl.Result{}, nil, nil
+		h.logger.Error(err, "Build not found for this workflow, starting over by recreating a new build", "Workflow", workflow.Name)
+		workflow.Status.Manager().MarkUnknown(api.BuiltConditionType, "", "")
+		if _, err = h.performStatusUpdate(ctx, workflow); err != nil {
+			return ctrl.Result{}, nil, err
+		}
+		return ctrl.Result{RequeueAfter: requeueAfterStartingBuild}, nil, nil
 	}
 
 	if build.Status.Builder.Status.Phase == builderapi.BuildPhaseSucceeded {
+		h.logger.Info("Workflow build has finished")
 		//If we have finished a build and the workflow is not running, we will start the provisioning phase
 		workflow.Status.Manager().MarkTrue(api.BuiltConditionType)
-		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForBuildReason, "")
 		_, err = h.performStatusUpdate(ctx, workflow)
 	} else if build.Status.Builder.Status.Phase == builderapi.BuildPhaseFailed || build.Status.Builder.Status.Phase == builderapi.BuildPhaseError {
-		// TODO: we should handle build failures
+		// TODO: we should handle build failures https://issues.redhat.com/browse/KOGITO-8792
 		workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.BuildFailedReason,
-			"Worflow %s build failed. Error: %s", workflow.Name, build.Status.Builder.Status.Error)
-		_, err = h.performStatusUpdate(ctx, workflow)
-	} else {
-		// still building
-		workflow.Status.Manager().MarkFalse(api.BuiltConditionType, "", "")
+			"Workflow %s build failed. Error: %s", workflow.Name, build.Status.Builder.Status.Error)
 		_, err = h.performStatusUpdate(ctx, workflow)
 	}
-	return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil, err
+	if err != nil {
+		return ctrl.Result{}, nil, err
+	}
+	return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil, nil
 }
 
 type deployWorkflowReconciliationState struct {
@@ -211,6 +190,13 @@ func (h *deployWorkflowReconciliationState) Do(ctx context.Context, workflow *op
 			"No active Platform for namespace %s so the workflow cannot be deployed. Waiting for an active platform", workflow.Namespace)
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil, err
 	}
+
+	if markRunningUnknownIfWorkflowChanged(workflow) { // Let's check that the 2 workflow definition are different
+		_, err = h.performStatusUpdate(ctx, workflow)
+		return ctrl.Result{Requeue: true}, nil, err
+	}
+
+	// didn't change, business as usual
 	image := pl.Spec.BuildPlatform.Registry.Address + "/" + workflow.Name + utils.GetWorkflowImageTag(workflow)
 	return h.handleObjects(ctx, workflow, image)
 }
@@ -264,4 +250,14 @@ func (h *deployWorkflowReconciliationState) handleObjects(ctx context.Context, w
 		return reconcile.Result{Requeue: false}, nil, err
 	}
 	return reconcile.Result{Requeue: true, RequeueAfter: 10 * time.Second}, objs, nil
+}
+
+// markRunningUnknownIfWorkflowChanged marks the workflow status as unknown to require a new build reconciliation
+func markRunningUnknownIfWorkflowChanged(workflow *operatorapi.KogitoServerlessWorkflow) bool {
+	// TODO: make sure that we handle this differently and not a copy of the spec in the status attribute, this can potentially make the status field unreadable. See: https://issues.redhat.com/browse/KOGITO-8644
+	if !utils.Compare(utils.GetWorkflowSpecHash(workflow.Status.Applied), utils.GetWorkflowSpecHash(workflow.Spec)) { // Let's check that the 2 workflow definition are different
+		workflow.Status.Manager().MarkUnknown(api.RunningConditionType, "", "")
+		return true
+	}
+	return false
 }

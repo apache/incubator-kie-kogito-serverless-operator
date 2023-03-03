@@ -83,7 +83,7 @@ func (s *KogitoServerlessWorkflowStatus) IsWaitingForBuild() bool {
 
 func (s *KogitoServerlessWorkflowStatus) IsBuildRunning() bool {
 	cond := s.GetCondition(api.BuiltConditionType)
-	return cond.IsUnknown() || (cond.IsFalse() && len(cond.Reason) == 0)
+	return cond.IsUnknown() || (cond.IsFalse() && cond.Reason == api.BuildIsRunningReason)
 }
 
 // KogitoServerlessWorkflow is the Schema for the kogitoserverlessworkflows API

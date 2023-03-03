@@ -46,13 +46,9 @@ func NewCustomConfig(platform operatorapi.KogitoServerlessPlatform) (map[string]
 		return nil, fmt.Errorf("unable to retrieve the namespace from platform %s", platform.Name)
 	}
 	customConfig[configKeyBuildNamespace] = platform.Namespace
-	if platform.Spec.BuildPlatform.Registry.Secret == "" {
-		return nil, fmt.Errorf("unable to retrieve the registry credentials from platform %s", platform.Name)
-	}
+	// Registry Secret and Address are not required, the inner builder will use minikube inner registry if available
+	// TODO: we should review
 	customConfig[configKeyRegistrySecret] = platform.Spec.BuildPlatform.Registry.Secret
-	if platform.Spec.BuildPlatform.Registry.Address == "" {
-		return nil, fmt.Errorf("unable to retrieve the registry address from platform %s", platform.Name)
-	}
 	customConfig[configKeyRegistryAddress] = platform.Spec.BuildPlatform.Registry.Address
 	return customConfig, nil
 }

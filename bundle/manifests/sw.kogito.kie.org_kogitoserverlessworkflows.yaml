@@ -28,7 +28,7 @@ spec:
       name: Address
       type: string
     - jsonPath: .status.conditions[?(@.type=='Running')].status
-      name: Condition
+      name: Ready
       type: string
     - jsonPath: .status.conditions[?(@.type=='Running')].reason
       name: Reason

@@ -42,6 +42,7 @@ const (
 	WaitingForPlatformReason    = "WaitingForPlatform"
 	BuildFailedReason           = "BuildFailedReason"
 	WaitingForBuildReason       = "WaitingForBuild"
+	BuildIsRunningReason        = "BuildIsRunning"
 )
 
 // Condition describes the common structure for conditions in our types

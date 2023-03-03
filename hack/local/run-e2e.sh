@@ -20,6 +20,4 @@ export OPERATOR_IMAGE_NAME=localhost/kogito-serverless-operator:0.0.1
 eval "$(minikube -p minikube docker-env)"
 make container-build BUILDER=docker IMG="${OPERATOR_IMAGE_NAME}"
 
-
-
 make test-e2e
