@@ -44,7 +44,9 @@ type prodProfile struct {
 }
 
 const (
-	requeueAfterStartingBuild = 3 * time.Minute
+	requeueAfterStartingBuild   = 3 * time.Minute
+	requeueWhileWaitForBuild    = 1 * time.Minute
+	requeueWhileWaitForPlatform = 5 * time.Second
 )
 
 // prodObjectEnsurers is a struct for the objects that ReconciliationState needs to create in the platform for the Production profile.
@@ -101,10 +103,10 @@ func (h *newBuilderReconciliationState) Do(ctx context.Context, workflow *operat
 			workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForPlatformReason,
 				"No active Platform for namespace %s so the workflow cannot be built.", workflow.Namespace)
 			_, err = h.performStatusUpdate(ctx, workflow)
-			return ctrl.Result{RequeueAfter: 5 * time.Second}, nil, err
+			return ctrl.Result{RequeueAfter: requeueWhileWaitForPlatform}, nil, err
 		}
 		h.logger.Error(err, "Failed to get active platform")
-		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil, err
+		return ctrl.Result{RequeueAfter: requeueWhileWaitForPlatform}, nil, err
 	}
 	// If there is an active platform we have got all the information to build but...
 	// ...let's check before if we have got already a build!
@@ -171,7 +173,7 @@ func (h *followBuildStatusReconciliationState) Do(ctx context.Context, workflow 
 	if err != nil {
 		return ctrl.Result{}, nil, err
 	}
-	return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil, nil
+	return ctrl.Result{RequeueAfter: requeueWhileWaitForBuild}, nil, nil
 }
 
 type deployWorkflowReconciliationState struct {
@@ -188,7 +190,7 @@ func (h *deployWorkflowReconciliationState) Do(ctx context.Context, workflow *op
 	if err != nil {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForPlatformReason,
 			"No active Platform for namespace %s so the workflow cannot be deployed. Waiting for an active platform", workflow.Namespace)
-		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil, err
+		return ctrl.Result{RequeueAfter: requeueWhileWaitForPlatform}, nil, err
 	}
 
 	if markRunningUnknownIfWorkflowChanged(workflow) { // Let's check that the 2 workflow definition are different
@@ -242,14 +244,14 @@ func (h *deployWorkflowReconciliationState) handleObjects(ctx context.Context, w
 		if _, err := h.performStatusUpdate(ctx, workflow); err != nil {
 			return reconcile.Result{Requeue: false}, nil, err
 		}
-		return reconcile.Result{Requeue: false}, objs, nil
+		return reconcile.Result{RequeueAfter: requeueAfterIsRunning}, objs, nil
 	}
 
 	workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
 	if _, err := h.performStatusUpdate(ctx, workflow); err != nil {
 		return reconcile.Result{Requeue: false}, nil, err
 	}
-	return reconcile.Result{Requeue: true, RequeueAfter: 10 * time.Second}, objs, nil
+	return reconcile.Result{RequeueAfter: requeueAfterFollowDeployment}, objs, nil
 }
 
 // markRunningUnknownIfWorkflowChanged marks the workflow status as unknown to require a new build reconciliation
