@@ -246,6 +246,8 @@ func (r *recoverFromFailureDevReconciliationState) Do(ctx context.Context, workf
 		return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, nil
 	}
 
+	// TODO: we can improve deployment failures https://issues.redhat.com/browse/KOGITO-8812
+
 	// let's try rolling out the deployment
 	if err := kubeutil.MarkDeploymentToRollout(deployment); err != nil {
 		return ctrl.Result{}, nil, err
