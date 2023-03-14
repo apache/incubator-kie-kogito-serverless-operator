@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	kubeutil "github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
+
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -78,6 +80,7 @@ func createKanikoCacheWarmerPod(ctx context.Context, client client.Client, platf
 							MountPath: builder.KanikoCacheDir,
 						},
 					},
+					SecurityContext: kubeutil.SecurityDefaults(),
 				},
 			},
 			// Create the cache directory otherwise Kaniko warmer skips caching silently
@@ -94,6 +97,7 @@ func createKanikoCacheWarmerPod(ctx context.Context, client client.Client, platf
 							MountPath: builder.KanikoCacheDir,
 						},
 					},
+					SecurityContext: kubeutil.SecurityDefaults(),
 				},
 			},
 			RestartPolicy: corev1.RestartPolicyOnFailure,

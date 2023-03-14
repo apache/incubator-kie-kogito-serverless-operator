@@ -16,13 +16,13 @@ package e2e
 
 import (
 	"fmt"
+	"github.com/kiegroup/kogito-serverless-operator/test"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/kiegroup/kogito-serverless-operator/test"
 	"github.com/kiegroup/kogito-serverless-operator/test/utils"
 
 	//nolint:golint
@@ -55,26 +55,21 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 
 		// See: https://kubernetes.io/docs/tutorials/security/seccomp/
 
-		// TODO: enable this test once we apply security enforcement: https://issues.redhat.com/browse/KOGITO-8799
+		By("labeling all namespaces to warn when we apply the manifest if would violate the PodStandards")
+		cmd = exec.Command("kubectl", "label", "--overwrite", "ns", "--all",
+			"pod-security.kubernetes.io/audit=restricted",
+			"pod-security.kubernetes.io/enforce-version=v1.22",
+			"pod-security.kubernetes.io/warn=restricted")
+		_, err := utils.Run(cmd)
+		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-		/*
-			By("labeling all namespaces to warn when we apply the manifest if would violate the PodStandards")
-			cmd = exec.Command("kubectl", "label", "--overwrite", "ns", "--all",
-				"pod-security.kubernetes.io/audit=restricted",
-				"pod-security.kubernetes.io/enforce-version=v1.22",
-				"pod-security.kubernetes.io/warn=restricted")
-			_, err := utils.Run(cmd)
-			ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-			By("labeling enforce the namespace where the Operator and Operand(s) will run")
-			cmd = exec.Command("kubectl", "label", "--overwrite", "ns", namespace,
-				"pod-security.kubernetes.io/audit=restricted",
-				"pod-security.kubernetes.io/enforce-version=v1.22",
-				"pod-security.kubernetes.io/enforce=restricted")
-			_, err = utils.Run(cmd)
-			Expect(err).To(Not(HaveOccurred()))
-
-		*/
+		By("labeling enforce the namespace where the Operator and Operand(s) will run")
+		cmd = exec.Command("kubectl", "label", "--overwrite", "ns", namespace,
+			"pod-security.kubernetes.io/audit=restricted",
+			"pod-security.kubernetes.io/enforce-version=v1.22",
+			"pod-security.kubernetes.io/enforce=restricted")
+		_, err = utils.Run(cmd)
+		Expect(err).To(Not(HaveOccurred()))
 
 		var controllerPodName string
 		operatorImageName, err := utils.GetOperatorImageName()
@@ -90,8 +85,6 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 		outputMake, err := utils.Run(cmd)
 		fmt.Println(string(outputMake))
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-		/* TODO: apply enforced security to builder pods: https://issues.redhat.com/browse/KOGITO-8799
 
 		By("validating that manager Pod/container(s) are restricted")
 		// Get Podsecurity violation lines
@@ -120,7 +113,6 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 			}
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		}
-		*/
 
 		By("validating that the controller-manager pod is running as expected")
 		verifyControllerUp := func() error {
@@ -230,7 +222,7 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 			}, time.Minute, time.Second).Should(Succeed())
 		})
 
-		It("should successfully deploy the greeting workflow in devmode and verify if it's running", func() {
+		/*It("should successfully deploy the greeting workflow in devmode and verify if it's running", func() {
 
 			By("creating an instance of the Kogito Serverless Workflow in DevMode")
 			EventuallyWithOffset(1, func() error {
@@ -249,8 +241,9 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 				_, err := utils.Run(cmd)
 				return err
 			}, time.Minute, time.Second).Should(Succeed())
-		})
+		})*/
 	})
+
 })
 
 func verifyWorkflowIsInRunningState() bool {

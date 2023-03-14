@@ -24,7 +24,8 @@ require (
 
 require (
 	github.com/RHsyseng/operator-utils v1.4.11
-	github.com/kiegroup/container-builder v0.0.0-20230131205716-bc25e59e2f13
+	github.com/kiegroup/container-builder v0.0.0-20230315074910-486952396d3b
+	github.com/magiconair/properties v1.8.7
 	github.com/onsi/ginkgo/v2 v2.3.0
 	github.com/openshift/api v0.0.0-20211209135129-c58d9f695577
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.55.1
@@ -66,7 +67,6 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
