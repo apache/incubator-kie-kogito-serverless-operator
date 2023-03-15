@@ -202,7 +202,7 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 			}, time.Minute, time.Second).Should(Succeed())
 		})
 
-		It("should successfully deploy the Greeting Workflow in prod mode and verify if it's running", func() {
+		/*It("should successfully deploy the Greeting Workflow in prod mode and verify if it's running", func() {
 			By("creating an instance of the Kogito Serverless Operand(CR)")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
@@ -220,9 +220,9 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 				_, err := utils.Run(cmd)
 				return err
 			}, time.Minute, time.Second).Should(Succeed())
-		})
+		})*/
 
-		/*It("should successfully deploy the greeting workflow in devmode and verify if it's running", func() {
+		It("should successfully deploy the greeting workflow in devmode and verify if it's running", func() {
 
 			By("creating an instance of the Kogito Serverless Workflow in DevMode")
 			EventuallyWithOffset(1, func() error {
@@ -241,7 +241,7 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 				_, err := utils.Run(cmd)
 				return err
 			}, time.Minute, time.Second).Should(Succeed())
-		})*/
+		})
 	})
 
 })
