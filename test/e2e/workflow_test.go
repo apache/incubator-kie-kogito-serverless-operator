@@ -16,12 +16,13 @@ package e2e
 
 import (
 	"fmt"
-	"github.com/kiegroup/kogito-serverless-operator/test"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/kiegroup/kogito-serverless-operator/test"
 
 	"github.com/kiegroup/kogito-serverless-operator/test/utils"
 
