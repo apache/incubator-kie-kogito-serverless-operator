@@ -14,8 +14,9 @@
 package kubernetes
 
 import (
-	"github.com/kiegroup/kogito-serverless-operator/utils"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/kiegroup/kogito-serverless-operator/utils"
 )
 
 // This is the security defualt to run without privileges
