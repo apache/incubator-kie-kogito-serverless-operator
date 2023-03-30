@@ -28,8 +28,8 @@ type ObjectEnsurer interface {
 	ensure(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow, visitors ...mutateVisitor) (client.Object, controllerutil.OperationResult, error)
 }
 
-// newDefualtObjectEnsurer see defaultObjectEnsurer
-func newDefualtObjectEnsurer(client client.Client, logger *logr.Logger, creator objectCreator) ObjectEnsurer {
+// newDefaultObjectEnsurer see defaultObjectEnsurer
+func newDefaultObjectEnsurer(client client.Client, logger *logr.Logger, creator objectCreator) ObjectEnsurer {
 	return &defaultObjectEnsurer{
 		client:  client,
 		logger:  logger,

@@ -136,21 +136,21 @@ func newDevProfileReconciler(client client.Client, config *rest.Config, logger *
 
 func newDevelopmentObjectEnsurers(support *stateSupport) *devProfileObjectEnsurers {
 	return &devProfileObjectEnsurers{
-		deployment:          newDefualtObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
-		service:             newDefualtObjectEnsurer(support.client, support.logger, devServiceCreator),
+		deployment:          newDefaultObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
+		service:             newDefaultObjectEnsurer(support.client, support.logger, devServiceCreator),
 		network:             newDummyObjectEnsurer(),
-		definitionConfigMap: newDefualtObjectEnsurer(support.client, support.logger, workflowDefConfigMapCreator),
-		propertiesConfigMap: newDefualtObjectEnsurer(support.client, support.logger, workflowDevPropsConfigMapCreator),
+		definitionConfigMap: newDefaultObjectEnsurer(support.client, support.logger, workflowDefConfigMapCreator),
+		propertiesConfigMap: newDefaultObjectEnsurer(support.client, support.logger, workflowDevPropsConfigMapCreator),
 	}
 }
 
 func newDevelopmentObjectEnsurersForOpenShift(support *stateSupport) *devProfileObjectEnsurers {
 	return &devProfileObjectEnsurers{
-		deployment:          newDefualtObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
-		service:             newDefualtObjectEnsurer(support.client, support.logger, defaultServiceCreator),
-		network:             newDefualtObjectEnsurer(support.client, support.logger, defaultNetworkCreator),
-		definitionConfigMap: newDefualtObjectEnsurer(support.client, support.logger, workflowDefConfigMapCreator),
-		propertiesConfigMap: newDefualtObjectEnsurer(support.client, support.logger, workflowDevPropsConfigMapCreator),
+		deployment:          newDefaultObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
+		service:             newDefaultObjectEnsurer(support.client, support.logger, defaultServiceCreator),
+		network:             newDefaultObjectEnsurer(support.client, support.logger, defaultNetworkCreator),
+		definitionConfigMap: newDefaultObjectEnsurer(support.client, support.logger, workflowDefConfigMapCreator),
+		propertiesConfigMap: newDefaultObjectEnsurer(support.client, support.logger, workflowDevPropsConfigMapCreator),
 	}
 }
 

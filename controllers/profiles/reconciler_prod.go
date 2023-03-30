@@ -33,6 +33,7 @@ import (
 	"github.com/kiegroup/kogito-serverless-operator/api"
 
 	builderapi "github.com/kiegroup/container-builder/api"
+
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/builder"
 	"github.com/kiegroup/kogito-serverless-operator/platform"
@@ -61,8 +62,8 @@ type prodObjectEnsurers struct {
 
 func newProdObjectEnsurers(support *stateSupport) *prodObjectEnsurers {
 	return &prodObjectEnsurers{
-		deployment: newDefualtObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
-		service:    newDefualtObjectEnsurer(support.client, support.logger, defaultServiceCreator),
+		deployment: newDefaultObjectEnsurer(support.client, support.logger, defaultDeploymentCreator),
+		service:    newDefaultObjectEnsurer(support.client, support.logger, defaultServiceCreator),
 	}
 }
 
