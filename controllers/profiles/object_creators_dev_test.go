@@ -27,16 +27,12 @@ func Test_ensureWorkflowDevServiceIsExposed(t *testing.T) {
 	workflow := test.GetKogitoServerlessWorkflow("../../config/samples/"+test.KogitoServerlessWorkflowSampleDevModeYamlCR, t.Name())
 
 	//On Kubernetes we want the service exposed in Dev with NodePort
-	service, _ := defaultServiceCreator(workflow)
+	service, _ := devServiceCreator(workflow)
 	service.SetUID("1")
 	service.SetResourceVersion("1")
 
-	visitor := devProfileServiceMutateVisitor(workflow)
-
-	mutateFn := visitor(service)
-
 	reflectService := service.(*v1.Service)
-	assert.NoError(t, mutateFn())
+
 	assert.NotNil(t, reflectService)
 	assert.NotNil(t, reflectService.Spec.Type)
 	assert.NotEmpty(t, reflectService.Spec.Type)
