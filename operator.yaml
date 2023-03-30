@@ -2809,6 +2809,26 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  name: kogito-serverless-operator-openshift-manager-role
+rules:
+- apiGroups:
+  - route.openshift.io
+  resources:
+  - route
+  - routes
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
   name: kogito-serverless-operator-proxy-role
 rules:
 - apiGroups:
@@ -2872,6 +2892,19 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: kogito-serverless-operator-manager-role
+subjects:
+- kind: ServiceAccount
+  name: kogito-serverless-operator-controller-manager
+  namespace: kogito-serverless-operator-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kogito-serverless-operator-openshift-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kogito-serverless-operator-openshift-manager-role
 subjects:
 - kind: ServiceAccount
   name: kogito-serverless-operator-controller-manager
