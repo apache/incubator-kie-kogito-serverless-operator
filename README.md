@@ -71,13 +71,6 @@ make deploy IMG=<some-registry>/kogito-serverless-operator:tag
 
 This will deploy the operator into the `kogito-serverless-operator-system` namespace.
 
-**Note:** If you would like to deploy the operator on a local OpenShift you need to add the `TARGET_CLUSTER_KIND` parameter
-with the `openshift` value and so:
-
-```sh
-make deploy IMG=<some-registry>/kogito-serverless-operator:tag TARGET_CLUSTER_KIND=openshift
-```
-
 ## Test the Greeting workflow
 
 A good starting point to check that everything is working well, it is the [Greeting workflow](https://github.com/kiegroup/kogito-examples/blob/stable/README.md#serverless-workflow-getting-started).

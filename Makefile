@@ -41,9 +41,6 @@ BUNDLE_GEN_FLAGS ?= -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 # Container runtime engine used for building the images
 BUILDER ?= podman
 
-# Target cluster kind you would like to deploy (currently supported: kubernetes, openshift)
-TARGET_CLUSTER_KIND ?= kubernetes
-
 # USE_IMAGE_DIGESTS defines if images are resolved via tags or digests
 # You can enable this value if you would like to use SHA Based Digests
 # To enable set flag to true
