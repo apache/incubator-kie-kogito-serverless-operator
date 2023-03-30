@@ -71,7 +71,7 @@ make deploy IMG=<some-registry>/kogito-serverless-operator:tag
 
 This will deploy the operator into the `kogito-serverless-operator-system` namespace.
 
-**Note:** If you would like to deploy the operator OpenShift Local you need to add the `TARGET_CLUSTER_KIND` parameter
+**Note:** If you would like to deploy the operator on a local OpenShift you need to add the `TARGET_CLUSTER_KIND` parameter
 with the `openshift` value and so:
 
 ```sh

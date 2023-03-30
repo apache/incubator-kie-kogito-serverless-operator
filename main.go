@@ -109,7 +109,7 @@ func main() {
 	}
 	//+kubebuilder:scaffold:builder
 
-	//Add Route scheme if we are on OpenShift
+	// Add Route scheme if we are on OpenShift
 	if isOpenShift, err := openshift.IsOpenShift(mgr.GetConfig()); err != nil {
 		setupLog.Error(err, "Unable to verify if we are or not on OpenShift")
 		os.Exit(1)

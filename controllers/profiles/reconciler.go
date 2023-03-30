@@ -81,7 +81,7 @@ func (s stateSupport) performStatusUpdate(ctx context.Context, workflow *operato
 
 // PostReconcile function to perform all the other operations required after the reconcile - placeholder for null pattern usages
 func (s stateSupport) PostReconcile(ctx context.Context, workflow *operatorapi.KogitoServerlessWorkflow) error {
-	//By default we don't want to perform anything after the reconcile and so we will simply return a no error
+	//By default we don't want to perform anything after the reconcile and so we will simply return no error
 	return nil
 }
 
