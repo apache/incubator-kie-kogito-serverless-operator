@@ -267,18 +267,9 @@ spec:
                         description: To automatically detect from the code if a Service
                           needs to be created.
                         type: boolean
-                      configuration:
-                        description: 'Legacy trait configuration parameters. Deprecated:
-                          for backward compatibility.'
-                        type: object
-                        x-kubernetes-preserve-unknown-fields: true
                       enabled:
                         description: Can be used to enable or disable a trait. All
                           traits share this common property.
-                        type: boolean
-                      nodePort:
-                        description: 'Enable Service to be exposed as NodePort (default
-                          `false`). Depreceated: User service type instead.'
                         type: boolean
                       type:
                         description: The type of service to be used, either 'ClusterIP',
@@ -573,18 +564,9 @@ spec:
                         description: To automatically detect from the code if a Service
                           needs to be created.
                         type: boolean
-                      configuration:
-                        description: 'Legacy trait configuration parameters. Deprecated:
-                          for backward compatibility.'
-                        type: object
-                        x-kubernetes-preserve-unknown-fields: true
                       enabled:
                         description: Can be used to enable or disable a trait. All
                           traits share this common property.
-                        type: boolean
-                      nodePort:
-                        description: 'Enable Service to be exposed as NodePort (default
-                          `false`). Depreceated: User service type instead.'
                         type: boolean
                       type:
                         description: The type of service to be used, either 'ClusterIP',

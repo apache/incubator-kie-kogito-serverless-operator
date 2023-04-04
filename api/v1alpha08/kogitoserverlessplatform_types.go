@@ -106,30 +106,6 @@ type Traits struct {
 	Service *trait.ServiceTrait `property:"service" json:"service,omitempty"`
 }
 
-// A TraitSpec contains the configuration of a trait
-// Deprecated: superceded by each Trait type, left for backward compatibility.
-type TraitSpec struct {
-	// TraitConfiguration parameters configuration
-	Configuration TraitConfiguration `json:"configuration"`
-}
-
-// TraitConfiguration represents the expected configuration for a given trait parameter
-// Deprecated: superceded by each Trait type, left for backward compatibility.
-type TraitConfiguration struct {
-	// generic raw message, typically a map containing the keys (trait parameters) and the values (either single text or array)
-	RawMessage `json:",inline"`
-}
-
-// RawMessage is a raw encoded JSON value.
-// It implements Marshaler and Unmarshaler and can
-// be used to delay JSON decoding or precompute a JSON encoding.
-// +kubebuilder:validation:Type=object
-// +kubebuilder:validation:Format=""
-// +kubebuilder:pruning:PreserveUnknownFields
-type RawMessage []byte
-
-// +kubebuilder:object:generate=false
-
 // PlatformPhase is the phase of a Platform
 type PlatformPhase string
 
