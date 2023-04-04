@@ -19,7 +19,6 @@ import (
 	"strconv"
 
 	"github.com/magiconair/properties"
-	v1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +29,7 @@ import (
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 	kubeutil "github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
+	"github.com/kiegroup/kogito-serverless-operator/utils/openshift"
 )
 
 const (
@@ -205,20 +205,8 @@ func defaultServiceCreator(workflow *operatorapi.KogitoServerlessWorkflow) (clie
 // See: https://github.com/openshift/api/blob/d170fcdc0fa638b664e4f35f2daf753cb4afe36b/route/v1/route.crd.yaml
 func defaultNetworkCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
 	lbl := labels(workflow)
-	route := &v1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      workflow.Name,
-			Namespace: workflow.Namespace,
-			Labels:    lbl,
-		},
-		Spec: v1.RouteSpec{
-			To: v1.RouteTargetReference{
-				Kind: "Service",
-				Name: workflow.Name,
-			},
-		},
-	}
-	return route, nil
+	route, err := openshift.CreateRouteForWorkflow(workflow, lbl)
+	return route, err
 }
 
 func defaultServiceMutateVisitor(workflow *operatorapi.KogitoServerlessWorkflow) mutateVisitor {

@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/RHsyseng/operator-utils/pkg/utils/openshift"
+
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
@@ -30,7 +32,6 @@ import (
 	"github.com/kiegroup/kogito-serverless-operator/platform"
 
 	"github.com/go-logr/logr"
-	openshiftv1 "github.com/openshift/api/route/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -113,7 +114,7 @@ func newDevProfileReconciler(client client.Client, config *rest.Config, logger *
 
 	var ensurers *devProfileObjectEnsurers
 	var enrichers *devProfileObjectEnrichers
-	if isOpenShift(client) {
+	if ok, _ := openshift.IsOpenShift(config); ok {
 		ensurers = newDevelopmentObjectEnsurersForOpenShift(support)
 		enrichers = newDevelopmentObjectEnrichersForOpenShift(support)
 	} else {
@@ -465,36 +466,6 @@ func (e ensureRunningDevWorkflowReconciliationState) fetchConfigMap(configMapNam
 		return v1.ConfigMap{}, err
 	}
 	return existingConfigMap, nil
-}
-
-// rolloutDeploymentIfCMChangedMutateVisitor forces a pod refresh if the workflow definition suffered any changes.
-// This method can be used as an alternative to the Kubernetes ConfigMap refresher.
-//
-// See: https://kubernetes.io/docs/concepts/configuration/configmap/#mounted-configmaps-are-updated-automatically
-func rolloutDeploymentIfCMChangedMutateVisitor(cmOperationResult controllerutil.OperationResult) mutateVisitor {
-	return func(object client.Object) controllerutil.MutateFn {
-		return func() error {
-			if cmOperationResult == controllerutil.OperationResultUpdated {
-				deployment := object.(*appsv1.Deployment)
-				err := kubeutil.MarkDeploymentToRollout(deployment)
-				return err
-			}
-			return nil
-		}
-	}
-}
-
-// Function to return the first Port in an array of ServicePort
-func findNodePortFromPorts(ports []v1.ServicePort) int {
-	if ports != nil && len(ports) > 0 {
-		for _, p := range ports {
-			if p.NodePort != 0 {
-				return int(p.NodePort)
-			}
-		}
-	}
-	//If we are not able to find a NodePort let's return the zero value
-	return 0
 }
 
 // Function that verifies if we are on OpenShift checking if the Route CRD exists
