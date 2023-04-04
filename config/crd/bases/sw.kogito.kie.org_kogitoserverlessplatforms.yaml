@@ -256,6 +256,40 @@ spec:
                     description: how much time to wait before time out the build process
                     type: string
                 type: object
+              traits:
+                description: Trait list of traits properties attached to all the Workflow
+                  built from this Platform
+                properties:
+                  service:
+                    description: The configuration of Service trait
+                    properties:
+                      auto:
+                        description: To automatically detect from the code if a Service
+                          needs to be created.
+                        type: boolean
+                      configuration:
+                        description: 'Legacy trait configuration parameters. Deprecated:
+                          for backward compatibility.'
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
+                      enabled:
+                        description: Can be used to enable or disable a trait. All
+                          traits share this common property.
+                        type: boolean
+                      nodePort:
+                        description: 'Enable Service to be exposed as NodePort (default
+                          `false`). Depreceated: User service type instead.'
+                        type: boolean
+                      type:
+                        description: The type of service to be used, either 'ClusterIP',
+                          'NodePort', or 'LoadBalancer'.
+                        enum:
+                        - ClusterIP
+                        - NodePort
+                        - LoadBalancer
+                        type: string
+                    type: object
+                type: object
             type: object
           status:
             description: KogitoServerlessPlatformStatus defines the observed state
@@ -527,6 +561,40 @@ spec:
                   timeout:
                     description: how much time to wait before time out the build process
                     type: string
+                type: object
+              traits:
+                description: Trait list of traits properties attached to all the Workflow
+                  built from this Platform
+                properties:
+                  service:
+                    description: The configuration of Service trait
+                    properties:
+                      auto:
+                        description: To automatically detect from the code if a Service
+                          needs to be created.
+                        type: boolean
+                      configuration:
+                        description: 'Legacy trait configuration parameters. Deprecated:
+                          for backward compatibility.'
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
+                      enabled:
+                        description: Can be used to enable or disable a trait. All
+                          traits share this common property.
+                        type: boolean
+                      nodePort:
+                        description: 'Enable Service to be exposed as NodePort (default
+                          `false`). Depreceated: User service type instead.'
+                        type: boolean
+                      type:
+                        description: The type of service to be used, either 'ClusterIP',
+                          'NodePort', or 'LoadBalancer'.
+                        enum:
+                        - ClusterIP
+                        - NodePort
+                        - LoadBalancer
+                        type: string
+                    type: object
                 type: object
               version:
                 description: Version the Kogito Serverless operator version controlling

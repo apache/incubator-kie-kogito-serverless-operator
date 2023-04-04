@@ -18,7 +18,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+<<<<<<< HEAD
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/api"
+=======
+	"github.com/kiegroup/container-builder/api"
+	"github.com/kiegroup/kogito-serverless-operator/api/v1alpha08/trait"
+>>>>>>> 75765cf ([KOGITO-8945] Defined a Traits API to customize a Kubernetes Service)
 )
 
 // ConfigurationSpecType is used to define the enum values of the supported types for ConfigurationSpec
@@ -87,9 +92,43 @@ type KogitoServerlessPlatformSpec struct {
 	BuildPlatform api.PlatformBuildSpec `json:"platform,omitempty"`
 	// Configuration list of configuration properties to be attached to all the Workflow built from this Platform
 	Configuration ConfigurationSpec `json:"configuration,omitempty"`
+<<<<<<< HEAD
 	// DevBaseImage, optional, used for the dev profile only
 	DevBaseImage string `json:"devBaseImage,omitempty"`
+=======
+	// Trait list of traits properties attached to all the Workflow built from this Platform
+	Traits Traits `json:"traits,omitempty"`
+>>>>>>> 75765cf ([KOGITO-8945] Defined a Traits API to customize a Kubernetes Service)
 }
+
+type Traits struct {
+	// The configuration of Service trait
+	Service *trait.ServiceTrait `property:"service" json:"service,omitempty"`
+}
+
+// A TraitSpec contains the configuration of a trait
+// Deprecated: superceded by each Trait type, left for backward compatibility.
+type TraitSpec struct {
+	// TraitConfiguration parameters configuration
+	Configuration TraitConfiguration `json:"configuration"`
+}
+
+// TraitConfiguration represents the expected configuration for a given trait parameter
+// Deprecated: superceded by each Trait type, left for backward compatibility.
+type TraitConfiguration struct {
+	// generic raw message, typically a map containing the keys (trait parameters) and the values (either single text or array)
+	RawMessage `json:",inline"`
+}
+
+// RawMessage is a raw encoded JSON value.
+// It implements Marshaler and Unmarshaler and can
+// be used to delay JSON decoding or precompute a JSON encoding.
+// +kubebuilder:validation:Type=object
+// +kubebuilder:validation:Format=""
+// +kubebuilder:pruning:PreserveUnknownFields
+type RawMessage []byte
+
+// +kubebuilder:object:generate=false
 
 // PlatformPhase is the phase of a Platform
 type PlatformPhase string
