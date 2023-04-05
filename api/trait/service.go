@@ -18,7 +18,6 @@ package trait
 // (or integrations) in the same namespace.
 
 type ServiceTrait struct {
-	Trait `property:",squash" json:",inline"`
 	// To automatically detect from the code if a Service needs to be created.
 	Auto *bool `property:"auto" json:"auto,omitempty"`
 	// The type of service to be used, either 'ClusterIP', 'NodePort', or 'LoadBalancer'.

@@ -257,8 +257,8 @@ spec:
                     type: string
                 type: object
               traits:
-                description: Trait list of traits properties attached to all the Workflow
-                  built from this Platform
+                description: Trait is list of trait properties attached to all Workflows
+                  built with Platform
                 properties:
                   service:
                     description: The configuration of Service trait
@@ -266,10 +266,6 @@ spec:
                       auto:
                         description: To automatically detect from the code if a Service
                           needs to be created.
-                        type: boolean
-                      enabled:
-                        description: Can be used to enable or disable a trait. All
-                          traits share this common property.
                         type: boolean
                       type:
                         description: The type of service to be used, either 'ClusterIP',
@@ -554,8 +550,8 @@ spec:
                     type: string
                 type: object
               traits:
-                description: Trait list of traits properties attached to all the Workflow
-                  built from this Platform
+                description: Trait is list of trait properties attached to all Workflows
+                  built with Platform
                 properties:
                   service:
                     description: The configuration of Service trait
@@ -563,10 +559,6 @@ spec:
                       auto:
                         description: To automatically detect from the code if a Service
                           needs to be created.
-                        type: boolean
-                      enabled:
-                        description: Can be used to enable or disable a trait. All
-                          traits share this common property.
                         type: boolean
                       type:
                         description: The type of service to be used, either 'ClusterIP',
