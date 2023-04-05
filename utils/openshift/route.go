@@ -21,7 +21,7 @@ import (
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
-func CreateRouteForWorkflow(workflow *operatorapi.KogitoServerlessWorkflow, labels map[string]string) (*v1.Route, error) {
+func RouteForWorkflow(workflow *operatorapi.KogitoServerlessWorkflow, labels map[string]string) (*v1.Route, error) {
 	route := &v1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workflow.Name,

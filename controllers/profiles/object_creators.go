@@ -205,7 +205,7 @@ func defaultServiceCreator(workflow *operatorapi.KogitoServerlessWorkflow) (clie
 // See: https://github.com/openshift/api/blob/d170fcdc0fa638b664e4f35f2daf753cb4afe36b/route/v1/route.crd.yaml
 func defaultNetworkCreator(workflow *operatorapi.KogitoServerlessWorkflow) (client.Object, error) {
 	lbl := labels(workflow)
-	route, err := openshift.CreateRouteForWorkflow(workflow, lbl)
+	route, err := openshift.RouteForWorkflow(workflow, lbl)
 	return route, err
 }
 

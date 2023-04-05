@@ -45,7 +45,6 @@ func Test_recoverFromFailureNoDeployment(t *testing.T) {
 	workflowID := clientruntime.ObjectKeyFromObject(workflow)
 
 	workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentFailureReason, "")
-
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).Build()
 
 	config := &rest.Config{}
