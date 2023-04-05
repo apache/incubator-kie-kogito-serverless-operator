@@ -18,11 +18,9 @@ import (
 	"context"
 	"testing"
 
-	"k8s.io/client-go/rest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	openshiftv1 "github.com/openshift/api/route/v1"
+	"k8s.io/client-go/rest"
 
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 
@@ -250,27 +248,12 @@ func Test_devProfileWithPlatformWithoutDevBaseImageAndWithoutBaseImage(t *testin
 	assert.Equal(t, defaultKogitoServerlessWorkflowDevImage+"-"+nightlySuffix+":latest", deployment.Spec.Template.Spec.Containers[0].Image)
 }
 
-func Test_detectOpenshiftCluster(t *testing.T) {
-
-	workflow := test.GetKogitoServerlessWorkflow("../../config/samples/"+test.KogitoServerlessWorkflowSampleYamlCR, t.Name())
-
-	//On K8S the Route CRD won't be defines
-	k8sClient := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).Build()
-	resultK8s := isOpenShift(k8sClient)
-	assert.False(t, resultK8s)
-
-	//On OC the Route CRD will be there
-	route := &openshiftv1.Route{}
-	ocClient := test.NewKogitoClientBuilderWithAdditionalScheme(openshiftv1.GroupVersion, route).WithRuntimeObjects(workflow).Build()
-	resultOC := isOpenShift(ocClient)
-	assert.True(t, resultOC)
-}
-
 func Test_newDevProfileWithExternalConfigMaps(t *testing.T) {
 	logger := ctrllog.FromContext(context.TODO())
 	workflow := test.GetKogitoServerlessWorkflow("../../config/samples/"+test.KogitoServerlessWorkflowSampleDevModeWithExternalResourceYamlCR, t.Name())
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).Build()
-	devReconciler := newDevProfileReconciler(client, &logger)
+	config := &rest.Config{}
+	devReconciler := newDevProfileReconciler(client, config, &logger)
 	configmapName := "mycamel-configmap"
 	camelXmlRouteFileName := "camelroute-xml"
 	xmlRoute := `<route routeConfigurationId="xmlError">

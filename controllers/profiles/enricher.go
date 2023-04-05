@@ -23,6 +23,8 @@ import (
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
+// Enricher is useful when you have to apply the content enricher design pattern, adding some info to resources
+// See https://www.enterpriseintegrationpatterns.com/patterns/messaging/DataEnricher.html
 type Enricher interface {
 	Enrich(ctx context.Context, client client.Client, workflow *operatorapi.KogitoServerlessWorkflow) (controllerutil.OperationResult, error)
 }

@@ -467,14 +467,3 @@ func (e ensureRunningDevWorkflowReconciliationState) fetchConfigMap(configMapNam
 	}
 	return existingConfigMap, nil
 }
-
-// Function that verifies if we are on OpenShift checking if the Route CRD exists
-func isOpenShift(client client.Client) bool {
-	routeKind := reflect.TypeOf(openshiftv1.Route{})
-	for groupVersionKind, _ := range client.Scheme().AllKnownTypes() {
-		if groupVersionKind.Kind == routeKind.Name() && groupVersionKind.Group == openshiftv1.GroupVersion.Group && groupVersionKind.Version == openshiftv1.GroupVersion.Version {
-			return true
-		}
-	}
-	return false
-}
