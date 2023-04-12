@@ -250,6 +250,27 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 				return err
 			}, time.Minute, time.Second).Should(Succeed())
 		})
+
+		It("should successfully honor service Trait", func() {
+
+			By("creating the service if auto is set to true")
+			EventuallyWithOffset(1, func() error {
+				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
+					"config/samples/"+test.KogitoServerlessPlatformWithTraitCR), "-n", namespace)
+				_, err := utils.Run(cmd)
+				return err
+			}, time.Minute, time.Second).Should(Succeed())
+
+			By("check the workflow is in running state")
+			EventuallyWithOffset(1, verifyWorkflowIsInRunningState, 5*time.Minute, 30*time.Second).Should(BeTrue())
+
+			EventuallyWithOffset(1, func() error {
+				cmd := exec.Command("kubectl", "delete", "-f", filepath.Join(projectDir,
+					"config/samples/"+test.KogitoServerlessPlatformWithTraitCR), "-n", namespace)
+				_, err := utils.Run(cmd)
+				return err
+			}, time.Minute, time.Second).Should(Succeed())
+		})
 	})
 })
 
