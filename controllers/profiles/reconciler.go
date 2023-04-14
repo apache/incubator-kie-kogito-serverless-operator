@@ -64,7 +64,6 @@ type ProfileReconciler interface {
 type stateSupport struct {
 	logger *logr.Logger
 	client client.Client
-	config *rest.Config
 }
 
 // performStatusUpdate updates the KogitoServerlessWorkflow Status conditions

@@ -109,7 +109,6 @@ func newDevProfileReconciler(client client.Client, config *rest.Config, logger *
 	support := &stateSupport{
 		logger: logger,
 		client: client,
-		config: config,
 	}
 
 	var ensurers *devProfileObjectEnsurers
@@ -157,13 +156,13 @@ func newDevelopmentObjectEnsurersForOpenShift(support *stateSupport) *devProfile
 
 func newDevelopmentObjectEnrichers(support *stateSupport) *devProfileObjectEnrichers {
 	return &devProfileObjectEnrichers{
-		networkInfo: newStatusEnricher(support.client, support.config, support.logger, defaultDevStatusEnricher),
+		networkInfo: newStatusEnricher(support.client, support.logger, defaultDevStatusEnricher),
 	}
 }
 
 func newDevelopmentObjectEnrichersForOpenShift(support *stateSupport) *devProfileObjectEnrichers {
 	return &devProfileObjectEnrichers{
-		networkInfo: newStatusEnricher(support.client, support.config, support.logger, devStatusEnricherForOpenShift),
+		networkInfo: newStatusEnricher(support.client, support.logger, devStatusEnricherForOpenShift),
 	}
 }
 

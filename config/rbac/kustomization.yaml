@@ -11,7 +11,6 @@ resources:
 - builder_role_binding.yaml
 - leader_election_role.yaml
 - leader_election_role_binding.yaml
-# Uncomment the following 2 lines if you want to deploy on OpenShift
 - openshift_role.yaml
 - openshift_role_binding.yaml
 - operator_role_leases.yaml

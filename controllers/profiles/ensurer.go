@@ -56,7 +56,8 @@ type dummyObjectEnsurer struct {
 // mutateVisitor is a visitor function that mutates the given object before performing any updates in the cluster.
 // It gets called after the objectEnforcer reference.
 //
-// The defaultObjectEnsurer will call the returned function after creating the given object structure, so callers is ensured to have the default reference of the given object.
+// The defaultObjectEnsurer will call the returned mutateVisitor function after creating the given object structure,
+// so callers is ensured to have the default reference of the given object.
 //
 // Usually you can safely do `object.(*<kubernetesType>).Spec...` since you control the objectCreator.
 //

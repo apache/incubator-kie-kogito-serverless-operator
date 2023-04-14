@@ -71,7 +71,6 @@ func newProdProfileReconciler(client client.Client, config *rest.Config, logger 
 	support := &stateSupport{
 		logger: logger,
 		client: client,
-		config: config,
 	}
 	// the reconciliation state machine
 	stateMachine := newReconciliationStateMachine(
