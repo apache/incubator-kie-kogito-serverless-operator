@@ -48,19 +48,16 @@ void waitForMinikubeStarted() {
     println 'Wait for Minikube components to be in Running state'
     def minikubeStatus = sh(returnStatus: true, script: '''
         set -x
-        function getKubeSystemPodStatus { kubectl get pods $1 -n kube-system -o json | jq '.items[].status.conditions[]'; }
-        function getKubeSystemPodReadyStatus { echo $(kubectl get pods $1 -n kube-system -o json | jq -r '.items[].status.conditions[] | select(.type == "Ready") | .status'); }
-        export -f getKubeSystemPodStatus
-        export -f getKubeSystemPodReadyStatus
+        source ./hack/kube-utils.sh
         MINIKUBE_COMPONENTS=(etcd kube-apiserver kube-controller-manager kube-scheduler)
         for component in "${MINIKUBE_COMPONENTS[@]}"
         do
             echo "Check component '${component}' is in 'Running' state"
-            COMPONENT_NAME=${component} timeout 60s bash -c 'getKubeSystemPodStatus "-l tier=control-plane -l component=${COMPONENT_NAME}" && while [[ "$(getKubeSystemPodReadyStatus "-l tier=control-plane -l component=${COMPONENT_NAME}")" != "True" ]] ; do sleep 2 && getKubeSystemPodStatus "-l tier=control-plane -l component=${COMPONENT_NAME}"; done'
+            COMPONENT_NAME=${component} timeout 60s bash -c 'getKubeSystemPodStatusConditions "-l tier=control-plane -l component=${COMPONENT_NAME}" && while [[ "$(getKubeSystemPodReadyStatus "-l tier=control-plane -l component=${COMPONENT_NAME}")" != "True" ]] ; do sleep 2 && getKubeSystemPodStatusConditions "-l tier=control-plane -l component=${COMPONENT_NAME}"; done'
         done
 
         echo "Check kube-dns is in 'Running' state"
-        timeout 60s bash -c 'getKubeSystemPodStatus "-l k8s-app=kube-dns" && while [[ "$(getKubeSystemPodReadyStatus "-l k8s-app=kube-dns")" != "True" ]] ; do sleep 2 && getKubeSystemPodStatus "-l k8s-app=kube-dns"; done'
+        timeout 60s bash -c 'getKubeSystemPodStatusConditions "-l k8s-app=kube-dns" && while [[ "$(getKubeSystemPodReadyStatus "-l k8s-app=kube-dns")" != "True" ]] ; do sleep 2 && getKubeSystemPodStatusConditions "-l k8s-app=kube-dns"; done'
     ''')
     if (minikubeStatus != 0) {
         error 'Error starting Minikube ...'
@@ -72,11 +69,8 @@ void waitForMinikubeRegistry() {
     def minikubeStatus = sh(returnStatus: true, script: '''
         set -x
         kubectl get pods -A
-        function getKubeSystemPodStatus { kubectl get pods $1 -n kube-system -o json | jq '.items[].status.conditions[]'; }
-        function getKubeSystemPodReadyStatus { echo $(kubectl get pods $1 -n kube-system -o json | jq -r '.items[].status.conditions[] | select(.type == "Ready") | .status'); }
-        export -f getKubeSystemPodStatus
-        export -f getKubeSystemPodReadyStatus
-        timeout 60s bash -c 'getKubeSystemPodStatus "-l kubernetes.io/minikube-addons=registry -l actual-registry=true" && while [[ "$(getKubeSystemPodReadyStatus "-l kubernetes.io/minikube-addons=registry -l actual-registry=true")" != "True" ]] ; do sleep 2 && getKubeSystemPodStatus "-l kubernetes.io/minikube-addons=registry -l actual-registry=true"; done'
+        source ./hack/kube-utils.sh
+        timeout 60s bash -c 'getKubeSystemPodStatusConditions "-l kubernetes.io/minikube-addons=registry -l actual-registry=true" && while [[ "$(getKubeSystemPodReadyStatus "-l kubernetes.io/minikube-addons=registry -l actual-registry=true")" != "True" ]] ; do sleep 2 && getKubeSystemPodStatusConditions "-l kubernetes.io/minikube-addons=registry -l actual-registry=true"; done'
     ''')
     if (minikubeStatus != 0) {
         error 'Error waiting for Minikube registry ...'
