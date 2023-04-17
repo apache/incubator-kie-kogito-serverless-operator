@@ -20,3 +20,15 @@ getKubeSystemPodStatusConditions() {
 getKubeSystemPodReadyStatus() { 
   echo $(kubectl get pods $1 -n kube-system -o json | jq -r '.items[].status.conditions[] | select(.type == "Ready") | .status') 
 }
+
+waitKubeSystemForPodReady() {
+  local selector=${1}
+  local timeout_time=${2:-60s}
+
+  export -f getKubeSystemPodStatusConditions
+  export -f getKubeSystemPodReadyStatus
+
+  echo "Wait for Kube System pod with selector ${selector} and timeout ${timeout_time}"
+
+  timeout ${timeout_time} bash -c "getKubeSystemPodStatusConditions '${selector}' && while [[ $(getKubeSystemPodReadyStatus "${selector}") != "True" ]] ; do sleep 2 && getKubeSystemPodStatusConditions '${selector}'; done"
+}
