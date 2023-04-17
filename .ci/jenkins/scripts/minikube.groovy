@@ -53,7 +53,7 @@ void waitForMinikubeStarted() {
         for component in "${MINIKUBE_COMPONENTS[@]}"
         do
             echo "Check component '${component}' is in 'Running' state"
-            waitKubeSystemForPodReady "-l tier=control-plane -l component=${COMPONENT_NAME}"
+            waitKubeSystemForPodReady "-l tier=control-plane -l component=${component}"
         done
 
         echo "Check kube-dns is in 'Running' state"

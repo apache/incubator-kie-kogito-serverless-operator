@@ -28,7 +28,7 @@ waitKubeSystemForPodReady() {
   export -f getKubeSystemPodStatusConditions
   export -f getKubeSystemPodReadyStatus
 
-  echo "Wait for Kube System pod with selector ${selector} and timeout ${timeout_time}"
+  echo "Wait for Kube System pod with selector '${selector}' and timeout ${timeout_time}"
 
-  timeout ${timeout_time} bash -c "getKubeSystemPodStatusConditions '${selector}' && while [[ $(getKubeSystemPodReadyStatus "${selector}") != "True" ]] ; do sleep 2 && getKubeSystemPodStatusConditions '${selector}'; done"
+  timeout ${timeout_time} bash -c "getKubeSystemPodStatusConditions '${selector}' && while [[ \"$(getKubeSystemPodReadyStatus "${selector}")\" != "True" ]] ; do sleep 2 && getKubeSystemPodStatusConditions '${selector}'; done"
 }
