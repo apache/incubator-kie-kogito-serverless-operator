@@ -165,8 +165,8 @@ func Test_devProfileImageDefaultsNoPlatform(t *testing.T) {
 	logger := ctrllog.FromContext(context.TODO())
 	workflow := test.GetKogitoServerlessWorkflow("../../config/samples/"+test.KogitoServerlessWorkflowSampleDevModeYamlCR, t.Name())
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).Build()
-
-	devReconciler := newDevProfileReconciler(client, &logger)
+	config := &rest.Config{}
+	devReconciler := newDevProfileReconciler(client, config, &logger)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -192,7 +192,8 @@ func Test_devProfileWithImageSnapshotOverrideWithPlatform(t *testing.T) {
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).Build()
 	errCreatePlatform := client.Create(context.Background(), platform)
 	assert.Nil(t, errCreatePlatform)
-	devReconciler := newDevProfileReconciler(client, &logger)
+	config := &rest.Config{}
+	devReconciler := newDevProfileReconciler(client, config, &logger)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -214,7 +215,8 @@ func Test_devProfileWithWPlatformWithoutDevBaseImageAndWithBaseImage(t *testing.
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).Build()
 	errCreatePlatform := client.Create(context.Background(), platform)
 	assert.Nil(t, errCreatePlatform)
-	devReconciler := newDevProfileReconciler(client, &logger)
+	config := &rest.Config{}
+	devReconciler := newDevProfileReconciler(client, config, &logger)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -236,7 +238,8 @@ func Test_devProfileWithPlatformWithoutDevBaseImageAndWithoutBaseImage(t *testin
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).Build()
 	errCreatePlatform := client.Create(context.Background(), platform)
 	assert.Nil(t, errCreatePlatform)
-	devReconciler := newDevProfileReconciler(client, &logger)
+	config := &rest.Config{}
+	devReconciler := newDevProfileReconciler(client, config, &logger)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)

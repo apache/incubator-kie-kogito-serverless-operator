@@ -32,9 +32,9 @@ const (
 	KogitoServerlessWorkflowProdProfileSampleYamlCR                 = "sw.kogito_v1alpha08_kogitoserverlessworkflow_withExplicitProdProfile.yaml"
 	KogitoServerlessPlatformWithCacheYamlCR                         = "sw.kogito_v1alpha08_kogitoserverlessplatform_withCacheAndCustomization.yaml"
 	KogitoServerlessPlatformWithCacheMinikubeYamlCR                 = "sw.kogito_v1alpha08_kogitoserverlessplatform_withCache_minikube.yaml"
-    KogitoServerlessPlatformYamlCR                  = "sw.kogito_v1alpha08_kogitoserverlessplatform.yaml"
-	KogitoServerlessPlatformWithBaseImageYamlCR     = "sw.kogito_v1alpha08_kogitoserverlessplatformWithBaseImage.yaml"
-	KogitoServerlessPlatformWithDevBaseImageYamlCR  = "sw.kogito_v1alpha08_kogitoserverlessplatformWithDevBaseImage.yaml"
+	KogitoServerlessPlatformYamlCR                                  = "sw.kogito_v1alpha08_kogitoserverlessplatform.yaml"
+	KogitoServerlessPlatformWithBaseImageYamlCR                     = "sw.kogito_v1alpha08_kogitoserverlessplatformWithBaseImage.yaml"
+	KogitoServerlessPlatformWithDevBaseImageYamlCR                  = "sw.kogito_v1alpha08_kogitoserverlessplatformWithDevBaseImage.yaml"
 )
 
 func GetKogitoServerlessWorkflow(path string, namespace string) *operatorapi.KogitoServerlessWorkflow {
