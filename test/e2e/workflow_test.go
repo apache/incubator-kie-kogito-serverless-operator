@@ -260,6 +260,12 @@ func verifyWorkflowIsInRunningState() bool {
 		return false
 	} else {
 		GinkgoWriter.Println(fmt.Sprintf("Got response %s", response))
+		if string(response) == "False" {
+			cmdLog := exec.Command("kubectl", "logs", "kogito-greeting-builder", "-n", namespace)
+			if responseLog, errLog := utils.Run(cmdLog); errLog == nil {
+				GinkgoWriter.Println(fmt.Sprintf("Got PodLog %s", responseLog))
+			}
+		}
 		if len(strings.TrimSpace(string(response))) > 0 {
 			status, err := strconv.ParseBool(string(response))
 			if err != nil {
