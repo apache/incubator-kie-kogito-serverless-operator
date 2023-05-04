@@ -44,7 +44,7 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 		// The namespace can be created when we run make install
 		// However, in this test we want to ensure that the solution
 		// can run in a ns labeled as restricted. Therefore, we are
-		// creating the namespace a lebeling it.
+		// creating the namespace and labeling it.
 		By("creating manager namespace")
 		cmd := exec.Command("kubectl", "create", "ns", namespace)
 		_, _ = utils.Run(cmd)
