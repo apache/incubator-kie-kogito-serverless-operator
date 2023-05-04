@@ -35,23 +35,17 @@ var logger logr.Logger
 func ToCNCFWorkflow(ctx context.Context, serverlessWorkflow *operatorapi.KogitoServerlessWorkflow) (*model.Workflow, error) {
 	if serverlessWorkflow != nil {
 		logger = ctrllog.FromContext(ctx)
-		newBaseWorkflow := &model.BaseWorkflow{ID: serverlessWorkflow.ObjectMeta.Name,
-			Key:            serverlessWorkflow.ObjectMeta.Annotations[metadata.Key],
-			Name:           serverlessWorkflow.ObjectMeta.Name,
-			Description:    serverlessWorkflow.ObjectMeta.Annotations[metadata.Description],
-			Version:        serverlessWorkflow.ObjectMeta.Annotations[metadata.Version],
-			SpecVersion:    extractSchemaVersion(serverlessWorkflow.APIVersion),
-			ExpressionLang: model.ExpressionLangType(extractExpressionLang(serverlessWorkflow.ObjectMeta.Annotations)),
-			KeepActive:     serverlessWorkflow.Spec.BaseWorkflow.KeepActive,
-			AutoRetries:    serverlessWorkflow.Spec.BaseWorkflow.AutoRetries,
-			Start:          serverlessWorkflow.Spec.BaseWorkflow.Start,
-		}
-		logger.V(DebugV).Info("Created new Base Workflow with name", "name", newBaseWorkflow.Name)
-		newWorkflow := &model.Workflow{
-			BaseWorkflow: *newBaseWorkflow,
-			Functions:    serverlessWorkflow.Spec.Functions,
-			States:       serverlessWorkflow.Spec.States}
-		return newWorkflow, nil
+
+		serverlessWorkflow.Spec.Workflow.ID = serverlessWorkflow.ObjectMeta.Name
+		serverlessWorkflow.Spec.Workflow.Key = serverlessWorkflow.ObjectMeta.Annotations[metadata.Key]
+		serverlessWorkflow.Spec.Workflow.Name = serverlessWorkflow.ObjectMeta.Name
+		serverlessWorkflow.Spec.Workflow.Description = serverlessWorkflow.ObjectMeta.Annotations[metadata.Description]
+		serverlessWorkflow.Spec.Workflow.Version = serverlessWorkflow.ObjectMeta.Annotations[metadata.Version]
+		serverlessWorkflow.Spec.Workflow.SpecVersion = extractSchemaVersion(serverlessWorkflow.APIVersion)
+		serverlessWorkflow.Spec.Workflow.ExpressionLang = model.ExpressionLangType(extractExpressionLang(serverlessWorkflow.ObjectMeta.Annotations))
+
+		logger.V(DebugV).Info("Created new Base Workflow with name", "name", serverlessWorkflow.Spec.Workflow.Name)
+		return &serverlessWorkflow.Spec.Workflow, nil
 	}
 	return nil, errors.New("kogitoServerlessWorkflow is nil")
 }
