@@ -87,4 +87,5 @@ jobs:
           pid=$(systemctl --user show podman.service  | grep ^MainPID | sed -e 's|MainPID=||')
           sudo prlimit --pid $pid --nofile=262144:262144
           sudo prlimit --pid $$ --nofile=262144:262144
+          cd container-builder
           make ${{ matrix.container-engine }}-integration-test
