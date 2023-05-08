@@ -28,7 +28,9 @@ jobs:
         run: |
           sudo apt-get -y install \
           btrfs-progs \
-          libgpgme-dev
+          libgpgme-dev \
+          libbtrfs-dev \
+          libdevmapper-dev
 
       - name: Checkout Code
         uses: actions/checkout@v3
