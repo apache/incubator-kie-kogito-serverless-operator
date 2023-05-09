@@ -3,6 +3,9 @@ name: Verify Container Builder
 on:
   pull_request:
     types: [opened, reopened, edited, synchronize]
+    paths: 
+      - container-builder/**
+      - .github/workflows/check-container-builder.yml
     branches:
       - main
 
