@@ -3,7 +3,6 @@ module github.com/kiegroup/kogito-serverless-operator/container-builder
 go 1.19
 
 require (
-	github.com/containers/buildah v1.29.0
 	github.com/containers/common v0.51.0
 	github.com/containers/podman/v4 v4.4.2
 	github.com/docker/docker v23.0.1+incompatible
@@ -41,6 +40,7 @@ require (
 	github.com/containerd/cgroups v1.0.4 // indirect
 	github.com/containerd/containerd v1.6.18 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
+	github.com/containers/buildah v1.29.0 // indirect
 	github.com/containers/image/v5 v5.24.1 // indirect
 	github.com/containers/libtrust v0.0.0-20230121012942-c1716e8a8d01 // indirect
 	github.com/containers/ocicrypt v1.1.7 // indirect
