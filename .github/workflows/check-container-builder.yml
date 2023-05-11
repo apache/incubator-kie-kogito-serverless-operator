@@ -44,7 +44,6 @@ jobs:
       matrix:
         container-engine:
           - docker
-          - podman
           - kaniko-docker
       fail-fast: false
     concurrency:
