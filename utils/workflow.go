@@ -29,7 +29,7 @@ import (
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
-const defaultImageTag = ":latest"
+const defaultImageTag = ":1.38"
 
 // GetJSONWorkflow return a Kogito compliant JSON format workflow as bytearray give a specific workflow CR
 func GetJSONWorkflow(workflowCR *operatorapi.KogitoServerlessWorkflow, ctx context.Context) ([]byte, error) {

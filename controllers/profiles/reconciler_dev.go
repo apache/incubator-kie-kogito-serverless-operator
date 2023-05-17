@@ -216,7 +216,7 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 	} else {
 		// is the operator version is a snapshot we add the nightly version
 		if isSnapshot(version.OperatorVersion) {
-			devBaseContainerImage = defaultKogitoServerlessWorkflowDevImage + "-" + nightlySuffix + ":latest"
+			devBaseContainerImage = defaultKogitoServerlessWorkflowDevImage + "-" + nightlySuffix + ":1.38"
 		}
 	}
 

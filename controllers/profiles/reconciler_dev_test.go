@@ -99,7 +99,7 @@ func Test_newDevProfile(t *testing.T) {
 
 	// check if the objects have been created
 	deployment := test.MustGetDeployment(t, client, workflow)
-	assert.Equal(t, defaultKogitoServerlessWorkflowDevImage+"-"+nightlySuffix+":latest", deployment.Spec.Template.Spec.Containers[0].Image)
+	assert.Equal(t, defaultKogitoServerlessWorkflowDevImage+"-"+nightlySuffix+":1.38", deployment.Spec.Template.Spec.Containers[0].Image)
 	assert.NotNil(t, deployment.Spec.Template.Spec.Containers[0].LivenessProbe)
 	assert.NotNil(t, deployment.Spec.Template.Spec.Containers[0].ReadinessProbe)
 	assert.NotNil(t, deployment.Spec.Template.Spec.Containers[0].StartupProbe)
@@ -158,7 +158,7 @@ func Test_newDevProfile(t *testing.T) {
 	assert.NotNil(t, result)
 
 	deployment = test.MustGetDeployment(t, client, workflow)
-	assert.Equal(t, defaultKogitoServerlessWorkflowDevImage+"-"+nightlySuffix+":latest", deployment.Spec.Template.Spec.Containers[0].Image)
+	assert.Equal(t, defaultKogitoServerlessWorkflowDevImage+"-"+nightlySuffix+":1.38", deployment.Spec.Template.Spec.Containers[0].Image)
 }
 
 func Test_devProfileImageDefaultsNoPlatform(t *testing.T) {
@@ -175,7 +175,7 @@ func Test_devProfileImageDefaultsNoPlatform(t *testing.T) {
 	// check if the objects have been created
 	deployment := test.MustGetDeployment(t, client, workflow)
 	if isSnapshot(version.OperatorVersion) {
-		assert.Equal(t, defaultKogitoServerlessWorkflowDevImage+"-"+nightlySuffix+":latest", deployment.Spec.Template.Spec.Containers[0].Image)
+		assert.Equal(t, defaultKogitoServerlessWorkflowDevImage+"-"+nightlySuffix+":1.38", deployment.Spec.Template.Spec.Containers[0].Image)
 	} else {
 		assert.Equal(t, defaultKogitoServerlessWorkflowDevImage+":"+version.OperatorVersion, deployment.Spec.Template.Spec.Containers[0].Image)
 	}
@@ -224,7 +224,7 @@ func Test_devProfileWithWPlatformWithoutDevBaseImageAndWithBaseImage(t *testing.
 
 	// check if the objects have been created
 	deployment := test.MustGetDeployment(t, client, workflow)
-	assert.Equal(t, "quay.io/kiegroup/kogito-swf-builder-nightly:latest", deployment.Spec.Template.Spec.Containers[0].Image)
+	assert.Equal(t, "quay.io/kiegroup/kogito-swf-builder-nightly:1.38", deployment.Spec.Template.Spec.Containers[0].Image)
 }
 
 func Test_devProfileWithPlatformWithoutDevBaseImageAndWithoutBaseImage(t *testing.T) {
@@ -247,7 +247,7 @@ func Test_devProfileWithPlatformWithoutDevBaseImageAndWithoutBaseImage(t *testin
 
 	// check if the objects have been created
 	deployment := test.MustGetDeployment(t, client, workflow)
-	assert.Equal(t, defaultKogitoServerlessWorkflowDevImage+"-"+nightlySuffix+":latest", deployment.Spec.Template.Spec.Containers[0].Image)
+	assert.Equal(t, defaultKogitoServerlessWorkflowDevImage+"-"+nightlySuffix+":1.38", deployment.Spec.Template.Spec.Containers[0].Image)
 }
 
 func Test_newDevProfileWithExternalConfigMaps(t *testing.T) {

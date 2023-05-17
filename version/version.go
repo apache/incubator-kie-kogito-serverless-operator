@@ -15,5 +15,5 @@ package version
 
 const (
 	// Current version
-	OperatorVersion = "2.0.0-snapshot"
+	OperatorVersion = "1.38.0-snapshot"
 )
