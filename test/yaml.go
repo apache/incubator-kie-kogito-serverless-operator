@@ -35,6 +35,7 @@ const (
 	KogitoServerlessPlatformYamlCR                                  = "sw.kogito_v1alpha08_kogitoserverlessplatform.yaml"
 	KogitoServerlessPlatformWithBaseImageYamlCR                     = "sw.kogito_v1alpha08_kogitoserverlessplatformWithBaseImage.yaml"
 	KogitoServerlessPlatformWithDevBaseImageYamlCR                  = "sw.kogito_v1alpha08_kogitoserverlessplatformWithDevBaseImage.yaml"
+	KogitoServerlessPlatformWithTraitCR                             = "sw.kogito_v1alpha08_kogitoserverlessplatform_withTrait.yaml"
 )
 
 func GetKogitoServerlessWorkflow(path string, namespace string) *operatorapi.KogitoServerlessWorkflow {

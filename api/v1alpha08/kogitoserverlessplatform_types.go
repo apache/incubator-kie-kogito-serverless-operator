@@ -22,7 +22,7 @@ import (
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/api"
 =======
 	"github.com/kiegroup/container-builder/api"
-	"github.com/kiegroup/kogito-serverless-operator/api/v1alpha08/trait"
+	"github.com/kiegroup/kogito-serverless-operator/api/trait"
 >>>>>>> 75765cf ([KOGITO-8945] Defined a Traits API to customize a Kubernetes Service)
 )
 
