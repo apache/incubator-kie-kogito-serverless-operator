@@ -15,15 +15,11 @@
 package v1alpha08
 
 import (
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-<<<<<<< HEAD
-	"github.com/kiegroup/kogito-serverless-operator/container-builder/api"
-=======
 	"github.com/kiegroup/container-builder/api"
 	"github.com/kiegroup/kogito-serverless-operator/api/trait"
->>>>>>> 75765cf ([KOGITO-8945] Defined a Traits API to customize a Kubernetes Service)
+	"github.com/kiegroup/kogito-serverless-operator/container-builder/api"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ConfigurationSpecType is used to define the enum values of the supported types for ConfigurationSpec
@@ -92,13 +88,11 @@ type KogitoServerlessPlatformSpec struct {
 	BuildPlatform api.PlatformBuildSpec `json:"platform,omitempty"`
 	// Configuration list of configuration properties to be attached to all the Workflow built from this Platform
 	Configuration ConfigurationSpec `json:"configuration,omitempty"`
-<<<<<<< HEAD
+
 	// DevBaseImage, optional, used for the dev profile only
 	DevBaseImage string `json:"devBaseImage,omitempty"`
-=======
 	// Trait list of traits properties attached to all the Workflow built from this Platform
 	Traits Traits `json:"traits,omitempty"`
->>>>>>> 75765cf ([KOGITO-8945] Defined a Traits API to customize a Kubernetes Service)
 }
 
 type Traits struct {
