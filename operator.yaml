@@ -4949,6 +4949,12 @@ rules:
 - apiGroups:
   - sw.kogito.kie.org
   resources:
+  - kogitoserverlessbuilds/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - sw.kogito.kie.org
+  resources:
   - kogitoserverlessbuilds/status
   verbs:
   - get
@@ -5006,14 +5012,6 @@ rules:
   - get
   - patch
   - update
-- apiGroups:
-  - sw.kogito.kie.org
-  resources:
-  - pods
-  verbs:
-  - get
-  - list
-  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -5044,6 +5042,82 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - route.openshift.io
+  resources:
+  - route/finalizers
+  - routes/finalizers
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - delete
+  - deletecollection
+  - patch
+  - watch
+- apiGroups:
+  - image.openshift.io
+  resources:
+  - imagestreams
+  - imagestreamtags
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - image.openshift.io
+  resources:
+  - imagestreams/finalizers
+  - imagestreamtags/finalizers
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - delete
+  - deletecollection
+  - patch
+  - watch
+- apiGroups:
+  - build.openshift.io
+  resources:
+  - buildconfigs
+  - builds
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - build.openshift.io
+  resources:
+  - buildconfigs/finalizers
+  - builds/finalizers
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - delete
+  - deletecollection
+  - patch
+  - watch
+- apiGroups:
+  - build.openshift.io
+  resources:
+  - buildconfigs/instantiatebinary
+  verbs:
+  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

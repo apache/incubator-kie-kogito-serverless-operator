@@ -280,5 +280,5 @@ func (o *openshiftBuilderManager) pushNewOpenShiftBuildForWorkflow(build *operat
 		Do(context.TODO()).
 		Into(result)
 
-	return result, nil
+	return result, err
 }
