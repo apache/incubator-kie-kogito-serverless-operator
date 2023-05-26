@@ -174,7 +174,7 @@ when the Operator will be installed, and it contains:
 
 ## Customize Builder Image
 
-At the startup a [Dockerfile](../config/manager/sonataflow_builder_dockerfile.yaml) is placed in a configmap. This
+At the startup a [Dockerfile](../config/manager/app/sonataflow_builder_dockerfile.yaml) is placed in a configmap. This
 Dockerfile uses a base image
 called [kogito-swf-builder](https://github.com/kiegroup/kogito-images/tree/master/modules/kogito-swf-builder) with:
 

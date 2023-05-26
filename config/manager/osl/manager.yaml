@@ -26,14 +26,11 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
       containers:
       - command:
         - /usr/local/bin/manager
         args:
         - --leader-elect
-        - --v=2
         image: controller:latest
         name: manager
         securityContext:

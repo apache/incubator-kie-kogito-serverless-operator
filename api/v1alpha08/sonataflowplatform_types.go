@@ -52,13 +52,17 @@ const (
 )
 
 // SonataFlowPlatformStatus defines the observed state of SonataFlowPlatform
+// +k8s:openapi-gen=true
 type SonataFlowPlatformStatus struct {
 	api.Status `json:",inline"`
 	// Cluster what kind of cluster you're running (ie, plain Kubernetes or OpenShift)
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="cluster"
 	Cluster PlatformCluster `json:"cluster,omitempty"`
 	// Version the operator version controlling this Platform
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="version"
 	Version string `json:"version,omitempty"`
 	// Info generic information related to the build
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="info"
 	Info map[string]string `json:"info,omitempty"`
 }
 
@@ -107,6 +111,9 @@ func (in *SonataFlowPlatformStatus) IsFailure() bool {
 // +kubebuilder:printcolumn:name="Cluster",type=string,JSONPath=`.status.cluster`
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=='Succeed')].status`
 // +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.conditions[?(@.type=='Succeed')].reason`
+// +operator-sdk:csv:customresourcedefinitions:resources={{Namespace,v1,"The Namespace controlled by the platform"}}
+// +operator-sdk:csv:customresourcedefinitions:resources={{Namespace,v1,"The Namespace controlled by the platform"}}
+// +operator-sdk:csv:customresourcedefinitions:resources={{Namespace,v1,"The Namespace controlled by the platform"}}
 type SonataFlowPlatform struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -1,0 +1,155 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+    operators.openshift.io/valid-subscription: '["OpenShift Container Platform", "OpenShift
+      Platform Plus"]'
+  name: logic-operator-rhel8.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: SonataFlowBuild is an internal custom resource to control workflow
+        build instances in the target platform
+      displayName: Sonata Flow Build
+      kind: SonataFlowBuild
+      name: sonataflowbuilds.sonataflow.org
+      resources:
+      - kind: BuildConfig
+        name: A Openshift Build Config
+        version: build.openshift.io/v1
+      version: v1alpha08
+    - description: SonataFlowPlatform is the descriptor for the workflow platform
+        infrastructure.
+      displayName: Sonata Flow Platform
+      kind: SonataFlowPlatform
+      name: sonataflowplatforms.sonataflow.org
+      resources:
+      - kind: Namespace
+        name: The Namespace controlled by the platform
+        version: v1
+      - kind: Namespace
+        name: The Namespace controlled by the platform
+        version: v1
+      - kind: Namespace
+        name: The Namespace controlled by the platform
+        version: v1
+      specDescriptors:
+      - description: BuildTemplate specify how to build the Workflow. It's used as
+          a template for the SonataFlowBuild
+        displayName: build
+        path: build
+      - description: Configuration list of configuration properties to be attached
+          to all the Workflow built from this Platform
+        displayName: configuration
+        path: configuration
+      - description: DevBaseImage Base image to run the Workflow in dev mode instead
+          of the operator's default. Optional, used for the dev profile only
+        displayName: devBaseImage
+        path: devBaseImage
+      - description: BuildPlatform specify how is the platform where we want to build
+          the Workflow
+        displayName: platform
+        path: platform
+      statusDescriptors:
+      - description: Cluster what kind of cluster you're running (ie, plain Kubernetes
+          or OpenShift)
+        displayName: cluster
+        path: cluster
+      - description: Conditions which are the conditions met (particularly useful
+          when in ERROR phase)
+        displayName: conditions
+        path: conditions
+      - description: Info generic information related to the build
+        displayName: info
+        path: info
+      - description: ObservedGeneration is the most recent generation observed for
+          this Platform.
+        displayName: observedGeneration
+        path: observedGeneration
+      - description: Phase defines in what phase the Platform is found
+        displayName: phase
+        path: phase
+      - description: Version the operator version controlling this Platform
+        displayName: version
+        path: version
+      version: v1alpha08
+    - description: SonataFlow is the descriptor representation for a workflow application
+        based on the CNCF Serverless Workflow specification.
+      displayName: Sonata Flow
+      kind: SonataFlow
+      name: sonataflows.sonataflow.org
+      resources:
+      - kind: Deployment
+        name: A Deployment for the Flow
+        version: apps/v1
+      - kind: Service
+        name: A Service for the Flow
+        version: v1
+      - kind: SonataFlowBuild
+        name: A SonataFlow Build
+        version: sonataflow.org/v1alpha08
+      - kind: Route
+        name: An OpenShift Route for the Flow
+        version: route.openshift.io/v1
+      specDescriptors:
+      - displayName: flow
+        path: flow
+      - description: Resources workflow resources that are linked to this workflow
+          definition. For example, a collection of OpenAPI specification files.
+        displayName: resources
+        path: resources
+      statusDescriptors:
+      - displayName: address
+        path: address
+      - displayName: endpoint
+        path: endpoint
+      - displayName: lastTimeRecoverAttempt
+        path: lastTimeRecoverAttempt
+      - description: keeps track of how many failure recovers a given workflow had
+          so far
+        displayName: recoverFailureAttempts
+        path: recoverFailureAttempts
+      version: v1alpha08
+  description: OpenShift Serverless Logic Operator
+  displayName: openshift-serverless-logic-operator
+  icon:
+  - base64data: PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiPjxkZWZzPjxzdHlsZT4uY2xzLTF7ZmlsbDojMDg1ODcwO30uY2xzLTJ7ZmlsbDojZmZmO30uY2xzLTN7ZmlsbDojZjU4OTFmO30uY2xzLTR7ZmlsbDojOTdkNGU4O308L3N0eWxlPjwvZGVmcz48dGl0bGU+a29naXRvX2ljb25fcmdiX2NvbG9yX2RlZmF1bHQ8L3RpdGxlPjxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTkyOS4zNywzMC41QTcwLjMxLDcwLjMxLDAsMCwwLDg3Mi4xOSwxQzg2OC4wOSwxLDczOCwyMy42Nyw3MzgsMjMuNjdhNzAuMTUsNzAuMTUsMCwwLDAtNDguMSwzMy4yNUw2NjgsOTMuNzdjLTQ4LjQxLTQyLjQ2LTEwMS43NC02NC43LTE1Ni02NC43UzQwNC40Myw1MS4zMSwzNTYsOTMuNzdMMzM0LjExLDU2LjkyQTcwLjEzLDcwLjEzLDAsMCwwLDI4NiwyMy42N1MxNTUuOSwxLDE1MS44MSwxQTcwLjE5LDcwLjE5LDAsMCwwLDkwLjU0LDEwNS40MWw1MC4yNCw5MGExMTUuMTIsMTE1LjEyLDAsMCwwLDYwLjMsMTY5LjlMMTA4LjMsNzk0LjYsNTEyLDEwMjMsOTE1LjcsNzk0LjYsODIyLjkyLDM2NS4yN2ExMTUuMTIsMTE1LjEyLDAsMCwwLDYwLjMtMTY5LjlsNTAuMjQtOTBBNzAuNDksNzAuNDksMCwwLDAsOTI5LjM3LDMwLjVaIi8+PHBhdGggY2xhc3M9ImNscy0yIiBkPSJNNDgwLjA5LDI3OC4zbDguNTctLjA5TDUxMiwzMDEuNGwyMy4xOS0yMy4xOSw4LjYuMDhjNjMuMjMuNjMsMTIzLjgyLDMuMTQsMTc2LjI4LDcuMjctNDUuOTQtOTkuNDktMTIyLTE4Ni4zLTIwOC0xODYuM1MzNDkuOSwxODYuMDcsMzA0LDI4NS41N0MzNTYuMzksMjgxLjQ0LDQxNi45NCwyNzguOTIsNDgwLjA5LDI3OC4zWiIvPjxwYXRoIGNsYXNzPSJjbHMtMyIgZD0iTTQ0OC43LDY5Ni4xNmExMTYuMzYsMTE2LjM2LDAsMCwwLDEzMS4xNy41MSw1ODEuNDcsNTgxLjQ3LDAsMCwwLTEzMS4xNy0uNTFaIi8+PHBhdGggY2xhc3M9ImNscy00IiBkPSJNNjkxLjU3LDY3OS43M2ExODUuNDQsMTg1LjQ0LDAsMCwwLTE3LjI3LTQxLjQ3Yy0xLjIxLTIuMTItMi41LTQuMTgtMy43OC02LjI0LS43My0xLjE5LTEuNDMtMi40MS0yLjE5LTMuNTgtMS4yLTEuODUtMi40OS0zLjYzLTMuNzUtNS40My0uOTQtMS4zNC0xLjg1LTIuNzEtMi44Mi00LTEuMTItMS41MS0yLjMyLTMtMy40OC00LjQzcy0yLjM4LTMuMDgtMy42NC00LjU3Yy0xLTEuMTgtMi0yLjI5LTMtMy40NEExODYuNjksMTg2LjY5LDAsMCwwLDU3MC43Myw1NTNjLTE3LjI1LDExLjU2LTM5LDIyLjY5LTU4LjczLDIyLjY5UzQ3MC41Miw1NjQuNTcsNDUzLjI3LDU1M2ExODYuNTksMTg2LjU5LDAsMCwwLTgwLjkxLDUzLjZjLTEsMS4xMy0yLDIuMjItMywzLjM3LTEuMjYsMS41LTIuNDQsMy4wNi0zLjY2LDQuNnMtMi4zNCwyLjkxLTMuNDYsNC40MWMtMSwxLjMyLTEuODgsMi42OS0yLjgzLDQtMS4yNiwxLjc5LTIuNTQsMy41Ni0zLjczLDUuNC0uNzcsMS4xOS0xLjQ4LDIuNDItMi4yMiwzLjYyLTEuMjcsMi4wNS0yLjU2LDQuMS0zLjc1LDYuMjFhMTg1LDE4NSwwLDAsMC0xNy4yOCw0MS40N2MxMi44NC00LjQsMjYuNDMtOC4yMyw0MC40Ni0xMS42NywwLDAtLjA1LS4wOS0uMDctLjE0LDEuNDUtLjM1LDIuOTUtLjY2LDQuNDEtMWwxNi45NS00Ny4yNnY0My41MWMxLS4yLDItLjM0LDMtLjU0cTkuNDQtMS44NSwxOS4xNC0zLjM5Yy43OS0uMTMsMS41Ny0uMjcsMi4zNi0uMzlxMTEuNzQtMS44MywyMy44Ni0zLjJsMTMuODctNTUuNTF2NTQuMDljOC41Ni0uNzcsMTcuMjYtMS4zMSwyNi0xLjcybDMuOTItLjE3YzMuMjctLjEzLDYuNTMtLjI3LDkuODMtLjM1LDUuMjMtLjE0LDEwLjUtLjIzLDE1LjgtLjIzLDUuNDksMCwxMC45My4xLDE2LjM0LjI1LDIuOS4wOCw1Ljc5LjE5LDguNjcuMzFsNS43NS4yNmM4LjM2LjQxLDE2LjY2Ljk0LDI0LjgyLDEuNjhWNjAwLjEzbDEzLjg4LDU1LjUzYy41NS4wNiwxLjA5LjE1LDEuNjUuMjIsNy4zLjg1LDE0LjU0LDEuNzksMjEuNjUsMi44OSwyLjczLjQxLDUuMzguOTIsOC4wOCwxLjM3LDMuOTUuNjgsNy45LDEuMzUsMTEuNzgsMi4xLDEuNzIuMzIsMy41LjU4LDUuMi45MlY2MTkuNjVsMTcsNDcuMjljMS4yMy4yOSwyLjQuNjQsMy42Mi45NCwxLjg0LjQ1LDMuNzIuODYsNS41NCwxLjMybC0uMDYuMUM2NjguMTksNjcyLjQ0LDY4MC4yMSw2NzUuODMsNjkxLjU3LDY3OS43M1oiLz48cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik03MzcuNTcsMzI4LjA3bC0xMC0uODRjLTUxLjU2LTQuMzgtMTEyLjEzLTcuMS0xNzUuNjctNy45TDUxMiwzNTkuMjRsLTQwLjA5LTM5LjkxYy02My40OC44MS0xMjQsMy41My0xNzUuNTQsNy45bC0xMCwuODVDMjY4LjI3LDM3Ny44MiwyNTgsNDI4LjExLDI1OCw0NzAuMjRjMCw2OS45NCwyOC4zMSwxMDQuMTYsNzQsMTIwLjkzQTIyOS40OCwyMjkuNDgsMCwwLDEsNDE4LjI4LDUyM2EyMC40MywyMC40MywwLDAsMSwzMi4xNi0yNC4xNmMxNi4xMiwxNC45LDQ1Ljg5LDM1LjkxLDYxLjU2LDM1LjkxczQ1Ljk0LTIxLjQzLDYxLjU1LTM1LjkxQTIwLjQzLDIwLjQzLDAsMCwxLDYwNS43Miw1MjMsMjI5LjY1LDIyOS42NSwwLDAsMSw2OTIsNTkxLjE3YzQ1Ljc0LTE2Ljc3LDc0LTUxLDc0LTEyMC45M0M3NjYsNDI4LjExLDc1NS43MywzNzcuODIsNzM3LjU3LDMyOC4wN1pNNDAzLjUsNDYyLjc3Yy0yOS4zMS42Ni01Ni0xNi4yLTc0LjgyLTQzLjUxLDE3LjUzLTI4LjEzLDQzLjQ3LTQ2LjE3LDcyLjc4LTQ2LjgzczU2LDE2LjE5LDc0LjgyLDQzLjUxQzQ1OC43NSw0NDQuMDcsNDMyLjgxLDQ2Mi4xMSw0MDMuNSw0NjIuNzdabTI5MS44Mi0xMy4xOC0zMiwzMi0zMi0zMi0zMiwzMi0zMi0zMiwzMi0zMi0zMi0zMiwzMi0zMiwzMiwzMiwzMi0zMiwzMiwzMi0zMiwzMloiLz48cGF0aCBjbGFzcz0iY2xzLTQiIGQ9Ik02MDguMjMsNzk3bDE5LjkxLDc5LjY3LDc2LjMyLTQzLjE4Vjc0NWwxOS4zOCw3Ny41MywxMTIuMzUtNjMuNTZMNzkxLjUyLDU1Mi4yN2MtMTQuOTQsMzMuOTItNDAuNjgsNTguNzctNzcuMiw3NC4xMkEyMjUuMTQsMjI1LjE0LDAsMCwxLDczMSw2NjguNzFhNDAuOTQsNDAuOTQsMCwwLDEtNTIuNzIsNDkuNzUsNDM4LjI3LDQzOC4yNywwLDAsMC00Ni43My0xMywxNTcuMDcsMTU3LjA3LDAsMCwxLTIzNC42LTEsNDQzLjg2LDQ0My44NiwwLDAsMC01MS4yMywxNEE0MC45NCw0MC45NCwwLDAsMSwyOTMsNjY4LjcxYTIyNC44NiwyMjQuODYsMCwwLDEsMTYuNjktNDIuMzNjLTM2LjUzLTE1LjM0LTYyLjI3LTQwLjItNzcuMjEtNzQuMTFMMTg3LjgxLDc1OC45NCwzMDAuMTYsODIyLjUsMzE5LjU0LDc0NXY4OC41bDc2LjMyLDQzLjE4TDQxNS43Nyw3OTd2OTAuOTNMNTEyLDk0Mi4zNmw5Ni4yMy01NC40NVoiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik0yNTMuOTEsMjk4LjQzYTU4MC4wNiw1ODAuMDYsMCwwLDEsNDMuNTUtODcuNjRxMTEuOTMtMTkuNTEsMjQuNjktMzYuNjRMMjczLjc4LDkyLjc5bC0xMjItMjEuNiw3OC43NiwxNDEsLjA2LjA3YTQ0LjgxLDQ0LjgxLDAsMSwwLDIzLjI3LDg2LjEzWiIvPjxwYXRoIGNsYXNzPSJjbHMtMiIgZD0iTTc5My4zNSwyMTIuM2wuMDctLjA3LDc4Ljc2LTE0MS0xMjIsMjEuNi00OC4zNyw4MS4zNnExMi43MiwxNy4xNywyNC42OSwzNi42NGE1ODAuMDYsNTgwLjA2LDAsMCwxLDQzLjU1LDg3LjY0LDQ0LjgsNDQuOCwwLDEsMCwyMy4yNi04Ni4xM1oiLz48L3N2Zz4=
+    mediatype: image/svg+xml
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - sonataflow
+  - cncf
+  - serverless
+  - serverlessworkflow
+  links:
+  - name: OpenShift Serverless Logic Operator
+    url: https://kiegroup.github.io/kogito-docs/serverlessworkflow/latest/index.html
+  maturity: alpha
+  provider:
+    name: logic-operator-rhel8
+  relatedImages:
+  - image: registry.redhat.io/openshift-serverless-1-tech-preview/logic-operator-rhel8:1.30.0
+    name: IMAGE_LOGIC_SWF_OPERATOR
+  - image: registry.redhat.io/openshift-serverless-1-tech-preview/logic-swf-devmode-rhel8:1.30.0
+    name: IMAGE_LOGIC_SWF_DEVMODE
+  - image: registry.redhat.io/openshift-serverless-1-tech-preview/logic-swf-builder-rhel8:1.30.0
+    name: IMAGE_LOGIC_SWF_BUILDER
+  - image: registry.redhat.io/openshift4/ose-kube-rbac-proxy@sha256:4564ca3dc5bac80d6faddaf94c817fbbc270698a9399d8a21ee1005d85ceda56
+    name: IMAGE_KUBE_RBAC_PROXY
+  version: 0.0.0

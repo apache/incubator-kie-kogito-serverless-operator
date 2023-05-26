@@ -48,7 +48,7 @@ const (
 	sonataFlowBuildSucceed                    = "sonataflow.org_v1alpha08_sonataflowbuild.yaml"
 
 	e2eSamples    = "test/testdata/"
-	manifestsPath = "bundle/manifests/"
+	manifestsPath = "bundle/app/manifests/"
 )
 
 var projectDir = ""

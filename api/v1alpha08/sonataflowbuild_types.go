@@ -66,11 +66,13 @@ type BuildTemplate struct {
 }
 
 // SonataFlowBuildSpec an abstraction over the actual build process performed by the platform.
+// +k8s:openapi-gen=true
 type SonataFlowBuildSpec struct {
 	BuildTemplate `json:",inline"`
 }
 
 // SonataFlowBuildStatus defines the observed state of SonataFlowBuild
+// +k8s:openapi-gen=true
 type SonataFlowBuildStatus struct {
 	// The final image tag produced by this build instance
 	ImageTag string `json:"imageTag,omitempty"`
@@ -112,6 +114,7 @@ func (k *SonataFlowBuildStatus) GetInnerBuild(innerBuild interface{}) error {
 // +kubebuilder:printcolumn:name="Image",type=string,JSONPath=`.status.imageTag`
 // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.buildPhase`
 // +kubebuilder:resource:shortName={"sfb", "sfbuild", "sfbuilds"}
+// +operator-sdk:csv:customresourcedefinitions:resources={{BuildConfig,build.openshift.io/v1," A Openshift Build Config"}}
 type SonataFlowBuild struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

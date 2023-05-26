@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-CSV_DIR="config/manifests/bases"
-BUNDLE_DIR="bundle/manifests"
+CSV_DIR="config/manifests/app/bases"
+BUNDLE_DIR="bundle/app/manifests"
 
 getOperatorVersion() {
   local version=$(grep -m 1 'OperatorVersion' version/version.go | awk -F\" '{print $2}')

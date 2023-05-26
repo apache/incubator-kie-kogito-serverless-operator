@@ -45,10 +45,10 @@ sed -i "s|version: ${old_version}|version: ${new_version}|g" image.yaml
 
 sed -i "s|^VERSION ?=.*|VERSION ?= ${new_version}|g" Makefile
 sed -i "s|^REDUCED_VERSION ?=.*|REDUCED_VERSION ?= ${newMajorMinorVersion}|g" Makefile
-sed -i "s|newTag:.*|newTag: ${new_version}|g" config/manager/kustomization.yaml
+sed -i "s|newTag:.*|newTag: ${new_version}|g" config/manager/app/kustomization.yaml
 
 sed -i "s|IMAGE_TAG_BASE ?=.*|IMAGE_TAG_BASE ?= ${imageTag}${imageSuffix}|g" Makefile
-sed -i "s|newName:.*|newName: ${imageTag}${imageSuffix}|g" config/manager/kustomization.yaml
+sed -i "s|newName:.*|newName: ${imageTag}${imageSuffix}|g" config/manager/app/kustomization.yaml
 
 # Update kogito-swf-* images
 find . -name "*.yaml" -exec sed -i "s|quay.io/kiegroup/kogito-swf-builder.*:${oldMajorMinorVersion}|quay.io/kiegroup/kogito-swf-builder${imageSuffix}:${newMajorMinorVersion}|" {} +
