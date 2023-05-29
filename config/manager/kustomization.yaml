@@ -22,6 +22,11 @@ images:
   newName: quay.io/kiegroup/kogito-serverless-operator-nightly
   newTag: 2.0.0-snapshot
 # Patching the manager deployment file to add an env var with the operator namespace in
+#    - op: add
+#      path: /spec/template/spec/containers/0/env
+#      value:
+#        - name: ENABLE_WEBHOOKS
+#          value: "false"
 patchesJson6902:
 - patch: |-
     - op: add

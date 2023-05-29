@@ -38,6 +38,8 @@ import (
 	//+kubebuilder:scaffold:imports
 )
 
+const enableWebhookEnv = "ENABLE_WEBHOOKS"
+
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -90,6 +92,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "KogitoServerlessWorkflow")
 		os.Exit(1)
 	}
+
 	if err = (&controllers.KogitoServerlessBuildReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
@@ -98,6 +101,14 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "KogitoServerlessBuild")
 		os.Exit(1)
+	}
+
+	// when running local for quick tests, disable the webhook by default
+	if os.Getenv(enableWebhookEnv) != "false" {
+		if err = (&operatorapi.KogitoServerlessWorkflow{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "KogitoServerlessWorkflow")
+			os.Exit(1)
+		}
 	}
 
 	if err = (&controllers.KogitoServerlessPlatformReconciler{

@@ -17,8 +17,6 @@ package workflowdef
 import (
 	"context"
 	"encoding/json"
-	"path"
-	"strings"
 
 	"github.com/serverlessworkflow/sdk-go/v2/model"
 
@@ -50,6 +48,7 @@ func GetJSONWorkflow(workflowCR *operatorapi.KogitoServerlessWorkflow, ctx conte
 }
 
 // ToCNCFWorkflow converts a KogitoServerlessWorkflow object to a model.Workflow one in order to be able to convert it to a YAML/Json
+// TODO figure out if it needs to be here or if we can delegate to the mutate webhook
 func ToCNCFWorkflow(ctx context.Context, workflowCR *operatorapi.KogitoServerlessWorkflow) (*model.Workflow, error) {
 	if workflowCR != nil {
 		logger := ctrllog.FromContext(ctx)
@@ -59,7 +58,6 @@ func ToCNCFWorkflow(ctx context.Context, workflowCR *operatorapi.KogitoServerles
 		workflowCR.Spec.Flow.Name = workflowCR.ObjectMeta.Name
 		workflowCR.Spec.Flow.Description = workflowCR.ObjectMeta.Annotations[metadata.Description]
 		workflowCR.Spec.Flow.Version = workflowCR.ObjectMeta.Annotations[metadata.Version]
-		workflowCR.Spec.Flow.SpecVersion = extractSchemaVersion(workflowCR.APIVersion)
 		workflowCR.Spec.Flow.ExpressionLang = model.ExpressionLangType(extractExpressionLang(workflowCR.ObjectMeta.Annotations))
 
 		logger.V(utils.DebugV).Info("Created new Base Workflow with name", "name", workflowCR.Spec.Flow.Name)
@@ -74,12 +72,4 @@ func extractExpressionLang(annotations map[string]string) string {
 		return expressionLang
 	}
 	return metadata.DefaultExpressionLang
-}
-
-// Function to extract from the apiVersion the ServerlessWorkflow schema version
-// For example given sw.kogito.kie.org/operatorapi we would like to extract v0.8
-func extractSchemaVersion(version string) string {
-	schemaVersion := path.Base(version)
-	strings.Replace(schemaVersion, "v0", "v0.", 1)
-	return schemaVersion
 }

@@ -1,0 +1,54 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: mutating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-sw-kogito-kie-org-v1alpha08-kogitoserverlessworkflow
+  failurePolicy: Fail
+  name: mkogitoserverlessworkflow.kb.io
+  rules:
+  - apiGroups:
+    - sw.kogito.kie.org
+    apiVersions:
+    - v1alpha08
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kogitoserverlessworkflows
+  sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-sw-kogito-kie-org-v1alpha08-kogitoserverlessworkflow
+  failurePolicy: Fail
+  name: vkogitoserverlessworkflow.kb.io
+  rules:
+  - apiGroups:
+    - sw.kogito.kie.org
+    apiVersions:
+    - v1alpha08
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kogitoserverlessworkflows
+  sideEffects: None

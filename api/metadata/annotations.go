@@ -36,7 +36,7 @@ const (
 	// DefaultExpressionLang is the default serverless workflow specification language
 	DefaultExpressionLang = "jq"
 	// SpecVersion is the current CNCF Serverless Workflow version supported by the operator
-	SpecVersion = "v0.8"
+	SpecVersion = "0.8"
 )
 
 type ProfileType string

@@ -403,6 +403,47 @@ spec:
             spec:
               containers:
               - args:
+                - --health-probe-bind-address=:8081
+                - --metrics-bind-address=127.0.0.1:8080
+                - --leader-elect
+                command:
+                - /usr/local/bin/manager
+                env:
+                - name: POD_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                image: quay.io/kiegroup/kogito-serverless-operator-nightly:2.0.0-snapshot
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8081
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                name: manager
+                ports:
+                - containerPort: 9443
+                  name: webhook-server
+                  protocol: TCP
+                readinessProbe:
+                  httpGet:
+                    path: /readyz
+                    port: 8081
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 128Mi
+                  requests:
+                    cpu: 10m
+                    memory: 64Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+              - args:
                 - --secure-listen-address=0.0.0.0:8443
                 - --upstream=http://127.0.0.1:8080/
                 - --logtostderr=true
@@ -427,43 +468,6 @@ spec:
                     - ALL
                   seccompProfile:
                     type: RuntimeDefault
-              - args:
-                - --health-probe-bind-address=:8081
-                - --metrics-bind-address=127.0.0.1:8080
-                - --leader-elect
-                command:
-                - /usr/local/bin/manager
-                env:
-                - name: POD_NAMESPACE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.namespace
-                image: quay.io/kiegroup/kogito-serverless-operator-nightly:2.0.0-snapshot
-                livenessProbe:
-                  httpGet:
-                    path: /healthz
-                    port: 8081
-                  initialDelaySeconds: 15
-                  periodSeconds: 20
-                name: manager
-                readinessProbe:
-                  httpGet:
-                    path: /readyz
-                    port: 8081
-                  initialDelaySeconds: 5
-                  periodSeconds: 10
-                resources:
-                  limits:
-                    cpu: 500m
-                    memory: 128Mi
-                  requests:
-                    cpu: 10m
-                    memory: 64Mi
-                securityContext:
-                  allowPrivilegeEscalation: false
-                  capabilities:
-                    drop:
-                    - ALL
               securityContext:
                 runAsNonRoot: true
                 seccompProfile:
@@ -525,3 +529,57 @@ spec:
   provider:
     name: kogito-serverlessworkflow-operator
   version: 2.0.0-snapshot
+  webhookdefinitions:
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    conversionCRDs:
+    - kogitoserverlessbuilds.sw.kogito.kie.org
+    - kogitoserverlessplatforms.sw.kogito.kie.org
+    - kogitoserverlessworkflows.sw.kogito.kie.org
+    deploymentName: kogito-serverless-operator-controller-manager
+    generateName: ckogitoserverlessbuildskogitoserverlessplatformskogitoserverlessworkflows.kb.io
+    sideEffects: None
+    targetPort: 9443
+    type: ConversionWebhook
+    webhookPath: /convert
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: kogito-serverless-operator-controller-manager
+    failurePolicy: Fail
+    generateName: mkogitoserverlessworkflow.kb.io
+    rules:
+    - apiGroups:
+      - sw.kogito.kie.org
+      apiVersions:
+      - v1alpha08
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - kogitoserverlessworkflows
+    sideEffects: None
+    targetPort: 9443
+    type: MutatingAdmissionWebhook
+    webhookPath: /mutate-sw-kogito-kie-org-v1alpha08-kogitoserverlessworkflow
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: kogito-serverless-operator-controller-manager
+    failurePolicy: Fail
+    generateName: vkogitoserverlessworkflow.kb.io
+    rules:
+    - apiGroups:
+      - sw.kogito.kie.org
+      apiVersions:
+      - v1alpha08
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - kogitoserverlessworkflows
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-sw-kogito-kie-org-v1alpha08-kogitoserverlessworkflow

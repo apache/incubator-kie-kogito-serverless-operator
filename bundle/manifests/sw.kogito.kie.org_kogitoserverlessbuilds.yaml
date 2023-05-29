@@ -6,6 +6,16 @@ metadata:
   creationTimestamp: null
   name: kogitoserverlessbuilds.sw.kogito.kie.org
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        service:
+          name: kogito-serverless-operator-webhook-service
+          namespace: kogito-serverless-operator-system
+          path: /convert
+      conversionReviewVersions:
+      - v1
   group: sw.kogito.kie.org
   names:
     kind: KogitoServerlessBuild

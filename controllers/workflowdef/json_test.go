@@ -34,7 +34,8 @@ func TestKogitoServerlessWorkflowConverter(t *testing.T) {
 		assert.Equal(t, "greeting", out.ID)
 		//assert.Equal(t, "greeting-key", out.Key)
 		assert.Equal(t, "0.0.1", out.Version)
-		assert.Equal(t, "v1alpha08", out.SpecVersion)
+		// this will be by webhook
+		// assert.Equal(t, "v1alpha08", out.SpecVersion)
 		assert.Equal(t, "Greeting example on k8s!", out.Description)
 		assert.Equal(t, model.JqExpressionLang, out.ExpressionLang)
 		assert.Equal(t, "greeting", out.Name)
