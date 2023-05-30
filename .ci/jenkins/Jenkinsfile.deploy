@@ -74,27 +74,6 @@ pipeline {
             }
         }
 
-        stage('Update version') {
-            when {
-                expression { return helper.getProjectVersion() }
-            }
-            steps {
-                script {
-                    sh "make bump-version new_version=${helper.getProjectVersion()}"
-
-                    // Commit changes
-                    githubscm.commitChanges(getCommitMessage(), {
-                        sh '''
-                            git add .
-                            git reset -- go.mod
-                            git reset -- go.sum
-                        '''
-                    })
-                    commitDone = true
-                }
-            }
-        }
-
         stage('Test Operator') {
             when {
                 expression {
@@ -113,37 +92,15 @@ pipeline {
             }
         }
 
-        stage('Build Operator') {
+        stage('Build Operator for tests') {
             steps {
-                sh "make container-build BUILDER=${env.CONTAINER_ENGINE} IMG=${getBuiltImage()}"
+                sh "make container-build BUILDER=${env.CONTAINER_ENGINE} IMG=${getBuiltImage('temp')}"
             }
             post {
                 unsuccessful {
                     script {
                         util.archiveConsoleLog()
                     }
-                }
-            }
-        }
-
-        stage('Prepare for e2e tests') {
-            when {
-                expression { 
-                    return helper.shouldLaunchTests() && helper.isRelease() 
-                }
-            }
-            steps {
-                script {
-                    // Define specific tests images as those to override defaults
-                    // Because released builder and devmode images are not yet available
-                    String platformCRFile = 'config/samples/sw.kogito_v1alpha08_kogitoserverlessplatform_withCache_minikube.yaml'
-                    String[] versionSplit = getOperatorVersion().split("\\.")
-                    String majorMinor = "${versionSplit[0]}.${versionSplit[1]}"
-                    def platformCR = readYaml(file: platformCRFile)
-                    platformCR.spec.devBaseImage = "quay.io/kiegroup/kogito-swf-devmode-nightly:${majorMinor}"
-                    platformCR.spec.platform.baseImage = "quay.io/kiegroup/kogito-swf-builder-nightly:${majorMinor}"
-                    writeYaml(file: platformCRFile, data: platformCR, overwrite: true)
-                    sh "cat ${platformCRFile}"
                 }
             }
         }
@@ -170,7 +127,7 @@ pipeline {
 
                         // Push image to minikube
                         String minikubeImageName = "${minikube.getImageRegistry()}/${env.OPERATOR_IMAGE_NAME}:${getOperatorVersion()}"
-                        container.tagImage(getBuiltImage(), minikubeImageName)
+                        container.tagImage(getBuiltImage('temp'), minikubeImageName)
                         container.pushImage(minikubeImageName)
                         sh """
                             export OPERATOR_IMAGE_NAME=${minikubeImageName}
@@ -188,6 +145,28 @@ pipeline {
                     script {
                         minikube.stop()
                     }
+                }
+            }
+        }
+
+        stage('Update version & Build') {
+            when {
+                expression { return helper.getProjectVersion() }
+            }
+            steps {
+                script {
+                    sh "make bump-version new_version=${helper.getProjectVersion()}"
+                    sh "make container-build BUILDER=${env.CONTAINER_ENGINE} IMG=${getBuiltImage()}"
+
+                    // Commit changes
+                    githubscm.commitChanges(getCommitMessage(), {
+                        sh '''
+                            git add .
+                            git reset -- go.mod
+                            git reset -- go.sum
+                        '''
+                    })
+                    commitDone = true
                 }
             }
         }
@@ -291,8 +270,8 @@ String getOperatorImageName() {
     return sh(script: 'source ./hack/env.sh > /dev/null && echo $(getOperatorImageName)', returnStdout: true).trim()
 }
 
-String getBuiltImage() {
-    return "${getOperatorImageName()}:${getOperatorVersion()}"
+String getBuiltImage(String suffix = '') {
+    return "${getOperatorImageName()}${suffix ? "-${suffix}" : ''}:${getOperatorVersion()}"
 }
 
 String getCommitMessage() {
