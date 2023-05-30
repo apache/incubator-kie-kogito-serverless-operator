@@ -1,4 +1,4 @@
-FROM quay.io/kiegroup/kogito-swf-builder:1.39 AS builder
+FROM quay.io/kiegroup/kogito-swf-builder-nightly:1.39 AS builder
   
   # Copy from build context to skeleton resources project
 COPY * ./resources/

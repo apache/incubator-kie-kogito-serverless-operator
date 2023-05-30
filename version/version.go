@@ -19,7 +19,7 @@ import (
 
 const (
 	// Current version
-	OperatorVersion = "1.39.0"
+	OperatorVersion = "1.39.1-snapshot"
 
 	// Should not be changed
 	snapshotSuffix = "snapshot"
