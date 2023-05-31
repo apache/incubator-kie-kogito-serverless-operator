@@ -21,6 +21,10 @@ The CustomResources defined and managed by this operator are the following:
 - Workflow
 - Platform
 - Build
+- 
+## Pre requisites
+
+- [KUBECTL 1.27+](https://kubernetes.io/docs/tasks/tools/#kubectl) 
 
 ## Getting Started
 
