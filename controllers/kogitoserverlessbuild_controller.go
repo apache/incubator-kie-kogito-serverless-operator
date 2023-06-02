@@ -85,11 +85,10 @@ func (r *KogitoServerlessBuildReconciler) Reconcile(ctx context.Context, req ctr
 	}
 
 	if phase == operatorapi.BuildPhaseNone {
-		if err := buildManager.Schedule(build); err != nil {
+		if err = buildManager.Schedule(build); err != nil {
 			return ctrl.Result{}, err
 		}
-		r.manageStatusUpdate(ctx, build)
-		return ctrl.Result{RequeueAfter: requeueAfterForNewBuild}, nil
+		return ctrl.Result{RequeueAfter: requeueAfterForNewBuild}, r.manageStatusUpdate(ctx, build)
 		// TODO: this smells, why not just else? review in the future: https://issues.redhat.com/browse/KOGITO-8785
 	} else if phase != operatorapi.BuildPhaseSucceeded && phase != operatorapi.BuildPhaseError && phase != operatorapi.BuildPhaseFailed {
 		beforeReconcilePhase := build.Status.BuildPhase
@@ -97,7 +96,9 @@ func (r *KogitoServerlessBuildReconciler) Reconcile(ctx context.Context, req ctr
 			return ctrl.Result{}, err
 		}
 		if beforeReconcilePhase != build.Status.BuildPhase {
-			r.manageStatusUpdate(ctx, build)
+			if err = r.manageStatusUpdate(ctx, build); err != nil {
+				return ctrl.Result{}, err
+			}
 		}
 		return ctrl.Result{RequeueAfter: requeueAfterForBuildRunning}, nil
 	}
@@ -105,11 +106,12 @@ func (r *KogitoServerlessBuildReconciler) Reconcile(ctx context.Context, req ctr
 	return ctrl.Result{}, nil
 }
 
-func (r *KogitoServerlessBuildReconciler) manageStatusUpdate(ctx context.Context, instance *operatorapi.KogitoServerlessBuild) {
+func (r *KogitoServerlessBuildReconciler) manageStatusUpdate(ctx context.Context, instance *operatorapi.KogitoServerlessBuild) error {
 	err := r.Status().Update(ctx, instance)
 	if err == nil {
 		r.Recorder.Event(instance, corev1.EventTypeNormal, "Updated", fmt.Sprintf("Updated buildphase to  %s", instance.Status.BuildPhase))
 	}
+	return err
 }
 
 // SetupWithManager sets up the controller with the Manager.
