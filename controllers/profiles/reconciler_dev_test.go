@@ -46,7 +46,7 @@ func Test_OverrideStartupProbe(t *testing.T) {
 	logger := ctrllog.FromContext(context.TODO())
 	workflow := test.GetKogitoServerlessWorkflow("../../config/samples/"+test.KogitoServerlessWorkflowSampleYamlCR, t.Name())
 
-	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).Build()
+	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
 
 	config := &rest.Config{}
 	devReconciler := newDevProfileReconciler(client, config, &logger)
