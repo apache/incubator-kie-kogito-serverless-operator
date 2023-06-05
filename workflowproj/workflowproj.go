@@ -15,6 +15,7 @@
 package workflowproj
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/pkg/errors"
@@ -145,16 +146,19 @@ func (w *workflowProjectHandler) SaveAsKubernetesManifests(path string) error {
 	if err := w.parseRawProject(); err != nil {
 		return err
 	}
-	if err := saveAsKubernetesManifest(w.project.Workflow, path); err != nil {
+	fileCount := 1
+	if err := saveAsKubernetesManifest(w.project.Workflow, path, fmt.Sprintf("%02d_", 1)); err != nil {
 		return err
 	}
-	if err := saveAsKubernetesManifest(w.project.Properties, path); err != nil {
-		return err
-	}
-	for _, r := range w.project.Resources {
-		if err := saveAsKubernetesManifest(r, path); err != nil {
+	for i, r := range w.project.Resources {
+		fileCount = i + 1
+		if err := saveAsKubernetesManifest(r, path, fmt.Sprintf("%02d_", fileCount)); err != nil {
 			return err
 		}
+	}
+	fileCount++
+	if err := saveAsKubernetesManifest(w.project.Properties, path, fmt.Sprintf("%02d_", fileCount)); err != nil {
+		return err
 	}
 	return nil
 }

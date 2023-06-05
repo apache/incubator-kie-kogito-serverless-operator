@@ -15,9 +15,11 @@
 package workflowproj
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -35,16 +37,21 @@ func ensurePath(path string) error {
 	return nil
 }
 
-func saveAsKubernetesManifest(object client.Object, path string) error {
+func saveAsKubernetesManifest(object client.Object, savePath, prefix string) error {
 	if reflect.ValueOf(object).IsNil() {
 		return nil
 	}
-	filename := filepath.Join(path, object.GetName()+yamlFileExt)
+	filename := strings.ToLower(fmt.Sprintf("%s%s_%s%s",
+		prefix,
+		object.GetObjectKind().GroupVersionKind().Kind,
+		object.GetName(),
+		yamlFileExt))
+	finalPath := filepath.Join(savePath, filename)
 	contents, err := yaml.Marshal(object)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filename, contents, os.ModePerm)
+	err = os.WriteFile(finalPath, contents, os.ModePerm)
 	if err != nil {
 		return err
 	}
