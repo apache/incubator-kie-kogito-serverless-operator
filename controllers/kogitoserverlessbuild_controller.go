@@ -74,10 +74,6 @@ func (r *KogitoServerlessBuildReconciler) Reconcile(ctx context.Context, req ctr
 	}
 
 	phase := build.Status.BuildPhase
-
-	if err != nil {
-		return ctrl.Result{}, err
-	}
 	buildManager, err := builder.NewBuildManager(ctx, r.Client, r.Config, build.Name, build.Namespace)
 	if err != nil {
 		log.Error(err, "Failed to get create a build manager to handle the workflow build")

@@ -54,7 +54,8 @@ cluster
 ### Prerequisites
 
 The Operator's controllers and the configurations are generated using the Operator sdk, the tasks are executed using a
-Makefile
+Makefile. 
+
 More information about annotations can be found via
 the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
@@ -65,10 +66,10 @@ In order to build the project, you need to comply with the following requirement
 - [Kubebuilder 3.7.0+](https://github.com/kubernetes-sigs/kubebuilder/releases)
 
 GNU Make:
-used to define composite build actions. This should be already installed or available as a
+Used to define composite build actions. This should be already installed or available as a
 package (https://www.gnu.org/software/make/).
 
-**NOTE:** Run `make help` for more information on all potential `make` targets
+> **NOTE:** Run `make help` for more information on all potential `make` targets
 
 ### Getting Started
 
@@ -79,8 +80,12 @@ You’ll need a Kubernetes cluster to run against. You can use:
 - [Openshift Local](https://console.redhat.com/openshift/create/local)
 - [Openshift-developer-sandbox-trial](https://www.redhat.com/en/technologies/cloud-computing/openshift/openshift-developer-sandbox-trial)
 
-**Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever
-cluster `kubectl cluster-info` shows).
+> **NOTE:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever
+> cluster `kubectl cluster-info` shows).
+
+> **IMPORTANT**: Please make sure that your [kubectl](https://kubernetes.io/docs/tasks/tools/) is version 1.24.0 or
+> later
+> since there's a bug performing validation on default attributes in Custom Resources.
 
 ### Test It Out locally
 
@@ -98,9 +103,9 @@ make install
 make run
 ```
 
-**NOTE:** You can also run this in one step by running: `make install run`
+> **NOTE:** You can also run this in one step by running: `make install run`
 
-**NOTE:** Run `make help` for more information on all potential `make` targets
+> **NOTE:** Run `make help` for more information on all potential `make` targets
 
 More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 

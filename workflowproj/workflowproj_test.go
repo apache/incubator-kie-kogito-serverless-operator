@@ -130,7 +130,36 @@ func Test_Handler_WorklflowServiceAndPropsAndSpec_SaveAs(t *testing.T) {
 			assert.NotEmpty(t, k8sObj.GetObjectKind().GroupVersionKind().String())
 		}
 	}
+}
 
+func Test_Handler_WorkflowService_SaveAs(t *testing.T) {
+	handler := New("default").
+		WithWorkflow(getWorkflowService())
+
+	proj, err := handler.AsObjects()
+	assert.NoError(t, err)
+	assert.NotNil(t, proj.Workflow)
+
+	tmpPath, err := os.MkdirTemp("", "*-test")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tmpPath)
+
+	assert.NoError(t, handler.SaveAsKubernetesManifests(tmpPath))
+	files, err := os.ReadDir(tmpPath)
+	assert.NoError(t, err)
+	assert.Len(t, files, 1)
+
+	for _, f := range files {
+		if strings.HasSuffix(f.Name(), yamlFileExt) {
+			contents, err := os.ReadFile(path.Join(tmpPath, f.Name()))
+			assert.NoError(t, err)
+			decode := scheme.Codecs.UniversalDeserializer().Decode
+			k8sObj, _, err := decode(contents, nil, nil)
+			assert.NoError(t, err)
+			assert.NotNil(t, k8sObj)
+			assert.NotEmpty(t, k8sObj.GetObjectKind().GroupVersionKind().String())
+		}
+	}
 }
 
 func getWorkflowMinimalInvalid() io.Reader {
