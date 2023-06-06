@@ -15,7 +15,7 @@
 
 #
 # This script fetches the sha256 of images built on Brew and tagged into a specific Brew tag.
-# As an input it required the OpenShift Serverless Logic produt version.
+# As an input it requires the OpenShift Serverless Logic produt version.
 #
 # Example to run:
 # $ ./get-images-sha.sh 1.29
@@ -24,6 +24,12 @@
 #
 
 imagesBrewPackageName=("openshift-serverless-1-logic-rhel8-operator-container")
+
+if ! command -v brew > /dev/null;
+then
+    echo "brew command not available in the system, please install brewkoji package"
+    exit 1
+fi
 
 if [ $# -eq 0 ];
 then
