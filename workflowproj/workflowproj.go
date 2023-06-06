@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
+	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/pkg/errors"
 	"github.com/serverlessworkflow/sdk-go/v2/model"
 	"github.com/serverlessworkflow/sdk-go/v2/parser"
@@ -26,10 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
-	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
 var _ WorkflowProjectHandler = &workflowProjectHandler{}
@@ -244,7 +242,7 @@ func (w *workflowProjectHandler) parseRawAppProperties() error {
 	if err = SetTypeToObject(w.project.Properties, w.scheme); err != nil {
 		return err
 	}
-	return controllerutil.SetOwnerReference(w.project.Workflow, w.project.Properties, w.scheme)
+	return nil
 }
 
 func (w *workflowProjectHandler) parseRawResources() error {
@@ -290,9 +288,6 @@ func (w *workflowProjectHandler) parseRawResources() error {
 func (w *workflowProjectHandler) addExternalResConfigMapToProject(cms ...*corev1.ConfigMap) error {
 	for _, cm := range cms {
 		if cm.Data != nil {
-			if err := controllerutil.SetOwnerReference(w.project.Workflow, cm, w.scheme); err != nil {
-				return err
-			}
 			if err := SetTypeToObject(cm, w.scheme); err != nil {
 				return err
 			}
