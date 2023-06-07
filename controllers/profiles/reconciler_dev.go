@@ -17,20 +17,19 @@ package profiles
 import (
 	"context"
 	"fmt"
-	"os"
 	"path"
-	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
-	"github.com/kiegroup/kogito-serverless-operator/controllers/workflowdef"
-	"github.com/kiegroup/kogito-serverless-operator/utils"
 	"github.com/kiegroup/kogito-serverless-operator/workflowproj"
 
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
+
+	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
+	"github.com/kiegroup/kogito-serverless-operator/controllers/workflowdef"
+	"github.com/kiegroup/kogito-serverless-operator/utils"
 
 	"github.com/kiegroup/kogito-serverless-operator/controllers/platform"
 
@@ -385,82 +384,38 @@ func getDeploymentFailureMessage(deployment *appsv1.Deployment) string {
 }
 
 // mountDevConfigMapsMutateVisitor mounts the required configMaps in the Workflow Dev Deployment
-func mountDevConfigMapsMutateVisitor(flowDefCM, propsCM *corev1.ConfigMap, resourceConfigMapsRef []operatorapi.ConfigMapWorkflowResource) mutateVisitor {
+func mountDevConfigMapsMutateVisitor(flowDefCM, propsCM *corev1.ConfigMap, workflowResCMs []operatorapi.ConfigMapWorkflowResource) mutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			deployment := object.(*appsv1.Deployment)
+
 			volumes := make([]corev1.Volume, 0)
 			volumeMounts := []corev1.VolumeMount{
 				kubeutil.VolumeMount(configMapWorkflowDefVolumeName, true, configMapWorkflowDefMountPath),
 				kubeutil.VolumeMount(configMapResourcesVolumeName, true, quarkusDevConfigMountPath),
 			}
 
+			// defaultResourcesVolume holds every ConfigMap mount required on src/main/resources
+			defaultResourcesVolume := corev1.Volume{Name: configMapResourcesVolumeName, VolumeSource: corev1.VolumeSource{Projected: &corev1.ProjectedVolumeSource{}}}
+			kubeutil.VolumeProjectionAddConfigMap(defaultResourcesVolume.Projected, propsCM.Name, corev1.KeyToPath{Key: workflowproj.ApplicationPropertiesFileName, Path: workflowproj.ApplicationPropertiesFileName})
+
 			// resourceVolumes holds every resource that needs to be mounted on src/main/resources/<specific_dir>
 			resourceVolumes := make([]corev1.Volume, 0)
 
-			// defaultResourcesVolume holds every ConfigMap mount required on src/main/resources
-			defaultResourcesVolume := corev1.Volume{
-				Name: configMapResourcesVolumeName,
-				VolumeSource: corev1.VolumeSource{
-					Projected: &corev1.ProjectedVolumeSource{
-						Sources: []corev1.VolumeProjection{
-							{
-								ConfigMap: &corev1.ConfigMapProjection{
-									LocalObjectReference: corev1.LocalObjectReference{Name: propsCM.Name},
-									Items:                []corev1.KeyToPath{{Key: workflowproj.ApplicationPropertiesFileName, Path: workflowproj.ApplicationPropertiesFileName}},
-								},
-							},
-						},
-					},
-				},
-			}
-
-			for _, resourceCM := range resourceConfigMapsRef {
+			for _, workflowResCM := range workflowResCMs {
 				// if we need to mount at the root dir, we use the defaultResourcesVolume
-				if len(resourceCM.WorkflowPath) == 0 {
-					defaultResourcesVolume.Projected.Sources = append(defaultResourcesVolume.Projected.Sources,
-						corev1.VolumeProjection{
-							ConfigMap: &corev1.ConfigMapProjection{LocalObjectReference: resourceCM.ConfigMap},
-						})
-				} else {
-					// the resource configMap needs a specific dir, inside the src/main/resources
-					// to avoid clashing with other configMaps trying to mount on the same dir, we create one projected per path
-					volumeMountName := ""
-					for _, mount := range volumeMounts {
-						if mount.MountPath == path.Join(quarkusDevConfigMountPath, resourceCM.WorkflowPath) {
-							volumeMountName = mount.MountPath
-							break
-						}
-					}
-					if len(volumeMountName) == 0 {
-						volumeMountName = configMapExternalResourcesVolumeNamePrefix +
-							strings.ReplaceAll(path.Clean(resourceCM.WorkflowPath), string(os.PathSeparator), "")
-						volumeMounts = append(volumeMounts,
-							kubeutil.VolumeMount(volumeMountName, true,
-								path.Join(quarkusDevConfigMountPath, resourceCM.WorkflowPath)))
-					}
-
-					resourceProjection :=
-						corev1.VolumeProjection{ConfigMap: &corev1.ConfigMapProjection{LocalObjectReference: resourceCM.ConfigMap}}
-					projectionExists := false
-					for i, vol := range resourceVolumes {
-						if vol.Name == volumeMountName {
-							resourceVolumes[i].Projected.Sources =
-								append(resourceVolumes[i].Projected.Sources, resourceProjection)
-							projectionExists = true
-						}
-					}
-					if !projectionExists {
-						resourceVolumes = append(resourceVolumes,
-							corev1.Volume{
-								Name: volumeMountName,
-								VolumeSource: corev1.VolumeSource{
-									Projected: &corev1.ProjectedVolumeSource{Sources: []corev1.VolumeProjection{resourceProjection}}}})
-					}
+				if len(workflowResCM.WorkflowPath) == 0 {
+					kubeutil.VolumeProjectionAddConfigMap(defaultResourcesVolume.Projected, workflowResCM.ConfigMap.Name)
+					continue
 				}
+				// the resource configMap needs a specific dir, inside the src/main/resources
+				// to avoid clashing with other configMaps trying to mount on the same dir, we create one projected per path
+				volumeMountName := configMapExternalResourcesVolumeNamePrefix + utils.PathToString(workflowResCM.WorkflowPath)
+				volumeMounts = kubeutil.VolumeMountAdd(volumeMounts, volumeMountName, path.Join(quarkusDevConfigMountPath, workflowResCM.WorkflowPath))
+				resourceVolumes = kubeutil.VolumeAddVolumeProjectionConfigMap(resourceVolumes, workflowResCM.ConfigMap.Name, volumeMountName)
 			}
 
-			volumes = append(volumes, defaultResourcesVolume, kubeutil.Volume(configMapWorkflowDefVolumeName, flowDefCM.Name))
+			volumes = append(volumes, defaultResourcesVolume, kubeutil.VolumeConfigMap(configMapWorkflowDefVolumeName, flowDefCM.Name))
 			volumes = append(volumes, resourceVolumes...)
 
 			deployment.Spec.Template.Spec.Volumes = make([]corev1.Volume, 0)

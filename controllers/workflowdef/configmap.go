@@ -79,7 +79,7 @@ func ExternalResCMsToVolumesAndMount(configMaps []operatorapi.ConfigMapWorkflowR
 	volumes := make([]corev1.Volume, 0)
 	volumeMounts := make([]corev1.VolumeMount, 0)
 	for _, cm := range configMaps {
-		volumes = append(volumes, kubernetes.Volume(cm.ConfigMap.Name, cm.ConfigMap.Name))
+		volumes = append(volumes, kubernetes.VolumeConfigMap(cm.ConfigMap.Name, cm.ConfigMap.Name))
 		volumeMounts = append(volumeMounts, kubernetes.VolumeMount(cm.ConfigMap.Name, true, path.Join(baseMountPath, cm.WorkflowPath)))
 	}
 	return volumes, volumeMounts
