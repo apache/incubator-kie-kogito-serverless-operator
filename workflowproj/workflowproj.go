@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
-	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/pkg/errors"
 	"github.com/serverlessworkflow/sdk-go/v2/model"
 	"github.com/serverlessworkflow/sdk-go/v2/parser"
@@ -28,6 +26,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+
+	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
+	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
 var _ WorkflowProjectHandler = &workflowProjectHandler{}
