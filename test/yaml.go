@@ -32,6 +32,7 @@ import (
 )
 
 const (
+	kogitoServerlessWorkflowOrderProcessingFolder   = "order-processing"
 	KogitoServerlessWorkflowSampleYamlCR            = "sw.kogito_v1alpha08_kogitoserverlessworkflow.yaml"
 	kogitoServerlessPlatformYamlCR                  = "sw.kogito_v1alpha08_kogitoserverlessplatform.yaml"
 	kogitoServerlessPlatformWithCacheMinikubeYamlCR = "sw.kogito_v1alpha08_kogitoserverlessplatform_withCache_minikube.yaml"
@@ -203,7 +204,6 @@ func GetBasePlatform() *operatorapi.KogitoServerlessPlatform {
 	} else {
 		return &operatorapi.KogitoServerlessPlatform{}
 	}
-
 }
 
 func GetPlatformMinikubeE2eTest() string {
@@ -216,4 +216,8 @@ func GetPlatformOpenshiftE2eTest() string {
 
 func GetServerlessWorkflowE2eTest() string {
 	return e2eSamples + kogitoServerlessWorkflowSampleDevModeYamlCR
+}
+
+func GetServerlessWorkflowE2eOrderProcessingFolder() string {
+	return e2eSamples + kogitoServerlessWorkflowOrderProcessingFolder
 }
