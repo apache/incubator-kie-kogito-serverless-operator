@@ -266,7 +266,7 @@ func Test_devProfileWithPlatformWithoutDevBaseImageAndWithoutBaseImage(t *testin
 func Test_newDevProfileWithExternalConfigMaps(t *testing.T) {
 	logger := ctrllog.FromContext(context.TODO())
 	configmapName := "mycamel-configmap"
-	workflow := test.GetBaseServerlessWorkflowWithDevProfileAndExternalResource(t.Name())
+	workflow := test.GetBaseServerlessWorkflowWithDevProfile(t.Name())
 	workflow.Spec.Resources.ConfigMaps = append(workflow.Spec.Resources.ConfigMaps,
 		operatorapi.ConfigMapWorkflowResource{ConfigMap: v1.LocalObjectReference{Name: configmapName}, WorkflowPath: "routes"})
 

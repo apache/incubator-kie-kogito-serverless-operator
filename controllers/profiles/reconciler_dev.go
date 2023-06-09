@@ -176,7 +176,7 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 
 	externalCM, err := workflowdef.FetchExternalResourcesConfigMapsRef(e.client, workflow)
 	if err != nil {
-		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.ExternalResourcesNotFoundReason, "external Resources ConfigMap not found: %s", err.Error())
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.ExternalResourcesNotFoundReason, "External Resources ConfigMap not found: %s", err.Error())
 		if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 		}

@@ -214,7 +214,7 @@ var _ = Describe("Kogito Serverless Operator", Ordered, func() {
 			}, time.Minute, time.Second).Should(Succeed())
 		})
 
-		It("should successfully deploy the greeting workflow in devmode and verify if it's running", func() {
+		It("should successfully deploy the orderprocessing workflow in devmode and verify if it's running", func() {
 
 			By("creating an instance of the Kogito Serverless Workflow in DevMode")
 			EventuallyWithOffset(1, func() error {

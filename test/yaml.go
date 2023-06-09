@@ -159,12 +159,6 @@ func GetBaseServerlessWorkflowWithDevProfile(namespace string) *operatorapi.Kogi
 	return workflow
 }
 
-func GetBaseServerlessWorkflowWithDevProfileAndExternalResource(namespace string) *operatorapi.KogitoServerlessWorkflow {
-	workflow := GetBaseServerlessWorkflowWithDevProfile(namespace)
-	workflow.Annotations["sw.kogito.kie.org/resource-camel"] = "mycamel-configmap"
-	return workflow
-}
-
 func GetBaseServerlessWorkflowWithProdProfile(namespace string) *operatorapi.KogitoServerlessWorkflow {
 	workflow := GetBaseServerlessWorkflow(namespace)
 	workflow.Annotations["sw.kogito.kie.org/profile"] = "prod"
