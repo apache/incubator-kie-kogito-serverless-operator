@@ -208,10 +208,6 @@ func GetPlatformOpenshiftE2eTest() string {
 	return e2eSamples + kogitoServerlessPlatformForOpenshift
 }
 
-func GetServerlessWorkflowE2eTest() string {
-	return e2eSamples + kogitoServerlessWorkflowSampleDevModeYamlCR
-}
-
 func GetServerlessWorkflowE2eOrderProcessingFolder() string {
 	return e2eSamples + kogitoServerlessWorkflowOrderProcessingFolder
 }
