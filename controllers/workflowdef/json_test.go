@@ -15,11 +15,12 @@
 package workflowdef
 
 import (
-	"context"
 	"testing"
 
 	"github.com/serverlessworkflow/sdk-go/v2/model"
 	"github.com/stretchr/testify/assert"
+
+	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 
 	"github.com/kiegroup/kogito-serverless-operator/test"
 )
@@ -28,7 +29,7 @@ func TestKogitoServerlessWorkflowConverter(t *testing.T) {
 	t.Run("verify that when KogitoServerlessWorkflow CR is nil an error is returned", func(t *testing.T) {
 		// Create a KogitoServerlessWorkflow object with metadata and spec.
 		ksw := test.GetBaseServerlessWorkflow(t.Name())
-		out, err := ToCNCFWorkflow(context.TODO(), ksw)
+		out, err := operatorapi.ToCNCFWorkflow(ksw)
 		assert.NoError(t, err)
 		assert.True(t, out != nil)
 		assert.Equal(t, "greeting", out.ID)
