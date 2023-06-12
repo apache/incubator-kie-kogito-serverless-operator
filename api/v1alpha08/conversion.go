@@ -15,6 +15,7 @@
 package v1alpha08
 
 import (
+	"context"
 	"errors"
 	"path"
 	"regexp"
@@ -22,6 +23,7 @@ import (
 
 	cncfmodel "github.com/serverlessworkflow/sdk-go/v2/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
@@ -29,7 +31,8 @@ import (
 
 var namingRegexp = regexp.MustCompile("^[a-z0-9](-?[a-z0-9])*$")
 var allowedCharsRegexp = regexp.MustCompile("[^-a-z0-9]")
-var startingDash = regexp.MustCompile("^-+")
+var startingDashRegexp = regexp.MustCompile("^-+")
+var crdVersionRegexp = regexp.MustCompile("v[0-9](alpha|beta)?")
 
 const (
 	// see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
@@ -38,7 +41,7 @@ const (
 )
 
 // FromCNCFWorkflow converts the given CNCF Serverless Workflow instance in a new KogitoServerlessWorkflow Custom Resource.
-func FromCNCFWorkflow(cncfWorkflow *cncfmodel.Workflow) (*KogitoServerlessWorkflow, error) {
+func FromCNCFWorkflow(cncfWorkflow *cncfmodel.Workflow, context context.Context) (*KogitoServerlessWorkflow, error) {
 	if cncfWorkflow == nil {
 		return nil, errors.New("CNCF Workflow is nil")
 	}
@@ -62,11 +65,24 @@ func FromCNCFWorkflow(cncfWorkflow *cncfmodel.Workflow) (*KogitoServerlessWorkfl
 	}
 	workflowCR.Spec.Flow = *workflowCRFlow
 
+	s, _ := SchemeBuilder.Build()
+	gvks, _, err := s.ObjectKinds(workflowCR)
+	if err != nil {
+		return nil, err
+	}
+	for _, gvk := range gvks {
+		if len(gvk.Version) == 0 {
+			continue
+		}
+		workflowCR.SetGroupVersionKind(gvk)
+	}
+	warnIfSpecVersionNotSupported(cncfWorkflow, context)
+
 	return workflowCR, nil
 }
 
 // ToCNCFWorkflow converts a KogitoServerlessWorkflow object to a Workflow one in order to be able to convert it to a YAML/Json
-func ToCNCFWorkflow(workflowCR *KogitoServerlessWorkflow) (*cncfmodel.Workflow, error) {
+func ToCNCFWorkflow(workflowCR *KogitoServerlessWorkflow, context context.Context) (*cncfmodel.Workflow, error) {
 	if workflowCR == nil {
 		return nil, errors.New("kogitoServerlessWorkflow is nil")
 	}
@@ -82,13 +98,27 @@ func ToCNCFWorkflow(workflowCR *KogitoServerlessWorkflow) (*cncfmodel.Workflow, 
 
 	cncfWorkflow.ID = workflowCR.ObjectMeta.Name
 	cncfWorkflow.Key = workflowCR.ObjectMeta.Annotations[metadata.Key]
-	cncfWorkflow.Name = workflowCR.ObjectMeta.Name
 	cncfWorkflow.Description = workflowCR.ObjectMeta.Annotations[metadata.Description]
 	cncfWorkflow.Version = workflowCR.ObjectMeta.Annotations[metadata.Version]
-	cncfWorkflow.SpecVersion = extractSchemaVersion(workflowCR.APIVersion)
+	cncfWorkflow.SpecVersion = extractSpecVersion(workflowCR)
 	cncfWorkflow.ExpressionLang = cncfmodel.ExpressionLangType(extractExpressionLang(workflowCR.ObjectMeta.Annotations))
 
+	warnIfSpecVersionNotSupported(cncfWorkflow, context)
+
 	return cncfWorkflow, nil
+}
+
+// warnIfSpecVersionNotSupported simple check if the version is not supported by the operator.
+// Clearly this will be reviewed once we support 0.9.
+func warnIfSpecVersionNotSupported(workflow *cncfmodel.Workflow, context context.Context) {
+	// simple guard to avoid polluting user's log.
+	if len(workflow.Version) == 0 {
+		workflow.Version = metadata.SpecVersion
+		return
+	}
+	if metadata.SpecVersion != workflow.Version {
+		controllerruntime.LoggerFrom(context).Info("SpecVersion from not supported", "Workflow SpecVersion", workflow.Version)
+	}
 }
 
 func extractExpressionLang(annotations map[string]string) string {
@@ -100,11 +130,15 @@ func extractExpressionLang(annotations map[string]string) string {
 }
 
 // Function to extract from the apiVersion the ServerlessWorkflow schema version
-// For example given sw.kogito.kie.org/operatorapi we would like to extract v0.8
-func extractSchemaVersion(version string) string {
-	schemaVersion := path.Base(version)
-	strings.Replace(schemaVersion, "v0", "v0.", 1)
-	return schemaVersion
+// For example given KogitoServerlessWorkflow APIVersion, we would like to extract 0.8
+func extractSpecVersion(workflowCR *KogitoServerlessWorkflow) string {
+	schemaVersion := path.Base(workflowCR.APIVersion)
+	if len(schemaVersion) == 0 {
+		return metadata.SpecVersion
+	}
+	schemaVersion = crdVersionRegexp.ReplaceAllString(schemaVersion, "")
+	// we only support major minor from the spec
+	return schemaVersion[0:1] + "." + "" + schemaVersion[1:]
 }
 
 func extractName(workflow *cncfmodel.Workflow) string {
@@ -124,7 +158,7 @@ func sanitizeNaming(name string) string {
 	if len(name) == 0 || namingRegexp.MatchString(name) {
 		return name
 	}
-	sanitized := startingDash.ReplaceAllString(allowedCharsRegexp.ReplaceAllString(strings.TrimSpace(strings.ToLower(name)), dash), "")
+	sanitized := startingDashRegexp.ReplaceAllString(allowedCharsRegexp.ReplaceAllString(strings.TrimSpace(strings.ToLower(name)), dash), "")
 	if len(sanitized) > charLimit {
 		return sanitized[:charLimit]
 	}

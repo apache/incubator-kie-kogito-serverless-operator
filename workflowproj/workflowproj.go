@@ -15,6 +15,7 @@
 package workflowproj
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -212,7 +213,7 @@ func (w *workflowProjectHandler) parseRawWorkflow() error {
 		w.name = strings.ToLower(workflowDef.ID)
 	}
 
-	w.project.Workflow, err = operatorapi.FromCNCFWorkflow(workflowDef)
+	w.project.Workflow, err = operatorapi.FromCNCFWorkflow(workflowDef, context.TODO())
 	w.project.Workflow.Name = w.name
 	w.project.Workflow.Namespace = w.namespace
 

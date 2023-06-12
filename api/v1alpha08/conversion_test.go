@@ -15,11 +15,49 @@
 package v1alpha08
 
 import (
+	"context"
+	"os"
 	"reflect"
 	"testing"
 
 	cncfmodel "github.com/serverlessworkflow/sdk-go/v2/model"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/yaml"
 )
+
+const (
+	camelCNCFWorkflow   = "testdata/camel.sw.json"
+	foreachCNCFWorkflow = "testdata/foreach.sw.json"
+	invalidCNCFWorkflow = "testdata/invalid.sw.json"
+	camelWorkflowCR     = "testdata/kogitoserverlessworkflow-camel.yaml"
+	foreachWorkflowCR   = "testdata/kogitoserverlessworkflow-foreach.yaml"
+	invalidWorkflowCR   = "testdata/kogitoserverlessworkflow-invalid.yaml"
+)
+
+func getCNCFWorkflow(name string) *cncfmodel.Workflow {
+	workflowBytes, err := os.ReadFile(name)
+	if err != nil {
+		panic(err)
+	}
+	cncfWorkflow := &cncfmodel.Workflow{}
+	err = yaml.Unmarshal(workflowBytes, cncfWorkflow)
+	if err != nil {
+		panic(err)
+	}
+	return cncfWorkflow
+}
+
+func getWorkflowCR(name string) *KogitoServerlessWorkflow {
+	crBytes, err := os.ReadFile(name)
+	if err != nil {
+		panic(err)
+	}
+	workflowCR := &KogitoServerlessWorkflow{}
+	if err = yaml.Unmarshal(crBytes, workflowCR); err != nil {
+		panic(err)
+	}
+	return workflowCR
+}
 
 func TestFromCNCFWorkflow(t *testing.T) {
 	type args struct {
@@ -31,17 +69,27 @@ func TestFromCNCFWorkflow(t *testing.T) {
 		want    *KogitoServerlessWorkflow
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{name: "Camel Flow", args: args{getCNCFWorkflow(camelCNCFWorkflow)}, wantErr: false, want: getWorkflowCR(camelWorkflowCR)},
+		{name: "ForEach Flow", args: args{getCNCFWorkflow(foreachCNCFWorkflow)}, wantErr: false, want: getWorkflowCR(foreachWorkflowCR)},
+		{name: "Invalid Flow", args: args{getCNCFWorkflow(invalidCNCFWorkflow)}, wantErr: false, want: getWorkflowCR(invalidWorkflowCR)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FromCNCFWorkflow(tt.args.cncfWorkflow)
+			got, err := FromCNCFWorkflow(tt.args.cncfWorkflow, context.TODO())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FromCNCFWorkflow() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FromCNCFWorkflow() got = %v, want %v", got, tt.want)
+			wantUns, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tt.want)
+			if err != nil {
+				t.Errorf("%v", err)
+			}
+			gotUns, err := runtime.DefaultUnstructuredConverter.ToUnstructured(got)
+			if err != nil {
+				t.Errorf("%v", err)
+			}
+			if !reflect.DeepEqual(gotUns, wantUns) {
+				t.Errorf("FromCNCFWorkflow() got = %v, want %v", gotUns, wantUns)
 			}
 		})
 	}
@@ -57,11 +105,13 @@ func TestToCNCFWorkflow(t *testing.T) {
 		want    *cncfmodel.Workflow
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{name: "Camel Flow", args: args{getWorkflowCR(camelWorkflowCR)}, wantErr: false, want: getCNCFWorkflow(camelCNCFWorkflow)},
+		{name: "ForEach Flow", args: args{getWorkflowCR(foreachWorkflowCR)}, wantErr: false, want: getCNCFWorkflow(foreachCNCFWorkflow)},
+		{name: "Invalid Flow", args: args{getWorkflowCR(invalidWorkflowCR)}, wantErr: false, want: getCNCFWorkflow(invalidCNCFWorkflow)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ToCNCFWorkflow(tt.args.workflowCR)
+			got, err := ToCNCFWorkflow(tt.args.workflowCR, context.TODO())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ToCNCFWorkflow() error = %v, wantErr %v", err, tt.wantErr)
 				return

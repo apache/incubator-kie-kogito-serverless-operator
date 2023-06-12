@@ -1,7 +1,6 @@
 {
-  "id": "camelCustomFunction",
+  "id": "camel-custom-function",
   "version": "1.0.0",
-  "name": "Custom Camel example",
   "start": "start",
   "specVersion": "0.8",
   "functions": [

@@ -27,7 +27,7 @@ import (
 func GetJSONWorkflow(workflowCR *operatorapi.KogitoServerlessWorkflow, ctx context.Context) ([]byte, error) {
 	logger := ctrllog.FromContext(ctx)
 	// apply workflow metadata
-	workflow, err := operatorapi.ToCNCFWorkflow(workflowCR)
+	workflow, err := operatorapi.ToCNCFWorkflow(workflowCR, ctx)
 	if err != nil {
 		logger.Error(err, "Failed converting KogitoServerlessWorkflow into Workflow")
 		return nil, err

@@ -18,6 +18,8 @@ metadata:
   name: camel-custom-function
   annotations:
     sw.kogito.kie.org/version: 1.0.0
+    sw.kogito.kie.org/expressionLang: jq
+    sw.kogito.kie.org/description: ""
 spec:
   flow:
     start: start

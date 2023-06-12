@@ -15,6 +15,7 @@
 package workflowdef
 
 import (
+	"context"
 	"testing"
 
 	"github.com/serverlessworkflow/sdk-go/v2/model"
@@ -29,16 +30,15 @@ func TestKogitoServerlessWorkflowConverter(t *testing.T) {
 	t.Run("verify that when KogitoServerlessWorkflow CR is nil an error is returned", func(t *testing.T) {
 		// Create a KogitoServerlessWorkflow object with metadata and spec.
 		ksw := test.GetBaseServerlessWorkflow(t.Name())
-		out, err := operatorapi.ToCNCFWorkflow(ksw)
+		out, err := operatorapi.ToCNCFWorkflow(ksw, context.TODO())
 		assert.NoError(t, err)
 		assert.True(t, out != nil)
 		assert.Equal(t, "greeting", out.ID)
 		//assert.Equal(t, "greeting-key", out.Key)
 		assert.Equal(t, "0.0.1", out.Version)
-		assert.Equal(t, "v1alpha08", out.SpecVersion)
+		assert.Equal(t, "0.8", out.SpecVersion)
 		assert.Equal(t, "Greeting example on k8s!", out.Description)
 		assert.Equal(t, model.JqExpressionLang, out.ExpressionLang)
-		assert.Equal(t, "greeting", out.Name)
 		assert.True(t, out.Functions != nil && len(out.Functions) == 1)
 		assert.True(t, out.States != nil && len(out.States) == 4)
 	})
