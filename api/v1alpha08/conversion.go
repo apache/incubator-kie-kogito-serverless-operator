@@ -117,7 +117,7 @@ func warnIfSpecVersionNotSupported(workflow *cncfmodel.Workflow, context context
 		return
 	}
 	if metadata.SpecVersion != workflow.Version {
-		controllerruntime.LoggerFrom(context).Info("SpecVersion from not supported", "Workflow SpecVersion", workflow.Version)
+		controllerruntime.LoggerFrom(context).Info("SpecVersion not supported", "Workflow SpecVersion", workflow.Version)
 	}
 }
 
