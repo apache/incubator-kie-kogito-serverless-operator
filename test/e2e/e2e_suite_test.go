@@ -25,6 +25,6 @@ import (
 // Run e2e tests using the Ginkgo runner.
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
-	fmt.Fprintf(GinkgoWriter, "Starting Kogito Serverless Operator suite\n")
-	RunSpecs(t, "Kogito Serverless e2e suite")
+	fmt.Fprintf(GinkgoWriter, "Starting SonataFlow Operator suite\n")
+	RunSpecs(t, "SonataFlow e2e suite")
 }
