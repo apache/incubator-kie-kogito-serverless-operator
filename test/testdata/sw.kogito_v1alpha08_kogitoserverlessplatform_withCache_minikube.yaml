@@ -18,6 +18,6 @@ metadata:
   name: kogito-workflow-platform
 spec:
   platform:
-    baseImage: quay.io/kiegroup/kogito-swf-builder-nightly:latest
+    baseImage: quay.io/kiegroup/kogito-swf-builder-nightly:1.40
     buildStrategyOptions:
       KanikoBuildCacheEnabled: "true"
