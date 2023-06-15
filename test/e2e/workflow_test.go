@@ -44,7 +44,7 @@ const (
 	openshiftPlatform = "openshift"
 )
 
-var _ = Describe("SonataFlow Operator", Ordered, func() {
+var _ = Describe("Sonata Flow Operator", Ordered, func() {
 
 	BeforeAll(func() {
 
@@ -185,7 +185,7 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 		projectDir, _ := utils.GetProjectDir()
 
 		It("should create a basic platform for Minikube", func() {
-			By("creating an instance of the SonataFlow Platform")
+			By("creating an instance of the SonataFlowPlatform")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
 					getSonataFlowPlatformFilename()), "-n", namespace)

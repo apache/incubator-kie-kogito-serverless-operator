@@ -143,7 +143,7 @@ See the section on [README](../README.md#getting-started)
 
 ### Configuration
 
-A configmap called `sonataflow-operator-builder-config` will be created under the `kogito-workflows` namespace
+A configmap called `sonataflow-operator-builder-config` will be created under the `sonataflow-operator-system` namespace
 when the Operator will be installed, and it contains:
 
 - DEFAULT_BUILDER_RESOURCE = Dockerfile
@@ -179,8 +179,6 @@ accordingly to your specific needs.
 
 ### Workflow CR
 
-- The converter from a SonataFlow CR to a Kogito compliant JSON ready for the build is supporting only the
-  features that are in the Greeting workflow
 - At the moment we are supporting only deployment of services on Kubernetes
 
 ### Platform CR
