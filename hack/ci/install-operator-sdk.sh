@@ -14,7 +14,7 @@
 # limitations under the License.
 set -e
 
-default_operator_sdk_version=v1.25.0
+default_operator_sdk_version=v1.31.0
 
 if [[ -z ${OPERATOR_SDK_VERSION} ]]; then
     OPERATOR_SDK_VERSION=$default_operator_sdk_version

@@ -55,9 +55,9 @@ endif
 # Image URL to use all building/pushing image targets
 IMG ?= $(IMAGE_TAG_BASE):$(REDUCED_VERSION)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.24
+ENVTEST_K8S_VERSION = 1.26
 
-OPERATOR_SDK_VERSION ?= 1.25.0
+OPERATOR_SDK_VERSION ?= 1.31.0
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -132,7 +132,7 @@ test-workflowproj:
 ##@ Build
 
 .PHONY: build
-build: generate ## Build manager binary.
+build: manifests generate fmt vet ## Build manager binary.
 	go build -o bin/manager main.go
 
 .PHONY: build-4-debug
@@ -234,7 +234,7 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v4.5.2
-CONTROLLER_TOOLS_VERSION ?= v0.9.2
+CONTROLLER_TOOLS_VERSION ?= v0.11.3
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 .PHONY: kustomize
@@ -265,7 +265,7 @@ bundle-build: ## Build the bundle image.
 
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
-	$(MAKE) contianer-push IMG=$(BUNDLE_IMG)
+	$(MAKE) container-push IMG=$(BUNDLE_IMG)
 
 .PHONY: opm
 OPM = ./bin/opm

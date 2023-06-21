@@ -99,7 +99,7 @@ metadata:
     containerImage: quay.io/kiegroup/kogito-serverless-operator-nightly:latest
     description: SonataFlow Kubernetes Operator for deploying workflow applications
       based on the CNCF Serverless Workflow specification
-    operators.operatorframework.io/builder: operator-sdk-v1.25.0
+    operators.operatorframework.io/builder: operator-sdk-v1.31.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/kiegroup/kogito-serverless-operator
     support: Red Hat
@@ -417,7 +417,7 @@ spec:
                 - --upstream=http://127.0.0.1:8080/
                 - --logtostderr=true
                 - --v=0
-                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.13.0
+                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.13.1
                 name: kube-rbac-proxy
                 ports:
                 - containerPort: 8443
