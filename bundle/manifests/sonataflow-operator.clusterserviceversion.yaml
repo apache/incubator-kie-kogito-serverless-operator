@@ -95,7 +95,7 @@ metadata:
     capabilities: Basic Install
     operators.operatorframework.io/builder: operator-sdk-v1.25.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
-  name: sonataflow-operator.v2.0.0-snapshot
+  name: sonataflow-operator.v1.40.0-snapshot
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -522,4 +522,4 @@ spec:
   maturity: alpha
   provider:
     name: sonataflow-operator
-  version: 2.0.0-snapshot
+  version: 1.40.0-snapshot
