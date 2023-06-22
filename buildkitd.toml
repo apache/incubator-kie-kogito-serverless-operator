@@ -1,0 +1,7 @@
+
+debug = true
+[registry."docker.io"]
+mirrors = ["mirror.gcr.io"]
+[registry."localhost:5000"]
+http = true
+        
