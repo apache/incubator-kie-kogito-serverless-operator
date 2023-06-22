@@ -169,7 +169,7 @@ void executeInCluster(Closure executeClosure) {
             break
         case openshiftClusterPlatform:
             echo "Execute in openshift"
-            lock("E2E tests on OCP API ${getOpenshiftApi()}") {
+            lock("Sonataflow Operator OpenShift tests ${getOpenshiftApi()}") {
                 executeClosure()
             }
             break
