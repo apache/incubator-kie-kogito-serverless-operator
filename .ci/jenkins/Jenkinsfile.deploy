@@ -65,8 +65,8 @@ pipeline {
                     helper.loginRegistry()
 
                     // Prepare for multiplatform build
-                    String localRegistry = cloud.startLocalRegistry()
-                    cloud.prepareForDockerMultiplatformBuild([localRegistry],[cloud.getDockerIOMirrorRegistryConfig()], false)
+                    env.LOCAL_REGISTRY = cloud.startLocalRegistry(5001)
+                    cloud.prepareForDockerMultiplatformBuild([env.LOCAL_REGISTRY],[cloud.getDockerIOMirrorRegistryConfig()], false)
                     cloud.installSkopeo()
                 }
             }
@@ -289,7 +289,7 @@ String getBuiltImage() {
 }
 
 String getTempBuiltImageTag() {
-    return "localhost:5000/kogito-serverless-operator:${getOperatorVersion()}"
+    return "${env.LOCAL_REGISTRY}/kogito-serverless-operator:${getOperatorVersion()}"
 }
 
 def runPythonCommand(String cmd, boolean stdout = false) {
