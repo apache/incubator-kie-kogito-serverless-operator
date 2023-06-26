@@ -334,3 +334,7 @@ test-e2e: install-operator-sdk
 
 .PHONY: before-pr
 before-pr: test generate-all
+
+.PHONY: olm-tests
+olm-tests:
+	./hack/ci/run-olm-tests.sh

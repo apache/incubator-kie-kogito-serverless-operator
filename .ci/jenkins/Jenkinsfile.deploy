@@ -29,6 +29,11 @@ pipeline {
         BOT_BRANCH_HASH = "${util.generateHash(10)}"
 
         IMAGE_BUILD_PLATFORMS = 'linux/amd64,linux/arm64'
+
+        // Environment required by OLM tests when run from process
+        OP_TEST_CONTAINER_OPT = '-t'
+        OP_TEST_DEBUG = 1
+        OP_TEST_CONTAINER_TOOL = 'docker'
     }
 
     stages {
@@ -140,6 +145,19 @@ pipeline {
                         cloud.dockerBuildMultiPlatformImages(tempBuiltImageTag, getImageBuildPlatforms(), true, 'Kogito Serverless Operator squashed image')
                     }
                 }
+            }
+            post {
+                unsuccessful {
+                    script {
+                        util.archiveConsoleLog()
+                    }
+                }
+            }
+        }
+
+        stage('Run OLM tests') {
+            steps {
+                sh 'make olm-tests'
             }
             post {
                 unsuccessful {
