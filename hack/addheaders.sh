@@ -9,7 +9,7 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KINDa, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
@@ -18,4 +18,4 @@ if ! hash addlicense 2>/dev/null; then
 fi
 
 # shellcheck disable=SC2035
-addlicense -c "Red Hat, Inc. and/or its affiliates" -l=apache -ignore=test/samples/*.yaml -ignore=container-builder/examples/**/*.yaml *Dockerfile hack api controllers utils test container-builder workflowproj
+addlicense -c "Red Hat, Inc. and/or its affiliates" -l=apache -ignore=test/samples/*.yaml -ignore=container-builder/examples/**/*.yaml Dockerfile hack api controllers utils test container-builder workflowproj
