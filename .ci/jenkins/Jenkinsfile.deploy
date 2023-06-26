@@ -82,55 +82,55 @@ pipeline {
             }
         }
 
-        stage('Prepare for PR') {
-            when {
-                expression { return helper.isRelease() }
-            }
-            steps {
-                script {
-                    githubscm.createBranch(helper.getPRBranch())
-                }
-            }
-        }
+        // stage('Prepare for PR') {
+        //     when {
+        //         expression { return helper.isRelease() }
+        //     }
+        //     steps {
+        //         script {
+        //             githubscm.createBranch(helper.getPRBranch())
+        //         }
+        //     }
+        // }
 
-        stage('Update version') {
-            when {
-                expression { return helper.getProjectVersion() }
-            }
-            steps {
-                script {
-                    runPythonCommand("make bump-version new_version=${helper.getProjectVersion()}")
+        // stage('Update version') {
+        //     when {
+        //         expression { return helper.getProjectVersion() }
+        //     }
+        //     steps {
+        //         script {
+        //             runPythonCommand("make bump-version new_version=${helper.getProjectVersion()}")
 
-                    // Commit changes
-                    githubscm.commitChanges(getCommitMessage(), {
-                        sh '''
-                            git add .
-                            git reset -- go.mod
-                            git reset -- go.sum
-                        '''
-                    })
-                    commitDone = true
-                }
-            }
-        }
+        //             // Commit changes
+        //             githubscm.commitChanges(getCommitMessage(), {
+        //                 sh '''
+        //                     git add .
+        //                     git reset -- go.mod
+        //                     git reset -- go.sum
+        //                 '''
+        //             })
+        //             commitDone = true
+        //         }
+        //     }
+        // }
 
-        stage('Test Operator') {
-            when {
-                expression {
-                    return helper.shouldLaunchTests()
-                }
-            }
-            steps {
-                runPythonCommand('make test')
-            }
-            post {
-                unsuccessful {
-                    script {
-                        util.archiveConsoleLog()
-                    }
-                }
-            }
-        }
+        // stage('Test Operator') {
+        //     when {
+        //         expression {
+        //             return helper.shouldLaunchTests()
+        //         }
+        //     }
+        //     steps {
+        //         runPythonCommand('make test')
+        //     }
+        //     post {
+        //         unsuccessful {
+        //             script {
+        //                 util.archiveConsoleLog()
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Build Operator') {
             steps {
@@ -168,83 +168,83 @@ pipeline {
             }
         }
 
-        stage('Push to registry') {
-            steps {
-                script {
-                    // If not release, push built image
-                    // So the user using the `operator.yaml on branch can use an existing image`
-                    if (!helper.isRelease()) {
-                        pushFinalImage(getTempBuiltImageTag(), getBuiltImage())
-                    }
+        // stage('Push to registry') {
+        //     steps {
+        //         script {
+        //             // If not release, push built image
+        //             // So the user using the `operator.yaml on branch can use an existing image`
+        //             if (!helper.isRelease()) {
+        //                 pushFinalImage(getTempBuiltImageTag(), getBuiltImage())
+        //             }
 
-                    // Tag with given parameter tag
-                    pushFinalImage(getTempBuiltImageTag(), helper.getImageFullTag(env.OPERATOR_IMAGE_NAME))
+        //             // Tag with given parameter tag
+        //             pushFinalImage(getTempBuiltImageTag(), helper.getImageFullTag(env.OPERATOR_IMAGE_NAME))
 
-                    try {
-                        pushFinalImage(getTempBuiltImageTag(), helper.getImageReducedTag(env.OPERATOR_IMAGE_NAME))
-                    } catch (err) {
-                        echo 'Reduced tag cannot be applied'
-                    }
+                    // try {
+                    //     pushFinalImage(getTempBuiltImageTag(), helper.getImageReducedTag(env.OPERATOR_IMAGE_NAME))
+                    // } catch (err) {
+                    //     echo 'Reduced tag cannot be applied'
+                    // }
 
-                    // Tag with `latest` tag if asked for as parameter
-                    if (helper.isDeployLatestTag()) {
-                        pushFinalImage(getTempBuiltImageTag(), helper.getImageFullTag(env.OPERATOR_IMAGE_NAME, defaultImageParamsPrefix, 'latest'))
-                    }
+                    // // Tag with `latest` tag if asked for as parameter
+                    // if (helper.isDeployLatestTag()) {
+                    //     pushFinalImage(getTempBuiltImageTag(), helper.getImageFullTag(env.OPERATOR_IMAGE_NAME, defaultImageParamsPrefix, 'latest'))
+                    // }
 
-                    // Store image deployment information
-                    properties.add(helper.getImageRegistryProperty(), helper.getImageRegistry())
-                    properties.add(helper.getImageNamespaceProperty(), helper.getImageNamespace())
-                    properties.add(helper.getImageNamePrefixProperty(), helper.getImageNamePrefix())
-                    properties.add(helper.getImageNameSuffixProperty(), helper.getImageNameSuffix())
-                    properties.add(helper.getImageTagProperty(), helper.getImageTag())
-                }
-            }
-        }
+        //             // Store image deployment information
+        //             properties.add(helper.getImageRegistryProperty(), helper.getImageRegistry())
+        //             properties.add(helper.getImageNamespaceProperty(), helper.getImageNamespace())
+        //             properties.add(helper.getImageNamePrefixProperty(), helper.getImageNamePrefix())
+        //             properties.add(helper.getImageNameSuffixProperty(), helper.getImageNameSuffix())
+        //             properties.add(helper.getImageTagProperty(), helper.getImageTag())
+        //         }
+        //     }
+        // }
 
-        stage('Run e2e tests') {
-            when {
-                expression {
-                    return helper.shouldLaunchTests()
-                }
-            }
-            parallel {
-                stage('Run tests on Minikube') {
-                    steps {
-                        script {
-                            launchE2ETestsJob('minikube')
-                        }
-                    }
-                }
-                stage('Run tests on Openshift') {
-                    steps {
-                        script {
-                            launchE2ETestsJob('openshift')
-                        }
-                    }
-                }
-            }
-        }
+        // stage('Run e2e tests') {
+        //     when {
+        //         expression {
+        //             return helper.shouldLaunchTests()
+        //         }
+        //     }
+        //     parallel {
+        //         stage('Run tests on Minikube') {
+        //             steps {
+        //                 script {
+        //                     launchE2ETestsJob('minikube')
+        //                 }
+        //             }
+        //         }
+        //         stage('Run tests on Openshift') {
+        //             steps {
+        //                 script {
+        //                     launchE2ETestsJob('openshift')
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
-        stage('Create PR') {
-            when {
-                expression { return commitDone }
-            }
-            steps {
-                script {
-                    githubscm.pushObject('origin', helper.getPRBranch(), helper.getGitAuthorCredsID())
+        // stage('Create PR') {
+        //     when {
+        //         expression { return commitDone }
+        //     }
+        //     steps {
+        //         script {
+        //             githubscm.pushObject('origin', helper.getPRBranch(), helper.getGitAuthorCredsID())
 
-                    def prMsg = getCommitMessage()
-                    def prBody = "Generated by build ${BUILD_TAG}: ${BUILD_URL}.\nPlease do not merge, it shoud be merged automatically."
-                    String prLink = githubscm.createPR(prMsg, prBody, helper.getBuildBranch(), helper.getGitAuthorCredsID())
-                    properties.add("${helper.getRepoName()}.pr.link", prLink)
+        //             def prMsg = getCommitMessage()
+        //             def prBody = "Generated by build ${BUILD_TAG}: ${BUILD_URL}.\nPlease do not merge, it shoud be merged automatically."
+        //             String prLink = githubscm.createPR(prMsg, prBody, helper.getBuildBranch(), helper.getGitAuthorCredsID())
+        //             properties.add("${helper.getRepoName()}.pr.link", prLink)
 
-                    properties.add("${helper.getRepoName()}.pr.source.uri", "https://github.com/${helper.getGitAuthorCredsID()}/${helper.getRepoName()}")
-                    properties.add("${helper.getRepoName()}.pr.source.ref", helper.getPRBranch())
-                    properties.add("${helper.getRepoName()}.pr.target.uri", "https://github.com/${helper.getGitAuthor()}/${helper.getRepoName()}")
-                    properties.add("${helper.getRepoName()}.pr.target.ref", helper.getBuildBranch())
-                }
-            }
-        }
+        //             properties.add("${helper.getRepoName()}.pr.source.uri", "https://github.com/${helper.getGitAuthorCredsID()}/${helper.getRepoName()}")
+        //             properties.add("${helper.getRepoName()}.pr.source.ref", helper.getPRBranch())
+        //             properties.add("${helper.getRepoName()}.pr.target.uri", "https://github.com/${helper.getGitAuthor()}/${helper.getRepoName()}")
+        //             properties.add("${helper.getRepoName()}.pr.target.ref", helper.getBuildBranch())
+        //         }
+        //     }
+        // }
     }
     post {
         always {
