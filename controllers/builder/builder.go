@@ -52,16 +52,17 @@ func NewBuildManager(ctx context.Context, client client.Client, cliConfig *rest.
 		logger.Error(err, fmt.Sprintf("Error retrieving the active platform. Workflow %s build cannot be performed!", targetName))
 		return nil, err
 	}
-	commonConfig, err := GetCommonConfigMap(client, targetNamespace)
+	cmName := SonataPrefix + "-" + targetName + "-builder"
+	cmConfig, err := GetNamespaceConfigMap(client, cmName, targetNamespace)
 	if err != nil {
-		logger.Error(err, "Failed to get common configMap for Workflow Builder. Make sure that sonataflow-operator-builder-config is present in the operator namespace.")
+		logger.Error(err, fmt.Sprintf("Failed to get %s configMap for Workflow Builder. Make sure that %s is present in the namespace.", cmName, cmName))
 		return nil, err
 	}
 	managerContext := buildManagerContext{
 		ctx:          ctx,
 		client:       client,
 		platform:     p,
-		commonConfig: commonConfig,
+		commonConfig: cmConfig,
 	}
 	switch p.Status.Cluster {
 	case operatorapi.PlatformClusterOpenShift:

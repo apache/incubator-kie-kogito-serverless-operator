@@ -19,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/client-go/tools/record"
+
 	"k8s.io/client-go/rest"
 
 	"github.com/stretchr/testify/assert"
@@ -34,6 +36,7 @@ import (
 
 func Test_reconcilerProdBuildConditions(t *testing.T) {
 	logger := ctrllog.FromContext(context.TODO())
+	recorder := record.FakeRecorder{}
 	workflow := test.GetBaseSonataFlow(t.Name())
 	platform := test.GetBasePlatformInReadyPhase(t.Name())
 	client := test.NewKogitoClientBuilder().
@@ -41,7 +44,7 @@ func Test_reconcilerProdBuildConditions(t *testing.T) {
 		WithStatusSubresource(workflow, platform, &operatorapi.SonataFlowBuild{}).Build()
 
 	config := &rest.Config{}
-	result, err := NewReconciler(client, config, &logger, workflow).Reconcile(context.TODO(), workflow)
+	result, err := NewReconciler(client, config, &logger, &recorder, workflow).Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 
 	assert.NotNil(t, result.RequeueAfter)
@@ -49,7 +52,7 @@ func Test_reconcilerProdBuildConditions(t *testing.T) {
 	assert.False(t, workflow.Status.IsReady())
 
 	// still building
-	result, err = NewReconciler(client, config, &logger, workflow).Reconcile(context.TODO(), workflow)
+	result, err = NewReconciler(client, config, &logger, &recorder, workflow).Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 	assert.Equal(t, requeueWhileWaitForBuild, result.RequeueAfter)
 	assert.True(t, workflow.Status.IsBuildRunningOrUnknown())
@@ -62,7 +65,7 @@ func Test_reconcilerProdBuildConditions(t *testing.T) {
 	assert.NoError(t, client.Status().Update(context.TODO(), build))
 
 	// last reconciliation cycle waiting for build
-	result, err = NewReconciler(client, config, &logger, workflow).Reconcile(context.TODO(), workflow)
+	result, err = NewReconciler(client, config, &logger, &recorder, workflow).Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 	assert.Equal(t, requeueWhileWaitForBuild, result.RequeueAfter)
 	assert.False(t, workflow.Status.IsBuildRunningOrUnknown())
@@ -70,14 +73,14 @@ func Test_reconcilerProdBuildConditions(t *testing.T) {
 	assert.Equal(t, api.WaitingForBuildReason, workflow.Status.GetTopLevelCondition().Reason)
 
 	// now we create the objects
-	result, err = NewReconciler(client, config, &logger, workflow).Reconcile(context.TODO(), workflow)
+	result, err = NewReconciler(client, config, &logger, &recorder, workflow).Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 	assert.False(t, workflow.Status.IsBuildRunningOrUnknown())
 	assert.False(t, workflow.Status.IsReady())
 	assert.Equal(t, api.WaitingForDeploymentReason, workflow.Status.GetTopLevelCondition().Reason)
 
 	// now with the objects created, it should be running
-	result, err = NewReconciler(client, config, &logger, workflow).Reconcile(context.TODO(), workflow)
+	result, err = NewReconciler(client, config, &logger, &recorder, workflow).Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 	assert.False(t, workflow.Status.IsBuildRunningOrUnknown())
 	assert.True(t, workflow.Status.IsReady())

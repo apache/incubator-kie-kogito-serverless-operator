@@ -53,7 +53,7 @@ func Test_openshiftBuilderManager_Reconcile(t *testing.T) {
 
 	// Schedule a build
 	kogitoBuildManager := NewSonataFlowBuildManager(context.TODO(), client)
-	kbuild, err := kogitoBuildManager.GetOrCreateBuild(workflow)
+	kbuild, err := kogitoBuildManager.GetOrCreateBuildWithPlatform(platform, workflow)
 	assert.NoError(t, err)
 	assert.NotNil(t, kbuild)
 	assert.NoError(t, buildManager.Schedule(kbuild))
@@ -116,7 +116,7 @@ func Test_openshiftbuilder_externalCMs(t *testing.T) {
 
 	// Schedule a build
 	kogitoBuildManager := NewSonataFlowBuildManager(context.TODO(), client)
-	kbuild, err := kogitoBuildManager.GetOrCreateBuild(workflow)
+	kbuild, err := kogitoBuildManager.GetOrCreateBuildWithPlatform(platform, workflow)
 	assert.NoError(t, err)
 
 	assert.NoError(t, buildManager.Schedule(kbuild))

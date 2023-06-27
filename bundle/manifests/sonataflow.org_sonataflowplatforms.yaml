@@ -181,6 +181,10 @@ spec:
                       images. It can be useful if you want to provide some custom
                       base image with further utility software
                     type: string
+                  buildAttemptsAfterError:
+                    description: BuildAttemptsAfterError number of attempts after
+                      a build error, to avoid of momentary infra slop
+                    type: integer
                   buildStrategy:
                     description: BuildStrategy to use to build workflows in the platform.
                       Usually, the operator elect the strategy based on the platform.

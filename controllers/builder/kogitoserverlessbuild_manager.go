@@ -33,23 +33,58 @@ type sonataFlowBuildManager struct {
 	ctx    context.Context
 }
 
+func (k *sonataFlowBuildManager) GetOrCreateBuildWithPlatform(activePlatform *operatorapi.SonataFlowPlatform, workflow *operatorapi.SonataFlow) (*operatorapi.SonataFlowBuild, error) {
+	return k.getOrCreateBuildWithPlatform(activePlatform, workflow)
+}
+
 func (k *sonataFlowBuildManager) MarkToRestart(build *operatorapi.SonataFlowBuild) error {
 	build.Status.BuildPhase = operatorapi.BuildPhaseNone
 	return k.client.Status().Update(k.ctx, build)
 }
 
 func (k *sonataFlowBuildManager) GetOrCreateBuild(workflow *operatorapi.SonataFlow) (*operatorapi.SonataFlowBuild, error) {
+	return k.getOrCreateBuildWithPlatform(nil, workflow)
+}
+
+func (k *sonataFlowBuildManager) getOrCreateBuildWithPlatform(activePlatform *operatorapi.SonataFlowPlatform, workflow *operatorapi.SonataFlow) (*operatorapi.SonataFlowBuild, error) {
+	buildInstance := &operatorapi.SonataFlowBuild{}
+	buildInstance.ObjectMeta.Namespace = workflow.Namespace
+	buildInstance.ObjectMeta.Name = workflow.Name
+
+	// Checks if another buildinstance is present to avoid a new build while another is still running
+	if err := k.client.Get(k.ctx, client.ObjectKeyFromObject(workflow), buildInstance); err != nil {
+		// No BuildInstance are found we can process a new build
+		if errors.IsNotFound(err) {
+
+			if activePlatform == nil {
+				activePlatform = &operatorapi.SonataFlowPlatform{}
+				if activePlatform, err = platform.GetActivePlatform(k.ctx, k.client, workflow.Namespace); err != nil {
+					return nil, err
+				}
+			}
+			buildInstance.Spec.BuildTemplate = activePlatform.Spec.BuildTemplate
+			if err = controllerutil.SetControllerReference(workflow, buildInstance, k.client.Scheme()); err != nil {
+				return nil, err
+			}
+			if err = k.client.Create(k.ctx, buildInstance); err != nil {
+				return nil, err
+			}
+			return buildInstance, nil
+		}
+		return nil, err
+	}
+
+	return buildInstance, nil
+}
+
+func (k *sonataFlowBuildManager) GetOrCreateBuildWithPatform(platform operatorapi.SonataFlowPlatform, workflow *operatorapi.SonataFlow) (*operatorapi.SonataFlowBuild, error) {
 	buildInstance := &operatorapi.SonataFlowBuild{}
 	buildInstance.ObjectMeta.Namespace = workflow.Namespace
 	buildInstance.ObjectMeta.Name = workflow.Name
 
 	if err := k.client.Get(k.ctx, client.ObjectKeyFromObject(workflow), buildInstance); err != nil {
 		if errors.IsNotFound(err) {
-			plat := &operatorapi.SonataFlowPlatform{}
-			if plat, err = platform.GetActivePlatform(k.ctx, k.client, workflow.Namespace); err != nil {
-				return nil, err
-			}
-			buildInstance.Spec.BuildTemplate = plat.Spec.BuildTemplate
+			buildInstance.Spec.BuildTemplate = platform.Spec.BuildTemplate
 			if err = controllerutil.SetControllerReference(workflow, buildInstance, k.client.Scheme()); err != nil {
 				return nil, err
 			}
@@ -69,6 +104,10 @@ type SonataFlowBuildManager interface {
 	//
 	// Only one build is allowed per workflow instance
 	GetOrCreateBuild(workflow *operatorapi.SonataFlow) (*operatorapi.SonataFlowBuild, error)
+	// GetOrCreateBuildWithPlatform gets or creates a new instance of SonataFlowBuild for the given SonataFlow using the provided platform
+	//
+	// Only one build is allowed per workflow instance
+	GetOrCreateBuildWithPlatform(activePlatform *operatorapi.SonataFlowPlatform, workflow *operatorapi.SonataFlow) (*operatorapi.SonataFlowBuild, error)
 	// MarkToRestart tell the controller to restart this build in the next iteration
 	MarkToRestart(build *operatorapi.SonataFlowBuild) error
 }

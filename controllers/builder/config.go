@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/util/log"
 )
 
@@ -33,35 +32,16 @@ const (
 	envVarPodNamespaceName = "POD_NAMESPACE"
 	// ConfigMapName is the default name for the Builder ConfigMap name
 	ConfigMapName                       = "sonataflow-operator-builder-config"
+	SonataPrefix                        = "sonataflow"
 	configKeyDefaultExtension           = "DEFAULT_WORKFLOW_EXTENSION"
 	configKeyDefaultBuilderResourceName = "DEFAULT_BUILDER_RESOURCE_NAME"
-	configKeyBuildNamespace             = "build-namespace"
-	configKeyRegistrySecret             = "registry-secret"
-	configKeyRegistryAddress            = "registry-address"
+	ConfigDockerfile                    = "Dockerfile"
 )
 
-func NewCustomConfig(platform operatorapi.SonataFlowPlatform) (map[string]string, error) {
-	customConfig := make(map[string]string)
-	if platform.Namespace == "" {
-		return nil, fmt.Errorf("unable to retrieve the namespace from platform %s", platform.Name)
-	}
-	customConfig[configKeyBuildNamespace] = platform.Namespace
-	// Registry Secret and Address are not required, the inner builder will use minikube inner registry if available
-	// TODO: we should review
-	customConfig[configKeyRegistrySecret] = platform.Spec.BuildPlatform.Registry.Secret
-	customConfig[configKeyRegistryAddress] = platform.Spec.BuildPlatform.Registry.Address
-	return customConfig, nil
-}
+func GetNamespaceConfigMap(client client.Client, cmName string, namespace string) (*corev1.ConfigMap, error) {
 
-// GetCommonConfigMap retrieves the config map with the builder common configuration information
-func GetCommonConfigMap(client client.Client, fallbackNS string) (*corev1.ConfigMap, error) {
-	namespace, found := os.LookupEnv(envVarPodNamespaceName)
-	if !found {
-		namespace = fallbackNS
-	}
-
-	if !found && len(namespace) == 0 {
-		return nil, errors.Errorf("Can't find current context namespace, make sure that %s env is set", envVarPodNamespaceName)
+	if len(namespace) == 0 {
+		return nil, errors.Errorf("Can't find current context namespace, make sure that %s namespace exists", namespace)
 	}
 
 	existingConfigMap := &corev1.ConfigMap{
@@ -70,25 +50,50 @@ func GetCommonConfigMap(client client.Client, fallbackNS string) (*corev1.Config
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ConfigMapName,
+			Name:      cmName,
 			Namespace: namespace,
 		},
 		Data: map[string]string{},
 	}
 
-	err := client.Get(context.TODO(), types.NamespacedName{Name: ConfigMapName, Namespace: namespace}, existingConfigMap)
+	err := client.Get(context.TODO(), types.NamespacedName{Name: cmName, Namespace: namespace}, existingConfigMap)
 	if err != nil {
-		log.Error(err, "fetching configmap "+ConfigMapName)
-		return nil, err
+		copyOperatorConfigMapIntoNamespaceConfigMap(client, existingConfigMap)
+	}
+	if len(existingConfigMap.Data) == 2 {
+		commonConfig, _ := GetCommonConfigMap(client, "")
+		existingConfigMap.Data[configKeyDefaultExtension] = commonConfig.Data[configKeyDefaultExtension]
+		existingConfigMap.Data[configKeyDefaultBuilderResourceName] = commonConfig.Data[configKeyDefaultBuilderResourceName]
+		err = client.Update(context.TODO(), existingConfigMap)
+		if err != nil {
+			log.Error(err, "Error adding fields in the configmap")
+		}
 	}
 
 	err = isValidBuilderCommonConfigMap(existingConfigMap)
 	if err != nil {
-		log.Error(err, "configmap "+ConfigMapName+" is not valid")
+		log.Error(err, "configmap "+cmName+" is not valid")
 		return existingConfigMap, err
 	}
 
 	return existingConfigMap, nil
+}
+
+func copyOperatorConfigMapIntoNamespaceConfigMap(client client.Client, existingConfigMap *corev1.ConfigMap) {
+	commonConfig, _ := GetCommonConfigMap(client, "")
+	existingConfigMap.Data[configKeyDefaultExtension] = commonConfig.Data[configKeyDefaultExtension]
+	existingConfigMap.Data[configKeyDefaultBuilderResourceName] = commonConfig.Data[configKeyDefaultBuilderResourceName]
+	existingConfigMap.Data[resourceDockerfile] = commonConfig.Data[resourceDockerfile]
+	client.Create(context.TODO(), existingConfigMap)
+}
+
+// GetCommonConfigMap retrieves the config map with the builder common configuration information
+func GetCommonConfigMap(client client.Client, fallbackNS string) (*corev1.ConfigMap, error) {
+	namespace, found := os.LookupEnv(envVarPodNamespaceName)
+	if !found {
+		namespace = fallbackNS
+	}
+	return GetNamespaceConfigMap(client, ConfigMapName, namespace)
 }
 
 // isValidBuilderCommonConfigMap  function that will verify that in the builder config maps there are the required keys, and they aren't empty

@@ -74,6 +74,8 @@ type SonataFlowBuildStatus struct {
 	// InnerBuild is a reference to an internal build object, which can be anything known only to internal builders.
 	// +kubebuilder:pruning:PreserveUnknownFields
 	InnerBuild runtime.RawExtension `json:"innerBuild,omitempty" patchStrategy:"replace"`
+	// BuildAttemptsAfterError number of attempts after a build error, to avoid of momentary infra slop errors
+	BuildAttemptsAfterError int `json:"buildAttemptsAfterError,omitempty"`
 }
 
 // SetInnerBuild use to define a new object pointer to the inner build.

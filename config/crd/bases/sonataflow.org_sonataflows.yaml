@@ -2199,8 +2199,17 @@ spec:
               lastTimeRecoverAttempt:
                 format: date-time
                 type: string
+              observedDockerfile:
+                description: The dockerfile observed by the deployment controller
+                  when is marked with WaitingForConfigurationChanges.
+                type: string
               observedGeneration:
                 description: The generation observed by the deployment controller.
+                format: int64
+                type: integer
+              observedPlatformGeneration:
+                description: The platform generation observed by the deployment controller
+                  when is marked with WaitingForConfigurationChanges .
                 format: int64
                 type: integer
               recoverFailureAttempts:

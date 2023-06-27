@@ -16,6 +16,7 @@ package utils
 
 import (
 	"os"
+	"strconv"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -63,6 +64,17 @@ func Pbool(b bool) *bool {
 // Pint returns a pointer to an int
 func Pint(i int32) *int32 {
 	return &i
+}
+
+func ParseInt64(s string) (int64, error) {
+	if len(s) == 0 {
+		return 0, nil
+	}
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return i, nil
 }
 
 func Compare(a, b []byte) bool {

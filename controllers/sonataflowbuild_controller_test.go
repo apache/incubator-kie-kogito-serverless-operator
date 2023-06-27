@@ -18,6 +18,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/kiegroup/kogito-serverless-operator/controllers/builder"
+
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
@@ -33,11 +35,13 @@ func TestSonataFlowBuildController(t *testing.T) {
 	namespace := t.Name()
 	ksw := test.GetBaseSonataFlow(namespace)
 	ksb := test.GetNewEmptySonataFlowBuild(ksw.Name, namespace)
+	cm := test.GetSonataFlowBuilderConfig("../", namespace)
+	cm.Name = builder.SonataPrefix + "-" + ksw.Name + "-builder"
 
 	cl := test.NewKogitoClientBuilder().
 		WithRuntimeObjects(ksb, ksw).
 		WithRuntimeObjects(test.GetBasePlatformInReadyPhase(namespace)).
-		WithRuntimeObjects(test.GetSonataFlowBuilderConfig("../", namespace)).
+		WithRuntimeObjects(cm).
 		WithStatusSubresource(ksb, ksw).
 		Build()
 

@@ -113,6 +113,10 @@ spec:
           status:
             description: SonataFlowBuildStatus defines the observed state of SonataFlowBuild
             properties:
+              buildAttemptsAfterError:
+                description: BuildAttemptsAfterError number of attempts after a build
+                  error, to avoid of momentary infra slop errors
+                type: integer
               buildPhase:
                 description: Current phase of the build
                 type: string

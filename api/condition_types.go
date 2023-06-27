@@ -35,15 +35,16 @@ const (
 )
 
 const (
-	WaitingForDeploymentReason      = "WaitingForDeployment"
-	ExternalResourcesNotFoundReason = "ExternalResourcesNotFound"
-	DeploymentFailureReason         = "DeploymentFailure"
-	DeploymentUnavailableReason     = "DeploymentIsUnavailable"
-	RedeploymentExhaustedReason     = "AttemptToRedeployFailed"
-	WaitingForPlatformReason        = "WaitingForPlatform"
-	BuildFailedReason               = "BuildFailedReason"
-	WaitingForBuildReason           = "WaitingForBuild"
-	BuildIsRunningReason            = "BuildIsRunning"
+	WaitingForDeploymentReason         = "WaitingForDeployment"
+	ExternalResourcesNotFoundReason    = "ExternalResourcesNotFound"
+	DeploymentFailureReason            = "DeploymentFailure"
+	DeploymentUnavailableReason        = "DeploymentIsUnavailable"
+	RedeploymentExhaustedReason        = "AttemptToRedeployFailed"
+	WaitingForPlatformReason           = "WaitingForPlatform"
+	WaitingForWrongConfigurationReason = "WaitingForConfigurationChanges"
+	BuildFailedReason                  = "BuildFailedReason"
+	WaitingForBuildReason              = "WaitingForBuild"
+	BuildIsRunningReason               = "BuildIsRunning"
 )
 
 // Condition describes the common structure for conditions in our types

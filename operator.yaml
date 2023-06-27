@@ -120,6 +120,10 @@ spec:
           status:
             description: SonataFlowBuildStatus defines the observed state of SonataFlowBuild
             properties:
+              buildAttemptsAfterError:
+                description: BuildAttemptsAfterError number of attempts after a build
+                  error, to avoid of momentary infra slop errors
+                type: integer
               buildPhase:
                 description: Current phase of the build
                 type: string
@@ -324,6 +328,10 @@ spec:
                       images. It can be useful if you want to provide some custom
                       base image with further utility software
                     type: string
+                  buildAttemptsAfterError:
+                    description: BuildAttemptsAfterError number of attempts after
+                      a build error, to avoid of momentary infra slop
+                    type: integer
                   buildStrategy:
                     description: BuildStrategy to use to build workflows in the platform.
                       Usually, the operator elect the strategy based on the platform.
@@ -2629,8 +2637,17 @@ spec:
               lastTimeRecoverAttempt:
                 format: date-time
                 type: string
+              observedDockerfile:
+                description: The dockerfile observed by the deployment controller
+                  when is marked with WaitingForConfigurationChanges.
+                type: string
               observedGeneration:
                 description: The generation observed by the deployment controller.
+                format: int64
+                type: integer
+              observedPlatformGeneration:
+                description: The platform generation observed by the deployment controller
+                  when is marked with WaitingForConfigurationChanges .
                 format: int64
                 type: integer
               recoverFailureAttempts:

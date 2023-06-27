@@ -20,6 +20,8 @@ import (
 	"path"
 	"time"
 
+	"k8s.io/client-go/tools/record"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kiegroup/kogito-serverless-operator/workflowproj"
@@ -76,10 +78,11 @@ func (d developmentProfile) GetProfile() metadata.ProfileType {
 	return metadata.DevProfile
 }
 
-func newDevProfileReconciler(client client.Client, config *rest.Config, logger *logr.Logger) ProfileReconciler {
+func newDevProfileReconciler(client client.Client, config *rest.Config, logger *logr.Logger, recorder record.EventRecorder) ProfileReconciler {
 	support := &stateSupport{
-		logger: logger,
-		client: client,
+		logger:   logger,
+		client:   client,
+		recorder: recorder,
 	}
 
 	var ensurers *devProfileObjectEnsurers
@@ -177,7 +180,7 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 	externalCM, err := workflowdef.FetchExternalResourcesConfigMapsRef(e.client, workflow)
 	if err != nil {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.ExternalResourcesNotFoundReason, "External Resources ConfigMap not found: %s", err.Error())
-		if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
+		if _, err = e.getAndUpdateStatusWorkFlow(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 		}
 		return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, nil
@@ -215,7 +218,7 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 	if workflow.Status.GetTopLevelCondition().IsUnknown() {
 		e.logger.Info("Workflow is in WaitingForDeployment Condition")
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
-		if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
+		if _, err = e.getAndUpdateStatusWorkFlow(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 		}
 		return ctrl.Result{RequeueAfter: requeueAfterIsRunning}, objs, nil
@@ -226,7 +229,7 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 	if !kubeutil.IsDeploymentAvailable(convertedDeployment) {
 		e.logger.Info("Workflow is not running due to a problem in the Deployment. Attempt to recover.")
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, getDeploymentFailureMessage(convertedDeployment))
-		if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
+		if _, err = e.getAndUpdateStatusWorkFlow(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
 		}
 	}
@@ -248,7 +251,7 @@ func (f *followDeployDevWorkflowReconciliationState) Do(ctx context.Context, wor
 	if err := f.client.Get(ctx, client.ObjectKeyFromObject(workflow), deployment); err != nil {
 		// we should have the deployment by this time, so even if the error above is not found, we should halt.
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, "Couldn't find deployment anymore while waiting for the deploy")
-		if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
+		if _, err := f.getAndUpdateStatusWorkFlow(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
 		}
 		return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
@@ -257,7 +260,7 @@ func (f *followDeployDevWorkflowReconciliationState) Do(ctx context.Context, wor
 	if kubeutil.IsDeploymentAvailable(deployment) {
 		workflow.Status.Manager().MarkTrue(api.RunningConditionType)
 		f.logger.Info("Workflow is in Running Condition")
-		if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
+		if _, err := f.getAndUpdateStatusWorkFlow(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
 
 		}
@@ -267,7 +270,7 @@ func (f *followDeployDevWorkflowReconciliationState) Do(ctx context.Context, wor
 	if kubeutil.IsDeploymentProgressing(deployment) {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
 		f.logger.Info("Workflow is in WaitingForDeployment Condition")
-		if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
+		if _, err := f.getAndUpdateStatusWorkFlow(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
 		}
 		return ctrl.Result{RequeueAfter: requeueAfterFollowDeployment}, nil, nil
@@ -277,7 +280,7 @@ func (f *followDeployDevWorkflowReconciliationState) Do(ctx context.Context, wor
 	workflow.Status.LastTimeRecoverAttempt = metav1.Now()
 	workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentFailureReason, failedReason)
 	f.logger.Info("Workflow deployment failed", "Reason Message", failedReason)
-	_, err := f.performStatusUpdate(ctx, workflow)
+	_, err := f.getAndUpdateStatusWorkFlow(ctx, workflow)
 	return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
 }
 
@@ -291,7 +294,7 @@ func (f *followDeployDevWorkflowReconciliationState) PostReconcile(ctx context.C
 		if _, err := f.enrichers.networkInfo.Enrich(ctx, workflow); err != nil {
 			return err
 		}
-		if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
+		if _, err := f.getAndUpdateStatusWorkFlow(ctx, workflow); err != nil {
 			return err
 		}
 	}
@@ -315,7 +318,7 @@ func (r *recoverFromFailureDevReconciliationState) Do(ctx context.Context, workf
 			r.logger.Info("Tried to recover from failed state, no deployment found, trying to reset the workflow conditions")
 			workflow.Status.RecoverFailureAttempts = 0
 			workflow.Status.Manager().MarkUnknown(api.RunningConditionType, "", "")
-			if _, updateErr := r.performStatusUpdate(ctx, workflow); updateErr != nil {
+			if _, updateErr := r.getAndUpdateStatusWorkFlow(ctx, workflow); updateErr != nil {
 				return ctrl.Result{Requeue: false}, nil, updateErr
 			}
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, nil
@@ -327,7 +330,7 @@ func (r *recoverFromFailureDevReconciliationState) Do(ctx context.Context, workf
 	if kubeutil.IsDeploymentAvailable(deployment) {
 		workflow.Status.RecoverFailureAttempts = 0
 		workflow.Status.Manager().MarkTrue(api.RunningConditionType)
-		if _, updateErr := r.performStatusUpdate(ctx, workflow); updateErr != nil {
+		if _, updateErr := r.getAndUpdateStatusWorkFlow(ctx, workflow); updateErr != nil {
 			return ctrl.Result{Requeue: false}, nil, updateErr
 		}
 		return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, nil
@@ -336,7 +339,7 @@ func (r *recoverFromFailureDevReconciliationState) Do(ctx context.Context, workf
 	if workflow.Status.RecoverFailureAttempts >= recoverDeploymentErrorRetries {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.RedeploymentExhaustedReason,
 			"Can't recover workflow from failure after maximum attempts: %d", workflow.Status.RecoverFailureAttempts)
-		if _, updateErr := r.performStatusUpdate(ctx, workflow); updateErr != nil {
+		if _, updateErr := r.getAndUpdateStatusWorkFlow(ctx, workflow); updateErr != nil {
 			return ctrl.Result{}, nil, updateErr
 		}
 		return ctrl.Result{RequeueAfter: requeueRecoverDeploymentErrorInterval}, nil, nil
@@ -366,7 +369,7 @@ func (r *recoverFromFailureDevReconciliationState) Do(ctx context.Context, workf
 
 	workflow.Status.RecoverFailureAttempts += 1
 	workflow.Status.LastTimeRecoverAttempt = metav1.Now()
-	if _, err := r.performStatusUpdate(ctx, workflow); err != nil {
+	if _, err := r.getAndUpdateStatusWorkFlow(ctx, workflow); err != nil {
 		return ctrl.Result{Requeue: false}, nil, err
 	}
 	return ctrl.Result{RequeueAfter: requeueRecoverDeploymentErrorInterval}, nil, nil

@@ -84,6 +84,7 @@ metadata:
           },
           "spec": {
             "platform": {
+              "buildAttemptsAfterError": 3,
               "registry": {
                 "address": "quay.io/kiegroup",
                 "secret": "regcred"

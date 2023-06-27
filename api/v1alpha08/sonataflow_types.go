@@ -128,6 +128,13 @@ type SonataFlowStatus struct {
 	LastTimeRecoverAttempt metav1.Time `json:"lastTimeRecoverAttempt,omitempty"`
 	// Endpoint is an externally accessible URL of the workflow
 	Endpoint *apis.URL `json:"endpoint,omitempty"`
+
+	// The platform generation observed by the deployment controller when is marked with WaitingForConfigurationChanges .
+	// +optional
+	ObservedPlatformGeneration int64 `json:"observedPlatformGeneration,omitempty"`
+	// The dockerfile observed by the deployment controller when is marked with WaitingForConfigurationChanges.
+	// +optional
+	ObserverdDockerfile string `json:"observedDockerfile,omitempty"`
 }
 
 func (s *SonataFlowStatus) GetTopLevelConditionType() api.ConditionType {
@@ -177,6 +184,11 @@ func (s *SonataFlowStatus) IsBuildRunningOrUnknown() bool {
 func (s *SonataFlowStatus) IsBuildFailed() bool {
 	cond := s.GetCondition(api.BuiltConditionType)
 	return cond.IsFalse() && cond.Reason == api.BuildFailedReason
+}
+
+func (s *SonataFlowStatus) IsWaitingConfigurationChanges() bool {
+	cond := s.GetCondition(api.BuiltConditionType)
+	return cond.IsFalse() && cond.Reason == api.WaitingForWrongConfigurationReason
 }
 
 // SonataFlow is the descriptor representation for a workflow application based on the CNCF Serverless Workflow specification.
