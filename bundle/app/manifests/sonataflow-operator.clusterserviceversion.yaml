@@ -197,9 +197,12 @@ spec:
         displayName: resources
         path: resources
       statusDescriptors:
-      - displayName: address
+      - description: Address is used as a part of Addressable interface (status.address.url)
+          for knative
+        displayName: address
         path: address
-      - displayName: endpoint
+      - description: Endpoint is an externally accessible URL of the workflow
+        displayName: endpoint
         path: endpoint
       - displayName: lastTimeRecoverAttempt
         path: lastTimeRecoverAttempt

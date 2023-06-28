@@ -63,6 +63,7 @@ osbs:
         only:
           - x86_64
           - ppc64le
+          - aarch64
   extra_dir: osbs-extra
   repository:
     name: containers/openshift-serverless-1-logic-operator-bundle

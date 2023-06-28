@@ -19,7 +19,7 @@ spec:
       name: sonataflowbuilds.sonataflow.org
       resources:
       - kind: BuildConfig
-        name: A Openshift Build Config
+        name: An Openshift Build Config
         version: build.openshift.io/v1
       version: v1alpha08
     - description: SonataFlowPlatform is the descriptor for the workflow platform
@@ -28,12 +28,6 @@ spec:
       kind: SonataFlowPlatform
       name: sonataflowplatforms.sonataflow.org
       resources:
-      - kind: Namespace
-        name: The Namespace controlled by the platform
-        version: v1
-      - kind: Namespace
-        name: The Namespace controlled by the platform
-        version: v1
       - kind: Namespace
         name: The Namespace controlled by the platform
         version: v1
@@ -95,6 +89,9 @@ spec:
       - kind: Route
         name: An OpenShift Route for the Flow
         version: route.openshift.io/v1
+      - kind: ConfigMap
+        name: The ConfigMaps with Flow definition and additional configuration files
+        version: v1
       specDescriptors:
       - displayName: flow
         path: flow
@@ -103,9 +100,12 @@ spec:
         displayName: resources
         path: resources
       statusDescriptors:
-      - displayName: address
+      - description: Address is used as a part of Addressable interface (status.address.url)
+          for knative
+        displayName: address
         path: address
-      - displayName: endpoint
+      - description: Endpoint is an externally accessible URL of the workflow
+        displayName: endpoint
         path: endpoint
       - displayName: lastTimeRecoverAttempt
         path: lastTimeRecoverAttempt
@@ -142,7 +142,7 @@ spec:
     url: https://kiegroup.github.io/kogito-docs/serverlessworkflow/latest/index.html
   maturity: alpha
   provider:
-    name: logic-operator-rhel8
+    name: Red Hat
   relatedImages:
   - image: registry.redhat.io/openshift-serverless-1-tech-preview/logic-operator-rhel8:1.30.0
     name: IMAGE_LOGIC_SWF_OPERATOR
