@@ -175,7 +175,7 @@ endif
 
 .PHONY: container-build
 container-build: test ## Build the container image
-	cekit --redhat -vvvv --descriptor osl-image-prod.yaml build osbs $(CEKIT_FLAGS)
+	cekit --redhat -v --descriptor osl-image-prod.yaml build osbs $(CEKIT_FLAGS)
 
 .PHONY: container-push
 container-push: ## Push the container image
