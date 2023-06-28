@@ -17,7 +17,7 @@ spec:
       name: sonataflowbuilds.sonataflow.org
       resources:
       - kind: BuildConfig
-        name: A Openshift Build Config
+        name: An Openshift Build Config
         version: build.openshift.io/v1
       version: v1alpha08
     - description: SonataFlowPlatform is the descriptor for the workflow platform
@@ -26,12 +26,6 @@ spec:
       kind: SonataFlowPlatform
       name: sonataflowplatforms.sonataflow.org
       resources:
-      - kind: Namespace
-        name: The Namespace controlled by the platform
-        version: v1
-      - kind: Namespace
-        name: The Namespace controlled by the platform
-        version: v1
       - kind: Namespace
         name: The Namespace controlled by the platform
         version: v1
@@ -93,6 +87,9 @@ spec:
       - kind: Route
         name: An OpenShift Route for the Flow
         version: route.openshift.io/v1
+      - kind: ConfigMap
+        name: The ConfigMaps with Flow definition and additional configuration files
+        version: v1
       specDescriptors:
       - displayName: flow
         path: flow
