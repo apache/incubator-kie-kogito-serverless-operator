@@ -70,7 +70,7 @@ pipeline {
 
                         // Tag with `latest` tag if asked for as parameter
                         if (helper.isDeployLatestTag()) {
-                            promoteImage(helper.getImageFullTag(imageName, baseImageParamsPrefix, 'latest'), helper.getImageFullTag(imageName, promoteImageParamsPrefix, 'latest'))
+                             promoteImage(helper.getImageFullTag(imageName, baseImageParamsPrefix), helper.getImageFullTag(imageName, promoteImageParamsPrefix, 'latest'))
                         }
                     }
                 }
