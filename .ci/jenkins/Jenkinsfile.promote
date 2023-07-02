@@ -63,7 +63,7 @@ pipeline {
                         promoteImage(helper.getImageFullTag(imageName, baseImageParamsPrefix), helper.getImageFullTag(imageName, promoteImageParamsPrefix))
 
                         try {
-                            promoteImage(helper.getImageReducedTag(imageName, baseImageParamsPrefix), helper.getImageReducedTag(imageName, promoteImageParamsPrefix))
+                            promoteImage(helper.getImageFullTag(imageName, baseImageParamsPrefix), helper.getImageReducedTag(imageName, promoteImageParamsPrefix))
                         } catch (err) {
                             echo 'Reduced tag cannot be applied'
                         }
