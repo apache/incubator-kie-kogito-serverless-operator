@@ -561,8 +561,6 @@ spec:
                     - ALL
               securityContext:
                 runAsNonRoot: true
-                seccompProfile:
-                  type: RuntimeDefault
               serviceAccountName: sonataflow-operator-controller-manager
               terminationGracePeriodSeconds: 10
       permissions:

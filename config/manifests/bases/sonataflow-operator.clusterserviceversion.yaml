@@ -1,0 +1,156 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+    categories: Application Runtime
+    containerImage: quay.io/kiegroup/kogito-serverless-operator:0.0.0
+    description: SonataFlow Kubernetes Operator for deploying workflow applications
+      based on the CNCF Serverless Workflow specification
+    repository: https://github.com/kiegroup/kogito-serverless-operator
+    support: Red Hat
+  name: sonataflow-operator.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: SonataFlowBuild is an internal custom resource to control workflow
+        build instances in the target platform
+      displayName: Sonata Flow Build
+      kind: SonataFlowBuild
+      name: sonataflowbuilds.sonataflow.org
+      resources:
+      - kind: BuildConfig
+        name: An Openshift Build Config
+        version: build.openshift.io/v1
+      version: v1alpha08
+    - description: SonataFlowPlatform is the descriptor for the workflow platform
+        infrastructure.
+      displayName: Sonata Flow Platform
+      kind: SonataFlowPlatform
+      name: sonataflowplatforms.sonataflow.org
+      resources:
+      - kind: Namespace
+        name: The Namespace controlled by the platform
+        version: v1
+      specDescriptors:
+      - description: BuildTemplate specify how to build the Workflow. It's used as
+          a template for the SonataFlowBuild
+        displayName: build
+        path: build
+      - description: Configuration list of configuration properties to be attached
+          to all the Workflow built from this Platform
+        displayName: configuration
+        path: configuration
+      - description: DevBaseImage Base image to run the Workflow in dev mode instead
+          of the operator's default. Optional, used for the dev profile only
+        displayName: devBaseImage
+        path: devBaseImage
+      - description: BuildPlatform specify how is the platform where we want to build
+          the Workflow
+        displayName: platform
+        path: platform
+      statusDescriptors:
+      - description: Cluster what kind of cluster you're running (ie, plain Kubernetes
+          or OpenShift)
+        displayName: cluster
+        path: cluster
+      - description: Conditions which are the conditions met (particularly useful
+          when in ERROR phase)
+        displayName: conditions
+        path: conditions
+      - description: Info generic information related to the build
+        displayName: info
+        path: info
+      - description: ObservedGeneration is the most recent generation observed for
+          this Platform.
+        displayName: observedGeneration
+        path: observedGeneration
+      - description: Phase defines in what phase the Platform is found
+        displayName: phase
+        path: phase
+      - description: Version the operator version controlling this Platform
+        displayName: version
+        path: version
+      version: v1alpha08
+    - description: SonataFlow is the descriptor representation for a workflow application
+        based on the CNCF Serverless Workflow specification.
+      displayName: Sonata Flow
+      kind: SonataFlow
+      name: sonataflows.sonataflow.org
+      resources:
+      - kind: Deployment
+        name: A Deployment for the Flow
+        version: apps/v1
+      - kind: Service
+        name: A Service for the Flow
+        version: v1
+      - kind: SonataFlowBuild
+        name: A SonataFlow Build
+        version: sonataflow.org/v1alpha08
+      - kind: Route
+        name: An OpenShift Route for the Flow
+        version: route.openshift.io/v1
+      - kind: ConfigMap
+        name: The ConfigMaps with Flow definition and additional configuration files
+        version: v1
+      specDescriptors:
+      - displayName: flow
+        path: flow
+      - description: Resources workflow resources that are linked to this workflow
+          definition. For example, a collection of OpenAPI specification files.
+        displayName: resources
+        path: resources
+      statusDescriptors:
+      - description: Address is used as a part of Addressable interface (status.address.url)
+          for knative
+        displayName: address
+        path: address
+      - description: Endpoint is an externally accessible URL of the workflow
+        displayName: endpoint
+        path: endpoint
+      - displayName: lastTimeRecoverAttempt
+        path: lastTimeRecoverAttempt
+      - description: keeps track of how many failure recovers a given workflow had
+          so far
+        displayName: recoverFailureAttempts
+        path: recoverFailureAttempts
+      version: v1alpha08
+  description: |-
+    SonataFlow Kubernetes Operator for deploying workflow applications
+    based on the [CNCF Serverless Workflow specification](https://serverlessworkflow.io/):
+
+    * Deploy workflow applications using the [dev profile](https://sonataflow.org/serverlessworkflow/latest/cloud/operator/developing-workflows.html), suited for the your development cycle
+    * Build workflow applications based on the platform you're currently working on.
+  displayName: SonataFlow Operator
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - sonataflow
+  - cncf
+  - serverless
+  - serverlessworkflow
+  links:
+  - name: Product Page
+    url: https://sonataflow.org/serverlessworkflow/latest/index.html
+  maintainers:
+  - email: bsig-cloud@redhat.com
+    name: Red Hat
+  maturity: alpha
+  minKubeVersion: 1.23.0
+  provider:
+    name: Red Hat
+  version: 0.0.0

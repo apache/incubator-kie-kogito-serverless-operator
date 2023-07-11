@@ -245,8 +245,8 @@ $(ENVTEST): $(LOCALBIN)
 bundle: manifests kustomize install-operator-sdk ## Generate bundle manifests and metadata, then validate generated files.
 	operator-sdk generate kustomize manifests --input-dir=./config/manifests/osl --output-dir=./config/manifests/osl --package=logic-operator-rhel8  -q
 	cd config/manager/osl && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build config/manifests/osl | operator-sdk generate bundle --package=logic-operator-rhel8 --output-dir=bundle/osl $(BUNDLE_GEN_FLAGS) --use-image-digests
-	operator-sdk bundle validate ./bundle/osl
+	$(KUSTOMIZE) build config/manifests/osl | operator-sdk generate bundle --package=logic-operator-rhel8 --output-dir=bundle.osl $(BUNDLE_GEN_FLAGS) --use-image-digests
+	operator-sdk bundle validate ./bundle.osl
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
@@ -326,4 +326,4 @@ before-pr: addheaders test generate-all
 
 .PHONY: scorecard-tests
 scorecard-tests:
-	operator-sdk scorecard bundle/osl -o text --selector='test in (basic-check-spec-test,olm-bundle-validation-test)'
+	operator-sdk scorecard bundle.osl -o text --selector='test in (basic-check-spec-test,olm-bundle-validation-test)'
