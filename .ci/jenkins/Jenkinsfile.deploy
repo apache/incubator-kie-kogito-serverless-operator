@@ -61,7 +61,7 @@ pipeline {
 
                     // Prepare for multiplatform build
                     String localRegistry = cloud.startLocalRegistry()
-                    cloud.prepareForDockerMultiplatformBuild([localRegistry],[cloud.getDockerIOMirrorRegistryConfig()], true)
+                    cloud.prepareForDockerMultiplatformBuild([localRegistry],[cloud.getDockerIOMirrorRegistryConfig()], false)
                     cloud.installSkopeo()
                 }
             }
