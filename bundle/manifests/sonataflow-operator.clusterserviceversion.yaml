@@ -101,7 +101,7 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/kiegroup/kogito-serverless-operator
     support: Red Hat
-  name: sonataflow-operator.v1.41
+  name: sonataflow-operator.v1.41.0-snapshot
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -446,7 +446,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.namespace
-                image: quay.io/kiegroup/kogito-serverless-operator-nightly:1.41
+                image: quay.io/kiegroup/kogito-serverless-operator-nightly:1.41.0-snapshot
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -537,4 +537,4 @@ spec:
   minKubeVersion: 1.23.0
   provider:
     name: Red Hat
-  version: 1.41
+  version: 1.41.0-snapshot
