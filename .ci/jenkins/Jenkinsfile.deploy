@@ -29,6 +29,11 @@ pipeline {
         BOT_BRANCH_HASH = "${util.generateHash(10)}"
 
         IMAGE_BUILD_PLATFORMS = 'linux/amd64,linux/arm64'
+
+        // Environment required by OLM tests when run from process
+        OP_TEST_CONTAINER_OPT = '-t'
+        OP_TEST_DEBUG = 1
+        OP_TEST_CONTAINER_TOOL = 'podman'
     }
 
     stages {
@@ -60,8 +65,8 @@ pipeline {
                     helper.loginRegistry()
 
                     // Prepare for multiplatform build
-                    String localRegistry = cloud.startLocalRegistry()
-                    cloud.prepareForDockerMultiplatformBuild([localRegistry],[cloud.getDockerIOMirrorRegistryConfig()], false)
+                    env.LOCAL_REGISTRY = cloud.startLocalRegistry(5001)
+                    cloud.prepareForDockerMultiplatformBuild([env.LOCAL_REGISTRY],[cloud.getDockerIOMirrorRegistryConfig()], false)
                     cloud.installSkopeo()
                 }
             }
@@ -77,46 +82,88 @@ pipeline {
             }
         }
 
-        stage('Prepare for PR') {
-            when {
-                expression { return helper.isRelease() }
+        // stage('Prepare for PR') {
+        //     when {
+        //         expression { return helper.isRelease() }
+        //     }
+        //     steps {
+        //         script {
+        //             githubscm.createBranch(helper.getPRBranch())
+        //         }
+        //     }
+        // }
+
+        // stage('Update version') {
+        //     when {
+        //         expression { return helper.getProjectVersion() }
+        //     }
+        //     steps {
+        //         script {
+        //             runPythonCommand("make bump-version new_version=${helper.getProjectVersion()}")
+
+        //             // Commit changes
+        //             githubscm.commitChanges(getCommitMessage(), {
+        //                 sh '''
+        //                     git add .
+        //                     git reset -- go.mod
+        //                     git reset -- go.sum
+        //                 '''
+        //             })
+        //             commitDone = true
+        //         }
+        //     }
+        // }
+
+        // stage('Test Operator') {
+        //     when {
+        //         expression {
+        //             return helper.shouldLaunchTests()
+        //         }
+        //     }
+        //     steps {
+        //         runPythonCommand('make test')
+        //     }
+        //     post {
+        //         unsuccessful {
+        //             script {
+        //                 util.archiveConsoleLog()
+        //             }
+        //         }
+        //     }
+        // }
+
+        // stage('Build Operator') {
+        //     steps {
+        //         script {
+        //             String tempBuiltImageTag = getTempBuiltImageTag()
+
+        //             // Generate the Dockerfile
+        //             runPythonCommand("make container-build BUILDER=${env.CONTAINER_ENGINE} IMG=${tempBuiltImageTag} ignore_tag=true build_options='--dry-run'")
+
+        //             // Build multiplatform from generated Dockerfile
+        //             dir('target/image') {
+        //                 cloud.dockerBuildMultiPlatformImages(tempBuiltImageTag, getImageBuildPlatforms(), true, 'Kogito Serverless Operator squashed image')
+        //             }
+        //         }
+        //     }
+        //     post {
+        //         unsuccessful {
+        //             script {
+        //                 util.archiveConsoleLog()
+        //             }
+        //         }
+        //     }
+        // }
+
+        stage('Run OLM tests') {
+            agent {
+                label "rhel8 && podman"
             }
             steps {
                 script {
-                    githubscm.createBranch(helper.getPRBranch())
+                    helper.checkoutRepo()
+                    sh 'make olm-tests'
                 }
-            }
-        }
-
-        stage('Update version') {
-            when {
-                expression { return helper.getProjectVersion() }
-            }
-            steps {
-                script {
-                    runPythonCommand("make bump-version new_version=${helper.getProjectVersion()}")
-
-                    // Commit changes
-                    githubscm.commitChanges(getCommitMessage(), {
-                        sh '''
-                            git add .
-                            git reset -- go.mod
-                            git reset -- go.sum
-                        '''
-                    })
-                    commitDone = true
-                }
-            }
-        }
-
-        stage('Test Operator') {
-            when {
-                expression {
-                    return helper.shouldLaunchTests()
-                }
-            }
-            steps {
-                runPythonCommand('make test')
             }
             post {
                 unsuccessful {
@@ -127,106 +174,83 @@ pipeline {
             }
         }
 
-        stage('Build Operator') {
-            steps {
-                script {
-                    String tempBuiltImageTag = getTempBuiltImageTag()
+        // stage('Push to registry') {
+        //     steps {
+        //         script {
+        //             // If not release, push built image
+        //             // So the user using the `operator.yaml on branch can use an existing image`
+        //             if (!helper.isRelease()) {
+        //                 pushFinalImage(getTempBuiltImageTag(), getBuiltImage())
+        //             }
 
-                    // Generate the Dockerfile
-                    runPythonCommand("make container-build BUILDER=${env.CONTAINER_ENGINE} IMG=${tempBuiltImageTag} ignore_tag=true build_options='--dry-run'")
+        //             // Tag with given parameter tag
+        //             pushFinalImage(getTempBuiltImageTag(), helper.getImageFullTag(env.OPERATOR_IMAGE_NAME))
 
-                    // Build multiplatform from generated Dockerfile
-                    dir('target/image') {
-                        cloud.dockerBuildMultiPlatformImages(tempBuiltImageTag, getImageBuildPlatforms(), true, 'Kogito Serverless Operator squashed image')
-                    }
-                }
-            }
-            post {
-                unsuccessful {
-                    script {
-                        util.archiveConsoleLog()
-                    }
-                }
-            }
-        }
+                    // try {
+                    //     pushFinalImage(getTempBuiltImageTag(), helper.getImageReducedTag(env.OPERATOR_IMAGE_NAME))
+                    // } catch (err) {
+                    //     echo 'Reduced tag cannot be applied'
+                    // }
 
-        stage('Push to registry') {
-            steps {
-                script {
-                    // If not release, push built image
-                    // So the user using the `operator.yaml on branch can use an existing image`
-                    if (!helper.isRelease()) {
-                        pushFinalImage(getTempBuiltImageTag(), getBuiltImage())
-                    }
+                    // // Tag with `latest` tag if asked for as parameter
+                    // if (helper.isDeployLatestTag()) {
+                    //     pushFinalImage(getTempBuiltImageTag(), helper.getImageFullTag(env.OPERATOR_IMAGE_NAME, defaultImageParamsPrefix, 'latest'))
+                    // }
 
-                    // Tag with given parameter tag
-                    pushFinalImage(getTempBuiltImageTag(), helper.getImageFullTag(env.OPERATOR_IMAGE_NAME))
+        //             // Store image deployment information
+        //             properties.add(helper.getImageRegistryProperty(), helper.getImageRegistry())
+        //             properties.add(helper.getImageNamespaceProperty(), helper.getImageNamespace())
+        //             properties.add(helper.getImageNamePrefixProperty(), helper.getImageNamePrefix())
+        //             properties.add(helper.getImageNameSuffixProperty(), helper.getImageNameSuffix())
+        //             properties.add(helper.getImageTagProperty(), helper.getImageTag())
+        //         }
+        //     }
+        // }
 
-                    try {
-                        pushFinalImage(getTempBuiltImageTag(), helper.getImageReducedTag(env.OPERATOR_IMAGE_NAME))
-                    } catch (err) {
-                        echo 'Reduced tag cannot be applied'
-                    }
+        // stage('Run e2e tests') {
+        //     when {
+        //         expression {
+        //             return helper.shouldLaunchTests()
+        //         }
+        //     }
+        //     parallel {
+        //         stage('Run tests on Minikube') {
+        //             steps {
+        //                 script {
+        //                     launchE2ETestsJob('minikube')
+        //                 }
+        //             }
+        //         }
+        //         stage('Run tests on Openshift') {
+        //             steps {
+        //                 script {
+        //                     launchE2ETestsJob('openshift')
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
-                    // Tag with `latest` tag if asked for as parameter
-                    if (helper.isDeployLatestTag()) {
-                        pushFinalImage(getTempBuiltImageTag(), helper.getImageFullTag(env.OPERATOR_IMAGE_NAME, defaultImageParamsPrefix, 'latest'))
-                    }
+        // stage('Create PR') {
+        //     when {
+        //         expression { return commitDone }
+        //     }
+        //     steps {
+        //         script {
+        //             githubscm.pushObject('origin', helper.getPRBranch(), helper.getGitAuthorCredsID())
 
-                    // Store image deployment information
-                    properties.add(helper.getImageRegistryProperty(), helper.getImageRegistry())
-                    properties.add(helper.getImageNamespaceProperty(), helper.getImageNamespace())
-                    properties.add(helper.getImageNamePrefixProperty(), helper.getImageNamePrefix())
-                    properties.add(helper.getImageNameSuffixProperty(), helper.getImageNameSuffix())
-                    properties.add(helper.getImageTagProperty(), helper.getImageTag())
-                }
-            }
-        }
+        //             def prMsg = getCommitMessage()
+        //             def prBody = "Generated by build ${BUILD_TAG}: ${BUILD_URL}.\nPlease do not merge, it shoud be merged automatically."
+        //             String prLink = githubscm.createPR(prMsg, prBody, helper.getBuildBranch(), helper.getGitAuthorCredsID())
+        //             properties.add("${helper.getRepoName()}.pr.link", prLink)
 
-        stage('Run e2e tests') {
-            when {
-                expression {
-                    return helper.shouldLaunchTests()
-                }
-            }
-            parallel {
-                stage('Run tests on Minikube') {
-                    steps {
-                        script {
-                            launchE2ETestsJob('minikube')
-                        }
-                    }
-                }
-                stage('Run tests on Openshift') {
-                    steps {
-                        script {
-                            launchE2ETestsJob('openshift')
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Create PR') {
-            when {
-                expression { return commitDone }
-            }
-            steps {
-                script {
-                    githubscm.pushObject('origin', helper.getPRBranch(), helper.getGitAuthorCredsID())
-
-                    def prMsg = getCommitMessage()
-                    def prBody = "Generated by build ${BUILD_TAG}: ${BUILD_URL}.\nPlease do not merge, it shoud be merged automatically."
-                    String prLink = githubscm.createPR(prMsg, prBody, helper.getBuildBranch(), helper.getGitAuthorCredsID())
-                    properties.add("${helper.getRepoName()}.pr.link", prLink)
-
-                    properties.add("${helper.getRepoName()}.pr.source.uri", "https://github.com/${helper.getGitAuthorCredsID()}/${helper.getRepoName()}")
-                    properties.add("${helper.getRepoName()}.pr.source.ref", helper.getPRBranch())
-                    properties.add("${helper.getRepoName()}.pr.target.uri", "https://github.com/${helper.getGitAuthor()}/${helper.getRepoName()}")
-                    properties.add("${helper.getRepoName()}.pr.target.ref", helper.getBuildBranch())
-                }
-            }
-        }
+        //             properties.add("${helper.getRepoName()}.pr.source.uri", "https://github.com/${helper.getGitAuthorCredsID()}/${helper.getRepoName()}")
+        //             properties.add("${helper.getRepoName()}.pr.source.ref", helper.getPRBranch())
+        //             properties.add("${helper.getRepoName()}.pr.target.uri", "https://github.com/${helper.getGitAuthor()}/${helper.getRepoName()}")
+        //             properties.add("${helper.getRepoName()}.pr.target.ref", helper.getBuildBranch())
+        //         }
+        //     }
+        // }
     }
     post {
         always {
@@ -271,7 +295,7 @@ String getBuiltImage() {
 }
 
 String getTempBuiltImageTag() {
-    return "localhost:5000/kogito-serverless-operator:${getOperatorVersion()}"
+    return "${env.LOCAL_REGISTRY}/kogito-serverless-operator:${getOperatorVersion()}"
 }
 
 def runPythonCommand(String cmd, boolean stdout = false) {
