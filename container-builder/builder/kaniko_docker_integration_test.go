@@ -39,7 +39,7 @@ func (suite *KanikoDockerTestSuite) TestKanikoBuild() {
 	//registry, err, repos := checkEmptyDockerRegistry(suite)
 	mydir, err := os.Getwd()
 	if err != nil {
-		log.Error(err)
+		log.Error(err, "error getting working directory.")
 	}
 	dockefileDir := mydir + "/../examples/dockerfiles"
 	assert.Nil(suite.T(), suite.Docker.PullImage("gcr.io/kaniko-project/executor:latest"), "Pull image failed")
@@ -74,7 +74,7 @@ func checkEmptyDockerRegistry(suite *KanikoDockerTestSuite) (common.RegistryCont
 	assert.Truef(suite.T(), suite.RegistryID != "", "Registry not started")
 	registry, err := common.GetRegistryContainer()
 	if err != nil {
-		log.Error("registry not found")
+		log.Error(err, "registry not found")
 	}
 	repos, _ := registry.GetRepositories()
 	assert.True(suite.T(), len(repos) == 0)
