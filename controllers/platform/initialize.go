@@ -26,6 +26,7 @@ import (
 
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/client"
 
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
@@ -76,13 +77,13 @@ func (action *initializeAction) Handle(ctx context.Context, platform *operatorap
 		//If KanikoCache is enabled
 		if IsKanikoCacheEnabled(platform) {
 			// Create the persistent volume claim used by the Kaniko cache
-			action.Logger.Info("Create persistent volume claim")
+			log.Info("Create persistent volume claim")
 			err := createPersistentVolumeClaim(ctx, action.client, platform)
 			if err != nil {
 				return nil, err
 			}
 			// Create the Kaniko warmer pod that caches the base image into the SonataFlow builder volume
-			action.Logger.Info("Create Kaniko cache warmer pod")
+			log.Info("Create Kaniko cache warmer pod")
 			err = createKanikoCacheWarmerPod(ctx, action.client, platform)
 			if err != nil {
 				return nil, err

@@ -111,7 +111,6 @@ func (r *SonataFlowPlatformReconciler) Reconcile(ctx context.Context, req reconc
 	for _, a := range actions {
 		cli, _ := clientr.FromCtrlClientSchemeAndConfig(r.Client, r.Scheme, r.Config)
 		a.InjectClient(cli)
-		a.InjectLogger(targetLog)
 
 		if a.CanHandle(target) {
 			targetLog.Info("Invoking action", "Name", a.Name())

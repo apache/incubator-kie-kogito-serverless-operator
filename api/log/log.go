@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2023 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
 	"k8s.io/klog/v2"
 
-	"github.com/kiegroup/kogito-serverless-operator/container-builder/util"
+	"github.com/kiegroup/kogito-serverless-operator/api"
 )
 
 // Log --.
@@ -31,13 +30,9 @@ var Log Logger
 
 func init() {
 	Log = Logger{
-		delegate: klog.NewKlogr().WithName(util.ComponentName),
+		delegate: klog.NewKlogr().WithName(api.ComponentName),
 	}
-}
-
-// Injectable identifies objects that can receive a Logger.
-type Injectable interface {
-	InjectLogger(Logger)
+	klog.InitFlags(nil)
 }
 
 // Logger --.
@@ -95,18 +90,17 @@ func (l Logger) WithValues(keysAndValues ...interface{}) Logger {
 }
 
 // AsLogger --.
-func (l Logger) AsLogger() logr.Logger {
+func (l Logger) AsLogger() klog.Logger {
 	return l.delegate
 }
 
 // SetLogger --.
-func (l Logger) SetLogger(logger logr.Logger) logr.Logger {
-	return l.delegate.WithSink(logger.GetSink())
+func (l Logger) SetLogger(logger klog.Logger) {
+	l.delegate.WithSink(logger.GetSink())
 }
 
-func (l Logger) FromContext(ctx context.Context) Logger {
-	logger, _ := logr.FromContext(ctx)
-	return Logger{logger}
+func (l Logger) FromContext(ctx context.Context) klog.Logger {
+	return klog.FromContext(ctx)
 }
 
 // WithName --.
@@ -120,10 +114,10 @@ func WithValues(keysAndValues ...interface{}) Logger {
 }
 
 func FromContext(ctx context.Context) Logger {
-	return Log.FromContext(ctx)
+	return Logger{delegate: Log.FromContext(ctx)}
 }
 
-func SetLogger(logger logr.Logger) {
+func SetLogger(logger klog.Logger) {
 	Log.SetLogger(logger)
 }
 

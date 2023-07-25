@@ -19,8 +19,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	coreapi "github.com/kiegroup/kogito-serverless-operator/api"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/api"
-	"github.com/kiegroup/kogito-serverless-operator/container-builder/util"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/util/log"
 )
 
@@ -60,7 +60,7 @@ func (k kanikoSchedulerHandler) CreateScheduler(info ContainerBuilderInfo, build
 	sched := &kanikoScheduler{
 		&scheduler{
 			builder: builder{
-				L:       log.WithName(util.ComponentName),
+				L:       log.WithName(coreapi.ComponentName),
 				Context: buildCtx,
 			},
 			Resources: make([]resource, 0),

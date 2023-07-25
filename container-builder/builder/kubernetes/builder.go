@@ -20,9 +20,9 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	coreapi "github.com/kiegroup/kogito-serverless-operator/api"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/api"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/client"
-	"github.com/kiegroup/kogito-serverless-operator/container-builder/util"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/util/log"
 )
 
@@ -94,7 +94,7 @@ type schedulerHandler interface {
 
 func FromBuild(build *api.ContainerBuild) ContainerBuilder {
 	return &builder{
-		L: log.WithName(util.ComponentName),
+		L: log.WithName(coreapi.ComponentName),
 		Context: containerBuildContext{
 			ContainerBuild: build,
 			C:              context.TODO(),

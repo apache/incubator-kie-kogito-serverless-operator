@@ -17,6 +17,7 @@ package platform
 import (
 	"context"
 
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
@@ -42,7 +43,7 @@ func (action *monitorAction) Handle(ctx context.Context, platform *operatorapi.S
 	// Just track the version of the operator in the platform resource
 	if platform.Status.Version != metadata.SpecVersion {
 		platform.Status.Version = metadata.SpecVersion
-		action.Logger.Info("Platform version updated", "version", platform.Status.Version)
+		log.Info("Platform version updated", "version", platform.Status.Version)
 	}
 
 	// Refresh applied configuration

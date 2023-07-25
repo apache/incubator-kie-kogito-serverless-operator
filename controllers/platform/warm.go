@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
@@ -65,13 +66,13 @@ func (action *warmAction) Handle(ctx context.Context, platform *operatorapi.Sona
 
 	switch pod.Status.Phase {
 	case corev1.PodSucceeded:
-		action.Logger.Info("Kaniko cache successfully warmed up")
+		log.Info("Kaniko cache successfully warmed up")
 		platform.Status.Phase = operatorapi.PlatformPhaseCreating
 		return platform, nil
 	case corev1.PodFailed:
 		return nil, errors.New("failed to warm up Kaniko cache")
 	default:
-		action.Logger.Info("Waiting for Kaniko cache to warm up...")
+		log.Info("Waiting for Kaniko cache to warm up...")
 		// Requeue
 		return nil, nil
 	}

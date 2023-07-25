@@ -23,7 +23,7 @@ import (
 	"github.com/go-logr/logr"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kiegroup/kogito-serverless-operator/container-builder/util"
+	"github.com/kiegroup/kogito-serverless-operator/api"
 )
 
 // Log --.
@@ -31,7 +31,7 @@ var Log Logger
 
 func init() {
 	Log = Logger{
-		delegate: logf.Log.WithName(util.ComponentName),
+		delegate: logf.Log.WithName(api.ComponentName),
 	}
 }
 
