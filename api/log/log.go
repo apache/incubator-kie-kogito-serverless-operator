@@ -42,7 +42,7 @@ type Injectable interface {
 
 // Logger --.
 type Logger struct {
-	delegate logr.Logger
+	delegate klog.Logger
 }
 
 // Debugf --.
