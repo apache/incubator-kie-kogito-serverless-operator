@@ -27,13 +27,13 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
 	"github.com/kiegroup/kogito-serverless-operator/controllers/workflowdef"
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 
 	"github.com/kiegroup/kogito-serverless-operator/controllers/platform"
 
-	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -42,7 +42,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kiegroup/kogito-serverless-operator/api"
-
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	kubeutil "github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
 )
@@ -76,7 +75,7 @@ func (d developmentProfile) GetProfile() metadata.ProfileType {
 	return metadata.DevProfile
 }
 
-func newDevProfileReconciler(client client.Client, config *rest.Config, logger *logr.Logger) ProfileReconciler {
+func newDevProfileReconciler(client client.Client, config *rest.Config, logger *log.Logger) ProfileReconciler {
 	support := &stateSupport{
 		logger: logger,
 		client: client,

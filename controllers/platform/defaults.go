@@ -19,8 +19,8 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/client"
-	"github.com/kiegroup/kogito-serverless-operator/container-builder/util/log"
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"

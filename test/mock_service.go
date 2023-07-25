@@ -17,7 +17,6 @@ package test
 import (
 	"context"
 
-	"github.com/RHsyseng/operator-utils/pkg/logs"
 	oappsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
 	consolev1 "github.com/openshift/api/console/v1"
@@ -31,10 +30,11 @@ import (
 	clientv1 "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
-var logger = logs.GetLogger("kieapp.test")
+var logger = log.WithName("kieapp.test")
 
 type MockPlatformService struct {
 	Client          clientv1.Client

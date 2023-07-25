@@ -35,14 +35,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	clientruntime "sigs.k8s.io/controller-runtime/pkg/client"
-	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kiegroup/kogito-serverless-operator/api"
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	"github.com/kiegroup/kogito-serverless-operator/test"
 )
 
 func Test_OverrideStartupProbe(t *testing.T) {
-	logger := ctrllog.FromContext(context.TODO())
+	logger := log.FromContext(context.TODO())
 	workflow := test.GetBaseSonataFlow(t.Name())
 
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
@@ -69,7 +69,7 @@ func Test_OverrideStartupProbe(t *testing.T) {
 }
 
 func Test_recoverFromFailureNoDeployment(t *testing.T) {
-	logger := ctrllog.FromContext(context.TODO())
+	logger := log.FromContext(context.TODO())
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflowID := clientruntime.ObjectKeyFromObject(workflow)
 
@@ -114,7 +114,7 @@ func Test_recoverFromFailureNoDeployment(t *testing.T) {
 }
 
 func Test_newDevProfile(t *testing.T) {
-	logger := ctrllog.FromContext(context.TODO())
+	logger := log.FromContext(context.TODO())
 	workflow := test.GetBaseSonataFlow(t.Name())
 
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
@@ -191,7 +191,7 @@ func Test_newDevProfile(t *testing.T) {
 }
 
 func Test_devProfileImageDefaultsNoPlatform(t *testing.T) {
-	logger := ctrllog.FromContext(context.TODO())
+	logger := log.FromContext(context.TODO())
 	workflow := test.GetBaseSonataFlowWithDevProfile(t.Name())
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
 	config := &rest.Config{}
@@ -207,7 +207,7 @@ func Test_devProfileImageDefaultsNoPlatform(t *testing.T) {
 }
 
 func Test_devProfileWithImageSnapshotOverrideWithPlatform(t *testing.T) {
-	logger := ctrllog.FromContext(context.TODO())
+	logger := log.FromContext(context.TODO())
 	workflow := test.GetBaseSonataFlowWithDevProfile(t.Name())
 
 	platform := test.GetBasePlatformWithDevBaseImageInReadyPhase(workflow.Namespace)
@@ -226,7 +226,7 @@ func Test_devProfileWithImageSnapshotOverrideWithPlatform(t *testing.T) {
 }
 
 func Test_devProfileWithWPlatformWithoutDevBaseImageAndWithBaseImage(t *testing.T) {
-	logger := ctrllog.FromContext(context.TODO())
+	logger := log.FromContext(context.TODO())
 	workflow := test.GetBaseSonataFlowWithDevProfile(t.Name())
 
 	platform := test.GetBasePlatformWithBaseImageInReadyPhase(workflow.Namespace)
@@ -245,7 +245,7 @@ func Test_devProfileWithWPlatformWithoutDevBaseImageAndWithBaseImage(t *testing.
 }
 
 func Test_devProfileWithPlatformWithoutDevBaseImageAndWithoutBaseImage(t *testing.T) {
-	logger := ctrllog.FromContext(context.TODO())
+	logger := log.FromContext(context.TODO())
 	workflow := test.GetBaseSonataFlowWithDevProfile(t.Name())
 
 	platform := test.GetBasePlatformInReadyPhase(workflow.Namespace)
@@ -264,7 +264,7 @@ func Test_devProfileWithPlatformWithoutDevBaseImageAndWithoutBaseImage(t *testin
 }
 
 func Test_newDevProfileWithExternalConfigMaps(t *testing.T) {
-	logger := ctrllog.FromContext(context.TODO())
+	logger := log.FromContext(context.TODO())
 	configmapName := "mycamel-configmap"
 	workflow := test.GetBaseSonataFlowWithDevProfile(t.Name())
 	workflow.Spec.Resources.ConfigMaps = append(workflow.Spec.Resources.ConfigMaps,

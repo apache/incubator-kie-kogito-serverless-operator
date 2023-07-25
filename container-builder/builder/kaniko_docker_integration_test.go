@@ -22,11 +22,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/common"
+	"github.com/kiegroup/kogito-serverless-operator/container-builder/util/log"
 )
 
 func TestKanikoTestSuite(t *testing.T) {
@@ -39,7 +39,7 @@ func (suite *KanikoDockerTestSuite) TestKanikoBuild() {
 	//registry, err, repos := checkEmptyDockerRegistry(suite)
 	mydir, err := os.Getwd()
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 	}
 	dockefileDir := mydir + "/../examples/dockerfiles"
 	assert.Nil(suite.T(), suite.Docker.PullImage("gcr.io/kaniko-project/executor:latest"), "Pull image failed")
@@ -52,11 +52,11 @@ func (suite *KanikoDockerTestSuite) TestKanikoBuild() {
 		RegistryFinalImageName: imageName,
 		ReadBuildOutput:        false,
 	}
-	logrus.Infof("Start Kaniko build")
+	log.Infof("Start Kaniko build")
 	start := time.Now()
 	imageID, error := KanikoBuild(suite.Docker.Connection, config)
 	timeElapsed := time.Since(start)
-	logrus.Infof("The Kaniko build took %s", timeElapsed)
+	log.Infof("The Kaniko build took %s", timeElapsed)
 	assert.Nil(suite.T(), error, "ContainerBuild failed")
 	assert.NotNil(suite.T(), imageID, error, "ContainerBuild failed")
 	//@TODO investigate when the code will be in the mono repo
@@ -74,7 +74,7 @@ func checkEmptyDockerRegistry(suite *KanikoDockerTestSuite) (common.RegistryCont
 	assert.Truef(suite.T(), suite.RegistryID != "", "Registry not started")
 	registry, err := common.GetRegistryContainer()
 	if err != nil {
-		logrus.Error("registry not found")
+		log.Error("registry not found")
 	}
 	repos, _ := registry.GetRepositories()
 	assert.True(suite.T(), len(repos) == 0)

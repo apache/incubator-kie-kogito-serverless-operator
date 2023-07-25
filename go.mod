@@ -12,7 +12,7 @@ replace (
 // Direct dependencies (please keep organized, no indirects)
 require (
 	github.com/RHsyseng/operator-utils v1.4.12
-	github.com/go-logr/logr v1.2.4
+	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/kiegroup/kogito-serverless-operator/api v0.0.0
 	github.com/kiegroup/kogito-serverless-operator/container-builder v0.0.0
 	github.com/kiegroup/kogito-serverless-operator/workflowproj v0.0.0
@@ -81,7 +81,6 @@ require (
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.0 // indirect
 	github.com/senseyeio/duration v0.0.0-20180430131211-7c2a214ada46 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
@@ -104,7 +103,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.27.2 // indirect
 	k8s.io/component-base v0.27.2 // indirect
-	k8s.io/klog/v2 v2.90.1 // indirect
+	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
 	k8s.io/utils v0.0.0-20230313181309-38a27ef9d749 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect

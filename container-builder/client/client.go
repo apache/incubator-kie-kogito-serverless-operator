@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 
 	user "github.com/mitchellh/go-homedir"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -30,6 +29,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/kiegroup/kogito-serverless-operator/container-builder/util/log"
 )
 
 const (
@@ -161,7 +162,7 @@ func initialize(kubeconfig string) {
 		if kc, err := shouldUseContainerMode(); kc && err == nil {
 			return
 		} else if err != nil {
-			logrus.Errorf("could not determine if running in a container: %v", err)
+			log.Errorf(err, "could not determine if running in a container: %v", err)
 		}
 		var err error
 		kubeconfig, err = getDefaultKubeConfigFile()

@@ -18,11 +18,11 @@
 package cleaner
 
 import (
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/common"
+	"github.com/kiegroup/kogito-serverless-operator/container-builder/util/log"
 )
 
 type DockerTestSuite struct {
@@ -52,7 +52,7 @@ func (suite *DockerTestSuite) TearDownSuite() {
 	}
 	purged, err := suite.Docker.PurgeContainer("", common.REGISTRY_IMG)
 	if err != nil {
-		logrus.Errorf("Error during purged container in TearDown Suite %t", err)
+		log.Errorf(err, "Error during purged container in TearDown Suite.")
 	}
-	logrus.Infof("Purged containers %t", purged)
+	log.Infof("Purged containers %t", purged)
 }

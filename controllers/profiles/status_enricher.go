@@ -19,15 +19,15 @@ import (
 
 	"k8s.io/client-go/rest"
 
-	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
 // newStatusEnricher see defaultObjectEnsurer
-func newStatusEnricher(client client.Client, logger *logr.Logger, enricher statusEnricherFn) *statusEnricher {
+func newStatusEnricher(client client.Client, logger *log.Logger, enricher statusEnricherFn) *statusEnricher {
 	return &statusEnricher{
 		client:   client,
 		logger:   logger,
@@ -43,7 +43,7 @@ type statusEnricherFn func(ctx context.Context, client client.Client, workflow *
 type statusEnricher struct {
 	client   client.Client
 	config   *rest.Config
-	logger   *logr.Logger
+	logger   *log.Logger
 	enricher statusEnricherFn
 }
 

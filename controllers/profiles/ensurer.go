@@ -17,7 +17,8 @@ package profiles
 import (
 	"context"
 
-	"github.com/go-logr/logr"
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -29,7 +30,7 @@ type ObjectEnsurer interface {
 }
 
 // newDefaultObjectEnsurer see defaultObjectEnsurer
-func newDefaultObjectEnsurer(client client.Client, logger *logr.Logger, creator objectCreator) ObjectEnsurer {
+func newDefaultObjectEnsurer(client client.Client, logger *log.Logger, creator objectCreator) ObjectEnsurer {
 	return &defaultObjectEnsurer{
 		client:  client,
 		logger:  logger,
@@ -40,7 +41,7 @@ func newDefaultObjectEnsurer(client client.Client, logger *logr.Logger, creator 
 // defaultObjectEnsurer provides the engine for a ReconciliationState that needs to create or update a given Kubernetes object during the reconciliation cycle.
 type defaultObjectEnsurer struct {
 	client  client.Client
-	logger  *logr.Logger
+	logger  *log.Logger
 	creator objectCreator
 }
 

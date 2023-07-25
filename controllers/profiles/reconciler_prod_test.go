@@ -24,16 +24,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/apps/v1"
 	clientruntime "sigs.k8s.io/controller-runtime/pkg/client"
-	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kiegroup/kogito-serverless-operator/api"
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-
 	"github.com/kiegroup/kogito-serverless-operator/test"
 )
 
 func Test_reconcilerProdBuildConditions(t *testing.T) {
-	logger := ctrllog.FromContext(context.TODO())
+	logger := log.FromContext(context.TODO())
 	workflow := test.GetBaseSonataFlow(t.Name())
 	platform := test.GetBasePlatformInReadyPhase(t.Name())
 	client := test.NewKogitoClientBuilder().
@@ -84,7 +83,7 @@ func Test_reconcilerProdBuildConditions(t *testing.T) {
 }
 
 func Test_deployWorkflowReconciliationHandler_handleObjects(t *testing.T) {
-	logger := ctrllog.FromContext(context.TODO())
+	logger := log.FromContext(context.TODO())
 	workflow := test.GetBaseSonataFlow(t.Name())
 	platform := test.GetBasePlatformInReadyPhase(t.Name())
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow, platform).WithStatusSubresource(workflow, platform).Build()
@@ -128,7 +127,7 @@ func Test_deployWorkflowReconciliationHandler_handleObjects(t *testing.T) {
 }
 
 func Test_GenerationAnnotationCheck(t *testing.T) {
-	logger := ctrllog.FromContext(context.TODO())
+	logger := log.FromContext(context.TODO())
 	// we load a workflow with metadata.generation to 0
 	workflow := test.GetBaseSonataFlow(t.Name())
 	platform := test.GetBasePlatformInReadyPhase(t.Name())

@@ -20,13 +20,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
-	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	clientr "github.com/kiegroup/kogito-serverless-operator/container-builder/client"
 	"github.com/kiegroup/kogito-serverless-operator/controllers/platform"
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/api"
 	builder "github.com/kiegroup/kogito-serverless-operator/container-builder/builder/kubernetes"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/client"
@@ -122,7 +122,7 @@ func (c *containerBuilderManager) reconcileBuild(build *api.ContainerBuild, cli 
 }
 
 func (c *containerBuilderManager) buildImage(kb internalBuilder) (*api.ContainerBuild, error) {
-	log := ctrllog.FromContext(c.ctx)
+	log := log.FromContext(c.ctx)
 	cli, err := client.FromCtrlClientSchemeAndConfig(c.client, c.client.Scheme(), c.restConfig)
 	plat := api.PlatformContainerBuild{
 		ObjectReference: api.ObjectReference{
@@ -152,7 +152,7 @@ func (c *containerBuilderManager) buildImage(kb internalBuilder) (*api.Container
 }
 
 func (c *containerBuilderManager) scheduleBuild(kb internalBuilder) (*api.ContainerBuild, error) {
-	log := ctrllog.FromContext(c.ctx)
+	log := log.FromContext(c.ctx)
 	cli, err := client.FromCtrlClientSchemeAndConfig(c.client, c.client.Scheme(), c.restConfig)
 	plat := api.PlatformContainerBuild{
 		ObjectReference: api.ObjectReference{

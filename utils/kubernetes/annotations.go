@@ -17,13 +17,13 @@ package kubernetes
 import (
 	"context"
 
-	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/go-logr/logr"
-	client "sigs.k8s.io/controller-runtime/pkg/client"
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
+	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
-func getWorkflow(namespace string, name string, c client.Client, ctx context.Context, logger *logr.Logger) *operatorapi.SonataFlow {
+func getWorkflow(namespace string, name string, c client.Client, ctx context.Context, logger *log.Logger) *operatorapi.SonataFlow {
 	serverlessWorkflowType := &operatorapi.SonataFlow{}
 	serverlessWorkflowType.Namespace = namespace
 	serverlessWorkflowType.Name = name
@@ -34,7 +34,7 @@ func getWorkflow(namespace string, name string, c client.Client, ctx context.Con
 	return serverlessWorkflow
 }
 
-func GetLastGeneration(namespace string, name string, c client.Client, ctx context.Context, logger *logr.Logger) int64 {
+func GetLastGeneration(namespace string, name string, c client.Client, ctx context.Context, logger *log.Logger) int64 {
 	workflow := getWorkflow(namespace, name, c, ctx, logger)
 	return workflow.Generation
 }

@@ -28,7 +28,6 @@ import (
 
 	"github.com/kiegroup/kogito-serverless-operator/controllers/workflowdef"
 
-	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -38,6 +37,7 @@ import (
 
 	"github.com/kiegroup/kogito-serverless-operator/api"
 
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/controllers/builder"
 	"github.com/kiegroup/kogito-serverless-operator/controllers/platform"
@@ -74,7 +74,7 @@ func newProdObjectEnsurers(support *stateSupport) *prodObjectEnsurers {
 	}
 }
 
-func newProdProfileReconciler(client client.Client, config *rest.Config, logger *logr.Logger) ProfileReconciler {
+func newProdProfileReconciler(client client.Client, config *rest.Config, logger *log.Logger) ProfileReconciler {
 	support := &stateSupport{
 		logger: logger,
 		client: client,

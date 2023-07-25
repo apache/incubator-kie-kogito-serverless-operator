@@ -26,9 +26,9 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
-	"github.com/sirupsen/logrus"
 
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/util"
+	"github.com/kiegroup/kogito-serverless-operator/container-builder/util/log"
 )
 
 type Docker struct {
@@ -51,7 +51,7 @@ func (d Docker) GetClientRemote(host string, cacertPath string, certPath string,
 func (d Docker) GetImages(args types.ImageListOptions) ([]types.ImageSummary, error) {
 	images, err := d.Connection.ImageList(context.Background(), args)
 	if err != nil {
-		logrus.Errorf("%s \n", err)
+		log.Errorf(err, "%s \n", err)
 		return nil, err
 	}
 	return images, nil
@@ -61,14 +61,14 @@ func (d Docker) GetImages(args types.ImageListOptions) ([]types.ImageSummary, er
 func (d Docker) RemoveImagesUntagged() (bool, error) {
 	images, err := d.GetImages(types.ImageListOptions{All: true})
 	if err != nil {
-		logrus.Errorf("error during Remove Images Untagged %s", err)
+		log.Errorf(err, "error during Remove Images Untagged %s", err)
 		return false, err
 	}
 	for _, image := range images {
 		if image.RepoTags != nil && image.RepoTags[0] == "<none>:<none>" && image.RepoDigests[0] == "<none>@<none>" {
 			item, err := d.Connection.ImageRemove(context.Background(), image.ID, types.ImageRemoveOptions{PruneChildren: true, Force: true})
 			if err != nil {
-				logrus.Errorf("%s %s\n", err, item)
+				log.Errorf(err, "%s %s\n", err, item)
 				return false, err
 			}
 		}
@@ -82,13 +82,13 @@ func (d Docker) RemoveDanglingImages() (bool, error) {
 	filters.Add("dangling", "true")
 	images, err := d.GetImages(types.ImageListOptions{Filters: filters})
 	if err != nil {
-		logrus.Errorf("%s \n", err)
+		log.Errorf(err, "%s \n", err)
 		return false, err
 	}
 	for _, image := range images {
 		item, err := d.Connection.ImageRemove(context.Background(), image.ID, types.ImageRemoveOptions{PruneChildren: true, Force: true})
 		if err != nil {
-			logrus.Errorf("%s %s\n", err, item)
+			log.Errorf(err, "%s %s\n", err, item)
 			return false, err
 		}
 	}
@@ -101,10 +101,10 @@ func (d Docker) PurgeImages() (bool, error) {
 	filters.Add("dangling", "true")
 	report, err := d.Connection.ImagesPrune(context.Background(), filters)
 	if err != nil {
-		logrus.Errorf("%s\n", err)
+		log.Errorf(err, "%s\n", err)
 		return false, err
 	} else {
-		logrus.Info(report.ImagesDeleted)
+		log.Info("error during PruneImages", report.ImagesDeleted)
 		return true, nil
 	}
 }
@@ -112,14 +112,14 @@ func (d Docker) PurgeImages() (bool, error) {
 func (d Docker) PurgeContainer(id string, image string) (bool, error) {
 	containers, err := d.Connection.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	if err != nil {
-		logrus.Errorf("%s\n", err)
+		log.Errorf(err, "%s\n", err)
 		return false, err
 	} else {
 		for _, container := range containers {
 			if container.Image == image || container.ID == id {
 				d.ContainerKill(container.ID)
 				d.ContainerRemove(container.ID)
-				logrus.Infof("Purged container with ID %s", container.ID)
+				log.Infof("Purged container with ID %s", container.ID)
 			}
 		}
 		return true, nil
@@ -138,13 +138,13 @@ func (d Docker) RemoveImagesFiltered(repo string, tag string) (bool, error) {
 
 	images, err := d.GetImages(types.ImageListOptions{Filters: filters})
 	if err != nil {
-		logrus.Errorf("%s\n", err)
+		log.Errorf(err, "%s\n", err)
 		return false, err
 	}
 	for _, image := range images {
 		item, err := d.Connection.ImageRemove(context.Background(), image.ID, types.ImageRemoveOptions{PruneChildren: true, Force: true})
 		if err != nil {
-			logrus.Errorf("%s %s\n", err, item)
+			log.Errorf(err, "%s %s\n", err, item)
 			return false, err
 		}
 	}
@@ -154,7 +154,7 @@ func (d Docker) RemoveImagesFiltered(repo string, tag string) (bool, error) {
 func (d Docker) TagImage(imageSource string, imageTag string) error {
 	err := d.Connection.ImageTag(context.Background(), imageSource, imageTag)
 	if err != nil {
-		logrus.Errorf("%s %s\n", err, "Error during tag image")
+		log.Errorf(err, "%s %s\n", err, "Error during tag image")
 	}
 	return err
 }
@@ -171,9 +171,9 @@ func (d Docker) PushImage(image string, url string, username string, password st
 	opts := types.ImagePushOptions{RegistryAuth: authConfigEncoded}
 	resp, err := d.Connection.ImagePush(context.Background(), image, opts)
 	if err != nil {
-		logrus.Errorf("%s %s\n", err, "Error during push image")
+		log.Errorf(err, "%s %s\n", err, "Error during push image")
 		body, _ := ioutil.ReadAll(resp)
-		logrus.Error(string(body))
+		log.Error(err, string(body))
 	}
 	return err
 }
@@ -181,7 +181,7 @@ func (d Docker) PushImage(image string, url string, username string, password st
 func (d Docker) PullImage(image string) error {
 	_, err := d.Connection.ImagePull(context.Background(), image, types.ImagePullOptions{})
 	if err != nil {
-		logrus.Errorf("%s %s\n", err, "Error during pull image")
+		log.Errorf(err, "%s %s\n", err, "Error during pull image")
 	}
 	return err
 }
@@ -189,7 +189,7 @@ func (d Docker) PullImage(image string) error {
 func (d Docker) GetContainerID(imageName string) (string, error) {
 	containers, err := d.Connection.ContainerList(context.Background(), types.ContainerListOptions{})
 	if err != nil {
-		logrus.Errorf("%s %s\n", err, "Error during container list")
+		log.Errorf(err, "%s %s\n", err, "Error during container list")
 	}
 
 	for _, container := range containers {
@@ -206,7 +206,7 @@ func (d Docker) ContainerStop(containerID string) error {
 	}
 	err := d.Connection.ContainerStop(context.Background(), containerID, stopOptions)
 	if err != nil {
-		logrus.Errorf("%s %s\n", err, "Error during container stop")
+		log.Errorf(err, "%s %s\n", err, "Error during container stop")
 	}
 	return err
 }
@@ -214,7 +214,7 @@ func (d Docker) ContainerStop(containerID string) error {
 func (d Docker) ContainerKill(containerID string) error {
 	err := d.Connection.ContainerKill(context.Background(), containerID, "SIGKILL")
 	if err != nil {
-		logrus.Errorf("%s %s\n", err, "Error during container kill")
+		log.Errorf(err, "%s %s\n", err, "Error during container kill")
 	}
 	return err
 }
@@ -222,7 +222,7 @@ func (d Docker) ContainerKill(containerID string) error {
 func (d Docker) ContainerRemove(containerID string) error {
 	err := d.Connection.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{})
 	if err != nil {
-		logrus.Errorf("%s %s\n", err, "Error during container remove")
+		log.Errorf(err, "%s %s\n", err, "Error during container remove")
 	}
 	return err
 }

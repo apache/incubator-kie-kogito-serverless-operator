@@ -22,10 +22,10 @@ import (
 
 	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
 
-	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
@@ -64,7 +64,7 @@ type ProfileReconciler interface {
 
 // stateSupport is the shared structure with common accessors used throughout the whole reconciliation profiles
 type stateSupport struct {
-	logger *logr.Logger
+	logger *log.Logger
 	client client.Client
 }
 
@@ -125,7 +125,7 @@ type ReconciliationState interface {
 }
 
 // newReconciliationStateMachine builder for the reconciliationStateMachine
-func newReconciliationStateMachine(logger *logr.Logger, states ...ReconciliationState) *reconciliationStateMachine {
+func newReconciliationStateMachine(logger *log.Logger, states ...ReconciliationState) *reconciliationStateMachine {
 	return &reconciliationStateMachine{
 		states: states,
 		logger: logger,
@@ -138,7 +138,7 @@ func newReconciliationStateMachine(logger *logr.Logger, states ...Reconciliation
 // TODO: implement state transition, so based on a given condition we do the status update which actively transition the object state
 type reconciliationStateMachine struct {
 	states []ReconciliationState
-	logger *logr.Logger
+	logger *log.Logger
 }
 
 func (r *reconciliationStateMachine) do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
@@ -159,6 +159,6 @@ func (r *reconciliationStateMachine) do(ctx context.Context, workflow *operatora
 }
 
 // NewReconciler creates a new ProfileReconciler based on the given workflow and context.
-func NewReconciler(client client.Client, config *rest.Config, logger *logr.Logger, workflow *operatorapi.SonataFlow) ProfileReconciler {
+func NewReconciler(client client.Client, config *rest.Config, logger *log.Logger, workflow *operatorapi.SonataFlow) ProfileReconciler {
 	return profileBuilder(workflow)(client, config, logger)
 }

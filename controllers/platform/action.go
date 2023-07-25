@@ -17,8 +17,8 @@ package platform
 import (
 	"context"
 
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/client"
-	"github.com/kiegroup/kogito-serverless-operator/container-builder/util/log"
 
 	v08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )

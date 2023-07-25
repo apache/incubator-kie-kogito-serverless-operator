@@ -22,10 +22,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kiegroup/kogito-serverless-operator/controllers/workflowdef"
 
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/controllers/platform"
 )
@@ -43,7 +43,7 @@ type BuildManager interface {
 }
 
 func NewBuildManager(ctx context.Context, client client.Client, cliConfig *rest.Config, targetName, targetNamespace string) (BuildManager, error) {
-	logger := ctrllog.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	p, err := platform.GetActivePlatform(ctx, client, targetNamespace)
 	if err != nil {
 		if errors.IsNotFound(err) {

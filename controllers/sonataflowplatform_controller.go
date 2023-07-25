@@ -28,14 +28,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	clientr "github.com/kiegroup/kogito-serverless-operator/container-builder/client"
-	klog "github.com/kiegroup/kogito-serverless-operator/container-builder/util/log"
 
 	"github.com/kiegroup/kogito-serverless-operator/controllers/platform"
 
 	ctrlrun "sigs.k8s.io/controller-runtime"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
@@ -107,7 +106,7 @@ func (r *SonataFlowPlatformReconciler) Reconcile(ctx context.Context, req reconc
 	var err error
 
 	target := instance.DeepCopy()
-	targetLog := klog.Log
+	targetLog := log.Log
 
 	for _, a := range actions {
 		cli, _ := clientr.FromCtrlClientSchemeAndConfig(r.Client, r.Scheme, r.Config)
