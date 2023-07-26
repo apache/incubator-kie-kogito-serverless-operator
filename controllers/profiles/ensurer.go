@@ -30,10 +30,9 @@ type ObjectEnsurer interface {
 }
 
 // newDefaultObjectEnsurer see defaultObjectEnsurer
-func newDefaultObjectEnsurer(client client.Client, logger *log.Logger, creator objectCreator) ObjectEnsurer {
+func newDefaultObjectEnsurer(client client.Client, creator objectCreator) ObjectEnsurer {
 	return &defaultObjectEnsurer{
 		client:  client,
-		logger:  logger,
 		creator: creator,
 	}
 }
@@ -41,7 +40,6 @@ func newDefaultObjectEnsurer(client client.Client, logger *log.Logger, creator o
 // defaultObjectEnsurer provides the engine for a ReconciliationState that needs to create or update a given Kubernetes object during the reconciliation cycle.
 type defaultObjectEnsurer struct {
 	client  client.Client
-	logger  *log.Logger
 	creator objectCreator
 }
 
@@ -83,7 +81,7 @@ func (d *defaultObjectEnsurer) ensure(ctx context.Context, workflow *operatorapi
 		}); err != nil {
 		return nil, result, err
 	}
-	d.logger.Info("Object operation finalized", "result", result, "kind", object.GetObjectKind().GroupVersionKind().String(), "name", object.GetName(), "namespace", object.GetNamespace())
+	log.Info("Object operation finalized", "result", result, "kind", object.GetObjectKind().GroupVersionKind().String(), "name", object.GetName(), "namespace", object.GetNamespace())
 	return object, result, nil
 }
 

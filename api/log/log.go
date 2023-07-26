@@ -42,12 +42,17 @@ type Logger struct {
 
 // Debugf --.
 func (l Logger) Debugf(format string, args ...interface{}) {
-	l.delegate.V(1).Info(fmt.Sprintf(format, args...))
+	l.delegate.V(2).Info(fmt.Sprintf(format, args...))
 }
 
 // Infof --.
 func (l Logger) Infof(format string, args ...interface{}) {
 	l.delegate.Info(fmt.Sprintf(format, args...))
+}
+
+// Warnf --.
+func (l Logger) Warnf(format string, args ...interface{}) {
+	l.delegate.V(0).Info(fmt.Sprintf(format, args...))
 }
 
 // Errorf --.
@@ -67,7 +72,7 @@ func (l Logger) Info(msg string, keysAndValues ...interface{}) {
 
 // Warn --.
 func (l Logger) Warn(msg string, keysAndValues ...interface{}) {
-	l.delegate.V(1).Info(msg, keysAndValues...)
+	l.delegate.V(0).Info(msg, keysAndValues...)
 }
 
 // Error --.
@@ -129,6 +134,11 @@ func Debugf(format string, args ...interface{}) {
 // Infof --.
 func Infof(format string, args ...interface{}) {
 	Log.Infof(format, args...)
+}
+
+// Warnf --.
+func Warnf(format string, args ...interface{}) {
+	Log.Warnf(format, args...)
 }
 
 // Errorf --.

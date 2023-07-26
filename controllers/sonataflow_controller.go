@@ -62,7 +62,6 @@ type SonataFlowReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
 func (r *SonataFlowReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
 
 	// Make sure the operator is allowed to act on namespace
 	if ok, err := platform.IsOperatorAllowedOnNamespace(ctx, r.Client, req.Namespace); err != nil {
@@ -79,17 +78,17 @@ func (r *SonataFlowReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
-		logger.Error(err, "Failed to get SonataFlow")
+		log.Error(err, "Failed to get SonataFlow")
 		return ctrl.Result{}, err
 	}
 
 	// Only process resources assigned to the operator
 	if !platform.IsOperatorHandlerConsideringLock(ctx, r.Client, req.Namespace, workflow) {
-		logger.Info("Ignoring request because resource is not assigned to current operator")
+		log.Info("Ignoring request because resource is not assigned to current operator")
 		return reconcile.Result{}, nil
 	}
 
-	return profiles.NewReconciler(r.Client, r.Config, &logger, workflow).Reconcile(ctx, workflow)
+	return profiles.NewReconciler(r.Client, r.Config, workflow).Reconcile(ctx, workflow)
 }
 
 func platformEnqueueRequestsFromMapFunc(c client.Client, p *operatorapi.SonataFlowPlatform) []reconcile.Request {

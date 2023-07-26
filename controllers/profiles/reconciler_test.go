@@ -15,17 +15,11 @@
 package profiles
 
 import (
-	"context"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kiegroup/kogito-serverless-operator/api/log"
 )
 
 func fakeReconcilerSupport(client client.Client) *stateSupport {
-	logger := log.FromContext(context.TODO())
 	return &stateSupport{
-		logger: &logger,
 		client: client,
 	}
 }

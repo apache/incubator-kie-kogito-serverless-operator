@@ -17,13 +17,11 @@
 package log
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"k8s.io/klog/v2"
 
-	"github.com/kiegroup/kogito-serverless-operator/api"
+	"github.com/kiegroup/kogito-serverless-operator/container-builder/api"
 )
 
 // Log --.
@@ -31,28 +29,29 @@ var Log Logger
 
 func init() {
 	Log = Logger{
-		delegate: logf.Log.WithName(api.ComponentName),
+		delegate: klog.NewKlogr().WithName(api.ComponentName),
 	}
-}
-
-// Injectable identifies objects that can receive a Logger.
-type Injectable interface {
-	InjectLogger(Logger)
+	klog.InitFlags(nil)
 }
 
 // Logger --.
 type Logger struct {
-	delegate logr.Logger
+	delegate klog.Logger
 }
 
 // Debugf --.
 func (l Logger) Debugf(format string, args ...interface{}) {
-	l.delegate.V(1).Info(fmt.Sprintf(format, args...))
+	l.delegate.V(2).Info(fmt.Sprintf(format, args...))
 }
 
 // Infof --.
 func (l Logger) Infof(format string, args ...interface{}) {
 	l.delegate.Info(fmt.Sprintf(format, args...))
+}
+
+// Warnf --.
+func (l Logger) Warnf(format string, args ...interface{}) {
+	l.delegate.V(0).Info(fmt.Sprintf(format, args...))
 }
 
 // Errorf --.
@@ -72,7 +71,7 @@ func (l Logger) Info(msg string, keysAndValues ...interface{}) {
 
 // Warn --.
 func (l Logger) Warn(msg string, keysAndValues ...interface{}) {
-	l.delegate.V(1).Info(msg, keysAndValues...)
+	l.delegate.V(0).Info(msg, keysAndValues...)
 }
 
 // Error --.
@@ -87,44 +86,9 @@ func (l Logger) WithName(name string) Logger {
 	}
 }
 
-// WithValues --.
-func (l Logger) WithValues(keysAndValues ...interface{}) Logger {
-	return Logger{
-		delegate: l.delegate.WithValues(keysAndValues...),
-	}
-}
-
-// AsLogger --.
-func (l Logger) AsLogger() logr.Logger {
-	return l.delegate
-}
-
-// SetLogger --.
-func (l Logger) SetLogger(logger logr.Logger) logr.Logger {
-	return l.delegate.WithSink(logger.GetSink())
-}
-
-func (l Logger) FromContext(ctx context.Context) Logger {
-	logger, _ := logr.FromContext(ctx)
-	return Logger{logger}
-}
-
 // WithName --.
 func WithName(name string) Logger {
 	return Log.WithName(name)
-}
-
-// WithValues --.
-func WithValues(keysAndValues ...interface{}) Logger {
-	return Log.WithValues(keysAndValues...)
-}
-
-func FromContext(ctx context.Context) Logger {
-	return Log.FromContext(ctx)
-}
-
-func SetLogger(logger logr.Logger) {
-	Log.SetLogger(logger)
 }
 
 // Debugf --.
@@ -135,6 +99,11 @@ func Debugf(format string, args ...interface{}) {
 // Infof --.
 func Infof(format string, args ...interface{}) {
 	Log.Infof(format, args...)
+}
+
+// Warnf --.
+func Warnf(format string, args ...interface{}) {
+	Log.Warnf(format, args...)
 }
 
 // Errorf --.

@@ -27,10 +27,9 @@ import (
 )
 
 // newStatusEnricher see defaultObjectEnsurer
-func newStatusEnricher(client client.Client, logger *log.Logger, enricher statusEnricherFn) *statusEnricher {
+func newStatusEnricher(client client.Client, enricher statusEnricherFn) *statusEnricher {
 	return &statusEnricher{
 		client:   client,
-		logger:   logger,
 		enricher: enricher,
 	}
 }
@@ -43,7 +42,6 @@ type statusEnricherFn func(ctx context.Context, client client.Client, workflow *
 type statusEnricher struct {
 	client   client.Client
 	config   *rest.Config
-	logger   *log.Logger
 	enricher statusEnricherFn
 }
 
@@ -54,6 +52,6 @@ func (d *statusEnricher) Enrich(ctx context.Context, workflow *operatorapi.Sonat
 		return result, err
 	}
 
-	d.logger.Info("Enrichment operation finalized", "result", result, "workflow", workflow.GetName(), "namespace", workflow.GetNamespace())
+	log.Info("Enrichment operation finalized", "result", result, "workflow", workflow.GetName(), "namespace", workflow.GetNamespace())
 	return result, nil
 }

@@ -23,18 +23,18 @@ import (
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
 
-func getWorkflow(namespace string, name string, c client.Client, ctx context.Context, logger *log.Logger) *operatorapi.SonataFlow {
+func getWorkflow(namespace string, name string, c client.Client, ctx context.Context) *operatorapi.SonataFlow {
 	serverlessWorkflowType := &operatorapi.SonataFlow{}
 	serverlessWorkflowType.Namespace = namespace
 	serverlessWorkflowType.Name = name
 	serverlessWorkflow := &operatorapi.SonataFlow{}
 	if err := c.Get(ctx, client.ObjectKeyFromObject(serverlessWorkflowType), serverlessWorkflow); err != nil {
-		logger.Error(err, "Error during Get")
+		log.Error(err, "Error during Get")
 	}
 	return serverlessWorkflow
 }
 
-func GetLastGeneration(namespace string, name string, c client.Client, ctx context.Context, logger *log.Logger) int64 {
-	workflow := getWorkflow(namespace, name, c, ctx, logger)
+func GetLastGeneration(namespace string, name string, c client.Client, ctx context.Context) int64 {
+	workflow := getWorkflow(namespace, name, c, ctx)
 	return workflow.Generation
 }

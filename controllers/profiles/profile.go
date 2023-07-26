@@ -18,7 +18,6 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
@@ -27,7 +26,7 @@ const (
 	defaultProfile = metadata.ProdProfile
 )
 
-type reconcilerBuilder func(client client.Client, config *rest.Config, logger *log.Logger) ProfileReconciler
+type reconcilerBuilder func(client client.Client, config *rest.Config) ProfileReconciler
 
 var profileBuilders = map[metadata.ProfileType]reconcilerBuilder{
 	metadata.ProdProfile: newProdProfileReconciler,

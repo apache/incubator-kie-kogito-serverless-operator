@@ -23,7 +23,6 @@ import (
 )
 
 type Action interface {
-	log.Injectable
 	client.Injectable
 	// Name returns user-friendly name for the action
 	Name() string
