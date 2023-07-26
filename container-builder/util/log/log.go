@@ -31,7 +31,6 @@ func init() {
 	Log = Logger{
 		delegate: klog.NewKlogr().WithName(api.ComponentName),
 	}
-	klog.InitFlags(nil)
 }
 
 // Logger --.
