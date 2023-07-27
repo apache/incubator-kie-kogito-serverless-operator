@@ -129,10 +129,10 @@ type SonataFlowStatus struct {
 	// Endpoint is an externally accessible URL of the workflow
 	Endpoint *apis.URL `json:"endpoint,omitempty"`
 
-	// The platform generation observed by the deployment controller when is marked with WaitingForConfigurationChanges .
+	// The platform generation observed by the deployment controller, changes are used when the phase WaitingForConfigurationChanges .
 	// +optional
 	ObservedPlatformGeneration int64 `json:"observedPlatformGeneration,omitempty"`
-	// The dockerfile observed by the deployment controller when is marked with WaitingForConfigurationChanges.
+	// The dockerfile observed by the deployment controller, changes are used when the phase is WaitingForConfigurationChanges.
 	// +optional
 	ObserverdDockerfile string `json:"observedDockerfile,omitempty"`
 }
