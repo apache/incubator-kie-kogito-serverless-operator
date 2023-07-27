@@ -30,8 +30,8 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
-	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
 	"github.com/kiegroup/kogito-serverless-operator/controllers/workflowdef"
+	"github.com/kiegroup/kogito-serverless-operator/log"
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 
 	"github.com/kiegroup/kogito-serverless-operator/controllers/platform"

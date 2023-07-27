@@ -33,6 +33,7 @@ spec:
         - /usr/local/bin/manager
         args:
         - --leader-elect
+        - '-v=1'
         image: controller:latest
         name: manager
         securityContext:

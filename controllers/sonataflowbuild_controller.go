@@ -35,7 +35,7 @@ import (
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/controllers/builder"
-	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
+	"github.com/kiegroup/kogito-serverless-operator/log"
 )
 
 // SonataFlowBuildReconciler reconciles a SonataFlowBuild object

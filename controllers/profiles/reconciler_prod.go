@@ -20,7 +20,7 @@ import (
 
 	"k8s.io/klog/v2"
 
-	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
+	"github.com/kiegroup/kogito-serverless-operator/log"
 
 	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
 	"github.com/kiegroup/kogito-serverless-operator/utils"

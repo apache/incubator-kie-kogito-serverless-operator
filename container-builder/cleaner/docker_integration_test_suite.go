@@ -20,6 +20,7 @@ package cleaner
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"k8s.io/klog"
 
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/common"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/util/log"
@@ -52,7 +53,7 @@ func (suite *DockerTestSuite) TearDownSuite() {
 	}
 	purged, err := suite.Docker.PurgeContainer("", common.REGISTRY_IMG)
 	if err != nil {
-		log.Errorf(err, "Error during purged container in TearDown Suite.")
+		klog.V(log.E).Info("Error during purged container in TearDown Suite.", err)
 	}
-	log.Infof("Purged containers %t", purged)
+	klog.V(log.I).Infof("Purged containers %t", purged)
 }

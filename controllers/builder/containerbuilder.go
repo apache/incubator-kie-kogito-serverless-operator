@@ -31,7 +31,7 @@ import (
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/api"
 	builder "github.com/kiegroup/kogito-serverless-operator/container-builder/builder/kubernetes"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/client"
-	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
+	"github.com/kiegroup/kogito-serverless-operator/log"
 )
 
 const (

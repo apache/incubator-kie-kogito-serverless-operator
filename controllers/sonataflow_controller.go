@@ -36,7 +36,7 @@ import (
 
 	"github.com/kiegroup/kogito-serverless-operator/controllers/profiles"
 
-	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
+	"github.com/kiegroup/kogito-serverless-operator/log"
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/controllers/platform"

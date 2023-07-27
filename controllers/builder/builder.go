@@ -28,8 +28,8 @@ import (
 	"github.com/kiegroup/kogito-serverless-operator/controllers/workflowdef"
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
 	"github.com/kiegroup/kogito-serverless-operator/controllers/platform"
+	"github.com/kiegroup/kogito-serverless-operator/log"
 )
 
 type buildManagerContext struct {

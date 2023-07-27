@@ -19,6 +19,8 @@ import (
 	"context"
 	"os"
 
+	"k8s.io/klog/v2"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -63,25 +65,25 @@ func KanikoBuild(connection *client.Client, config KanikoVanillaConfig) (string,
 	}, hostConfig, nil, nil, config.ContainerName)
 
 	if err != nil {
-		log.Error(err, "error during KanikoBuild, ContainerCreate")
+		klog.V(log.E).Info("error during KanikoBuild, ContainerCreate", err)
 	}
 
 	if err := connection.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		log.Error(err, "error during KanikoBuild, ContainerStart")
+		klog.V(log.E).Info("error during KanikoBuild, ContainerStart", err)
 	}
 
 	statusCh, errCh := connection.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
-			log.Error(err, "error during KanikoBuild, ContainerWait")
+			klog.V(log.E).Info("error during KanikoBuild, ContainerWait", err)
 		}
 	case <-statusCh:
 	}
 
 	out, err := connection.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
-		log.Error(err, "error during KanikoBuild, ContainerLogs")
+		klog.V(log.E).Info("error during KanikoBuild, ContainerLogs", err)
 	}
 	if config.ReadBuildOutput {
 		stdcopy.StdCopy(os.Stdout, os.Stderr, out)

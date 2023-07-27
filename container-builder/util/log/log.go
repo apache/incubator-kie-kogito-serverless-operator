@@ -18,8 +18,8 @@ package log
 
 // Constants for different log level verbosity.
 const (
-	D = 3
-	I = 2
-	W = 1
-	E = 0
+	E = iota
+	W = iota
+	I = iota
+	D = iota
 )

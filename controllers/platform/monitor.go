@@ -21,7 +21,7 @@ import (
 
 	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
+	"github.com/kiegroup/kogito-serverless-operator/log"
 )
 
 // NewMonitorAction returns an action that monitors the build platform after it's fully initialized.
