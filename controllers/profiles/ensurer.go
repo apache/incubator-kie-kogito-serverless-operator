@@ -17,7 +17,9 @@ package profiles
 import (
 	"context"
 
-	"github.com/kiegroup/kogito-serverless-operator/api/log"
+	"k8s.io/klog/v2"
+
+	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -81,7 +83,7 @@ func (d *defaultObjectEnsurer) ensure(ctx context.Context, workflow *operatorapi
 		}); err != nil {
 		return nil, result, err
 	}
-	log.Info("Object operation finalized", "result", result, "kind", object.GetObjectKind().GroupVersionKind().String(), "name", object.GetName(), "namespace", object.GetNamespace())
+	klog.V(log.I).Info("Object operation finalized", "result", result, "kind", object.GetObjectKind().GroupVersionKind().String(), "name", object.GetName(), "namespace", object.GetNamespace())
 	return object, result, nil
 }
 

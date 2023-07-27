@@ -17,6 +17,8 @@ package builder
 import (
 	"time"
 
+	"k8s.io/klog/v2"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -26,10 +28,10 @@ import (
 	"github.com/kiegroup/kogito-serverless-operator/controllers/platform"
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 
-	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/api"
 	builder "github.com/kiegroup/kogito-serverless-operator/container-builder/builder/kubernetes"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/client"
+	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
 )
 
 const (
@@ -122,7 +124,6 @@ func (c *containerBuilderManager) reconcileBuild(build *api.ContainerBuild, cli 
 }
 
 func (c *containerBuilderManager) buildImage(kb internalBuilder) (*api.ContainerBuild, error) {
-	log := log.FromContext(c.ctx)
 	cli, err := client.FromCtrlClientSchemeAndConfig(c.client, c.client.Scheme(), c.restConfig)
 	plat := api.PlatformContainerBuild{
 		ObjectReference: api.ObjectReference{
@@ -145,14 +146,13 @@ func (c *containerBuilderManager) buildImage(kb internalBuilder) (*api.Container
 
 	build, err := newBuild(kb, plat, c.commonConfig.Data[configKeyDefaultExtension], cli)
 	if err != nil {
-		log.Error(err, err.Error())
+		klog.V(log.E).Info(err, err.Error())
 		return nil, err
 	}
 	return build, err
 }
 
 func (c *containerBuilderManager) scheduleBuild(kb internalBuilder) (*api.ContainerBuild, error) {
-	log := log.FromContext(c.ctx)
 	cli, err := client.FromCtrlClientSchemeAndConfig(c.client, c.client.Scheme(), c.restConfig)
 	plat := api.PlatformContainerBuild{
 		ObjectReference: api.ObjectReference{
@@ -175,7 +175,7 @@ func (c *containerBuilderManager) scheduleBuild(kb internalBuilder) (*api.Contai
 
 	build, err := newBuild(kb, plat, c.commonConfig.Data[configKeyDefaultExtension], cli)
 	if err != nil {
-		log.Error(err, err.Error())
+		klog.V(log.E).Info(err, err.Error())
 		return nil, err
 	}
 	return build, err

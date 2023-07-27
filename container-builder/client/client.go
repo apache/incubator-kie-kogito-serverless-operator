@@ -20,6 +20,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"k8s.io/klog/v2"
+
 	user "github.com/mitchellh/go-homedir"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -162,7 +164,7 @@ func initialize(kubeconfig string) {
 		if kc, err := shouldUseContainerMode(); kc && err == nil {
 			return
 		} else if err != nil {
-			log.Errorf(err, "could not determine if running in a container: %v", err)
+			klog.V(log.E).Infof("could not determine if running in a container")
 		}
 		var err error
 		kubeconfig, err = getDefaultKubeConfigFile()

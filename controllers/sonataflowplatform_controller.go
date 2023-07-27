@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/klog/v2"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,8 +36,8 @@ import (
 	ctrlrun "sigs.k8s.io/controller-runtime"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
 )
 
 // SonataFlowPlatformReconciler reconciles a SonataFlowPlatform object
@@ -63,13 +65,11 @@ type SonataFlowPlatformReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.12.1/pkg/reconcile
 func (r *SonataFlowPlatformReconciler) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
-	logger := log.FromContext(ctx)
-
 	// Make sure the operator is allowed to act on namespace
 	if ok, err := platform.IsOperatorAllowedOnNamespace(ctx, r.Reader, req.Namespace); err != nil {
 		return reconcile.Result{}, err
 	} else if !ok {
-		logger.Info(fmt.Sprintf("Ignoring request because the operator hasn't got the permissions to work on namespace %s", req.Namespace))
+		klog.V(log.I).Infof("Ignoring request because the operator hasn't got the permissions to work on namespace %s", req.Namespace)
 		return reconcile.Result{}, nil
 	}
 
@@ -91,7 +91,7 @@ func (r *SonataFlowPlatformReconciler) Reconcile(ctx context.Context, req reconc
 
 	// Only process resources assigned to the operator
 	if !platform.IsOperatorHandlerConsideringLock(ctx, r.Reader, req.Namespace, &instance) {
-		logger.Info("Ignoring request because resource is not assigned to current operator")
+		klog.V(log.I).Info("Ignoring request because resource is not assigned to current operator")
 		return reconcile.Result{}, nil
 	}
 	actions := []platform.Action{
@@ -106,14 +106,13 @@ func (r *SonataFlowPlatformReconciler) Reconcile(ctx context.Context, req reconc
 	var err error
 
 	target := instance.DeepCopy()
-	targetLog := log.Log
 
 	for _, a := range actions {
 		cli, _ := clientr.FromCtrlClientSchemeAndConfig(r.Client, r.Scheme, r.Config)
 		a.InjectClient(cli)
 
 		if a.CanHandle(target) {
-			targetLog.Info("Invoking action", "Name", a.Name())
+			klog.V(log.I).Info("Invoking action", "Name", a.Name())
 
 			phaseFrom := target.Status.Phase
 
@@ -139,7 +138,7 @@ func (r *SonataFlowPlatformReconciler) Reconcile(ctx context.Context, req reconc
 				targetPhase = target.Status.Phase
 
 				if targetPhase != phaseFrom {
-					logger.Info(
+					klog.V(log.I).Info(
 						"state transition",
 						"phase-from", phaseFrom,
 						"phase-to", target.Status.Phase,

@@ -17,6 +17,8 @@ package test
 import (
 	"context"
 
+	"k8s.io/klog/v2"
+
 	oappsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
 	consolev1 "github.com/openshift/api/console/v1"
@@ -33,8 +35,6 @@ import (
 	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	apiv08 "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 )
-
-var logger = log.WithName("kieapp.test")
 
 type MockPlatformService struct {
 	Client          clientv1.Client
@@ -112,7 +112,7 @@ func MockServiceWithExtraScheme(objs ...runtime.Object) *MockPlatformService {
 		}
 	}
 	client := fake.NewFakeClientWithScheme(scheme)
-	logger.Debugf("Fake client created as %v", client)
+	klog.V(log.D).Infof("Fake client created as %v", client)
 	return &MockPlatformService{
 		Client: client,
 		scheme: scheme,

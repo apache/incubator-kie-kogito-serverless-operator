@@ -18,6 +18,8 @@ import (
 	"flag"
 	"os"
 
+	"k8s.io/klog/v2"
+
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 
 	"github.com/kiegroup/kogito-serverless-operator/controllers"
@@ -33,14 +35,13 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
-	log "github.com/kiegroup/kogito-serverless-operator/api/log"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/log"
 	//+kubebuilder:scaffold:imports
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = log.Log.WithName("setup")
+	scheme = runtime.NewScheme()
 )
 
 func init() {
@@ -69,7 +70,7 @@ func main() {
 		LeaderElectionID:       "1be5e57d.kie.org",
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
+		klog.V(log.E).Info("unable to start manager", err)
 		os.Exit(1)
 	}
 
@@ -81,7 +82,7 @@ func main() {
 		Config:   mgr.GetConfig(),
 		Recorder: mgr.GetEventRecorderFor("workflow-controller"),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "SonataFlow")
+		klog.V(log.E).Info("unable to create controller", "controller", "SonataFlow", err)
 		os.Exit(1)
 	}
 	if err = (&controllers.SonataFlowBuildReconciler{
@@ -90,7 +91,7 @@ func main() {
 		Config:   mgr.GetConfig(),
 		Recorder: mgr.GetEventRecorderFor("build-controller"),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "SonataFlowBuild")
+		klog.V(log.E).Info("unable to create controller", "controller", "SonataFlowBuild", err)
 		os.Exit(1)
 	}
 
@@ -101,7 +102,7 @@ func main() {
 		Config:   mgr.GetConfig(),
 		Recorder: mgr.GetEventRecorderFor("platform-controller"),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "SonataFlowPlatform")
+		klog.V(log.E).Info("unable to create controller", "controller", "SonataFlowPlatform", err)
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
@@ -111,17 +112,17 @@ func main() {
 	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
+		klog.V(log.E).Info("unable to set up health check", err)
 		os.Exit(1)
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
+		klog.V(log.E).Info("unable to set up ready check", err)
 		os.Exit(1)
 	}
 
-	setupLog.Info("starting manager")
+	klog.V(log.I).Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
+		klog.V(log.E).Info("problem running manager", err)
 		os.Exit(1)
 	}
 

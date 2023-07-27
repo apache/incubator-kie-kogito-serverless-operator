@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/klog/v2"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/api"
@@ -48,7 +50,6 @@ type containerBuildContext struct {
 }
 
 type builder struct {
-	L       log.Logger
 	Context containerBuildContext
 }
 
@@ -93,7 +94,6 @@ type schedulerHandler interface {
 
 func FromBuild(build *api.ContainerBuild) ContainerBuilder {
 	return &builder{
-		L: log.WithName(api.ComponentName),
 		Context: containerBuildContext{
 			ContainerBuild: build,
 			C:              context.TODO(),
@@ -176,16 +176,16 @@ func (b *builder) Reconcile() (*api.ContainerBuild, error) {
 		a.InjectClient(b.Context.Client)
 
 		if a.CanHandle(target) {
-			b.L.Infof("Invoking action %s", a.Name())
+			klog.V(log.I).Infof("Invoking action %s", a.Name())
 			newTarget, err := a.Handle(b.Context.C, target)
 			if err != nil {
-				b.L.Errorf(err, "Failed to invoke action %s", a.Name())
+				klog.V(log.E).Infof("Failed to invoke action %s", a.Name(), err)
 				return nil, err
 			}
 
 			if newTarget != nil {
 				if newTarget.Status.Phase != target.Status.Phase {
-					b.L.Info(
+					klog.V(log.I).Info(
 						"state transition",
 						"phase-from", target.Status.Phase,
 						"phase-to", newTarget.Status.Phase,

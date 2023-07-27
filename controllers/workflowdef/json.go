@@ -18,22 +18,23 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/kiegroup/kogito-serverless-operator/api/log"
+	"k8s.io/klog/v2"
+
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
 )
 
 // GetJSONWorkflow return a Kogito compliant JSON format workflow as bytearray give a specific workflow CR
 func GetJSONWorkflow(workflowCR *operatorapi.SonataFlow, ctx context.Context) ([]byte, error) {
-	logger := log.FromContext(ctx)
 	// apply workflow metadata
 	workflow, err := operatorapi.ToCNCFWorkflow(workflowCR, ctx)
 	if err != nil {
-		logger.Error(err, "Failed converting SonataFlow into Workflow")
+		klog.V(log.E).Info("Failed converting SonataFlow into Workflow", err)
 		return nil, err
 	}
 	jsonWorkflow, err := json.Marshal(workflow)
 	if err != nil {
-		logger.Error(err, "Failed converting SonataFlow into JSON")
+		klog.V(log.E).Info("Failed converting SonataFlow into JSON", err)
 		return nil, err
 	}
 	return jsonWorkflow, nil

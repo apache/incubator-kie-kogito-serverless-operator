@@ -17,10 +17,12 @@ package kubernetes
 import (
 	"context"
 
+	"k8s.io/klog/v2"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/log"
 )
 
 func getWorkflow(namespace string, name string, c client.Client, ctx context.Context) *operatorapi.SonataFlow {
@@ -29,7 +31,7 @@ func getWorkflow(namespace string, name string, c client.Client, ctx context.Con
 	serverlessWorkflowType.Name = name
 	serverlessWorkflow := &operatorapi.SonataFlow{}
 	if err := c.Get(ctx, client.ObjectKeyFromObject(serverlessWorkflowType), serverlessWorkflow); err != nil {
-		log.Error(err, "Error during Get")
+		klog.V(log.E).Info("Error during Get", err)
 	}
 	return serverlessWorkflow
 }

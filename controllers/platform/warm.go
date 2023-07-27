@@ -18,13 +18,15 @@ import (
 	"context"
 	"errors"
 
+	"k8s.io/klog/v2"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
 )
 
 func NewWarmAction(reader ctrl.Reader) Action {
@@ -66,13 +68,13 @@ func (action *warmAction) Handle(ctx context.Context, platform *operatorapi.Sona
 
 	switch pod.Status.Phase {
 	case corev1.PodSucceeded:
-		log.Info("Kaniko cache successfully warmed up")
+		klog.V(log.I).Info("Kaniko cache successfully warmed up")
 		platform.Status.Phase = operatorapi.PlatformPhaseCreating
 		return platform, nil
 	case corev1.PodFailed:
 		return nil, errors.New("failed to warm up Kaniko cache")
 	default:
-		log.Info("Waiting for Kaniko cache to warm up...")
+		klog.V(log.I).Info("Waiting for Kaniko cache to warm up...")
 		// Requeue
 		return nil, nil
 	}

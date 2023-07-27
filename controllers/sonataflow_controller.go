@@ -16,7 +16,8 @@ package controllers
 
 import (
 	"context"
-	"fmt"
+
+	"k8s.io/klog/v2"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -35,7 +36,7 @@ import (
 
 	"github.com/kiegroup/kogito-serverless-operator/controllers/profiles"
 
-	"github.com/kiegroup/kogito-serverless-operator/api/log"
+	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 	"github.com/kiegroup/kogito-serverless-operator/controllers/platform"
@@ -67,7 +68,7 @@ func (r *SonataFlowReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if ok, err := platform.IsOperatorAllowedOnNamespace(ctx, r.Client, req.Namespace); err != nil {
 		return reconcile.Result{}, err
 	} else if !ok {
-		log.Info(fmt.Sprintf("Ignoring request because the operator hasn't got the permissions to work on namespace %s", req.Namespace))
+		klog.V(log.I).Infof("Ignoring request because the operator hasn't got the permissions to work on namespace %s", req.Namespace)
 		return reconcile.Result{}, nil
 	}
 
@@ -78,13 +79,13 @@ func (r *SonataFlowReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
-		log.Error(err, "Failed to get SonataFlow")
+		klog.V(log.E).Info("Failed to get SonataFlow", err)
 		return ctrl.Result{}, err
 	}
 
 	// Only process resources assigned to the operator
 	if !platform.IsOperatorHandlerConsideringLock(ctx, r.Client, req.Namespace, workflow) {
-		log.Info("Ignoring request because resource is not assigned to current operator")
+		klog.V(log.I).Info("Ignoring request because resource is not assigned to current operator")
 		return reconcile.Result{}, nil
 	}
 
@@ -104,14 +105,14 @@ func platformEnqueueRequestsFromMapFunc(c client.Client, p *operatorapi.SonataFl
 		}
 
 		if err := c.List(context.Background(), list, opts...); err != nil {
-			log.Error(err, "Failed to list workflows")
+			klog.V(log.E).Info("Failed to list workflows", err)
 			return requests
 		}
 
 		for _, workflow := range list.Items {
 			cond := workflow.Status.GetTopLevelCondition()
 			if cond.IsFalse() && api.WaitingForPlatformReason == cond.Reason {
-				log.Infof("Platform %s ready, wake-up workflow: %s", p.Name, workflow.Name)
+				klog.V(log.I).Infof("Platform %s ready, wake-up workflow: %s", p.Name, workflow.Name)
 				requests = append(requests, reconcile.Request{
 					NamespacedName: types.NamespacedName{
 						Namespace: workflow.Namespace,
@@ -135,7 +136,7 @@ func (r *SonataFlowReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&operatorapi.SonataFlowPlatform{}, handler.EnqueueRequestsFromMapFunc(func(c context.Context, a client.Object) []reconcile.Request {
 			platform, ok := a.(*operatorapi.SonataFlowPlatform)
 			if !ok {
-				log.Error(fmt.Errorf("type assertion failed: %v", a), "Failed to retrieve workflow list")
+				klog.V(log.E).Infof("Failed to retrieve workflow list. Type assertion failed: %v", a)
 				return []reconcile.Request{}
 			}
 			return platformEnqueueRequestsFromMapFunc(mgr.GetClient(), platform)

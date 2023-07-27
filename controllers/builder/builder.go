@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/klog/v2"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
@@ -25,8 +27,8 @@ import (
 
 	"github.com/kiegroup/kogito-serverless-operator/controllers/workflowdef"
 
-	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
 	"github.com/kiegroup/kogito-serverless-operator/controllers/platform"
 )
 
@@ -43,18 +45,17 @@ type BuildManager interface {
 }
 
 func NewBuildManager(ctx context.Context, client client.Client, cliConfig *rest.Config, targetName, targetNamespace string) (BuildManager, error) {
-	logger := log.FromContext(ctx)
 	p, err := platform.GetActivePlatform(ctx, client, targetNamespace)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return nil, err
 		}
-		logger.Error(err, fmt.Sprintf("Error retrieving the active platform. Workflow %s build cannot be performed!", targetName))
+		klog.V(log.E).Info(fmt.Sprintf("Error retrieving the active platform. Workflow %s build cannot be performed!", targetName), err)
 		return nil, err
 	}
 	commonConfig, err := GetCommonConfigMap(client, targetNamespace)
 	if err != nil {
-		logger.Error(err, "Failed to get common configMap for Workflow Builder. Make sure that sonataflow-operator-builder-config is present in the operator namespace.")
+		klog.V(log.E).Info("Failed to get common configMap for Workflow Builder. Make sure that sonataflow-operator-builder-config is present in the operator namespace.", err)
 		return nil, err
 	}
 	managerContext := buildManagerContext{
@@ -69,7 +70,7 @@ func NewBuildManager(ctx context.Context, client client.Client, cliConfig *rest.
 	case operatorapi.PlatformClusterKubernetes:
 		return newContainerBuilderManager(managerContext, cliConfig), nil
 	default:
-		logger.Info("Impossible to check the Cluster type in the SonataFlowPlatform")
+		klog.V(log.I).Info("Impossible to check the Cluster type in the SonataFlowPlatform")
 		return newContainerBuilderManager(managerContext, cliConfig), nil
 	}
 }

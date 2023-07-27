@@ -20,6 +20,10 @@ import (
 	"context"
 	"time"
 
+	"k8s.io/klog/v2"
+
+	"github.com/kiegroup/kogito-serverless-operator/container-builder/util/log"
+
 	"github.com/jpillora/backoff"
 
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/api"
@@ -86,7 +90,7 @@ func (action *errorRecoveryAction) Handle(ctx context.Context, build *api.Contai
 	build.Status.Failure.Recovery.Attempt++
 	build.Status.Failure.Recovery.AttemptTime = metav1.Now()
 
-	action.L.Infof("Recovery attempt (%d/%d)",
+	klog.V(log.I).Infof("Recovery attempt (%d/%d)",
 		build.Status.Failure.Recovery.Attempt,
 		build.Status.Failure.Recovery.AttemptMax,
 	)

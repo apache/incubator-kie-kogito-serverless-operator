@@ -19,14 +19,16 @@ import (
 	"fmt"
 	"os"
 
+	"k8s.io/klog/v2"
+
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kiegroup/kogito-serverless-operator/api/log"
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
+	"github.com/kiegroup/kogito-serverless-operator/controllers/log"
 )
 
 const (
@@ -78,13 +80,13 @@ func GetCommonConfigMap(client client.Client, fallbackNS string) (*corev1.Config
 
 	err := client.Get(context.TODO(), types.NamespacedName{Name: ConfigMapName, Namespace: namespace}, existingConfigMap)
 	if err != nil {
-		log.Error(err, "fetching configmap "+ConfigMapName)
+		klog.V(log.E).Info("fetching configmap "+ConfigMapName, err)
 		return nil, err
 	}
 
 	err = isValidBuilderCommonConfigMap(existingConfigMap)
 	if err != nil {
-		log.Error(err, "configmap "+ConfigMapName+" is not valid")
+		klog.V(log.E).Info("configmap "+ConfigMapName+" is not valid", err)
 		return existingConfigMap, err
 	}
 

@@ -19,7 +19,6 @@ import (
 
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/api"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/client"
-	"github.com/kiegroup/kogito-serverless-operator/container-builder/util/log"
 )
 
 type Action interface {
@@ -36,15 +35,10 @@ type Action interface {
 
 type baseAction struct {
 	client client.Client
-	L      log.Logger
 }
 
 // TODO: implement our client wrapper
 
 func (action *baseAction) InjectClient(client client.Client) {
 	action.client = client
-}
-
-func (action *baseAction) InjectLogger(log log.Logger) {
-	action.L = log
 }

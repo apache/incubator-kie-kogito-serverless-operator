@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
+	"k8s.io/klog/v2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -64,7 +65,7 @@ func newFastDiscoveryRESTMapperWithFilter(config *rest.Config, filter func(*meta
 	for _, group := range groups.Groups {
 		pinnedGroup := group
 		pick := filter(&pinnedGroup)
-		log.Debugf("Group: %s %v", group.Name, pick)
+		klog.V(log.D).Infof("Group: %s %v", group.Name, pick)
 		totalCount++
 		if !pick {
 			continue
@@ -78,7 +79,7 @@ func newFastDiscoveryRESTMapperWithFilter(config *rest.Config, filter func(*meta
 		wg.Start(func() { discoverGroupResources(dc, gr) })
 	}
 	wg.Wait()
-	log.Debugf("Picked %d/%d", pickedCount, totalCount)
+	klog.V(log.D).Infof("Picked %d/%d", pickedCount, totalCount)
 	return restmapper.NewDiscoveryRESTMapper(grs), nil
 }
 
@@ -86,7 +87,7 @@ func discoverGroupResources(dc discovery.DiscoveryInterface, gr *restmapper.APIG
 	for _, version := range gr.Group.Versions {
 		resources, err := dc.ServerResourcesForGroupVersion(version.GroupVersion)
 		if err != nil {
-			log.Error(err, version.GroupVersion)
+			klog.V(log.E).Info(version.GroupVersion, err)
 		}
 		gr.VersionedResources[version.Version] = resources.APIResources
 	}
