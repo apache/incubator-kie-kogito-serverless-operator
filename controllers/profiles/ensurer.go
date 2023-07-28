@@ -83,7 +83,7 @@ func (d *defaultObjectEnsurer) ensure(ctx context.Context, workflow *operatorapi
 		}); err != nil {
 		return nil, result, err
 	}
-	klog.V(log.I).Info("Object operation finalized", "result", result, "kind", object.GetObjectKind().GroupVersionKind().String(), "name", object.GetName(), "namespace", object.GetNamespace())
+	klog.V(log.I).InfoS("Object operation finalized", "result", result, "kind", object.GetObjectKind().GroupVersionKind().String(), "name", object.GetName(), "namespace", object.GetNamespace())
 	return object, result, nil
 }
 

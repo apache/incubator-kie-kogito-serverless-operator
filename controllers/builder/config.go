@@ -80,13 +80,13 @@ func GetCommonConfigMap(client client.Client, fallbackNS string) (*corev1.Config
 
 	err := client.Get(context.TODO(), types.NamespacedName{Name: ConfigMapName, Namespace: namespace}, existingConfigMap)
 	if err != nil {
-		klog.V(log.E).Info("fetching configmap "+ConfigMapName, err)
+		klog.V(log.E).ErrorS(err, "fetching configmap", "name", ConfigMapName)
 		return nil, err
 	}
 
 	err = isValidBuilderCommonConfigMap(existingConfigMap)
 	if err != nil {
-		klog.V(log.E).Info("configmap "+ConfigMapName+" is not valid", err)
+		klog.V(log.E).ErrorS(err, "configmap is not valid", "name", ConfigMapName)
 		return existingConfigMap, err
 	}
 

@@ -68,7 +68,7 @@ func (r *SonataFlowReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if ok, err := platform.IsOperatorAllowedOnNamespace(ctx, r.Client, req.Namespace); err != nil {
 		return reconcile.Result{}, err
 	} else if !ok {
-		klog.V(log.I).Infof("Ignoring request because the operator hasn't got the permissions to work on namespace %s", req.Namespace)
+		klog.V(log.I).InfoS("Ignoring request because the operator hasn't got the permissions to work on namespace", "namespace", req.Namespace)
 		return reconcile.Result{}, nil
 	}
 
@@ -79,13 +79,13 @@ func (r *SonataFlowReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
-		klog.V(log.E).Info("Failed to get SonataFlow", err)
+		klog.V(log.E).ErrorS(err, "Failed to get SonataFlow")
 		return ctrl.Result{}, err
 	}
 
 	// Only process resources assigned to the operator
 	if !platform.IsOperatorHandlerConsideringLock(ctx, r.Client, req.Namespace, workflow) {
-		klog.V(log.I).Info("Ignoring request because resource is not assigned to current operator")
+		klog.V(log.I).InfoS("Ignoring request because resource is not assigned to current operator")
 		return reconcile.Result{}, nil
 	}
 
@@ -105,14 +105,14 @@ func platformEnqueueRequestsFromMapFunc(c client.Client, p *operatorapi.SonataFl
 		}
 
 		if err := c.List(context.Background(), list, opts...); err != nil {
-			klog.V(log.E).Info("Failed to list workflows", err)
+			klog.V(log.E).ErrorS(err, "Failed to list workflows")
 			return requests
 		}
 
 		for _, workflow := range list.Items {
 			cond := workflow.Status.GetTopLevelCondition()
 			if cond.IsFalse() && api.WaitingForPlatformReason == cond.Reason {
-				klog.V(log.I).Infof("Platform %s ready, wake-up workflow: %s", p.Name, workflow.Name)
+				klog.V(log.I).InfoS("Platform ready, wake-up workflow", "platform", p.Name, "workflow", workflow.Name)
 				requests = append(requests, reconcile.Request{
 					NamespacedName: types.NamespacedName{
 						Namespace: workflow.Namespace,
@@ -136,7 +136,7 @@ func (r *SonataFlowReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&operatorapi.SonataFlowPlatform{}, handler.EnqueueRequestsFromMapFunc(func(c context.Context, a client.Object) []reconcile.Request {
 			platform, ok := a.(*operatorapi.SonataFlowPlatform)
 			if !ok {
-				klog.V(log.E).Infof("Failed to retrieve workflow list. Type assertion failed: %v", a)
+				klog.V(log.E).InfoS("Failed to retrieve workflow list. Type assertion failed", "assertion", a)
 				return []reconcile.Request{}
 			}
 			return platformEnqueueRequestsFromMapFunc(mgr.GetClient(), platform)

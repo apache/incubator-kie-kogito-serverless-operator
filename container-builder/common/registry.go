@@ -105,7 +105,7 @@ func (r RegistryContainer) DeleteImage(repository string, tag string) error {
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		klog.V(log.E).Info("error during DeleteImage", err)
+		klog.V(log.E).ErrorS(err, "error during DeleteImage")
 		return err
 	}
 	return nil
@@ -120,7 +120,7 @@ func (r *RegistryContainer) url(pathTemplate string, args ...interface{}) string
 func GetRegistryContainer() (RegistryContainer, error) {
 	registryContainerConnection, err := GetRegistryConnection(REGISTRY_CONTAINER_URL, "", "")
 	if err != nil {
-		klog.V(log.E).Info("Can't connect to the RegistryContainer", err)
+		klog.V(log.E).ErrorS(err, "Can't connect to the RegistryContainer")
 		return RegistryContainer{}, err
 	}
 	return RegistryContainer{Connection: *registryContainerConnection}, nil
@@ -139,11 +139,11 @@ func IsPortAvailable(port string) bool {
 func GetRegistryConnection(url string, username string, password string) (*registryContainer.Registry, error) {
 	registryConn, err := registryContainer.New(url, username, password)
 	if err != nil {
-		klog.V(log.E).Info("First Attempt to connect with RegistryContainer", err)
+		klog.V(log.E).ErrorS(err, "First Attempt to connect with RegistryContainer")
 	}
 	// we try ten times if the machine is slow and the registry needs time to start
 	if err != nil {
-		klog.V(log.I).Info("Waiting for a correct ping with RegistryContainer")
+		klog.V(log.I).InfoS("Waiting for a correct ping with RegistryContainer")
 
 		for i := 0; i < 10; i++ {
 			time.Sleep(1 * time.Second)

@@ -71,7 +71,7 @@ func main() {
 		LeaderElectionID:       "1be5e57d.kie.org",
 	})
 	if err != nil {
-		klog.V(log.E).Info("unable to start manager", err)
+		klog.V(log.E).ErrorS(err, "unable to start manager")
 		os.Exit(1)
 	}
 
@@ -83,7 +83,7 @@ func main() {
 		Config:   mgr.GetConfig(),
 		Recorder: mgr.GetEventRecorderFor("workflow-controller"),
 	}).SetupWithManager(mgr); err != nil {
-		klog.V(log.E).Info("unable to create controller", "controller", "SonataFlow", err)
+		klog.V(log.E).ErrorS(err, "unable to create controller", "controller", "SonataFlow")
 		os.Exit(1)
 	}
 	if err = (&controllers.SonataFlowBuildReconciler{
@@ -92,7 +92,7 @@ func main() {
 		Config:   mgr.GetConfig(),
 		Recorder: mgr.GetEventRecorderFor("build-controller"),
 	}).SetupWithManager(mgr); err != nil {
-		klog.V(log.E).Info("unable to create controller", "controller", "SonataFlowBuild", err)
+		klog.V(log.E).ErrorS(err, "unable to create controller", "controller", "SonataFlowBuild")
 		os.Exit(1)
 	}
 
@@ -103,7 +103,7 @@ func main() {
 		Config:   mgr.GetConfig(),
 		Recorder: mgr.GetEventRecorderFor("platform-controller"),
 	}).SetupWithManager(mgr); err != nil {
-		klog.V(log.E).Info("unable to create controller", "controller", "SonataFlowPlatform", err)
+		klog.V(log.E).ErrorS(err, "unable to create controller", "controller", "SonataFlowPlatform")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
@@ -113,17 +113,17 @@ func main() {
 	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		klog.V(log.E).Info("unable to set up health check", err)
+		klog.V(log.E).ErrorS(err, "unable to set up health check")
 		os.Exit(1)
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		klog.V(log.E).Info("unable to set up ready check", err)
+		klog.V(log.E).ErrorS(err, "unable to set up ready check")
 		os.Exit(1)
 	}
 
-	klog.V(log.I).Info("starting manager")
+	klog.V(log.I).InfoS("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		klog.V(log.E).Info("problem running manager", err)
+		klog.V(log.E).ErrorS(err, "problem running manager")
 		os.Exit(1)
 	}
 

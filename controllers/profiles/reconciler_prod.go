@@ -117,7 +117,7 @@ func (h *newBuilderReconciliationState) Do(ctx context.Context, workflow *operat
 			_, err = h.performStatusUpdate(ctx, workflow)
 			return ctrl.Result{RequeueAfter: requeueWhileWaitForPlatform}, nil, err
 		}
-		klog.V(log.E).Info("Failed to get active platform", err)
+		klog.V(log.E).ErrorS(err, "Failed to get active platform")
 		return ctrl.Result{RequeueAfter: requeueWhileWaitForPlatform}, nil, err
 	}
 	// If there is an active platform we have got all the information to build but...
@@ -134,7 +134,7 @@ func (h *newBuilderReconciliationState) Do(ctx context.Context, workflow *operat
 		_, err = h.performStatusUpdate(ctx, workflow)
 	} else {
 		// TODO: not ideal, but we will improve it on https://issues.redhat.com/browse/KOGITO-8792
-		klog.V(log.I).Info("Build is in failed state, try to delete the SonataFlowBuild to restart a new build cycle")
+		klog.V(log.I).InfoS("Build is in failed state, try to delete the SonataFlowBuild to restart a new build cycle")
 	}
 
 	return ctrl.Result{RequeueAfter: requeueAfterStartingBuild}, nil, err
@@ -152,7 +152,7 @@ func (h *followBuildStatusReconciliationState) Do(ctx context.Context, workflow 
 	// Let's retrieve the build to check the status
 	build, err := builder.NewSonataFlowBuildManager(ctx, h.client).GetOrCreateBuild(workflow)
 	if err != nil {
-		klog.V(log.E).Info("Failed to get or create the build for the workflow.", err)
+		klog.V(log.E).ErrorS(err, "Failed to get or create the build for the workflow.")
 		workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.BuildFailedReason, build.Status.Error)
 		if _, err = h.performStatusUpdate(ctx, workflow); err != nil {
 			return ctrl.Result{}, nil, err
@@ -161,7 +161,7 @@ func (h *followBuildStatusReconciliationState) Do(ctx context.Context, workflow 
 	}
 
 	if build.Status.BuildPhase == operatorapi.BuildPhaseSucceeded {
-		klog.V(log.I).Info("Workflow build has finished")
+		klog.V(log.I).InfoS("Workflow build has finished")
 		//If we have finished a build and the workflow is not running, we will start the provisioning phase
 		workflow.Status.Manager().MarkTrue(api.BuiltConditionType)
 		_, err = h.performStatusUpdate(ctx, workflow)
@@ -268,7 +268,7 @@ func (h *deployWorkflowReconciliationState) handleObjects(ctx context.Context, w
 	objs := []client.Object{existingDeployment, existingService, propsCM}
 
 	if !requeue {
-		klog.V(log.I).Info("Skip reconcile: Deployment and service already exists",
+		klog.V(log.I).InfoS("Skip reconcile: Deployment and service already exists",
 			"Deployment.Namespace", existingDeployment.Namespace, "Deployment.Name", existingDeployment.Name)
 		// TODO: very naive, the state should observe the Deployment's status: https://issues.redhat.com/browse/KOGITO-8524
 		workflow.Status.Manager().MarkTrue(api.RunningConditionType)

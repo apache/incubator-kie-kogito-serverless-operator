@@ -146,7 +146,7 @@ func (c *containerBuilderManager) buildImage(kb internalBuilder) (*api.Container
 
 	build, err := newBuild(kb, plat, c.commonConfig.Data[configKeyDefaultExtension], cli)
 	if err != nil {
-		klog.V(log.E).Info(err, err.Error())
+		klog.V(log.E).ErrorS(err, "error during build Image")
 		return nil, err
 	}
 	return build, err
@@ -175,7 +175,7 @@ func (c *containerBuilderManager) scheduleBuild(kb internalBuilder) (*api.Contai
 
 	build, err := newBuild(kb, plat, c.commonConfig.Data[configKeyDefaultExtension], cli)
 	if err != nil {
-		klog.V(log.E).Info(err, err.Error())
+		klog.V(log.E).ErrorS(err, "error during schedule Build")
 		return nil, err
 	}
 	return build, err

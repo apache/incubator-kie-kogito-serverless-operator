@@ -45,7 +45,7 @@ func (action *monitorAction) Handle(ctx context.Context, platform *operatorapi.S
 	// Just track the version of the operator in the platform resource
 	if platform.Status.Version != metadata.SpecVersion {
 		platform.Status.Version = metadata.SpecVersion
-		klog.V(log.I).Info("Platform version updated", "version", platform.Status.Version)
+		klog.V(log.I).InfoS("Platform version updated", "version", platform.Status.Version)
 	}
 
 	// Refresh applied configuration

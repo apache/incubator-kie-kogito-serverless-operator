@@ -65,25 +65,25 @@ func KanikoBuild(connection *client.Client, config KanikoVanillaConfig) (string,
 	}, hostConfig, nil, nil, config.ContainerName)
 
 	if err != nil {
-		klog.V(log.E).Info("error during KanikoBuild, ContainerCreate", err)
+		klog.V(log.E).ErrorS(err, "error during KanikoBuild, ContainerCreate")
 	}
 
 	if err := connection.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		klog.V(log.E).Info("error during KanikoBuild, ContainerStart", err)
+		klog.V(log.E).ErrorS(err, "error during KanikoBuild, ContainerStart")
 	}
 
 	statusCh, errCh := connection.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
-			klog.V(log.E).Info("error during KanikoBuild, ContainerWait", err)
+			klog.V(log.E).ErrorS(err, "error during KanikoBuild, ContainerWait")
 		}
 	case <-statusCh:
 	}
 
 	out, err := connection.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
-		klog.V(log.E).Info("error during KanikoBuild, ContainerLogs", err)
+		klog.V(log.E).ErrorS(err, "error during KanikoBuild, ContainerLogs")
 	}
 	if config.ReadBuildOutput {
 		stdcopy.StdCopy(os.Stdout, os.Stderr, out)

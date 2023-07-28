@@ -29,12 +29,12 @@ func GetJSONWorkflow(workflowCR *operatorapi.SonataFlow, ctx context.Context) ([
 	// apply workflow metadata
 	workflow, err := operatorapi.ToCNCFWorkflow(workflowCR, ctx)
 	if err != nil {
-		klog.V(log.E).Info("Failed converting SonataFlow into Workflow", err)
+		klog.V(log.E).ErrorS(err, "Failed converting SonataFlow into Workflow")
 		return nil, err
 	}
 	jsonWorkflow, err := json.Marshal(workflow)
 	if err != nil {
-		klog.V(log.E).Info("Failed converting SonataFlow into JSON", err)
+		klog.V(log.E).ErrorS(err, "Failed converting SonataFlow into JSON")
 		return nil, err
 	}
 	return jsonWorkflow, nil

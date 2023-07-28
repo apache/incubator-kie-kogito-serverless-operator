@@ -70,14 +70,14 @@ func (r *SonataFlowBuildReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
-		klog.V(log.E).Info("Failed to get the SonataFlowBuild", err)
+		klog.V(log.E).ErrorS(err, "Failed to get the SonataFlowBuild")
 		return ctrl.Result{}, err
 	}
 
 	phase := build.Status.BuildPhase
 	buildManager, err := builder.NewBuildManager(ctx, r.Client, r.Config, build.Name, build.Namespace)
 	if err != nil {
-		klog.V(log.E).Info("Failed to get create a build manager to handle the workflow build", err)
+		klog.V(log.E).ErrorS(err, "Failed to get create a build manager to handle the workflow build")
 		return ctrl.Result{}, err
 	}
 

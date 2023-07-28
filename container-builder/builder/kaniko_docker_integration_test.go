@@ -40,7 +40,7 @@ func (suite *KanikoDockerTestSuite) TestKanikoBuild() {
 	//registry, err, repos := checkEmptyDockerRegistry(suite)
 	mydir, err := os.Getwd()
 	if err != nil {
-		klog.V(log.E).Info("error getting working directory.", err)
+		klog.V(log.E).ErrorS(err, "error getting working directory.")
 	}
 	dockefileDir := mydir + "/../examples/dockerfiles"
 	assert.Nil(suite.T(), suite.Docker.PullImage("gcr.io/kaniko-project/executor:latest"), "Pull image failed")
@@ -53,11 +53,11 @@ func (suite *KanikoDockerTestSuite) TestKanikoBuild() {
 		RegistryFinalImageName: imageName,
 		ReadBuildOutput:        false,
 	}
-	klog.V(log.I).Info("Start Kaniko build")
+	klog.V(log.I).InfoS("Start Kaniko build")
 	start := time.Now()
 	imageID, error := KanikoBuild(suite.Docker.Connection, config)
 	timeElapsed := time.Since(start)
-	klog.V(log.I).Infof("The Kaniko build took %s", timeElapsed)
+	klog.V(log.I).InfoS("The Kaniko build took", "duration", timeElapsed)
 	assert.Nil(suite.T(), error, "ContainerBuild failed")
 	assert.NotNil(suite.T(), imageID, error, "ContainerBuild failed")
 	//@TODO investigate when the code will be in the mono repo
@@ -75,7 +75,7 @@ func checkEmptyDockerRegistry(suite *KanikoDockerTestSuite) (common.RegistryCont
 	assert.Truef(suite.T(), suite.RegistryID != "", "Registry not started")
 	registry, err := common.GetRegistryContainer()
 	if err != nil {
-		klog.V(log.E).Error("registry not found", err)
+		klog.V(log.E).ErrorS(err, "registry not found")
 	}
 	repos, _ := registry.GetRepositories()
 	assert.True(suite.T(), len(repos) == 0)

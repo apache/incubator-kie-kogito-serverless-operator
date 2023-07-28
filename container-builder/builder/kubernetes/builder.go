@@ -176,16 +176,16 @@ func (b *builder) Reconcile() (*api.ContainerBuild, error) {
 		a.InjectClient(b.Context.Client)
 
 		if a.CanHandle(target) {
-			klog.V(log.I).Infof("Invoking action %s", a.Name())
+			klog.V(log.I).InfoS("Invoking action", "action", a.Name())
 			newTarget, err := a.Handle(b.Context.C, target)
 			if err != nil {
-				klog.V(log.E).Infof("Failed to invoke action %s", a.Name(), err)
+				klog.V(log.E).ErrorS(err, "Failed to invoke action", "action", a.Name())
 				return nil, err
 			}
 
 			if newTarget != nil {
 				if newTarget.Status.Phase != target.Status.Phase {
-					klog.V(log.I).Info(
+					klog.V(log.I).InfoS(
 						"state transition",
 						"phase-from", target.Status.Phase,
 						"phase-to", newTarget.Status.Phase,

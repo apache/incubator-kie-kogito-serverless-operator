@@ -65,7 +65,7 @@ func newFastDiscoveryRESTMapperWithFilter(config *rest.Config, filter func(*meta
 	for _, group := range groups.Groups {
 		pinnedGroup := group
 		pick := filter(&pinnedGroup)
-		klog.V(log.D).Infof("Group: %s %v", group.Name, pick)
+		klog.V(log.D).InfoS("Group", "name", pick)
 		totalCount++
 		if !pick {
 			continue
@@ -79,7 +79,7 @@ func newFastDiscoveryRESTMapperWithFilter(config *rest.Config, filter func(*meta
 		wg.Start(func() { discoverGroupResources(dc, gr) })
 	}
 	wg.Wait()
-	klog.V(log.D).Infof("Picked %d/%d", pickedCount, totalCount)
+	klog.V(log.D).InfoS("Picked", "count", pickedCount, "totalCount", totalCount)
 	return restmapper.NewDiscoveryRESTMapper(grs), nil
 }
 
@@ -87,7 +87,7 @@ func discoverGroupResources(dc discovery.DiscoveryInterface, gr *restmapper.APIG
 	for _, version := range gr.Group.Versions {
 		resources, err := dc.ServerResourcesForGroupVersion(version.GroupVersion)
 		if err != nil {
-			klog.V(log.E).Info(version.GroupVersion, err)
+			klog.V(log.E).ErrorS(err, version.GroupVersion)
 		}
 		gr.VersionedResources[version.Version] = resources.APIResources
 	}

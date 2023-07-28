@@ -79,13 +79,13 @@ func (action *initializeAction) Handle(ctx context.Context, platform *operatorap
 		//If KanikoCache is enabled
 		if IsKanikoCacheEnabled(platform) {
 			// Create the persistent volume claim used by the Kaniko cache
-			klog.V(log.I).Info("Create persistent volume claim")
+			klog.V(log.I).InfoS("Create persistent volume claim")
 			err := createPersistentVolumeClaim(ctx, action.client, platform)
 			if err != nil {
 				return nil, err
 			}
 			// Create the Kaniko warmer pod that caches the base image into the SonataFlow builder volume
-			klog.V(log.I).Info("Create Kaniko cache warmer pod")
+			klog.V(log.I).InfoS("Create Kaniko cache warmer pod")
 			err = createKanikoCacheWarmerPod(ctx, action.client, platform)
 			if err != nil {
 				return nil, err

@@ -74,7 +74,7 @@ func (s stateSupport) performStatusUpdate(ctx context.Context, workflow *operato
 	var err error
 	workflow.Status.ObservedGeneration = workflow.Generation
 	if err = s.client.Status().Update(ctx, workflow); err != nil {
-		klog.V(log.E).Info("Failed to update Workflow status", err)
+		klog.V(log.E).ErrorS(err, "Failed to update Workflow status")
 		return false, err
 	}
 	return true, err
@@ -109,7 +109,7 @@ func (b baseReconciler) Reconcile(ctx context.Context, workflow *operatorapi.Son
 		return result, err
 	}
 	b.objects = objects
-	klog.V(log.I).Info("Returning from reconciliation", "Result", result)
+	klog.V(log.I).InfoS("Returning from reconciliation", "Result", result)
 
 	return result, err
 }
@@ -143,13 +143,13 @@ type reconciliationStateMachine struct {
 func (r *reconciliationStateMachine) do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
 	for _, h := range r.states {
 		if h.CanReconcile(workflow) {
-			klog.V(log.I).Info("Found a condition to reconcile.", "Conditions", workflow.Status.Conditions)
+			klog.V(log.I).InfoS("Found a condition to reconcile.", "Conditions", workflow.Status.Conditions)
 			result, objs, err := h.Do(ctx, workflow)
 			if err != nil {
 				return result, objs, err
 			}
 			if err = h.PostReconcile(ctx, workflow); err != nil {
-				klog.V(log.E).Info("Error in Post Reconcile actions.", "Workflow", workflow.Name, "Conditions", workflow.Status.Conditions, err)
+				klog.V(log.E).ErrorS(err, "Error in Post Reconcile actions.", "Workflow", workflow.Name, "Conditions", workflow.Status.Conditions)
 			}
 			return result, objs, err
 		}

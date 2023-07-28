@@ -112,7 +112,7 @@ func MockServiceWithExtraScheme(objs ...runtime.Object) *MockPlatformService {
 		}
 	}
 	client := fake.NewFakeClientWithScheme(scheme)
-	klog.V(log.D).Infof("Fake client created as %v", client)
+	klog.V(log.D).InfoS("Fake client created", "client", client)
 	return &MockPlatformService{
 		Client: client,
 		scheme: scheme,

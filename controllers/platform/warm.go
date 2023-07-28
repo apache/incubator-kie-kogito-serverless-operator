@@ -68,13 +68,13 @@ func (action *warmAction) Handle(ctx context.Context, platform *operatorapi.Sona
 
 	switch pod.Status.Phase {
 	case corev1.PodSucceeded:
-		klog.V(log.I).Info("Kaniko cache successfully warmed up")
+		klog.V(log.I).InfoS("Kaniko cache successfully warmed up")
 		platform.Status.Phase = operatorapi.PlatformPhaseCreating
 		return platform, nil
 	case corev1.PodFailed:
 		return nil, errors.New("failed to warm up Kaniko cache")
 	default:
-		klog.V(log.I).Info("Waiting for Kaniko cache to warm up...")
+		klog.V(log.I).InfoS("Waiting for Kaniko cache to warm up...")
 		// Requeue
 		return nil, nil
 	}

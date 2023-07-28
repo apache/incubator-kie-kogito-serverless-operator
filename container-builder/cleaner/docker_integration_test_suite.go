@@ -53,7 +53,7 @@ func (suite *DockerTestSuite) TearDownSuite() {
 	}
 	purged, err := suite.Docker.PurgeContainer("", common.REGISTRY_IMG)
 	if err != nil {
-		klog.V(log.E).Info("Error during purged container in TearDown Suite.", err)
+		klog.V(log.E).ErrorS(err, "Error during purged container in TearDown Suite.")
 	}
-	klog.V(log.I).Infof("Purged containers %t", purged)
+	klog.V(log.I).InfoS("Purged container", "containers", purged)
 }

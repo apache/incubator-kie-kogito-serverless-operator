@@ -101,7 +101,7 @@ func newDevProfileReconciler(client client.Client, config *rest.Config) ProfileR
 		baseReconciler: newBaseProfileReconciler(support, stateMachine),
 	}
 
-	klog.V(log.I).Info("Reconciling in", "profile", profile.GetProfile())
+	klog.V(log.I).InfoS("Reconciling in", "profile", profile.GetProfile())
 	return profile
 }
 
@@ -213,7 +213,7 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 
 	// First time reconciling this object, mark as wait for deployment
 	if workflow.Status.GetTopLevelCondition().IsUnknown() {
-		klog.V(log.I).Info("Workflow is in WaitingForDeployment Condition")
+		klog.V(log.I).InfoS("Workflow is in WaitingForDeployment Condition")
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
 		if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
@@ -224,7 +224,7 @@ func (e *ensureRunningDevWorkflowReconciliationState) Do(ctx context.Context, wo
 	// Is the deployment still available?
 	convertedDeployment := deployment.(*appsv1.Deployment)
 	if !kubeutil.IsDeploymentAvailable(convertedDeployment) {
-		klog.V(log.I).Info("Workflow is not running due to a problem in the Deployment. Attempt to recover.")
+		klog.V(log.I).InfoS("Workflow is not running due to a problem in the Deployment. Attempt to recover.")
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, getDeploymentFailureMessage(convertedDeployment))
 		if _, err = e.performStatusUpdate(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, objs, err
@@ -256,7 +256,7 @@ func (f *followDeployDevWorkflowReconciliationState) Do(ctx context.Context, wor
 
 	if kubeutil.IsDeploymentAvailable(deployment) {
 		workflow.Status.Manager().MarkTrue(api.RunningConditionType)
-		klog.V(log.I).Info("Workflow is in Running Condition")
+		klog.V(log.I).InfoS("Workflow is in Running Condition")
 		if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
 
@@ -266,7 +266,7 @@ func (f *followDeployDevWorkflowReconciliationState) Do(ctx context.Context, wor
 
 	if kubeutil.IsDeploymentProgressing(deployment) {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
-		klog.V(log.I).Info("Workflow is in WaitingForDeployment Condition")
+		klog.V(log.I).InfoS("Workflow is in WaitingForDeployment Condition")
 		if _, err := f.performStatusUpdate(ctx, workflow); err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
 		}
@@ -276,7 +276,7 @@ func (f *followDeployDevWorkflowReconciliationState) Do(ctx context.Context, wor
 	failedReason := getDeploymentFailureMessage(deployment)
 	workflow.Status.LastTimeRecoverAttempt = metav1.Now()
 	workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentFailureReason, failedReason)
-	klog.V(log.I).Info("Workflow deployment failed", "Reason Message", failedReason)
+	klog.V(log.I).InfoS("Workflow deployment failed", "Reason Message", failedReason)
 	_, err := f.performStatusUpdate(ctx, workflow)
 	return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil, err
 }
@@ -312,7 +312,7 @@ func (r *recoverFromFailureDevReconciliationState) Do(ctx context.Context, workf
 	if err := r.client.Get(ctx, client.ObjectKeyFromObject(workflow), deployment); err != nil {
 		// if the deployment is not there, let's try to reset the status condition and make the reconciliation fix the objects
 		if errors.IsNotFound(err) {
-			klog.V(log.I).Info("Tried to recover from failed state, no deployment found, trying to reset the workflow conditions")
+			klog.V(log.I).InfoS("Tried to recover from failed state, no deployment found, trying to reset the workflow conditions")
 			workflow.Status.RecoverFailureAttempts = 0
 			workflow.Status.Manager().MarkUnknown(api.RunningConditionType, "", "")
 			if _, updateErr := r.performStatusUpdate(ctx, workflow); updateErr != nil {
@@ -360,7 +360,7 @@ func (r *recoverFromFailureDevReconciliationState) Do(ctx context.Context, workf
 	})
 
 	if retryErr != nil {
-		klog.V(log.I).Info("Error during Deployment rollout")
+		klog.V(log.E).ErrorS(retryErr, "Error during Deployment rollout")
 		return ctrl.Result{RequeueAfter: requeueRecoverDeploymentErrorInterval}, nil, nil
 	}
 

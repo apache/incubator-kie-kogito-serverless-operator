@@ -47,7 +47,7 @@ func ConfigureRegistry(ctx context.Context, c client.Client, p *operatorapi.Sona
 	//@TODO Add a notification on the status about this registry value ignored when https://issues.redhat.com/browse/KOGITO-9218 will be implemented
 	if p.Spec.BuildPlatform.BuildStrategy == operatorapi.PlatformBuildStrategy && p.Status.Cluster == operatorapi.PlatformClusterOpenShift {
 		p.Spec.BuildPlatform.Registry = operatorapi.RegistrySpec{}
-		klog.V(log.I).Info("Platform registry not set and ignored on openshift cluster")
+		klog.V(log.I).InfoS("Platform registry not set and ignored on openshift cluster")
 		return nil
 	}
 
@@ -55,19 +55,19 @@ func ConfigureRegistry(ctx context.Context, c client.Client, p *operatorapi.Sona
 		// try KEP-1755
 		address, err := GetRegistryAddress(ctx, c)
 		if err != nil && verbose {
-			klog.V(log.E).Info("Cannot find a registry where to push images via KEP-1755", err)
+			klog.V(log.E).ErrorS(err, "Cannot find a registry where to push images via KEP-1755")
 		} else if err == nil && address != nil {
 			p.Spec.BuildPlatform.Registry.Address = *address
 		}
 	}
 
-	klog.V(log.D).Infof("Final Registry Address: %s", p.Spec.BuildPlatform.Registry.Address)
+	klog.V(log.D).InfoS("Final Registry Address", "address", p.Spec.BuildPlatform.Registry.Address)
 	return nil
 }
 
 func SetPlatformDefaults(p *operatorapi.SonataFlowPlatform, verbose bool) error {
 	if p.Spec.BuildPlatform.BuildStrategyOptions == nil {
-		klog.V(log.D).Infof("SonataFlow Platform [%s]: setting publish strategy options", p.Namespace)
+		klog.V(log.D).InfoS("SonataFlow Platform: setting publish strategy options", "namespace", p.Namespace)
 		p.Spec.BuildPlatform.BuildStrategyOptions = map[string]string{}
 	}
 
@@ -75,15 +75,15 @@ func SetPlatformDefaults(p *operatorapi.SonataFlowPlatform, verbose bool) error 
 		d := p.Spec.BuildPlatform.GetTimeout().Duration.Truncate(time.Second)
 
 		if verbose && p.Spec.BuildPlatform.Timeout.Duration != d {
-			klog.V(log.I).Infof("ContainerBuild timeout minimum unit is sec (configured: %s, truncated: %s)", p.Spec.BuildPlatform.GetTimeout().Duration, d)
+			klog.V(log.I).InfoS("ContainerBuild timeout minimum unit is sec", "configured", p.Spec.BuildPlatform.GetTimeout().Duration, "truncated", d)
 		}
 
-		klog.V(log.D).Infof("SonataFlow Platform [%s]: setting build timeout", p.Namespace)
+		klog.V(log.D).InfoS("SonataFlow Platform: setting build timeout", "namespace", p.Namespace)
 		p.Spec.BuildPlatform.Timeout = &metav1.Duration{
 			Duration: d,
 		}
 	} else {
-		klog.V(log.D).Infof("SonataFlow Platform [%s]: setting default build timeout to 5 minutes", p.Namespace)
+		klog.V(log.D).InfoS("SonataFlow Platform: setting default build timeout to 5 minutes", "namespace", p.Namespace)
 		p.Spec.BuildPlatform.Timeout = &metav1.Duration{
 			Duration: 5 * time.Minute,
 		}
@@ -103,15 +103,15 @@ func SetPlatformDefaults(p *operatorapi.SonataFlowPlatform, verbose bool) error 
 		defaultKanikoBuildCache := "false"
 		p.Spec.BuildPlatform.BuildStrategyOptions[kanikoBuildCacheEnabled] = defaultKanikoBuildCache
 		if verbose {
-			klog.V(log.I).Infof("Kaniko cache set to %s", defaultKanikoBuildCache)
+			klog.V(log.I).InfoS("Kaniko cache set", "value", defaultKanikoBuildCache)
 		}
 	}
 
 	setStatusAdditionalInfo(p)
 
 	if verbose {
-		klog.V(log.I).Infof("BaseImage set to %s", p.Spec.BuildPlatform.BaseImage)
-		klog.V(log.I).Infof("Timeout set to %s", p.Spec.BuildPlatform.GetTimeout())
+		klog.V(log.I).InfoS("BaseImage set", "value", p.Spec.BuildPlatform.BaseImage)
+		klog.V(log.I).InfoS("Timeout set", "value", p.Spec.BuildPlatform.GetTimeout())
 	}
 	return nil
 }
@@ -119,11 +119,11 @@ func SetPlatformDefaults(p *operatorapi.SonataFlowPlatform, verbose bool) error 
 func setStatusAdditionalInfo(platform *operatorapi.SonataFlowPlatform) {
 	platform.Status.Info = make(map[string]string)
 
-	klog.V(log.D).Infof("SonataFlow Platform [%s]: setting build publish strategy", platform.Namespace)
+	klog.V(log.D).InfoS("SonataFlow Platform: setting build publish strategy", "namespace", platform.Namespace)
 	if platform.Spec.BuildPlatform.BuildStrategy == operatorapi.OperatorBuildStrategy {
 		platform.Status.Info["kanikoVersion"] = defaults.KanikoVersion
 	}
-	klog.V(log.D).Infof("SonataFlow [%s]: setting status info", platform.Namespace)
+	klog.V(log.D).InfoS("SonataFlow: setting status info", "namespace", platform.Namespace)
 	platform.Status.Info["goVersion"] = runtime.Version()
 	platform.Status.Info["goOS"] = runtime.GOOS
 }

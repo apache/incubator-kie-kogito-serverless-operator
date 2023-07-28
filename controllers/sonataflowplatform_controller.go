@@ -69,7 +69,7 @@ func (r *SonataFlowPlatformReconciler) Reconcile(ctx context.Context, req reconc
 	if ok, err := platform.IsOperatorAllowedOnNamespace(ctx, r.Reader, req.Namespace); err != nil {
 		return reconcile.Result{}, err
 	} else if !ok {
-		klog.V(log.I).Infof("Ignoring request because the operator hasn't got the permissions to work on namespace %s", req.Namespace)
+		klog.V(log.I).InfoS("Ignoring request because the operator hasn't got the permissions to work on namespace", "namespace", req.Namespace)
 		return reconcile.Result{}, nil
 	}
 
@@ -91,7 +91,7 @@ func (r *SonataFlowPlatformReconciler) Reconcile(ctx context.Context, req reconc
 
 	// Only process resources assigned to the operator
 	if !platform.IsOperatorHandlerConsideringLock(ctx, r.Reader, req.Namespace, &instance) {
-		klog.V(log.I).Info("Ignoring request because resource is not assigned to current operator")
+		klog.V(log.I).InfoS("Ignoring request because resource is not assigned to current operator")
 		return reconcile.Result{}, nil
 	}
 	actions := []platform.Action{
@@ -112,7 +112,7 @@ func (r *SonataFlowPlatformReconciler) Reconcile(ctx context.Context, req reconc
 		a.InjectClient(cli)
 
 		if a.CanHandle(target) {
-			klog.V(log.I).Info("Invoking action", "Name", a.Name())
+			klog.V(log.I).InfoS("Invoking action", "Name", a.Name())
 
 			phaseFrom := target.Status.Phase
 
@@ -138,7 +138,7 @@ func (r *SonataFlowPlatformReconciler) Reconcile(ctx context.Context, req reconc
 				targetPhase = target.Status.Phase
 
 				if targetPhase != phaseFrom {
-					klog.V(log.I).Info(
+					klog.V(log.I).InfoS(
 						"state transition",
 						"phase-from", phaseFrom,
 						"phase-to", target.Status.Phase,

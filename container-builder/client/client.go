@@ -164,7 +164,7 @@ func initialize(kubeconfig string) {
 		if kc, err := shouldUseContainerMode(); kc && err == nil {
 			return
 		} else if err != nil {
-			klog.V(log.E).Infof("could not determine if running in a container")
+			klog.V(log.E).ErrorS(err, "could not determine if running in a container")
 		}
 		var err error
 		kubeconfig, err = getDefaultKubeConfigFile()

@@ -16,7 +16,6 @@ package builder
 
 import (
 	"context"
-	"fmt"
 
 	"k8s.io/klog/v2"
 
@@ -50,12 +49,12 @@ func NewBuildManager(ctx context.Context, client client.Client, cliConfig *rest.
 		if errors.IsNotFound(err) {
 			return nil, err
 		}
-		klog.V(log.E).Info(fmt.Sprintf("Error retrieving the active platform. Workflow %s build cannot be performed!", targetName), err)
+		klog.V(log.E).ErrorS(err, "Error retrieving the active platform. Workflow build cannot be performed!", "workflow", targetName)
 		return nil, err
 	}
 	commonConfig, err := GetCommonConfigMap(client, targetNamespace)
 	if err != nil {
-		klog.V(log.E).Info("Failed to get common configMap for Workflow Builder. Make sure that sonataflow-operator-builder-config is present in the operator namespace.", err)
+		klog.V(log.E).ErrorS(err, "Failed to get common configMap for Workflow Builder. Make sure that sonataflow-operator-builder-config is present in the operator namespace.")
 		return nil, err
 	}
 	managerContext := buildManagerContext{
@@ -70,7 +69,7 @@ func NewBuildManager(ctx context.Context, client client.Client, cliConfig *rest.
 	case operatorapi.PlatformClusterKubernetes:
 		return newContainerBuilderManager(managerContext, cliConfig), nil
 	default:
-		klog.V(log.I).Info("Impossible to check the Cluster type in the SonataFlowPlatform")
+		klog.V(log.I).InfoS("Impossible to check the Cluster type in the SonataFlowPlatform")
 		return newContainerBuilderManager(managerContext, cliConfig), nil
 	}
 }

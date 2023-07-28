@@ -90,9 +90,9 @@ func (action *errorRecoveryAction) Handle(ctx context.Context, build *api.Contai
 	build.Status.Failure.Recovery.Attempt++
 	build.Status.Failure.Recovery.AttemptTime = metav1.Now()
 
-	klog.V(log.I).Infof("Recovery attempt (%d/%d)",
-		build.Status.Failure.Recovery.Attempt,
-		build.Status.Failure.Recovery.AttemptMax,
+	klog.V(log.I).InfoS("Recovery attempt",
+		"attempt", build.Status.Failure.Recovery.Attempt,
+		"attemptMax", build.Status.Failure.Recovery.AttemptMax,
 	)
 
 	return build, nil

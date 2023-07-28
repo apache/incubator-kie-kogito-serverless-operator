@@ -50,7 +50,7 @@ func ConfigureDefaults(ctx context.Context, c client.Client, p *operatorapi.Sona
 	}
 
 	if verbose && p.Spec.BuildPlatform.Timeout.Duration != 0 {
-		klog.V(log.I).Infof("Maven Timeout set to %s", p.Spec.BuildPlatform.Timeout.Duration)
+		klog.V(log.I).InfoS("Maven Timeout set", "timeout", p.Spec.BuildPlatform.Timeout.Duration)
 	}
 
 	updatePlatform(ctx, c, p)
@@ -62,13 +62,13 @@ func updatePlatform(ctx context.Context, c client.Client, p *operatorapi.SonataF
 	config := operatorapi.SonataFlowPlatform{}
 	errGet := c.Get(ctx, ctrl.ObjectKey{Namespace: p.Namespace, Name: p.Name}, &config)
 	if errGet != nil {
-		klog.V(log.E).Info("Error reading the Platform", errGet)
+		klog.V(log.E).ErrorS(errGet, "Error reading the Platform")
 	}
 	config.Spec = p.Spec
 	config.Status.Cluster = p.Status.Cluster
 
 	updateErr := c.Update(ctx, &config)
 	if updateErr != nil {
-		klog.V(log.E).Info("Error updating the BuildPlatform", updateErr)
+		klog.V(log.E).ErrorS(updateErr, "Error updating the BuildPlatform")
 	}
 }

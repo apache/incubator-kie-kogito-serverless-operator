@@ -54,6 +54,6 @@ func (d *statusEnricher) Enrich(ctx context.Context, workflow *operatorapi.Sonat
 		return result, err
 	}
 
-	klog.V(log.I).Info("Enrichment operation finalized", "result", result, "workflow", workflow.GetName(), "namespace", workflow.GetNamespace())
+	klog.V(log.I).InfoS("Enrichment operation finalized", "result", result, "workflow", workflow.GetName(), "namespace", workflow.GetNamespace())
 	return result, nil
 }
