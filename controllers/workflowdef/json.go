@@ -18,10 +18,11 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/kiegroup/kogito-serverless-operator/log"
+
 	"k8s.io/klog/v2"
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
-	"github.com/kiegroup/kogito-serverless-operator/log"
 )
 
 // GetJSONWorkflow return a Kogito compliant JSON format workflow as bytearray give a specific workflow CR
