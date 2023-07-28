@@ -20,7 +20,7 @@ package cleaner
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/common"
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/util/log"
