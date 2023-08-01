@@ -179,7 +179,7 @@ func (b *builder) Reconcile() (*api.ContainerBuild, error) {
 			klog.V(log.I).InfoS("Invoking action", "buildAction", a.Name())
 			newTarget, err := a.Handle(b.Context.C, target)
 			if err != nil {
-				klog.V(log.E).ErrorS(err, "Failed to invoke action", "action", a.Name())
+				klog.V(log.E).ErrorS(err, "Failed to invoke action", "buildAction", a.Name())
 				return nil, err
 			}
 
