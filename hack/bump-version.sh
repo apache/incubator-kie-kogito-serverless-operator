@@ -42,6 +42,7 @@ fi
 echo "Set new version to ${new_version} (img_suffix = '${imageSuffix}', majorMinor = ${newMajorMinorVersion})"
 
 sed -i "s|^VERSION ?=.*|VERSION ?= ${new_version}|g" Makefile
+sed -i "s|^REDUCED_VERSION ?=.*|REDUCED_VERSION ?= ${newMajorMinorVersion}|g" Makefile
 sed -i "s|newTag:.*|newTag: ${new_version}|g" config/manager/kustomization.yaml
 
 sed -i "s|IMAGE_TAG_BASE ?=.*|IMAGE_TAG_BASE ?= ${imageTag}${imageSuffix}|g" Makefile
@@ -55,6 +56,8 @@ find . -name "*.yaml" -exec sed -i "s|quay.io/kiegroup/kogito-swf-devmode.*:${ol
 sed -i "s|quay.io/kiegroup/kogito-swf-devmode.*:${oldMajorMinorVersion}|quay.io/kiegroup/kogito-swf-devmode${imageSuffix}:${newMajorMinorVersion}|" Dockerfile
 
 sed -i -r "s|OperatorVersion =.*|OperatorVersion = \"${new_version}\"|g" version/version.go
+
+sed -i "s|containerImage:.*|containerImage: ${imageTag}${imageSuffix}:${newMajorMinorVersion}|g" $(getCsvFile)
 
 make generate-all
 make vet

@@ -33,3 +33,7 @@ getOperatorImageName() {
 getCsvFile() {
   echo "${CSV_DIR}/sonataflow-operator.clusterserviceversion.yaml"
 }
+
+getBundleCsvFile() {
+  echo "${BUNDLE_DIR}/sonataflow-operator.clusterserviceversion.yaml"
+}
