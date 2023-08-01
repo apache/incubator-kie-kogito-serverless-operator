@@ -31,7 +31,7 @@ func getWorkflow(namespace string, name string, c client.Client, ctx context.Con
 	serverlessWorkflowType.Name = name
 	serverlessWorkflow := &operatorapi.SonataFlow{}
 	if err := c.Get(ctx, client.ObjectKeyFromObject(serverlessWorkflowType), serverlessWorkflow); err != nil {
-		klog.V(log.E).ErrorS(err, "error during Get")
+		klog.V(log.E).ErrorS(err, "unable to retrieve SonataFlow definition")
 	}
 	return serverlessWorkflow
 }
