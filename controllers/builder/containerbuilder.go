@@ -175,7 +175,7 @@ func (c *containerBuilderManager) scheduleBuild(kb internalBuilder) (*api.Contai
 
 	build, err := newBuild(kb, plat, c.commonConfig.Data[configKeyDefaultExtension], cli)
 	if err != nil {
-		klog.V(log.E).ErrorS(err, "error during schedule Build")
+		klog.V(log.E).ErrorS(err, "error during schedule build")
 		return nil, err
 	}
 	return build, err
