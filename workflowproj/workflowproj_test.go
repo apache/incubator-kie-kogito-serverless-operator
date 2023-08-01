@@ -76,7 +76,6 @@ func Test_Handler_WorkflowMinimalAndPropsAndSpecAndGeneric(t *testing.T) {
 		WithWorkflow(getWorkflowMinimal()).
 		WithAppProperties(getWorkflowProperties()).
 		AddResource("myopenapi.json", getSpecOpenApi()).
-		AddResource("myopenapi.json", getSpecOpenApi()).
 		AddResource("myopenapi2.json", getSpecOpenApi()).
 		AddResourceAt("input.json", "files", getSpecGeneric()).
 		AsObjects()
