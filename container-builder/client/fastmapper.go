@@ -79,7 +79,7 @@ func newFastDiscoveryRESTMapperWithFilter(config *rest.Config, filter func(*meta
 		wg.Start(func() { discoverGroupResources(dc, gr) })
 	}
 	wg.Wait()
-	klog.V(log.D).InfoS("Picked", "count", pickedCount, "totalCount", totalCount)
+	klog.V(log.D).InfoS("Picked", "pickedCount", pickedCount, "totalCount", totalCount)
 	return restmapper.NewDiscoveryRESTMapper(grs), nil
 }
 
