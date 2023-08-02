@@ -83,7 +83,7 @@ func SetPlatformDefaults(p *operatorapi.SonataFlowPlatform, verbose bool) error 
 			Duration: d,
 		}
 	} else {
-		klog.V(log.D).InfoS("SonataFlow Platform: setting default build timeout to 5 minutes", "namespace", p.Namespace)
+		klog.V(log.D).InfoS("SonataFlow Platform setting default build timeout to 5 minutes", "namespace", p.Namespace)
 		p.Spec.BuildPlatform.Timeout = &metav1.Duration{
 			Duration: 5 * time.Minute,
 		}
