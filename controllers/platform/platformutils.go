@@ -123,7 +123,7 @@ func setStatusAdditionalInfo(platform *operatorapi.SonataFlowPlatform) {
 	if platform.Spec.BuildPlatform.BuildStrategy == operatorapi.OperatorBuildStrategy {
 		platform.Status.Info["kanikoVersion"] = defaults.KanikoVersion
 	}
-	klog.V(log.D).InfoS("SonataFlow: setting status info", "namespace", platform.Namespace)
+	klog.V(log.D).InfoS("SonataFlow setting status info", "namespace", platform.Namespace)
 	platform.Status.Info["goVersion"] = runtime.Version()
 	platform.Status.Info["goOS"] = runtime.GOOS
 }
