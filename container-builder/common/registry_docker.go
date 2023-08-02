@@ -115,7 +115,7 @@ func (d DockerLocalRegistry) StartRegistry() string {
 	}
 
 	// give some time to start
-	klog.V(log.I).InfoS("Waiting", "seconds", 4)
+	klog.V(log.I).InfoS("Waiting 4 seconds")
 	time.Sleep(4 * time.Second)
 	return d.GetRegistryRunningID()
 }
