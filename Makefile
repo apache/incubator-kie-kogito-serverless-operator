@@ -321,6 +321,9 @@ bump-version:
 install-operator-sdk:
 	./hack/ci/install-operator-sdk.sh
 
+align-osl-config:
+	./hack/align-osl-config.sh
+
 .PHONY: addheaders
 addheaders:
 	./hack/addheaders.sh

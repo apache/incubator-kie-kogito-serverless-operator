@@ -1,4 +1,4 @@
-FROM registry.redhat.io/openshift-serverless-1-tech-preview/logic-swf-builder-rhel8 AS builder
+FROM registry.redhat.io/openshift-serverless-1-tech-preview/logic-swf-builder-rhel8:latest AS builder
   
   # Copy from build context to skeleton resources project
 COPY * ./resources/
