@@ -119,7 +119,7 @@ func SetPlatformDefaults(p *operatorapi.SonataFlowPlatform, verbose bool) error 
 func setStatusAdditionalInfo(platform *operatorapi.SonataFlowPlatform) {
 	platform.Status.Info = make(map[string]string)
 
-	klog.V(log.D).InfoS("SonataFlow Platform: setting build publish strategy", "namespace", platform.Namespace)
+	klog.V(log.D).InfoS("SonataFlow Platform setting build publish strategy", "namespace", platform.Namespace)
 	if platform.Spec.BuildPlatform.BuildStrategy == operatorapi.OperatorBuildStrategy {
 		platform.Status.Info["kanikoVersion"] = defaults.KanikoVersion
 	}
