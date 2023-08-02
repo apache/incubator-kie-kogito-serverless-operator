@@ -20,7 +20,6 @@ changed_files=$(git status -s)
 check_file=$(expr "$changed_files" == "M bundle/manifests/sonataflow-operator.clusterserviceversion.yaml")
 
 if [[ "$check_file" == "0" ]] ; then
-  ##@TODO
   check_lines=$(git diff HEAD --no-ext-diff --unified=0 --exit-code -a --no-prefix | grep "^\+")
   var="+++ bundle/manifests/sonataflow-operator.clusterserviceversion.yaml + createdAt:"
   if [[ $check_lines = $var* ]] ; then
