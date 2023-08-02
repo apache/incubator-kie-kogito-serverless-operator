@@ -216,8 +216,8 @@ func (h *deployWorkflowReconciliationState) Do(ctx context.Context, workflow *op
 
 	// didn't change, business as usual
 	image := workflowdef.GetWorkflowAppImageNameTag(workflow)
-	if len(pl.Spec.BuildPlatform.Registry.Address) > 0 {
-		image = pl.Spec.BuildPlatform.Registry.Address + "/" + image
+	if len(pl.Spec.Build.Config.Registry.Address) > 0 {
+		image = pl.Spec.Build.Config.Registry.Address + "/" + image
 	}
 	return h.handleObjects(ctx, workflow, image)
 }

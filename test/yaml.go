@@ -20,9 +20,9 @@ import (
 	"runtime"
 	"strings"
 
-	"k8s.io/klog/v2"
-
 	"github.com/davecgh/go-spew/spew"
+
+	"github.com/kiegroup/kogito-serverless-operator/api"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -85,12 +85,13 @@ func GetSonataFlowPlatform(path string) *operatorapi.SonataFlowPlatform {
 		panic(err)
 	}
 	klog.V(log.D).InfoS("Successfully read KSP", "ksp", ksp)
+	ksp.Status.Manager().InitializeConditions()
 	return ksp
 }
 
 func GetSonataFlowPlatformInReadyPhase(path string, namespace string) *operatorapi.SonataFlowPlatform {
 	ksp := GetSonataFlowPlatform(path)
-	ksp.Status.Phase = operatorapi.PlatformPhaseReady
+	ksp.Status.Manager().MarkTrue(api.SucceedConditionType)
 	ksp.Namespace = namespace
 	return ksp
 }
@@ -181,16 +182,16 @@ func GetBasePlatformInReadyPhase(namespace string) *operatorapi.SonataFlowPlatfo
 func GetBasePlatformWithBaseImageInReadyPhase(namespace string) *operatorapi.SonataFlowPlatform {
 	platform := GetBasePlatform()
 	platform.Namespace = namespace
-	platform.Status.Phase = operatorapi.PlatformPhaseReady
-	platform.Spec.BuildPlatform.BaseImage = "quay.io/customx/custom-swf-builder:24.8.17"
+	platform.Status.Manager().MarkTrue(api.SucceedConditionType)
+	platform.Spec.Build.Config.BaseImage = "quay.io/customx/custom-swf-builder:24.8.17"
 	return platform
 }
 
 func GetBasePlatformWithDevBaseImageInReadyPhase(namespace string) *operatorapi.SonataFlowPlatform {
 	platform := GetBasePlatform()
 	platform.Namespace = namespace
-	platform.Status.Phase = operatorapi.PlatformPhaseReady
-	platform.Spec.DevBaseImage = "quay.io/customgroup/custom-swf-builder-nightly:42.43.7"
+	platform.Status.Manager().MarkTrue(api.SucceedConditionType)
+	platform.Spec.DevMode.BaseImage = "quay.io/customgroup/custom-swf-builder-nightly:42.43.7"
 	return platform
 }
 
@@ -199,7 +200,9 @@ func GetBasePlatform() *operatorapi.SonataFlowPlatform {
 	if ok {
 		return GetSonataFlowPlatform(GetPathForSamples(file) + sonataFlowPlatformYamlCR)
 	} else {
-		return &operatorapi.SonataFlowPlatform{}
+		ksp := &operatorapi.SonataFlowPlatform{}
+		ksp.Status.Manager().InitializeConditions()
+		return ksp
 	}
 }
 
