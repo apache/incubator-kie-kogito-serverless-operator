@@ -93,7 +93,7 @@ func (r *SonataFlowBuildReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		if err = buildManager.Reconcile(build); err != nil {
 			return ctrl.Result{}, err
 		}
-		if !reflect.DeepEqual(build.Status.InnerBuild, beforeReconcileStatus.InnerBuild) {
+		if !reflect.DeepEqual(build.Status, beforeReconcileStatus) {
 			if err = r.manageStatusUpdate(ctx, build); err != nil {
 				return ctrl.Result{}, err
 			}
