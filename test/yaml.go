@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
+	"k8s.io/klog/v2"
 
 	"github.com/kiegroup/kogito-serverless-operator/api"
 
@@ -40,8 +41,7 @@ const (
 	sonataFlowPlatformWithCacheMinikubeYamlCR = "sonataflow.org_v1alpha08_sonataflowplatform_withCache_minikube.yaml"
 	sonataFlowPlatformForOpenshift            = "sonataflow.org_v1alpha08_sonataflowplatform_openshift.yaml"
 	sonataFlowBuilderConfig                   = "sonataflow-operator-builder-config_v1_configmap.yaml"
-
-	BuilderDockerfile = "builder_dockerfile.yaml"
+	sonataFlowBuildSucceed                    = "sonataflow.org_v1alpha08_sonataflowbuild.yaml"
 
 	configSamplesOneLevelPath = "../config/samples/"
 	configSamplesTwoLevelPath = "../../config/samples/"
@@ -110,7 +110,23 @@ func GetNewEmptySonataFlowBuild(name, namespace string) *operatorapi.SonataFlowB
 		},
 		Status: operatorapi.SonataFlowBuildStatus{},
 	}
+}
 
+// GetLocalSucceedSonataFlowBuild gets a local (testdata dir ref to caller) SonataFlowBuild with Succeed status equals to true.
+func GetLocalSucceedSonataFlowBuild(name, namespace string) *operatorapi.SonataFlowBuild {
+	yamlFile, err := os.ReadFile("testdata/" + sonataFlowBuildSucceed)
+	if err != nil {
+		klog.ErrorS(err, "Yaml file not found on local testdata dir")
+		panic(err)
+	}
+	build := &operatorapi.SonataFlowBuild{}
+	if err := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(yamlFile), 255).Decode(build); err != nil {
+		klog.ErrorS(err, "Failed to unmarshal SonataFlowBuild")
+		panic(err)
+	}
+	build.Name = name
+	build.Namespace = namespace
+	return build
 }
 
 func GetSonataFlowBuilderConfig(path, namespace string) *corev1.ConfigMap {

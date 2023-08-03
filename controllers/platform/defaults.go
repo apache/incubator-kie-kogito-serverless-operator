@@ -17,6 +17,7 @@ package platform
 import (
 	"context"
 
+	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kiegroup/kogito-serverless-operator/container-builder/client"
