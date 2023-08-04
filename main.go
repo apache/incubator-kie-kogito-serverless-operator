@@ -18,6 +18,10 @@ import (
 	"flag"
 	"os"
 
+	"k8s.io/klog/v2/klogr"
+
+	"k8s.io/klog/v2"
+
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 
 	"github.com/kiegroup/kogito-serverless-operator/controllers"
@@ -64,7 +68,7 @@ func main() {
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	ctrl.SetLogger(klogr.New().WithName(controllers.ComponentName))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
