@@ -20,8 +20,9 @@ import (
 
 	"k8s.io/klog/v2/klogr"
 
-	"github.com/kiegroup/kogito-serverless-operator/utils"
 	"k8s.io/klog/v2"
+
+	"github.com/kiegroup/kogito-serverless-operator/utils"
 
 	"github.com/kiegroup/kogito-serverless-operator/controllers"
 	ocputil "github.com/kiegroup/kogito-serverless-operator/utils/openshift"
