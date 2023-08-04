@@ -10,7 +10,7 @@ labels:
   - name: com.redhat.component
     value: openshift-serverless-1-logic-rhel8-operator-bundle-container
   - name: io.k8s.description
-    value: Operator Bundle for deploying OSL Operator
+    value: Operator Bundle for deploying OpenShift Serverless Logic Operator
   - name: io.k8s.display-name
     value: Red Hat OpenShift Serverless Logic Operator Bundle
   - name: io.openshift.tags
