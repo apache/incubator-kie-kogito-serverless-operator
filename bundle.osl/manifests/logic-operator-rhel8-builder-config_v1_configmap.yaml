@@ -2,7 +2,7 @@ apiVersion: v1
 data:
   DEFAULT_BUILDER_RESOURCE_NAME: Dockerfile
   DEFAULT_WORKFLOW_EXTENSION: .sw.json
-  Dockerfile: "FROM registry.redhat.io/openshift-serverless-1-tech-preview/logic-swf-builder-rhel8
+  Dockerfile: "FROM registry.redhat.io/openshift-serverless-1-tech-preview/logic-swf-builder-rhel8:latest
     AS builder\n  \n  # Copy from build context to skeleton resources project\nCOPY
     * ./resources/\n\nRUN /home/kogito/launch/build-app.sh ./resources\n  \n  #=============================\n
     \ # Runtime Run\n  #=============================\nFROM registry.access.redhat.com/ubi8/openjdk-11:latest\n\nENV
