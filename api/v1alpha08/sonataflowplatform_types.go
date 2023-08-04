@@ -26,10 +26,15 @@ const (
 )
 
 // SonataFlowPlatformSpec defines the desired state of SonataFlowPlatform
+// +k8s:openapi-gen=true
 type SonataFlowPlatformSpec struct {
-	// Attributes for building workflows in the target platform
+	// Build Attributes for building workflows in the target platform
+	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Build"
 	Build BuildPlatformSpec `json:"build,omitempty"`
-	// Attributes for running workflows in devmode (immutable, no build required)
+	// DevMode Attributes for running workflows in devmode (immutable, no build required)
+	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="DevMode"
 	DevMode DevModePlatformSpec `json:"devMode,omitempty"`
 }
 

@@ -12,8 +12,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-set -e
 
+#
+# This script will align the configuration files needed to generate the bundle manifests
+# If someone will change one for the files that can be automatically aligned from the community to the osl version, executing
+# this script will copy them from the community folder to the osl one.
+#
+# At the moment folders that contain files to be aligned are:
+#  - config/manager (controller_manager_config.yaml, manager.yaml) -> config/manager/osl  (controller_manager_config.yaml, manager.yaml)
+#
+set -e
 
 script_dir_path=$(dirname "${BASH_SOURCE[0]}")
 config_dir_path=${script_dir_path}/../config

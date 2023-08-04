@@ -244,7 +244,7 @@ $(ENVTEST): $(LOCALBIN)
 bundle: manifests kustomize install-operator-sdk ## Generate bundle manifests and metadata, then validate generated files.
 	operator-sdk generate kustomize manifests --input-dir=./config/manifests/osl --output-dir=./config/manifests/osl --package=logic-operator-rhel8  -q
 	cd config/manager/osl && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build config/manifests/osl | operator-sdk generate bundle --package=logic-operator-rhel8 --output-dir=bundle.osl $(BUNDLE_GEN_FLAGS) --use-image-digests
+	$(KUSTOMIZE) build config/manifests/osl | operator-sdk generate bundle $(BUNDLE_GEN_FLAGS) --package=logic-operator-rhel8 --output-dir=bundle.osl
 	operator-sdk bundle validate ./bundle.osl
 
 .PHONY: bundle-build

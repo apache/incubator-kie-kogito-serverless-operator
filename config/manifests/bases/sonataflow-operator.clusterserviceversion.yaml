@@ -5,9 +5,10 @@ metadata:
     alm-examples: '[]'
     capabilities: Basic Install
     categories: Application Runtime
-    containerImage: quay.io/kiegroup/kogito-serverless-operator:0.0.0
+    containerImage: quay.io/kiegroup/kogito-serverless-operator-nightly:latest
     description: SonataFlow Kubernetes Operator for deploying workflow applications
       based on the CNCF Serverless Workflow specification
+    operators.operatorframework.io/internal-objects: '["sonataflowbuilds.sonataflow.org"]'
     repository: https://github.com/kiegroup/kogito-serverless-operator
     support: Red Hat
   name: sonataflow-operator.v0.0.0
@@ -25,6 +26,43 @@ spec:
       - kind: BuildConfig
         name: An Openshift Build Config
         version: build.openshift.io/v1
+      specDescriptors:
+      - description: 'Arguments lists the command line arguments to send to the internal
+          builder command. Depending on the build method you might set this attribute
+          instead of BuildArgs. For example: ".spec.arguments=verbose=3". Please see
+          the SonataFlow guides.'
+        displayName: Arguments
+        path: arguments
+      - description: Optional build arguments that can be set to the internal build
+          (e.g. Docker ARG)
+        displayName: BuildArgs
+        path: buildArgs
+      - description: Optional environment variables to add to the internal build
+        displayName: Envs
+        path: envs
+      - description: Resources optional compute resource requirements for the builder
+        displayName: Resources
+        path: resources
+      - description: Timeout defines the Build maximum execution duration. The Build
+          deadline is set to the Build start time plus the Timeout duration. If the
+          Build deadline is exceeded, the Build context is canceled, and its phase
+          set to BuildPhaseFailed.
+        displayName: Timeout
+        path: timeout
+      statusDescriptors:
+      - description: BuildPhase Current phase of the build
+        displayName: BuildPhase
+        path: buildPhase
+      - description: Error Last error found during build
+        displayName: Error
+        path: error
+      - description: ImageTag The final image tag produced by this build instance
+        displayName: ImageTag
+        path: imageTag
+      - description: InnerBuild is a reference to an internal build object, which
+          can be anything known only to internal builders.
+        displayName: InnerBuild
+        path: innerBuild
       version: v1alpha08
     - description: SonataFlowPlatform is the descriptor for the workflow platform
         infrastructure.
@@ -36,41 +74,43 @@ spec:
         name: The Namespace controlled by the platform
         version: v1
       specDescriptors:
-      - description: BuildTemplate specify how to build the Workflow. It's used as
-          a template for the SonataFlowBuild
-        displayName: build
+      - description: Build Attributes for building workflows in the target platform
+        displayName: Build
         path: build
-      - description: Configuration list of configuration properties to be attached
-          to all the Workflow built from this Platform
-        displayName: configuration
-        path: configuration
-      - description: DevBaseImage Base image to run the Workflow in dev mode instead
-          of the operator's default. Optional, used for the dev profile only
-        displayName: devBaseImage
-        path: devBaseImage
-      - description: BuildPlatform specify how is the platform where we want to build
-          the Workflow
-        displayName: platform
-        path: platform
+      - description: 'Arguments lists the command line arguments to send to the internal
+          builder command. Depending on the build method you might set this attribute
+          instead of BuildArgs. For example: ".spec.arguments=verbose=3". Please see
+          the SonataFlow guides.'
+        displayName: Arguments
+        path: build.template.arguments
+      - description: Optional build arguments that can be set to the internal build
+          (e.g. Docker ARG)
+        displayName: BuildArgs
+        path: build.template.buildArgs
+      - description: Optional environment variables to add to the internal build
+        displayName: Envs
+        path: build.template.envs
+      - description: Resources optional compute resource requirements for the builder
+        displayName: Resources
+        path: build.template.resources
+      - description: Timeout defines the Build maximum execution duration. The Build
+          deadline is set to the Build start time plus the Timeout duration. If the
+          Build deadline is exceeded, the Build context is canceled, and its phase
+          set to BuildPhaseFailed.
+        displayName: Timeout
+        path: build.template.timeout
+      - description: DevMode Attributes for running workflows in devmode (immutable,
+          no build required)
+        displayName: DevMode
+        path: devMode
       statusDescriptors:
       - description: Cluster what kind of cluster you're running (ie, plain Kubernetes
           or OpenShift)
         displayName: cluster
         path: cluster
-      - description: Conditions which are the conditions met (particularly useful
-          when in ERROR phase)
-        displayName: conditions
-        path: conditions
       - description: Info generic information related to the build
         displayName: info
         path: info
-      - description: ObservedGeneration is the most recent generation observed for
-          this Platform.
-        displayName: observedGeneration
-        path: observedGeneration
-      - description: Phase defines in what phase the Platform is found
-        displayName: phase
-        path: phase
       - description: Version the operator version controlling this Platform
         displayName: version
         path: version
@@ -97,7 +137,8 @@ spec:
         name: The ConfigMaps with Flow definition and additional configuration files
         version: v1
       specDescriptors:
-      - displayName: flow
+      - description: Flow the workflow definition.
+        displayName: flow
         path: flow
       - description: Resources workflow resources that are linked to this workflow
           definition. For example, a collection of OpenAPI specification files.

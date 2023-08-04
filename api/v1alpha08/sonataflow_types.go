@@ -111,6 +111,7 @@ type ConfigMapWorkflowResource struct {
 // SonataFlowSpec defines the desired state of SonataFlow
 // +k8s:openapi-gen=true
 type SonataFlowSpec struct {
+	// Flow the workflow definition.
 	// +kubebuilder:validation:Required
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="flow"
 	Flow Flow `json:"flow"`
