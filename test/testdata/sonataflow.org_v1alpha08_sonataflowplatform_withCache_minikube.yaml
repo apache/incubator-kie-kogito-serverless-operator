@@ -18,6 +18,6 @@ metadata:
   name: sonataflow-platform
 spec:
   platform:
-    baseImage: quay.io/kiegroup/kogito-swf-builder-nightly:1.42
+    baseImage: quay.io/kiegroup/kogito-swf-builder:1.42
     buildStrategyOptions:
       KanikoBuildCacheEnabled: "true"
