@@ -37,7 +37,7 @@ String buildTempOpenshiftImageFullName(boolean internal=false) {
 }
 
 String getTempOpenshiftImageName(boolean internal=false) {
-    String registry = internal ? openshiftInternalRegistry : openshift.getOpenshiftRegistry()
+    String registry = internal ? openshiftInternalRegistry : cloud.getOpenShiftRegistryURL()
     return "${registry}/openshift/${env.OPERATOR_IMAGE_NAME}"
 }
 
@@ -71,20 +71,6 @@ void loginRegistry(String paramsPrefix = defaultImageParamsPrefix) {
 
 void createTag(String tagName = getGitTag()) {
     githubscm.tagLocalAndRemoteRepository('origin', tagName, getGitAuthorCredsID(), '', true)
-}
-
-void createRelease() {
-    if(githubscm.isReleaseExist(getGitTag(), getGitAuthorCredsID())) {
-        githubscm.deleteReleaseAndTag(getGitTag(), getGitAuthorCredsID())
-    }
-    githubscm.createReleaseWithGeneratedReleaseNotes(getGitTag(), getBuildBranch(), githubscm.getPreviousTag(getGitTag()), getGitAuthorCredsID())
-    githubscm.updateReleaseBody(getGitTag(), getGitAuthorCredsID())
-
-    withCredentials([usernamePassword(credentialsId: getGitAuthorCredsID(), usernameVariable: 'GH_USER', passwordVariable: 'GH_TOKEN')]) {
-        sh """
-            gh release upload ${getGitTag()} "operator.yaml"
-        """
-    }
 }
 
 // Set images public on quay. Useful when new images are introduced.
