@@ -9,16 +9,6 @@ promoteImageParamsPrefix = 'PROMOTE_IMAGE'
 
 void initPipeline() {
     properties = load '.ci/jenkins/scripts/properties.groovy'
-
-    openshift = load '.ci/jenkins/scripts/openshift.groovy'
-    openshift.openshiftApiKey = env.OPENSHIFT_API_KEY
-    openshift.openshiftApiCredsKey = env.OPENSHIFT_CREDS_KEY
-
-    container = load '.ci/jenkins/scripts/container.groovy'
-    container.containerEngine = env.CONTAINER_ENGINE
-    container.containerEngineTlsOptions = env.CONTAINER_ENGINE_TLS_OPTIONS ?: ''
-    container.containerOpenshift = openshift
-
     minikube = load '.ci/jenkins/scripts/minikube.groovy'
 }
 
@@ -37,7 +27,7 @@ String buildTempOpenshiftImageFullName(boolean internal=false) {
 }
 
 String getTempOpenshiftImageName(boolean internal=false) {
-    String registry = internal ? openshiftInternalRegistry : openshift.getOpenshiftRegistry()
+    String registry = internal ? openshiftInternalRegistry : cloud.getOpenShiftRegistryURL()
     return "${registry}/openshift/${env.OPERATOR_IMAGE_NAME}"
 }
 
@@ -62,29 +52,17 @@ void checkoutRepo(String repoName = '', String directory = '') {
 }
 
 void loginRegistry(String paramsPrefix = defaultImageParamsPrefix) {
-    if (isImageInOpenshiftRegistry(paramsPrefix)) {
-        container.loginOpenshiftRegistry()
-    } else if (getImageRegistryCredentials(paramsPrefix)) {
-        container.loginContainerRegistry(getImageRegistry(paramsPrefix), getImageRegistryCredentials(paramsPrefix))
+    if (getImageRegistryCredentials(paramsPrefix)) {
+        getContainerEngineService().loginContainerRegistry(getImageRegistry(paramsPrefix), getImageRegistryCredentials(paramsPrefix))
     }
+}
+
+ContainerEngineService getContainerEngineService() {
+    return new ContainerEngineService(this)
 }
 
 void createTag(String tagName = getGitTag()) {
     githubscm.tagLocalAndRemoteRepository('origin', tagName, getGitAuthorCredsID(), '', true)
-}
-
-void createRelease() {
-    if(githubscm.isReleaseExist(getGitTag(), getGitAuthorCredsID())) {
-        githubscm.deleteReleaseAndTag(getGitTag(), getGitAuthorCredsID())
-    }
-    githubscm.createReleaseWithGeneratedReleaseNotes(getGitTag(), getBuildBranch(), githubscm.getPreviousTag(getGitTag()), getGitAuthorCredsID())
-    githubscm.updateReleaseBody(getGitTag(), getGitAuthorCredsID())
-
-    withCredentials([usernamePassword(credentialsId: getGitAuthorCredsID(), usernameVariable: 'GH_USER', passwordVariable: 'GH_TOKEN')]) {
-        sh """
-            gh release upload ${getGitTag()} "operator.yaml"
-        """
-    }
 }
 
 // Set images public on quay. Useful when new images are introduced.
@@ -134,27 +112,19 @@ String contructImageProperty(String suffix) {
 // Image information
 ////////////////////////////////////////////////////////////////////////
 
-boolean isImageInOpenshiftRegistry(String paramsPrefix = defaultImageParamsPrefix) {
-    return params[constructKey(paramsPrefix, 'USE_OPENSHIFT_REGISTRY')]
-}
-
 String getImageRegistryCredentials(String paramsPrefix = defaultImageParamsPrefix) {
-    return isImageInOpenshiftRegistry(paramsPrefix) ? '' : params[constructKey(paramsPrefix, 'REGISTRY_CREDENTIALS')]
+    return params[constructKey(paramsPrefix, 'REGISTRY_CREDENTIALS')]
 }
 
 String getImageRegistry(String paramsPrefix = defaultImageParamsPrefix) {
-    if (isImageInOpenshiftRegistry(paramsPrefix)) {
-        return openshift.getOpenshiftRegistry()
-    } else if (paramsPrefix == baseImageParamsPrefix && properties.contains(getImageRegistryProperty())) {
+    if (paramsPrefix == baseImageParamsPrefix && properties.contains(getImageRegistryProperty())) {
         return properties.retrieve(getImageRegistryProperty())
     }
     return  params[constructKey(paramsPrefix, 'REGISTRY')]
 }
 
 String getImageNamespace(String paramsPrefix = defaultImageParamsPrefix) {
-    if (isImageInOpenshiftRegistry(paramsPrefix)) {
-        return 'openshift'
-    } else if (paramsPrefix == baseImageParamsPrefix && properties.contains(getImageNamespaceProperty())) {
+    if (paramsPrefix == baseImageParamsPrefix && properties.contains(getImageNamespaceProperty())) {
         return properties.retrieve(getImageNamespaceProperty())
     }
     return params[constructKey(paramsPrefix, 'NAMESPACE')]

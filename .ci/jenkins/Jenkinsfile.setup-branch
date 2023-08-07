@@ -90,7 +90,7 @@ pipeline {
         cleanup {
             script {
                 helper.cleanGoPath()
-                util.cleanNode(containerEngine)
+                util.cleanNode()
             }
         }
     }

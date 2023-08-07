@@ -1,5 +1,7 @@
 @Library('jenkins-pipeline-shared-libraries')_
 
+import org.kie.jenkins.ContainerEngineService
+
 helper = null
 
 minikubeClusterPlatform = 'minikube'
@@ -21,8 +23,8 @@ pipeline {
 
     environment {
         // Linked to node label
-        CONTAINER_ENGINE='podman'
-        CONTAINER_ENGINE_TLS_OPTIONS='--tls-verify=false'
+        CONTAINER_ENGINE = 'podman'
+        CONTAINER_ENGINE_TLS_OPTIONS = '--tls-verify=false'
     }
 
     stages {
@@ -43,7 +45,7 @@ pipeline {
                     helper.checkoutRepo()
 
                     assert getTestImage(): 'Please provide a Test image'
-                    container.pullImage(getTestImage()) // Verify image exists
+                    helper.getContainerEngineService().pullImage(getTestImage()) // Verify image exists
                 }
             }
         }
@@ -56,7 +58,7 @@ pipeline {
         }
         stage('Prepare for e2e tests') {
             when {
-                expression { 
+                expression {
                     return helper.shouldLaunchTests() && helper.isRelease() 
                 }
             }
@@ -105,7 +107,8 @@ pipeline {
 
 void clean() {
     helper.cleanGoPath()
-    util.cleanNode(containerEngine)
+    util.cleanNode()
+    helper.getContainerEngineService().clean()
     cleanupCluster()
 }
 
@@ -145,7 +148,7 @@ void setupMinikube() {
 
 void setupOpenshift() {
     // Login to Openshift
-    openshift.loginOpenshift()
+    cloud.loginOpenShiftFromAPICreds(env.OPENSHIFT_API_KEY, env.OPENSHIFT_CREDS_KEY)
 }
 
 void cleanupCluster() {

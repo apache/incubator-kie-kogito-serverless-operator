@@ -55,7 +55,7 @@ pipeline {
                     }
 
                     // Verify we have the connectivity to Openshift
-                    openshift.loginOpenshift()
+                    cloud.loginOpenShiftFromAPICreds(env.OPENSHIFT_API_KEY, env.OPENSHIFT_CREDS_KEY)
                     // Login to final registry
                     helper.loginRegistry()
 
