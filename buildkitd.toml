@@ -1,7 +1,7 @@
-
-debug = true
-[registry."docker.io"]
-mirrors = ["mirror.gcr.io"]
+debug = false
 [registry."localhost:5000"]
 http = true
-        
+[registry."docker.io"]
+mirrors = ["ba-docker-registry.usersys.redhat.com:5000"]
+[registry."ba-docker-registry.usersys.redhat.com:5000"]
+http = true
