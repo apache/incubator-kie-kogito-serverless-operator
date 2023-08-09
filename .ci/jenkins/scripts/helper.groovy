@@ -37,7 +37,7 @@ String buildTempOpenshiftImageFullName(boolean internal=false) {
 }
 
 String getTempOpenshiftImageName(boolean internal=false) {
-    String registry = internal ? openshiftInternalRegistry : cloud.getOpenShiftRegistryURL()
+    String registry = internal ? openshiftInternalRegistry : openshift.getOpenshiftRegistry()
     return "${registry}/openshift/${env.OPERATOR_IMAGE_NAME}"
 }
 
