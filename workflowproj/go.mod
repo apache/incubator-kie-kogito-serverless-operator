@@ -3,7 +3,7 @@ module github.com/kiegroup/kogito-serverless-operator/workflowproj
 go 1.19
 
 require (
-	github.com/kiegroup/kogito-serverless-operator/api v0.0.0-20230613074518-8c40a054ef3c
+	github.com/kiegroup/kogito-serverless-operator/api v1.42.0
 	github.com/pb33f/libopenapi v0.8.4
 	github.com/pkg/errors v0.9.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.0
@@ -22,7 +22,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
-	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
@@ -57,7 +56,6 @@ require (
 	github.com/senseyeio/duration v0.0.0-20180430131211-7c2a214ada46 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
-	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/crypto v0.8.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.7.0 // indirect
@@ -74,7 +72,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.27.2 // indirect
 	k8s.io/component-base v0.27.2 // indirect
-	k8s.io/klog/v2 v2.90.1 // indirect
+	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
 	k8s.io/utils v0.0.0-20230313181309-38a27ef9d749 // indirect
 	knative.dev/pkg v0.0.0-20230525143525-9bda38b21643 // indirect
