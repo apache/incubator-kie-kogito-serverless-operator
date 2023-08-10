@@ -12,7 +12,7 @@ replace (
 // Direct dependencies (please keep organized, no indirects)
 require (
 	github.com/RHsyseng/operator-utils v1.4.12
-	github.com/go-logr/logr v1.2.4
+	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/kiegroup/kogito-serverless-operator/api v1.42.0
 	github.com/kiegroup/kogito-serverless-operator/container-builder v1.42.0
 	github.com/kiegroup/kogito-serverless-operator/workflowproj v1.42.0
@@ -83,6 +83,7 @@ require (
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.0 // indirect
 	github.com/senseyeio/duration v0.0.0-20180430131211-7c2a214ada46 // indirect
+	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	golang.org/x/crypto v0.8.0 // indirect
