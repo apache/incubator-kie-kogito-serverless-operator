@@ -11,7 +11,7 @@
       - name: org.kie.kogito.app.builder
 
 - name: kogito-serverless-operator
-  version: 1.42.0-snapshot
+  version: 1.42.1-snapshot
   from: registry.access.redhat.com/ubi8/ubi-micro:latest
   description: Runtime Image for the Operator
 
