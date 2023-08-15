@@ -34,10 +34,6 @@ func IsDeploymentAvailable(deployment *appsv1.Deployment) bool {
 	return isDeploymentInCondition(deployment, appsv1.DeploymentAvailable, v1.ConditionTrue)
 }
 
-func IsDeploymentProgressing(deployment *appsv1.Deployment) bool {
-	return isDeploymentInCondition(deployment, appsv1.DeploymentProgressing, v1.ConditionTrue)
-}
-
 // IsDeploymentFailed returns true in case of Deployment not available (IsDeploymentAvailable returns false) or it has a condition of
 // DeploymentReplicaFailure == true.
 func IsDeploymentFailed(deployment *appsv1.Deployment) bool {

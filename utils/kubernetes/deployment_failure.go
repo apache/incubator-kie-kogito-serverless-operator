@@ -24,25 +24,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-/*
-Possible failure causes:
-
-1. Image not available (ImagePullFailure, ImagePullBackOff)
-- Nothing to do, signal an event that the image is wrong (fwd deployment error message)
-
-2. Exceeding resource limits (Pod Stucks on Pending) - verify ReplicaSet
-- Try to scale it back to 1
-
-3. Application failure, usually "CrashLoopBackOff"
-- Show the pod's log error in the event
-
-4. Ensure properties configMap is correctly defined ("RunContainerError")
-- Nothing to do, ensurer always do that
-
-5. Ensure that the mount volumes are there ("RunContainerError")
-- Nothing to do, ensurer always do that
-
-*/
+const (
+	containerReasonContainerCreating = "ContainerCreating"
+)
 
 var _ DeploymentUnavailabilityReader = &deploymentUnavailabilityReader{}
 
@@ -69,6 +53,9 @@ type deploymentUnavailabilityReader struct {
 
 // ReasonMessage tries to find a human-readable reason message for why the deployment is not available or in a failed state.
 // This implementation fetches the given container status for this information.
+// Returning an empty string means that no reason has been found in the underlying pods.
+//
+// See: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
 //
 // Future implementations might look in other objects for a more specific reason.
 // Additionally, future work might involve returning a typed Reason, so controllers may take actions depending on what have happened.
@@ -81,13 +68,7 @@ func (d deploymentUnavailabilityReader) ReasonMessage() (string, error) {
 	// additionally, we are using a unique label identifier for matching
 	opts := &client.ListOptions{
 		LabelSelector: labels.SelectorFromSet(d.deployment.Spec.Selector.MatchLabels),
-		/*
-			FieldSelector: fields.AndSelectors(
-				fields.OneTermNotEqualSelector("status.phase", "Running"),
-				fields.OneTermNotEqualSelector("status.phase", "Succeeded")),
-
-		*/
-		Namespace: d.deployment.Namespace,
+		Namespace:     d.deployment.Namespace,
 	}
 
 	if err := d.c.List(context.TODO(), podList, opts); err != nil {
@@ -101,10 +82,10 @@ func (d deploymentUnavailabilityReader) ReasonMessage() (string, error) {
 		for _, container := range pod.Status.ContainerStatuses {
 			if container.Name == d.container {
 				if !container.Ready {
-					if container.State.Waiting != nil {
+					if container.State.Waiting != nil && container.State.Waiting.Reason != containerReasonContainerCreating {
 						return fmt.Sprintf("ContainerNotReady: (%s) %s", container.State.Waiting.Reason, container.State.Waiting.Message), nil
 					}
-					if container.State.Terminated != nil {
+					if container.State.Terminated != nil && container.State.Terminated.ExitCode > 0 {
 						return fmt.Sprintf("ContainerNotReady: (%s) %s", container.State.Terminated.Reason, container.State.Terminated.Message), nil
 					}
 				}

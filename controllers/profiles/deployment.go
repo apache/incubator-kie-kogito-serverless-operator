@@ -64,12 +64,13 @@ func (d deploymentHandler) SyncDeploymentStatus(ctx context.Context, workflow *o
 		return ctrl.Result{RequeueAfter: requeueAfterIsRunning}, nil
 	}
 
-	// Deployment should be progressing, Running = FALSE
-	// Wait for the next reconciliation
-	if kubeutil.IsDeploymentProgressing(deployment) {
-		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
-		klog.V(log.I).InfoS("Workflow is in WaitingForDeployment Condition")
-		return ctrl.Result{RequeueAfter: requeueAfterFollowDeployment}, nil
+	if kubeutil.IsDeploymentFailed(deployment) {
+		// Fallback to a general failure message if we can't determine if the deployment has minimum replicas available.
+		failedReason := getDeploymentUnavailabilityMessage(deployment)
+		workflow.Status.LastTimeRecoverAttempt = metav1.Now()
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentFailureReason, failedReason)
+		klog.V(log.I).InfoS("Workflow deployment failed", "Reason Message", failedReason)
+		return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil
 	}
 
 	// Deployment hasn't minimum replicas, let's find out why to give users a meaningful information
@@ -78,17 +79,16 @@ func (d deploymentHandler) SyncDeploymentStatus(ctx context.Context, workflow *o
 		if err != nil {
 			return ctrl.Result{RequeueAfter: requeueAfterFailure}, err
 		}
-		klog.V(log.I).InfoS("Workflow is not in Running condition duo to a deployment unavailability issue")
-		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, message)
-		return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil
+		if len(message) > 0 {
+			klog.V(log.I).InfoS("Workflow is not in Running condition duo to a deployment unavailability issue", "reason", message)
+			workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, message)
+			return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil
+		}
 	}
 
-	// Fallback to a general failure message if we can't determine if the deployment has minimum replicas available.
-	failedReason := getDeploymentUnavailabilityMessage(deployment)
-	workflow.Status.LastTimeRecoverAttempt = metav1.Now()
-	workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentFailureReason, failedReason)
-	klog.V(log.I).InfoS("Workflow deployment failed", "Reason Message", failedReason)
-	return ctrl.Result{RequeueAfter: requeueAfterFailure}, nil
+	workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
+	klog.V(log.I).InfoS("Workflow is in WaitingForDeployment Condition")
+	return ctrl.Result{RequeueAfter: requeueAfterFollowDeployment}, nil
 }
 
 // getDeploymentUnavailabilityMessage gets the replica failure reason.
