@@ -34,7 +34,7 @@ import (
 )
 
 type configMapVolumeBuildContext struct {
-	VolumeMount corev1.VolumeMount
+	VolumeMount []corev1.VolumeMount
 	Volume      corev1.Volume
 }
 
@@ -54,14 +54,13 @@ func addResourcesToBuilderContextVolume(ctx context.Context, client client.Clien
 				klog.ErrorS(err, "Failed to fetch configMap to add to build context", "configMap", resVol.ReferenceName, "Namespace", build.Namespace)
 				return err
 			}
-			if _, ok := mounts[resVol.DestinationDir]; !ok {
-				volName := uuid.NewString()
+			entry, ok := mounts[resVol.DestinationDir]
+			var volName string
+			if ok {
+				volName = entry.Volume.Name
+			} else {
+				volName = uuid.NewString()
 				mounts[resVol.DestinationDir] = configMapVolumeBuildContext{
-					VolumeMount: corev1.VolumeMount{
-						Name:      volName,
-						MountPath: path.Join(task.ContextDir, resVol.DestinationDir),
-						ReadOnly:  true,
-					},
 					Volume: corev1.Volume{
 						Name: volName,
 						VolumeSource: corev1.VolumeSource{
@@ -69,23 +68,34 @@ func addResourcesToBuilderContextVolume(ctx context.Context, client client.Clien
 						},
 					},
 				}
+				entry = mounts[resVol.DestinationDir]
 			}
-			// mount projections
-			if entry, ok := mounts[resVol.DestinationDir]; ok {
-				entry.Volume.Projected.Sources = append(entry.Volume.Projected.Sources, corev1.VolumeProjection{
-					ConfigMap: &corev1.ConfigMapProjection{
-						LocalObjectReference: corev1.LocalObjectReference{Name: configMap.Name},
-					},
-				})
-				mounts[resVol.DestinationDir] = entry
+
+			cmMounts := make([]corev1.VolumeMount, len(configMap.Data))
+			i := 0
+			for fileName := range configMap.Data {
+				cmMounts[i] = corev1.VolumeMount{
+					Name:      volName,
+					MountPath: path.Join(task.ContextDir, resVol.DestinationDir, fileName),
+					SubPath:   fileName,
+					ReadOnly:  true,
+				}
+				i++
 			}
+			entry.VolumeMount = append(entry.VolumeMount, cmMounts...)
+			entry.Volume.Projected.Sources = append(entry.Volume.Projected.Sources, corev1.VolumeProjection{
+				ConfigMap: &corev1.ConfigMapProjection{
+					LocalObjectReference: corev1.LocalObjectReference{Name: configMap.Name},
+				},
+			})
+			mounts[resVol.DestinationDir] = entry
 		default:
 			return errors.Errorf("unsupported resource mount type for build %s on ns %s", build.Name, build.Namespace)
 		}
 	}
 
 	for _, cmMount := range mounts {
-		*volumeMounts = append(*volumeMounts, cmMount.VolumeMount)
+		*volumeMounts = append(*volumeMounts, cmMount.VolumeMount...)
 		*volumes = append(*volumes, cmMount.Volume)
 	}
 
