@@ -119,7 +119,7 @@ test: manifests generate envtest vet fmt test-api ## Run tests.
 
 .PHONY: test-api
 test-api:
-	cd api && make test
+	cd api && make test KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)"
 
 .PHONY: test-container-builder
 test-container-builder:
@@ -139,9 +139,10 @@ build: generate ## Build manager binary.
 build-4-debug: generate ## Build manager binary with debug options.
 	go build -gcflags="all=-N -l" -o bin/manager main.go
 
+ENABLE_WEBHOOKS ?= false
 .PHONY: run
 run: manifests generate ## Run a controller from your host.
-	go run ./main.go
+	ENABLE_WEBHOOKS=${ENABLE_WEBHOOKS} go run ./main.go
 
 .PHONY: debug
 debug: build-4-debug ## Run a controller from your host from binary
@@ -158,6 +159,10 @@ podman-build: test ## Build container image with the manager.
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+
+.PHONY: podman-push
+podman-push: ## Push container image with the manager.
+	podman push ${PODMAN_PUSH_PARAMS} ${IMG}
 
 # This is currently done directly into the CI
 # PLATFORMS defines the target platforms for the manager image be build to provide support to multiple
@@ -176,10 +181,6 @@ docker-buildx: test ## Build and push docker image for the manager for cross-pla
 	- docker buildx build --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross
 	- docker buildx rm project-v3-builder
 	rm Dockerfile.cross
-
-.PHONY: podman-push
-podman-push: ## Push container image with the manager.
-	podman push ${PODMAN_PUSH_PARAMS} ${IMG}
 
 .PHONY: container-build
 container-build: test ## Build the container image
@@ -207,18 +208,18 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 	$(KUSTOMIZE) build config/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: deploy
-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+deploy: manifests kustomize install-cert-manager ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl create -f -
+
+.PHONY: undeploy
+undeploy: uninstall-cert-manager ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: generate-deploy
 generate-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default > operator.yaml
-
-.PHONY: undeploy
-undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 ##@ Build Dependencies
 
@@ -265,7 +266,7 @@ bundle-build: ## Build the bundle image.
 
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
-	$(MAKE) contianer-push IMG=$(BUNDLE_IMG)
+	$(MAKE) container-push IMG=$(BUNDLE_IMG)
 
 .PHONY: opm
 OPM = ./bin/opm
@@ -334,3 +335,11 @@ test-e2e: install-operator-sdk
 
 .PHONY: before-pr
 before-pr: test generate-all
+
+.PHONY: install-cert-manager
+install-cert-manager:
+	./hack/local/cert-manager.sh install
+
+.PHONY: uninstall-cert-manager
+uninstall-cert-manager:
+	./hack/local/cert-manager.sh uninstall

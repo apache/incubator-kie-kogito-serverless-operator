@@ -17,6 +17,7 @@ package main
 import (
 	"flag"
 	"os"
+	"strconv"
 
 	"k8s.io/klog/v2/klogr"
 
@@ -45,6 +46,8 @@ import (
 var (
 	scheme = runtime.NewScheme()
 )
+
+const enableWebhookEnv = "ENABLE_WEBHOOKS"
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
@@ -98,6 +101,19 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		klog.V(log.E).ErrorS(err, "unable to create controller", "controller", "SonataFlowBuild")
 		os.Exit(1)
+	}
+
+	// Setup webhooks
+	enable := true
+	env := os.Getenv(enableWebhookEnv)
+	if len(env) > 0 {
+		enable, _ = strconv.ParseBool(env)
+	}
+	if enable {
+		if err = (&operatorapi.SonataFlow{}).SetupWebhookWithManager(mgr); err != nil {
+			klog.V(log.E).ErrorS(err, "unable to create webhook", "webhook", "SonataFlow")
+			os.Exit(1)
+		}
 	}
 
 	if err = (&controllers.SonataFlowPlatformReconciler{

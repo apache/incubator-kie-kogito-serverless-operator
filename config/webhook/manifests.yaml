@@ -1,0 +1,28 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-sonataflow-org-v1alpha08-sonataflow
+  failurePolicy: Fail
+  name: vsonataflow.kb.io
+  rules:
+  - apiGroups:
+    - sonataflow.org
+    apiVersions:
+    - v1alpha08
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - sonataflows
+  sideEffects: None

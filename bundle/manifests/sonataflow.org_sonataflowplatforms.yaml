@@ -2,10 +2,21 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
+    cert-manager.io/inject-ca-from: sonataflow-operator-system/sonataflow-operator-serving-cert
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: sonataflowplatforms.sonataflow.org
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        service:
+          name: sonataflow-operator-webhook-service
+          namespace: sonataflow-operator-system
+          path: /convert
+      conversionReviewVersions:
+      - v1
   group: sonataflow.org
   names:
     kind: SonataFlowPlatform

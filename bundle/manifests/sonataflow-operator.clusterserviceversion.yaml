@@ -413,6 +413,48 @@ spec:
             spec:
               containers:
               - args:
+                - --health-probe-bind-address=:8081
+                - --metrics-bind-address=127.0.0.1:8080
+                - --leader-elect
+                - --v=0
+                command:
+                - /usr/local/bin/manager
+                env:
+                - name: POD_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                image: quay.io/kiegroup/kogito-serverless-operator-nightly:latest
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8081
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                name: manager
+                ports:
+                - containerPort: 9443
+                  name: webhook-server
+                  protocol: TCP
+                readinessProbe:
+                  httpGet:
+                    path: /readyz
+                    port: 8081
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 128Mi
+                  requests:
+                    cpu: 10m
+                    memory: 64Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+              - args:
                 - --secure-listen-address=0.0.0.0:8443
                 - --upstream=http://127.0.0.1:8080/
                 - --logtostderr=true
@@ -437,44 +479,6 @@ spec:
                     - ALL
                   seccompProfile:
                     type: RuntimeDefault
-              - args:
-                - --health-probe-bind-address=:8081
-                - --metrics-bind-address=127.0.0.1:8080
-                - --leader-elect
-                - --v=0
-                command:
-                - /usr/local/bin/manager
-                env:
-                - name: POD_NAMESPACE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.namespace
-                image: quay.io/kiegroup/kogito-serverless-operator-nightly:latest
-                livenessProbe:
-                  httpGet:
-                    path: /healthz
-                    port: 8081
-                  initialDelaySeconds: 15
-                  periodSeconds: 20
-                name: manager
-                readinessProbe:
-                  httpGet:
-                    path: /readyz
-                    port: 8081
-                  initialDelaySeconds: 5
-                  periodSeconds: 10
-                resources:
-                  limits:
-                    cpu: 500m
-                    memory: 128Mi
-                  requests:
-                    cpu: 10m
-                    memory: 64Mi
-                securityContext:
-                  allowPrivilegeEscalation: false
-                  capabilities:
-                    drop:
-                    - ALL
               securityContext:
                 runAsNonRoot: true
                 seccompProfile:
@@ -541,3 +545,36 @@ spec:
   provider:
     name: Red Hat
   version: 2.0.0-snapshot
+  webhookdefinitions:
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    conversionCRDs:
+    - sonataflowplatforms.sonataflow.org
+    deploymentName: sonataflow-operator-controller-manager
+    generateName: csonataflowplatforms.kb.io
+    sideEffects: None
+    targetPort: 9443
+    type: ConversionWebhook
+    webhookPath: /convert
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: sonataflow-operator-controller-manager
+    failurePolicy: Fail
+    generateName: vsonataflow.kb.io
+    rules:
+    - apiGroups:
+      - sonataflow.org
+      apiVersions:
+      - v1alpha08
+      operations:
+      - CREATE
+      - UPDATE
+      - DELETE
+      resources:
+      - sonataflows
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-sonataflow-org-v1alpha08-sonataflow
