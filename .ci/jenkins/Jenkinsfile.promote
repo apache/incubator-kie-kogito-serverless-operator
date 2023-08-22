@@ -80,7 +80,7 @@ pipeline {
                 }
             }
         }
-        stage('Merge PR, tag and release CLI') {
+        stage('Merge PR and create tags') {
             when {
                 expression { return helper.isRelease() }
             }
