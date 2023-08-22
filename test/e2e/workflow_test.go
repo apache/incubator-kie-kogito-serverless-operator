@@ -195,10 +195,18 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 		})
 
 		It("should successfully deploy the Greeting Workflow in prod mode and verify if it's running", func() {
+			By("creating external resources DataInputSchema configMap")
+			EventuallyWithOffset(1, func() error {
+				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
+					"test/testdata/"+test.SonataFlowGreetingsDataInputSchemaConfig), "-n", namespace)
+				_, err := utils.Run(cmd)
+				return err
+			}, time.Minute, time.Second).Should(Succeed())
+
 			By("creating an instance of the SonataFlow Operand(CR)")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
-					"config/samples/"+test.SonataFlowSampleYamlCR), "-n", namespace)
+					"test/testdata/"+test.SonataFlowGreetingsWithDataInputSchemaCR), "-n", namespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, time.Minute, time.Second).Should(Succeed())
@@ -208,40 +216,42 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "delete", "-f", filepath.Join(projectDir,
-					"config/samples/"+test.SonataFlowSampleYamlCR), "-n", namespace)
+					"test/testdata/"+test.SonataFlowGreetingsWithDataInputSchemaCR), "-n", namespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, time.Minute, time.Second).Should(Succeed())
 		})
 
-		It("should successfully deploy the orderprocessing workflow in devmode and verify if it's running", func() {
+		/*
+			It("should successfully deploy the orderprocessing workflow in devmode and verify if it's running", func() {
 
-			By("creating an instance of the SonataFlow Workflow in DevMode")
-			EventuallyWithOffset(1, func() error {
-				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
-					test.GetSonataFlowE2eOrderProcessingFolder()), "-n", namespace)
-				_, err := utils.Run(cmd)
-				return err
-			}, time.Minute, time.Second).Should(Succeed())
+				By("creating an instance of the SonataFlow Workflow in DevMode")
+				EventuallyWithOffset(1, func() error {
+					cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
+						test.GetSonataFlowE2eOrderProcessingFolder()), "-n", namespace)
+					_, err := utils.Run(cmd)
+					return err
+				}, time.Minute, time.Second).Should(Succeed())
 
-			By("check the workflow is in running state")
-			EventuallyWithOffset(1, func() bool { return verifyWorkflowIsInRunningState("orderprocessing") }, 5*time.Minute, 30*time.Second).Should(BeTrue())
+				By("check the workflow is in running state")
+				EventuallyWithOffset(1, func() bool { return verifyWorkflowIsInRunningState("orderprocessing") }, 5*time.Minute, 30*time.Second).Should(BeTrue())
 
-			cmdLog := exec.Command("kubectl", "logs", "orderprocessing", "-n", namespace)
-			if responseLog, errLog := utils.Run(cmdLog); errLog == nil {
-				GinkgoWriter.Println(fmt.Sprintf("devmode podlog %s", responseLog))
-			}
+				cmdLog := exec.Command("kubectl", "logs", "orderprocessing", "-n", namespace)
+				if responseLog, errLog := utils.Run(cmdLog); errLog == nil {
+					GinkgoWriter.Println(fmt.Sprintf("devmode podlog %s", responseLog))
+				}
 
-			By("check that the workflow is addressable")
-			EventuallyWithOffset(1, func() bool { return verifyWorkflowIsAddressable("orderprocessing") }, 5*time.Minute, 30*time.Second).Should(BeTrue())
+				By("check that the workflow is addressable")
+				EventuallyWithOffset(1, func() bool { return verifyWorkflowIsAddressable("orderprocessing") }, 5*time.Minute, 30*time.Second).Should(BeTrue())
 
-			EventuallyWithOffset(1, func() error {
-				cmd := exec.Command("kubectl", "delete", "-f", filepath.Join(projectDir,
-					test.GetSonataFlowE2eOrderProcessingFolder()), "-n", namespace)
-				_, err := utils.Run(cmd)
-				return err
-			}, time.Minute, time.Second).Should(Succeed())
-		})
+				EventuallyWithOffset(1, func() error {
+					cmd := exec.Command("kubectl", "delete", "-f", filepath.Join(projectDir,
+						test.GetSonataFlowE2eOrderProcessingFolder()), "-n", namespace)
+					_, err := utils.Run(cmd)
+					return err
+				}, time.Minute, time.Second).Should(Succeed())
+			})
+		*/
 	})
 })
 

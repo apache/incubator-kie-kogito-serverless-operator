@@ -60,7 +60,6 @@ type builder struct {
 }
 
 type scheduler struct {
-	Scheduler
 	builder            builder
 	Resources          []resource
 	ResourceConfigMaps []resourceConfigMap
@@ -128,32 +127,32 @@ func NewBuild(info ContainerBuilderInfo) Scheduler {
 
 func (s *scheduler) WithClient(client client.Client) Scheduler {
 	s.builder.WithClient(client)
-	return s.Scheduler
+	return s
 }
 
 func (s *scheduler) WithResource(target string, content []byte) Scheduler {
 	s.Resources = append(s.Resources, resource{target, content, ""})
-	return s.Scheduler
+	return s
 }
 
-func (s *scheduler) WithResourceConfigMap(configMap corev1.LocalObjectReference, path string) Scheduler {
+func (s *scheduler) WithConfigMapResource(configMap corev1.LocalObjectReference, path string) Scheduler {
 	s.ResourceConfigMaps = append(s.ResourceConfigMaps, resourceConfigMap{configMap, path})
-	return s.Scheduler
+	return s
 }
 
 func (s *scheduler) WithResourceRequirements(res corev1.ResourceRequirements) Scheduler {
 	// no default implementation.
-	return s.Scheduler
+	return s
 }
 
 func (s *scheduler) WithAdditionalArgs(args []string) Scheduler {
 	// no default implementation.
-	return s.Scheduler
+	return s
 }
 
 func (s *scheduler) WithProperty(property BuilderProperty, object interface{}) Scheduler {
 	// no default implementation
-	return s.Scheduler
+	return s
 }
 
 // Schedule schedules a new build in the platform
@@ -219,6 +218,6 @@ func (b *builder) Reconcile() (*api.ContainerBuild, error) {
 }
 
 func (b *builder) CancelBuild() (*api.ContainerBuild, error) {
-	//TODO implement me
-	panic("implement me")
+	// TODO: do the actual implementation if that makes sense
+	panic("CancelBuild: Operation Not Supported")
 }

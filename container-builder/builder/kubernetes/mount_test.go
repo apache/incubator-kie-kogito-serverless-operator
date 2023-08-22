@@ -67,7 +67,6 @@ func Test_addResourcesToBuilderContextVolume_specificPath(t *testing.T) {
 	assert.Len(t, volumes[0].Projected.Sources, 1)
 }
 
-// TODO: add test case to verify current behavior (one created CM with a resource file)
 func Test_addResourcesToBuilderContextVolume_rootPath(t *testing.T) {
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -112,7 +111,6 @@ func Test_addResourcesToBuilderContextVolume_rootPath(t *testing.T) {
 	assert.Len(t, volumes[0].Projected.Sources, 1)
 }
 
-// TODO: add test case to verify current behavior + additional CM resources
 func Test_addResourcesToBuilderContextVolume_multipleCMs(t *testing.T) {
 	cm1 := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
