@@ -19,6 +19,6 @@ metadata:
 spec:
   build:
     config:
-      baseImage: quay.io/kiegroup/kogito-swf-builder:1.43
+      baseImage: quay.io/kiegroup/kogito-swf-builder-nightly:1.43
       strategyOptions:
         KanikoBuildCacheEnabled: "true"
