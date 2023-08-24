@@ -42,12 +42,14 @@ var _ webhook.Defaulter = &SonataFlow{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (s *SonataFlow) Default() {
-	klog.V(log.I).InfoS("Applying default values for ", "name", s.Name)
+	klog.V(log.D).InfoS("Applying default values for ", "name", s.Name)
 	// Add defaults
 	if len(s.ObjectMeta.Annotations[metadata.Version]) == 0 {
-		s.ObjectMeta.Annotations[metadata.Key] = metadata.SpecVersion
+		s.ObjectMeta.Annotations[metadata.Version] = "0.0.1"
 	}
-	klog.V(log.I).InfoS("BBBBBBB Applying default values for ", "specVersion", s.ObjectMeta.Annotations[metadata.Key])
+	if len(s.ObjectMeta.Annotations[metadata.SpecVersion]) == 0 {
+		s.ObjectMeta.Annotations[metadata.SpecVersion] = metadata.SpecVersion
+	}
 }
 
 // change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
@@ -58,30 +60,29 @@ var _ webhook.Validator = &SonataFlow{}
 var requiredMetadataFields = [2]string{metadata.Description, metadata.Version}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *SonataFlow) ValidateCreate() (admission.Warnings, error) {
-	klog.V(log.I).InfoS("validate create", "name", r.Name)
-	return nil, validate(r)
+func (s *SonataFlow) ValidateCreate() (admission.Warnings, error) {
+	klog.V(log.D).InfoS("validate create", "name", s.Name)
+	return nil, validate(s)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *SonataFlow) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	klog.V(log.I).InfoS("validate update", "name", r.Name)
-	return nil, validate(r)
+func (s *SonataFlow) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
+	klog.V(log.D).InfoS("validate update", "name", s.Name)
+	return nil, validate(s)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *SonataFlow) ValidateDelete() (admission.Warnings, error) {
-	klog.V(log.I).InfoS("validate delete", "name", r.Name)
+func (s *SonataFlow) ValidateDelete() (admission.Warnings, error) {
 	// TODO
 	return nil, nil
 }
 
-func validate(r *SonataFlow) error {
+func validate(s *SonataFlow) error {
 	// validate the required metadata
 	response := "Field metadata.annotation.%s.%s not set."
 	var missingAnnotations []string
 	for _, field := range requiredMetadataFields {
-		if len(r.Annotations[field]) == 0 {
+		if len(s.Annotations[field]) == 0 {
 			missingAnnotations = append(missingAnnotations, fmt.Sprintf(response, metadata.Domain, field))
 		}
 	}
@@ -89,11 +90,11 @@ func validate(r *SonataFlow) error {
 		return fmt.Errorf("%+v", missingAnnotations)
 	}
 
-	klog.V(log.I).InfoS("Validating workflow", "flow", r.Spec.Flow)
+	klog.V(log.D).InfoS("Validating workflow", "flow", s.Spec.Flow)
 
 	validator := cncfvalidator.GetValidator()
-	fmt.Printf("validator: %+v", r.Spec.Flow)
-	if err := validator.Struct(r.Spec.Flow); err != nil {
+	fmt.Printf("validator: %+v", s.Spec.Flow)
+	if err := validator.Struct(s.Spec.Flow); err != nil {
 		return err
 	}
 
