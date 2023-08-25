@@ -14,8 +14,8 @@ require (
 	github.com/RHsyseng/operator-utils v1.4.12
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/kiegroup/kogito-serverless-operator/api v1.43.1
-	github.com/kiegroup/kogito-serverless-operator/container-builder v0.0.0
-	github.com/kiegroup/kogito-serverless-operator/workflowproj v0.0.0
+	github.com/kiegroup/kogito-serverless-operator/container-builder v1.43.1
+	github.com/kiegroup/kogito-serverless-operator/workflowproj v1.43.1
 	github.com/magiconair/properties v1.8.7
 	github.com/onsi/ginkgo/v2 v2.9.5
 	github.com/onsi/gomega v1.27.7
