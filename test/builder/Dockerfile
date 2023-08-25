@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM quay.io/kiegroup/kogito-swf-builder-nightly:latest AS builder
+FROM quay.io/kiegroup/kogito-swf-builder-nightly:1.43 AS builder
 
 # Kogito User
 USER 1001

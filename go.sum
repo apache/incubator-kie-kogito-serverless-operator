@@ -126,10 +126,6 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/kiegroup/kogito-serverless-operator/api v1.43.0 h1:GUxhaFcUxuauWLIU+4BZYGxIEQLGmBh4L3NYtGa0JI4=
 github.com/kiegroup/kogito-serverless-operator/api v1.43.0/go.mod h1:4oV+xpr32sKUV1Wi3Yq9/3s2SJdNRO8SfWqhWDhsWbc=
-github.com/kiegroup/kogito-serverless-operator/container-builder v1.43.0 h1:lsFXGx4rjWIYVBeYIW/eQsw9IVwGb/gAs5W46rWM7R8=
-github.com/kiegroup/kogito-serverless-operator/container-builder v1.43.0/go.mod h1:uABGLTLzIbb+ELltlG4N76PKeloOM1z5SQWX0pe+3us=
-github.com/kiegroup/kogito-serverless-operator/workflowproj v1.43.0 h1:WbvqDpBnPw9/qU3ugJDy8usiKoNSXHcC46y8/Ykfc0g=
-github.com/kiegroup/kogito-serverless-operator/workflowproj v1.43.0/go.mod h1:rclbP1i4gqveYkE383DozgxEmB96AIoOsXudX3s+mfw=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=

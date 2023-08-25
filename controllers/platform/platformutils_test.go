@@ -33,7 +33,7 @@ func TestSonataFlowBuildController(t *testing.T) {
 	dockerfile := string(dockerfileBytes)
 	// 1 - Let's verify that the default image is used (for this unit test is quay.io/kiegroup/kogito-swf-builder-nightly:latest)
 	resDefault := GetCustomizedDockerfile(dockerfile, *platform)
-	foundDefault, err := regexp.MatchString("FROM quay.io/kiegroup/kogito-swf-builder-nightly:latest AS builder", resDefault)
+	foundDefault, err := regexp.MatchString("FROM quay.io/kiegroup/kogito-swf-builder-nightly:1.43 AS builder", resDefault)
 	assert.NoError(t, err)
 	assert.True(t, foundDefault)
 
