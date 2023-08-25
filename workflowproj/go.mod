@@ -3,7 +3,7 @@ module github.com/kiegroup/kogito-serverless-operator/workflowproj
 go 1.19
 
 require (
-	github.com/kiegroup/kogito-serverless-operator/api v1.43.0
+	github.com/kiegroup/kogito-serverless-operator/api v1.43.1
 	github.com/pb33f/libopenapi v0.8.4
 	github.com/pkg/errors v0.9.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.0
