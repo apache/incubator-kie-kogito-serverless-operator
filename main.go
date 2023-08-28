@@ -19,6 +19,7 @@ import (
 	"os"
 
 	"k8s.io/klog/v2"
+	"k8s.io/klog/v2/klogr"
 
 	"github.com/kiegroup/kogito-serverless-operator/utils"
 
@@ -61,6 +62,8 @@ func main() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
+
+	ctrl.SetLogger(klogr.New().WithName(controllers.ComponentName))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
