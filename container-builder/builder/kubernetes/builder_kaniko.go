@@ -107,6 +107,16 @@ func (sk *kanikoScheduler) WithClient(client client.Client) Scheduler {
 	return sk
 }
 
+func (sk *kanikoScheduler) WithBuildArgs(args []corev1.EnvVar) Scheduler {
+	sk.KanikoTask.BuildArgs = args
+	return sk
+}
+
+func (sk *kanikoScheduler) WithEnvs(envs []corev1.EnvVar) Scheduler {
+	sk.KanikoTask.Envs = envs
+	return sk
+}
+
 func (sk *kanikoScheduler) Schedule() (*api.ContainerBuild, error) {
 	// verify if we really need this
 	for _, task := range sk.baseScheduler.builder.Context.ContainerBuild.Spec.Tasks {

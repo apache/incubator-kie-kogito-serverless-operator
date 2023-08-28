@@ -87,6 +87,8 @@ type Scheduler interface {
 	WithAdditionalArgs(args []string) Scheduler
 	// WithProperty specialized property known by inner implementations for additional properties to configure the underlying builder
 	WithProperty(property BuilderProperty, object interface{}) Scheduler
+	WithBuildArgs(args []corev1.EnvVar) Scheduler
+	WithEnvs(envs []corev1.EnvVar) Scheduler
 	Schedule() (*api.ContainerBuild, error)
 }
 
@@ -151,6 +153,16 @@ func (s *scheduler) WithAdditionalArgs(args []string) Scheduler {
 }
 
 func (s *scheduler) WithProperty(property BuilderProperty, object interface{}) Scheduler {
+	// no default implementation
+	return s
+}
+
+func (s *scheduler) WithBuildArgs(args []corev1.EnvVar) Scheduler {
+	// no default implementation
+	return s
+}
+
+func (s *scheduler) WithEnvs(envs []corev1.EnvVar) Scheduler {
 	// no default implementation
 	return s
 }

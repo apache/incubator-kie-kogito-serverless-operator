@@ -147,6 +147,7 @@ func GetRegistryAddress(ctx context.Context, c client.Client) (*string, error) {
 	return nil, nil
 }
 
+// GetCustomizedDockerfile gets the Dockerfile as defined in the default platform ConfigMap, apply any custom requirements and return.
 func GetCustomizedDockerfile(dockerfile string, platform operatorapi.SonataFlowPlatform) string {
 	if platform.Spec.Build.Config.BaseImage != "" {
 		res := builderDockerfileFromRE.FindAllStringSubmatch(dockerfile, 1)

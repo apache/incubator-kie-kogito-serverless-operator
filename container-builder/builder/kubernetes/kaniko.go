@@ -62,7 +62,7 @@ func addKanikoTaskToPod(ctx context.Context, c client.Client, build *api.Contain
 		if address != nil {
 			task.Registry.Address = *address
 		} else {
-			address, err := minikube.FindRegistry(ctx, c)
+			address, err = minikube.FindRegistry(ctx, c)
 			if err != nil {
 				return err
 			}
@@ -91,6 +91,7 @@ func addKanikoTaskToPod(ctx context.Context, c client.Client, build *api.Contain
 
 	affinity := &corev1.Affinity{}
 	env := make([]corev1.EnvVar, 0)
+	env = append(env, task.Envs...)
 	volumes := make([]corev1.Volume, 0)
 	volumeMounts := make([]corev1.VolumeMount, 0)
 
@@ -113,6 +114,12 @@ func addKanikoTaskToPod(ctx context.Context, c client.Client, build *api.Contain
 	}
 
 	env = append(env, proxyFromEnvironment()...)
+
+	buildArgs, err := FromEnvToArgs(c, pod.Namespace, task.BuildArgs...)
+	if err != nil {
+		return err
+	}
+	args = append(args, buildArgs...)
 
 	container := corev1.Container{
 		Name:            strings.ToLower(task.Name),
