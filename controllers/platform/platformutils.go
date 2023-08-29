@@ -108,7 +108,7 @@ func SetPlatformDefaults(p *operatorapi.SonataFlowPlatform, verbose bool) error 
 	setStatusAdditionalInfo(p)
 
 	if verbose {
-		klog.V(log.I).InfoS("BaseImage set", "value", p.Spec.Build.Config.BaseImage)
+		klog.V(log.I).InfoS("baseImage set", "value", p.Spec.Build.Config.BaseImage)
 		klog.V(log.I).InfoS("Timeout set", "value", p.Spec.Build.Config.GetTimeout())
 	}
 	return nil

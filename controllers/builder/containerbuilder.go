@@ -177,18 +177,17 @@ func (c *containerBuilderManager) buildImage(buildInput kanikoBuildInput) (*api.
 func newBuild(buildInput kanikoBuildInput, platform api.PlatformContainerBuild, defaultExtension string, cli client.Client) (*api.ContainerBuild, error) {
 	buildInfo := builder.ContainerBuilderInfo{FinalImageName: buildInput.imageTag, BuildUniqueName: buildInput.name, Platform: platform}
 
-	scheduler := builder.NewBuild(buildInfo).
-		WithResource(resourceDockerfile, []byte(buildInput.dockerfile)).
-		WithResource(buildInput.name+defaultExtension, buildInput.workflowDefinition).
+	newBuilder := builder.NewBuild(buildInfo).
+		WithClient(cli).
+		AddResource(resourceDockerfile, []byte(buildInput.dockerfile)).
+		AddResource(buildInput.name+defaultExtension, buildInput.workflowDefinition)
+	for _, res := range buildInput.workflow.Spec.Resources.ConfigMaps {
+		newBuilder.AddConfigMapResource(res.ConfigMap, res.WorkflowPath)
+	}
+
+	return newBuilder.Scheduler().
 		WithAdditionalArgs(buildInput.task.AdditionalFlags).
 		WithResourceRequirements(buildInput.task.Resources).
 		WithBuildArgs(buildInput.task.BuildArgs).
-		WithEnvs(buildInput.task.Envs).
-		WithClient(cli)
-
-	for _, res := range buildInput.workflow.Spec.Resources.ConfigMaps {
-		scheduler.WithConfigMapResource(res.ConfigMap, res.WorkflowPath)
-	}
-
-	return scheduler.Schedule()
+		WithEnvs(buildInput.task.Envs).Schedule()
 }

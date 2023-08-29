@@ -16,6 +16,7 @@ package kubernetes
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -51,6 +52,9 @@ var (
 		standardDockerKanikoRegistrySecret,
 	}
 )
+
+// see: https://github.com/GoogleContainerTools/kaniko#flag---build-arg
+const kanikoBuildArgs = "--build-arg"
 
 func addKanikoTaskToPod(ctx context.Context, c client.Client, build *api.ContainerBuild, task *api.KanikoTask, pod *corev1.Pod) error {
 	// TODO: perform an actual registry lookup based on the environment
@@ -119,7 +123,9 @@ func addKanikoTaskToPod(ctx context.Context, c client.Client, build *api.Contain
 	if err != nil {
 		return err
 	}
-	args = append(args, buildArgs...)
+	if len(buildArgs) > 0 {
+		args = append(args, fmt.Sprintf("%s=%s", kanikoBuildArgs, strings.Join(buildArgs, ",")))
+	}
 
 	container := corev1.Container{
 		Name:            strings.ToLower(task.Name),

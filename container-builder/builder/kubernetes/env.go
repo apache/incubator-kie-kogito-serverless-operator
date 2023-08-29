@@ -27,7 +27,7 @@ import (
 
 // FromEnvToArgs converts an EnvVar array into an args string slice. E.g. name=value,name=value
 func FromEnvToArgs(c client.Client, ns string, envVars ...v1.EnvVar) ([]string, error) {
-	args := make([]string, len(envVars))
+	args := make([]string, 0)
 	for _, env := range envVars {
 		if env.ValueFrom == nil {
 			args = append(args, fmt.Sprintf("%s=%s", env.Name, env.Value))
