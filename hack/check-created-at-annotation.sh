@@ -15,6 +15,10 @@
 
 # See https://github.com/operator-framework/operator-sdk/issues/6285
 # and https://github.com/operator-framework/operator-sdk/pull/6419
+# Since createdAt field is always updated when make bundle is run
+# we check if the bundle/manifests/sonataflow-operator.clusterserviceversion.yaml is modified with git
+# and then we check if is the change involve only the createdAt, if yes we suppress the error on the Github Action
+# this fix could be remove when the operator sdk provides a flag to avoid this change that broke the Github action checks
 
 changed_files=$(git status -s)
 check_file=$(expr "$changed_files" == "M bundle/manifests/sonataflow-operator.clusterserviceversion.yaml")
