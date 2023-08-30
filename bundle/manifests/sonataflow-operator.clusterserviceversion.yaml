@@ -420,10 +420,8 @@ spec:
                 command:
                 - /usr/local/bin/manager
                 env:
-                - name: POD_NAMESPACE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.namespace
+                - name: ENABLE_WEBHOOKS
+                  value: "true"
                 image: quay.io/kiegroup/kogito-serverless-operator-nightly:latest
                 livenessProbe:
                   httpGet:

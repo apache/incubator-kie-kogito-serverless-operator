@@ -22,11 +22,6 @@ images:
   newName: quay.io/kiegroup/kogito-serverless-operator-nightly
   newTag: latest
   # Patching the manager deployment file to add an env var with the operator namespace in
-  #    - op: add
-  #      path: /spec/template/spec/containers/0/env
-  #      value:
-  #        - name: ENABLE_WEBHOOKS
-  #          value: "false"
 patchesJson6902:
 - patch: |-
     - op: add
@@ -36,6 +31,11 @@ patchesJson6902:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+    - op: add
+      path: /spec/template/spec/containers/0/env
+      value:
+        - name: ENABLE_WEBHOOKS
+          value: "true"
   target:
     group: apps
     kind: Deployment
