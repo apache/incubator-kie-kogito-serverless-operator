@@ -424,8 +424,6 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.namespace
-                - name: ENABLE_WEBHOOKS
-                  value: "true"
                 image: quay.io/kiegroup/kogito-serverless-operator-nightly:latest
                 livenessProbe:
                   httpGet:
