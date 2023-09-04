@@ -44,6 +44,8 @@ type BuildPlatformConfig struct {
 	BuildStrategyOptions map[string]string `json:"strategyOptions,omitempty"`
 	// Registry the registry where to publish the built image
 	Registry RegistrySpec `json:"registry,omitempty"`
+	// number of attempts after a build error, to avoid of momentary infra slop
+	BuildAttemptsAfterError int `json:"buildAttemptsAfterError,omitempty"`
 }
 
 // GetTimeout returns the specified duration or a default one

@@ -18,9 +18,20 @@ import (
 	"context"
 	"fmt"
 
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 
+	"github.com/kiegroup/kogito-serverless-operator/api"
+	"github.com/kiegroup/kogito-serverless-operator/controllers/builder"
+	"github.com/kiegroup/kogito-serverless-operator/controllers/platform"
+
 	"k8s.io/client-go/rest"
+
+	api2 "github.com/kiegroup/kogito-serverless-operator/container-builder/api"
 
 	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
 
@@ -38,7 +49,7 @@ import (
 // 1. ProfileReconciler: it's the main interface that internal structs implement via the baseReconciler.
 // Every profile must embed the baseReconciler.
 //
-// 2. stateSupport: is a struct with a few support objects passed around the reconciliation states like the client and logger.
+// 2. stateSupport: is a struct with a few support objects passed around the reconciliation states like the client and recorder.
 //
 // 3. reconciliationStateMachine: is a struct within the ProfileReconciler that do the actual reconciliation.
 // Each part of the reconciliation algorithm is a ReconciliationState that will be executed based on the ReconciliationState.CanReconcile call.
@@ -66,7 +77,8 @@ type ProfileReconciler interface {
 
 // stateSupport is the shared structure with common accessors used throughout the whole reconciliation profiles
 type stateSupport struct {
-	client client.Client
+	client   client.Client
+	recorder record.EventRecorder
 }
 
 // performStatusUpdate updates the SonataFlow Status conditions
@@ -78,6 +90,34 @@ func (s stateSupport) performStatusUpdate(ctx context.Context, workflow *operato
 		return false, err
 	}
 	return true, err
+}
+
+// performStatusUpdate updates the SonataFlow Status conditions on the last version available
+func (s stateSupport) getAndUpdateStatusWorkFlow(ctx context.Context, workflow *operatorapi.SonataFlow) (bool, error) {
+	freshWorkFlow := operatorapi.SonataFlow{}
+
+	err := s.client.Get(ctx, client.ObjectKeyFromObject(workflow), &freshWorkFlow)
+	freshWorkFlow.Status = workflow.Status
+	freshWorkFlow.Status.ObservedGeneration = workflow.Generation
+	if err = s.client.Status().Update(ctx, &freshWorkFlow); err != nil {
+		klog.V(log.E).ErrorS(err, "Failed to update Workflow status")
+		s.recorder.Event(&freshWorkFlow, v1.EventTypeWarning, "SonataFlowStatusUpdateError", fmt.Sprintf("Error: %v", err))
+		return false, err
+	}
+	return true, nil
+}
+
+func getAndUpdateStatusBuild(ctx context.Context, build *operatorapi.SonataFlowBuild, support *stateSupport) error {
+	freshBuild := operatorapi.SonataFlowBuild{}
+	err := support.client.Get(ctx, client.ObjectKeyFromObject(build), &freshBuild)
+	freshBuild.Status = build.Status
+	freshBuild.Name = build.Name
+	if err = support.client.Status().Update(ctx, &freshBuild); err != nil {
+		klog.V(log.E).ErrorS(err, "Failed to update Build status")
+		support.recorder.Event(&freshBuild, v1.EventTypeWarning, "SonataFlowBuildStatusUpdateError", fmt.Sprintf("Error: %v", err))
+		return err
+	}
+	return nil
 }
 
 // PostReconcile function to perform all the other operations required after the reconciliation - placeholder for null pattern usages
@@ -110,7 +150,6 @@ func (b baseReconciler) Reconcile(ctx context.Context, workflow *operatorapi.Son
 	}
 	b.objects = objects
 	klog.V(log.I).InfoS("Returning from reconciliation", "Result", result)
-
 	return result, err
 }
 
@@ -158,6 +197,121 @@ func (r *reconciliationStateMachine) do(ctx context.Context, workflow *operatora
 }
 
 // NewReconciler creates a new ProfileReconciler based on the given workflow and context.
-func NewReconciler(client client.Client, config *rest.Config, workflow *operatorapi.SonataFlow) ProfileReconciler {
-	return profileBuilder(workflow)(client, config)
+func NewReconciler(client client.Client, config *rest.Config, recorder record.EventRecorder, workflow *operatorapi.SonataFlow) ProfileReconciler {
+	return profileBuilder(workflow)(client, config, recorder)
+}
+
+/*
+func getInnerBuild(build *operatorapi.SonataFlowBuild) (api2.ContainerBuildPhase, string) {
+	containerBuild := &api2.ContainerBuild{}
+	build.Status.GetInnerBuild(containerBuild)
+	phaseCurrent := containerBuild.Status.Phase
+	return phaseCurrent, containerBuild.Status.Error
+}*/
+
+func getNamespaceConfigMap(c context.Context, client client.Client, name string, namespace string) (v1.ConfigMap, error) {
+	configMap := v1.ConfigMap{}
+	configMapId := types.NamespacedName{Name: name, Namespace: namespace}
+	if err := client.Get(c, configMapId, &configMap); err != nil {
+		return configMap, err
+	}
+	return configMap, nil
+}
+
+func getActivePlatform(ctx context.Context, workflow *operatorapi.SonataFlow, client client.Client, stateSupport *stateSupport) (*operatorapi.SonataFlowPlatform, error) {
+	activePlatform, err := platform.GetActivePlatform(ctx, client, workflow.Namespace)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Recovery isn't possible just signal on events and on log
+			msg := "No active Platform for namespace %s so the workflow cannot be built."
+			stateSupport.recorder.Event(workflow, v1.EventTypeWarning, "SonataFlowPlatformError", fmt.Sprintf(msg, workflow.Namespace))
+			workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForPlatformReason, msg, workflow.Namespace)
+			_, err = stateSupport.getAndUpdateStatusWorkFlow(ctx, workflow)
+		}
+		// Recovery isn't possible just signal on events and on log
+		klog.V(log.E).ErrorS(err, "Failed to get active platform")
+		stateSupport.recorder.Event(workflow, v1.EventTypeWarning, "SonataFlowStatusUpdateError 1", fmt.Sprintf("Failed to get active platform, error: %v", err))
+	}
+	return activePlatform, err
+}
+
+func restartBuild(ctx context.Context, stateSupport *stateSupport, workflow *operatorapi.SonataFlow, activePlatform *operatorapi.SonataFlowPlatform, build *operatorapi.SonataFlowBuild) {
+	if activePlatform.Generation > workflow.Status.ObservedPlatformGeneration {
+		workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.BuildFailedReason, "PlatformUpdated", workflow.Namespace)
+		stateSupport.client.Status().Update(ctx, workflow)
+	}
+	// mark to restart
+	build.Status.BuildPhase = operatorapi.BuildPhaseNone
+	build.Status.BuildAttemptsAfterError = 0
+	build.Status.InnerBuild = runtime.RawExtension{}
+	restartErr := getAndUpdateStatusBuild(ctx, build, stateSupport)
+	if restartErr != nil {
+		buildManager := builder.NewSonataFlowBuildManager(ctx, stateSupport.client)
+		freshBuild, restartErr := buildManager.GetOrCreateBuildWithPlatform(activePlatform, workflow)
+		freshBuild.Status.BuildPhase = operatorapi.BuildPhaseNone
+		freshBuild.Status.BuildAttemptsAfterError = 0
+		freshBuild.Status.InnerBuild = runtime.RawExtension{}
+		restartErr = getAndUpdateStatusBuild(ctx, freshBuild, stateSupport)
+		if restartErr != nil {
+			klog.V(log.E).ErrorS(restartErr, "Error on Restart Build updae status")
+		}
+	}
+}
+
+func handleMultipleBuildsAfterError(ctx context.Context, build *operatorapi.SonataFlowBuild, workflow *operatorapi.SonataFlow, stateSupport stateSupport, activePlatform operatorapi.SonataFlowPlatform) bool {
+	if build.Status.BuildAttemptsAfterError == 0 {
+		build.Status.BuildAttemptsAfterError = 1
+	}
+
+	msg := fmt.Sprintf("Build attempt number %v is in failed state", build.Status.BuildAttemptsAfterError)
+	if build.Status.BuildAttemptsAfterError < activePlatform.Spec.Build.Template.BuildAttemptsAfterError {
+		build.Status.BuildAttemptsAfterError = build.Status.BuildAttemptsAfterError + 1
+		updateErr := stateSupport.client.Status().Update(ctx, build)
+		klog.V(log.I).Info(msg)
+		stateSupport.recorder.Event(workflow, v1.EventTypeWarning, "SonataFlowBuildError", msg)
+		if updateErr != nil {
+			klog.V(log.I).Info(fmt.Sprintf("Error updating Build: %v", updateErr))
+			stateSupport.recorder.Event(workflow, v1.EventTypeWarning, "Error updating Build", fmt.Sprintf("Error updating Build: %v", updateErr))
+		}
+	} else {
+		//We have surpassed the number of failed builds configured, we are going to change the condition to WaitingForChanges from the user
+		msgFinal := fmt.Sprintf(" Workflow %s build is in failed state, stop to build after %v attempts and waiting to fix the problem. Try to fix the problem or delete the SonataFlowBuild to restart a new build cycle. error %s", workflow.Name, build.Status.BuildAttemptsAfterError, build.Status.Error)
+		klog.V(log.I).Info(msgFinal)
+		stateSupport.recorder.Event(workflow, v1.EventTypeWarning, "SonataFlowBuildError", msgFinal)
+		workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.WaitingForWrongConfigurationReason, "WaitingForConfigChanges")
+		workflow.Status.ObservedPlatformGeneration = activePlatform.Generation
+		_, updateErr := stateSupport.getAndUpdateStatusWorkFlow(ctx, workflow)
+		if updateErr != nil {
+			klog.V(log.E).ErrorS(updateErr, "failed to update status update workflow")
+		}
+		return true
+	}
+	return false
+}
+
+func getInnerBuild(build *operatorapi.SonataFlowBuild) (api2.ContainerBuildPhase, string) {
+	containerBuild := &api2.ContainerBuild{}
+	build.Status.GetInnerBuild(containerBuild)
+	phaseCurrent := containerBuild.Status.Phase
+	return phaseCurrent, containerBuild.Status.Error
+}
+
+func getContextObjects(ctx context.Context, workflow *operatorapi.SonataFlow, support *stateSupport) (*operatorapi.SonataFlowPlatform, *operatorapi.SonataFlowBuild, v1.ConfigMap, error) {
+	activePlatform, err := getActivePlatform(ctx, workflow, support.client, support)
+	if err != nil {
+		return nil, nil, v1.ConfigMap{}, err
+	}
+	// If there is an active platform we have got all the information to build but...
+	// ...let's check before if we have got already a build!
+	buildManager := builder.NewSonataFlowBuildManager(ctx, support.client)
+	build, err := buildManager.GetOrCreateBuildWithPlatform(activePlatform, workflow)
+	if err != nil {
+		support.recorder.Event(workflow, v1.EventTypeWarning, "SonataFlowGetOrCreateBuildError", fmt.Sprintf("Error: %v", err))
+		return activePlatform, nil, v1.ConfigMap{}, err
+	}
+	cm, err := getNamespaceConfigMap(ctx, support.client, "sonataflow-"+workflow.Name+"-builder", workflow.Namespace)
+	if err != nil {
+		return activePlatform, build, v1.ConfigMap{}, nil
+	}
+	return activePlatform, build, cm, nil
 }

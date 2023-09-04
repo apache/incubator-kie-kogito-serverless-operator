@@ -56,6 +56,10 @@ spec:
                     description: Describes the platform configuration for building
                       workflows.
                     properties:
+                      BuildAttemptsAfterError:
+                        description: number of attempts after a build error, to avoid
+                          of momentary infra slop
+                        type: integer
                       baseImage:
                         description: a base image that can be used as base layer for
                           all images. It can be useful if you want to provide some
@@ -351,6 +355,10 @@ spec:
                           - name
                           type: object
                         type: array
+                      buildAttemptsAfterError:
+                        description: BuildAttemptsAfterError number of attempts after
+                          a build error, to avoid of momentary infra slop
+                        type: integer
                       resources:
                         description: Resources optional compute resource requirements
                           for the builder
@@ -423,6 +431,10 @@ spec:
           status:
             description: SonataFlowPlatformStatus defines the observed state of SonataFlowPlatform
             properties:
+              buildAttemptsAfterError:
+                description: BuildAttemptsAfterError number of attempts after a build
+                  error, to avoid of momentary infra slop
+                type: integer
               cluster:
                 description: Cluster what kind of cluster you're running (ie, plain
                   Kubernetes or OpenShift)

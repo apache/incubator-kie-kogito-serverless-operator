@@ -65,15 +65,6 @@ func Pint(i int32) *int32 {
 	return &i
 }
 
-func Compare(a, b []byte) bool {
-	a = append(a, b...)
-	c := 0
-	for _, x := range a {
-		c ^= int(x)
-	}
-	return c == 0
-}
-
 func GetEnv(key, fallback string) string {
 	value := os.Getenv(key)
 	if len(value) == 0 {

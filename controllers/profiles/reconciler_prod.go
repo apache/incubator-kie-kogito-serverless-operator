@@ -16,7 +16,10 @@ package profiles
 
 import (
 	"context"
+	"fmt"
 	"time"
+
+	"k8s.io/client-go/tools/record"
 
 	"k8s.io/klog/v2"
 
@@ -75,9 +78,10 @@ func newProdObjectEnsurers(support *stateSupport) *prodObjectEnsurers {
 	}
 }
 
-func newProdProfileReconciler(client client.Client, config *rest.Config) ProfileReconciler {
+func newProdProfileReconciler(client client.Client, config *rest.Config, recorder record.EventRecorder) ProfileReconciler {
 	support := &stateSupport{
-		client: client,
+		client:   client,
+		recorder: recorder,
 	}
 	// the reconciliation state machine
 	stateMachine := newReconciliationStateMachine(
@@ -103,43 +107,66 @@ type newBuilderReconciliationState struct {
 func (h *newBuilderReconciliationState) CanReconcile(workflow *operatorapi.SonataFlow) bool {
 	return workflow.Status.GetTopLevelCondition().IsUnknown() ||
 		workflow.Status.IsWaitingForPlatform() ||
-		workflow.Status.IsBuildFailed()
+		workflow.Status.IsBuildFailed() ||
+		workflow.Status.IsWaitingConfigurationChanges()
 }
 
 func (h *newBuilderReconciliationState) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
-	_, err := platform.GetActivePlatform(ctx, h.client, workflow.Namespace)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.WaitingForPlatformReason,
-				"No active Platform for namespace %s so the workflow cannot be built.", workflow.Namespace)
-			_, err = h.performStatusUpdate(ctx, workflow)
-			return ctrl.Result{RequeueAfter: requeueWhileWaitForPlatform}, nil, err
-		}
-		klog.V(log.E).ErrorS(err, "Failed to get active platform")
+	//check the platform for the first time, we are here because in the CanReconcile the top level is unknow or we are WaitingForPlatform
+	activePlatform, build, cm, err := getContextObjects(ctx, workflow, h.stateSupport)
+	if activePlatform == nil {
 		return ctrl.Result{RequeueAfter: requeueWhileWaitForPlatform}, nil, err
 	}
-	// If there is an active platform we have got all the information to build but...
 	// ...let's check before if we have got already a build!
-	buildManager := builder.NewSonataFlowBuildManager(ctx, h.client)
-	build, err := buildManager.GetOrCreateBuild(workflow)
-	if err != nil {
-		//If we are not able to retrieve or create a Build CR for this Workflow we will mark
-		klog.V(log.E).ErrorS(err, "Failed to retrieve or create a Build CR")
-		workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.WaitingForBuildReason,
-			"Failed to retrieve or create a Build CR", workflow.Namespace)
-		_, err = h.performStatusUpdate(ctx, workflow)
+	if build == nil {
 		return ctrl.Result{}, nil, err
 	}
-
-	if build.Status.BuildPhase != operatorapi.BuildPhaseFailed {
-		workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.BuildIsRunningReason, "")
-		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForBuildReason, "")
-		_, err = h.performStatusUpdate(ctx, workflow)
-	} else {
-		// TODO: not ideal, but we will improve it on https://issues.redhat.com/browse/KOGITO-8792
-		klog.V(log.I).InfoS("Build is in failed state, try to delete the SonataFlowBuild to restart a new build cycle")
+	updatedCM := false
+	// we store the dockerfile because the configmap doesn't have a generation version and the version is updated often even if the content of the data fields aren't updated
+	valCm := cm.Data[builder.ConfigDockerfile]
+	if workflow.Status.ObserverdDockerfile != valCm {
+		updatedCM = true
 	}
 
+	updatedPlatform := false
+	if workflow.Status.ObservedPlatformGeneration != activePlatform.Generation && workflow.Status.ObservedPlatformGeneration != 0 {
+		updatedPlatform = true
+	}
+
+	workflow.Status.ObservedPlatformGeneration = activePlatform.Generation
+	workflow.Status.ObserverdDockerfile = valCm
+
+	if build.Status.BuildPhase != operatorapi.BuildPhaseFailed {
+		//Double check on the innerbuild
+		innerBuildPhase, stringError := getInnerBuild(build)
+		if string(innerBuildPhase) == string(operatorapi.BuildPhaseFailed) {
+			workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.BuildFailedReason, stringError)
+			workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForBuildReason, stringError)
+		} else {
+			workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.BuildIsRunningReason, "")
+			workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForBuildReason, "")
+		}
+		if updatedPlatform || updatedCM {
+			restartBuild(ctx, h.stateSupport, workflow, activePlatform, build)
+		}
+		h.getAndUpdateStatusWorkFlow(ctx, workflow)
+	} else {
+		//We track the number of failed builds to see if we are in the configured range
+		if updatedCM || updatedPlatform {
+			workflow.Status.ObserverdDockerfile = cm.Data[builder.ConfigDockerfile]
+			workflow.Status.ObservedPlatformGeneration = activePlatform.Generation
+			h.getAndUpdateStatusWorkFlow(ctx, workflow)
+			restartBuild(ctx, h.stateSupport, workflow, activePlatform, build)
+		} else if !handleMultipleBuildsAfterError(ctx, build, workflow, *h.stateSupport, *activePlatform) {
+			//We have surpassed the number of failed builds configured, we are going to change the condition to WaitingForChanges from the user
+			msgFinal := fmt.Sprintf(" Build is in failed state, stop to build after %v attempts and waiting to fix the problem. Checks the pod logs and try to fix the problem on platform or on Dockerfile or delete the SonataFlowBuild to restart a new build cycle", build.Status.BuildAttemptsAfterError)
+			klog.V(log.I).Info(msgFinal)
+			h.recorder.Event(workflow, v1.EventTypeWarning, "SonataFlowBuild Error", msgFinal)
+			workflow.Status.ObservedPlatformGeneration = activePlatform.Generation
+			_, err := h.getAndUpdateStatusWorkFlow(ctx, workflow)
+			return ctrl.Result{}, nil, err
+		}
+	}
 	return ctrl.Result{RequeueAfter: requeueAfterStartingBuild}, nil, err
 }
 

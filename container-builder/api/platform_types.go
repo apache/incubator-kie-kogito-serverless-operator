@@ -41,6 +41,8 @@ type PlatformContainerBuildSpec struct {
 	Timeout *metav1.Duration `json:"timeout,omitempty"`
 	//
 	BuildStrategyOptions map[string]string `json:"BuildStrategyOptions,omitempty"`
+	// number of attempts after a build error, to avoid of momentary infra slop
+	BuildAttemptsAfterError int `json:"BuildAttemptsAfterError,omitempty"`
 }
 
 // PlatformContainerBuildPublishStrategy defines the strategy used to package and publish an Integration base image
@@ -71,4 +73,12 @@ func (b *PlatformContainerBuildSpec) GetTimeout() metav1.Duration {
 		return metav1.Duration{}
 	}
 	return *b.Timeout
+}
+
+// GetNumberOfAttemptsAfterABuildError returns the specified number of build attempts after a build error or a default one
+func (b *PlatformContainerBuildSpec) GetNumberOfAttemptsAfterABuildError() int {
+	if b.BuildAttemptsAfterError == 0 {
+		return 1
+	}
+	return b.BuildAttemptsAfterError
 }

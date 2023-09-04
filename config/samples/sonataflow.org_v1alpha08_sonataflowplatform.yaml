@@ -5,6 +5,7 @@ metadata:
 spec:
   build:
     config:
+      buildAttemptsAfterError: 3
       registry:
         address: quay.io/kiegroup
         secret: regcred

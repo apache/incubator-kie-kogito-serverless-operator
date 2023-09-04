@@ -17,6 +17,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"k8s.io/klog/v2"
 
@@ -81,6 +82,7 @@ func (r *SonataFlowReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			return ctrl.Result{}, nil
 		}
 		klog.V(log.E).ErrorS(err, "Failed to get SonataFlow")
+		r.Recorder.Event(workflow, corev1.EventTypeWarning, "SonataFlowReconcilerError", fmt.Sprintf("Error: %v", err))
 		return ctrl.Result{}, err
 	}
 
@@ -90,10 +92,10 @@ func (r *SonataFlowReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return reconcile.Result{}, nil
 	}
 
-	return profiles.NewReconciler(r.Client, r.Config, workflow).Reconcile(ctx, workflow)
+	return profiles.NewReconciler(r.Client, r.Config, r.Recorder, workflow).Reconcile(ctx, workflow)
 }
 
-func platformEnqueueRequestsFromMapFunc(c client.Client, p *operatorapi.SonataFlowPlatform) []reconcile.Request {
+func platformEnqueueRequestsFromMapFunc(c client.Client, p *operatorapi.SonataFlowPlatform, recorder record.EventRecorder) []reconcile.Request {
 	var requests []reconcile.Request
 
 	if p.Status.IsReady() {
@@ -107,6 +109,7 @@ func platformEnqueueRequestsFromMapFunc(c client.Client, p *operatorapi.SonataFl
 
 		if err := c.List(context.Background(), list, opts...); err != nil {
 			klog.V(log.E).ErrorS(err, "Failed to list workflows")
+			recorder.Event(list, corev1.EventTypeWarning, "SonataFlowReconcilerSetupWithManagerError", "Failed to list workflows")
 			return requests
 		}
 
@@ -142,7 +145,7 @@ func buildEnqueueRequestsFromMapFunc(c client.Client, b *operatorapi.SonataFlowB
 			if errors.IsNotFound(err) {
 				return requests
 			}
-			klog.V(log.I).ErrorS(err, "Failed to get SonataFlow")
+			klog.V(log.E).ErrorS(err, "Failed to get SonataFlow")
 			return requests
 		}
 
@@ -156,6 +159,39 @@ func buildEnqueueRequestsFromMapFunc(c client.Client, b *operatorapi.SonataFlowB
 			})
 		}
 
+	}
+	return requests
+}
+
+func configMapEnqueueRequestsFromMapFunc(c client.Client, cm *corev1.ConfigMap, recorder record.EventRecorder) []reconcile.Request {
+	var requests []reconcile.Request
+
+	if strings.HasPrefix(cm.Name, "sonataflow") {
+		list := &operatorapi.SonataFlowList{}
+
+		// Do global search in case of global operator (it may be using a global platform)
+		var opts []client.ListOption
+		if !platform.IsCurrentOperatorGlobal() {
+			klog.V(log.I).Info(fmt.Sprintf("ConfigMapEnqueueRequestsFromMapFunc ConfigMap name :%s namespace: %s resourceVersion: %s", cm.Name, cm.Namespace, cm.ResourceVersion))
+			opts = append(opts, client.InNamespace(cm.Namespace))
+		}
+
+		if err := c.List(context.Background(), list, opts...); err != nil {
+			klog.V(log.E).ErrorS(err, "Failed to list workflows")
+			recorder.Event(list, corev1.EventTypeWarning, "SonataFlowReconcilerSetupWithManagerError", "Failed to list workflows")
+			return requests
+		}
+
+		for _, workflow := range list.Items {
+			cond := workflow.Status.GetTopLevelCondition()
+			klog.V(log.I).Info("ConfigMap %s ready, wake-up workflow: %s condition:%s", cm.Name, workflow.Name, cond)
+			requests = append(requests, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: workflow.Namespace,
+					Name:      workflow.Name,
+				},
+			})
+		}
 	}
 	return requests
 }
@@ -174,15 +210,23 @@ func (r *SonataFlowReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				klog.V(log.E).InfoS("Failed to retrieve workflow list. Type assertion failed", "assertion", a)
 				return []reconcile.Request{}
 			}
-			return platformEnqueueRequestsFromMapFunc(mgr.GetClient(), plat)
+			return platformEnqueueRequestsFromMapFunc(mgr.GetClient(), plat, mgr.GetEventRecorderFor("workflow-controller"))
 		})).
 		Watches(&operatorapi.SonataFlowBuild{}, handler.EnqueueRequestsFromMapFunc(func(c context.Context, a client.Object) []reconcile.Request {
 			build, ok := a.(*operatorapi.SonataFlowBuild)
 			if !ok {
-				klog.V(log.I).ErrorS(fmt.Errorf("type assertion failed: %v", a), "Failed to retrieve workflow list")
+				klog.V(log.E).ErrorS(fmt.Errorf("type assertion failed: %v", a), "Failed to retrieve workflow list")
 				return []reconcile.Request{}
 			}
 			return buildEnqueueRequestsFromMapFunc(mgr.GetClient(), build)
+		})).
+		Watches(&corev1.ConfigMap{}, handler.EnqueueRequestsFromMapFunc(func(c context.Context, a client.Object) []reconcile.Request {
+			configMap, ok := a.(*corev1.ConfigMap)
+			if !ok {
+				klog.V(log.E).ErrorS(fmt.Errorf("type assertion failed: %v", a), "Failed to retrieve workflow list")
+				return []reconcile.Request{}
+			}
+			return configMapEnqueueRequestsFromMapFunc(mgr.GetClient(), configMap, mgr.GetEventRecorderFor("workflow-controller"))
 		})).
 		Complete(r)
 }

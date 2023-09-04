@@ -60,6 +60,8 @@ type SonataFlowPlatformStatus struct {
 	Version string `json:"version,omitempty"`
 	// Info generic information related to the build
 	Info map[string]string `json:"info,omitempty"`
+	// BuildAttemptsAfterError number of attempts after a build error, to avoid of momentary infra slop
+	BuildAttemptsAfterError int `json:"buildAttemptsAfterError,omitempty"`
 }
 
 func (in *SonataFlowPlatformStatus) GetTopLevelConditionType() api.ConditionType {

@@ -20,6 +20,9 @@ import (
 	"reflect"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
 	"k8s.io/klog/v2"
 
 	buildv1 "github.com/openshift/api/build/v1"
@@ -71,19 +74,24 @@ func (r *SonataFlowBuildReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
-		klog.V(log.E).ErrorS(err, "Failed to get the SonataFlowBuild")
+		errMsg := "Failed to get the SonataFlowBuild"
+		klog.V(log.E).ErrorS(err, errMsg)
+		r.Recorder.Event(build, corev1.EventTypeWarning, errMsg, fmt.Sprintf("Error: %v", err))
 		return ctrl.Result{}, err
 	}
 
 	phase := build.Status.BuildPhase
 	buildManager, err := builder.NewBuildManager(ctx, r.Client, r.Config, build.Name, build.Namespace)
 	if err != nil {
-		klog.V(log.E).ErrorS(err, "Failed to get create a build manager to handle the workflow build")
+		errMsg := "Failed to get create a build manager to handle the workflow build"
+		klog.V(log.E).ErrorS(err, errMsg)
+		r.Recorder.Event(build, corev1.EventTypeWarning, errMsg, fmt.Sprintf("Error: %v", err))
 		return ctrl.Result{}, err
 	}
 
 	if phase == operatorapi.BuildPhaseNone {
 		if err = buildManager.Schedule(build); err != nil {
+			r.Recorder.Event(build, corev1.EventTypeWarning, "SonataFlowBuildManagerScheduleError", fmt.Sprintf("Error: %v", err))
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{RequeueAfter: requeueAfterForNewBuild}, r.manageStatusUpdate(ctx, build)
@@ -91,10 +99,12 @@ func (r *SonataFlowBuildReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	} else if phase != operatorapi.BuildPhaseSucceeded && phase != operatorapi.BuildPhaseError && phase != operatorapi.BuildPhaseFailed {
 		beforeReconcileStatus := build.Status.DeepCopy()
 		if err = buildManager.Reconcile(build); err != nil {
+			r.Recorder.Event(build, corev1.EventTypeWarning, "SonataFlowBuildManagerReconcileError", fmt.Sprintf("Error: %v", err))
 			return ctrl.Result{}, err
 		}
 		if !reflect.DeepEqual(build.Status, beforeReconcileStatus) {
 			if err = r.manageStatusUpdate(ctx, build); err != nil {
+				r.Recorder.Event(build, corev1.EventTypeWarning, "SonataFlowStatusUpdateError", fmt.Sprintf("Error: %v", err))
 				return ctrl.Result{}, err
 			}
 		}
@@ -105,11 +115,17 @@ func (r *SonataFlowBuildReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 }
 
 func (r *SonataFlowBuildReconciler) manageStatusUpdate(ctx context.Context, instance *operatorapi.SonataFlowBuild) error {
-	err := r.Status().Update(ctx, instance)
-	if err == nil {
-		r.Recorder.Event(instance, corev1.EventTypeNormal, "Updated", fmt.Sprintf("Updated buildphase to  %s", instance.Status.BuildPhase))
+	freshBuild := operatorapi.SonataFlowBuild{}
+	err := r.Get(ctx, client.ObjectKeyFromObject(instance), &freshBuild)
+	freshBuild.Status = instance.Status
+	if freshBuild.Name != "" {
+		if err = r.Status().Update(ctx, &freshBuild); err != nil {
+			klog.V(log.E).ErrorS(err, "Failed to update Build status")
+			r.Recorder.Event(&freshBuild, corev1.EventTypeWarning, "SonataFlowStatusUpdateError", fmt.Sprintf("Error: %v", err))
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -119,9 +135,41 @@ func (r *SonataFlowBuildReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			For(&operatorapi.SonataFlowBuild{}).
 			Owns(&buildv1.BuildConfig{}).
 			Owns(&imgv1.ImageStream{}).
+			Watches(&operatorapi.SonataFlowPlatform{}, handler.EnqueueRequestsFromMapFunc(func(c context.Context, a client.Object) []reconcile.Request {
+				platform, ok := a.(*operatorapi.SonataFlowPlatform)
+				if !ok {
+					klog.V(log.E).ErrorS(fmt.Errorf("type assertion failed: %v", a), "Failed to retrieve platform list")
+					return []reconcile.Request{}
+				}
+				return platformEnqueueRequestsFromMapFunc(mgr.GetClient(), platform, mgr.GetEventRecorderFor("build-controller"))
+			})).
+			Watches(&corev1.ConfigMap{}, handler.EnqueueRequestsFromMapFunc(func(c context.Context, a client.Object) []reconcile.Request {
+				configMap, ok := a.(*corev1.ConfigMap)
+				if !ok {
+					klog.V(log.E).ErrorS(fmt.Errorf("type assertion failed: %v", a), "Failed to retrieve platform list")
+					return []reconcile.Request{}
+				}
+				return configMapEnqueueRequestsFromMapFunc(mgr.GetClient(), configMap, mgr.GetEventRecorderFor("build-controller"))
+			})).
 			Complete(r)
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorapi.SonataFlowBuild{}).
+		Watches(&operatorapi.SonataFlowPlatform{}, handler.EnqueueRequestsFromMapFunc(func(c context.Context, a client.Object) []reconcile.Request {
+			platform, ok := a.(*operatorapi.SonataFlowPlatform)
+			if !ok {
+				klog.V(log.E).ErrorS(fmt.Errorf("type assertion failed: %v", a), "Failed to retrieve platform list")
+				return []reconcile.Request{}
+			}
+			return platformEnqueueRequestsFromMapFunc(mgr.GetClient(), platform, mgr.GetEventRecorderFor("build-controller"))
+		})).
+		Watches(&corev1.ConfigMap{}, handler.EnqueueRequestsFromMapFunc(func(c context.Context, a client.Object) []reconcile.Request {
+			configMap, ok := a.(*corev1.ConfigMap)
+			if !ok {
+				klog.V(log.E).ErrorS(fmt.Errorf("type assertion failed: %v", a), "Failed to retrieve platform list")
+				return []reconcile.Request{}
+			}
+			return configMapEnqueueRequestsFromMapFunc(mgr.GetClient(), configMap, mgr.GetEventRecorderFor("build-controller"))
+		})).
 		Complete(r)
 }

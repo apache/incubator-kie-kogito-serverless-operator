@@ -62,6 +62,10 @@ spec:
                           all images. It can be useful if you want to provide some
                           custom base image with further utility software
                         type: string
+                      buildAttemptsAfterError:
+                        description: number of attempts after a build error, to avoid
+                          of momentary infra slop
+                        type: integer
                       registry:
                         description: Registry the registry where to publish the built
                           image
@@ -352,6 +356,10 @@ spec:
                           - name
                           type: object
                         type: array
+                      buildAttemptsAfterError:
+                        description: BuildAttemptsAfterError number of attempts after
+                          a build error, to avoid of momentary infra slop
+                        type: integer
                       resources:
                         description: Resources optional compute resource requirements
                           for the builder
@@ -424,6 +432,10 @@ spec:
           status:
             description: SonataFlowPlatformStatus defines the observed state of SonataFlowPlatform
             properties:
+              buildAttemptsAfterError:
+                description: BuildAttemptsAfterError number of attempts after a build
+                  error, to avoid of momentary infra slop
+                type: integer
               cluster:
                 description: Cluster what kind of cluster you're running (ie, plain
                   Kubernetes or OpenShift)

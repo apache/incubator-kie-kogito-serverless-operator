@@ -63,6 +63,8 @@ type BuildTemplate struct {
 	BuildArgs []corev1.EnvVar `json:"buildArgs,omitempty"`
 	// Optional environment variables to add to the internal build
 	Envs []corev1.EnvVar `json:"envs,omitempty"`
+	// BuildAttemptsAfterError number of attempts after a build error, to avoid of momentary infra slop
+	BuildAttemptsAfterError int `json:"buildAttemptsAfterError,omitempty"`
 }
 
 // SonataFlowBuildSpec an abstraction over the actual build process performed by the platform.
@@ -81,6 +83,8 @@ type SonataFlowBuildStatus struct {
 	// InnerBuild is a reference to an internal build object, which can be anything known only to internal builders.
 	// +kubebuilder:pruning:PreserveUnknownFields
 	InnerBuild runtime.RawExtension `json:"innerBuild,omitempty" patchStrategy:"replace"`
+	// BuildAttemptsAfterError number of attempts after a build error, to avoid of momentary infra slop errors
+	BuildAttemptsAfterError int `json:"buildAttemptsAfterError,omitempty"`
 }
 
 // SetInnerBuild use to define a new object pointer to the inner build.

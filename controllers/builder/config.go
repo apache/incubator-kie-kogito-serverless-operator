@@ -33,8 +33,10 @@ const (
 	envVarPodNamespaceName = "POD_NAMESPACE"
 	// ConfigMapName is the default name for the Builder ConfigMap name
 	ConfigMapName                       = "sonataflow-operator-builder-config"
+	SonataPrefix                        = "sonataflow"
 	configKeyDefaultExtension           = "DEFAULT_WORKFLOW_EXTENSION"
 	configKeyDefaultBuilderResourceName = "DEFAULT_BUILDER_RESOURCE_NAME"
+	ConfigDockerfile                    = "Dockerfile"
 )
 
 // GetCommonConfigMap retrieves the config map with the builder common configuration information
@@ -43,9 +45,13 @@ func GetCommonConfigMap(client client.Client, fallbackNS string) (*corev1.Config
 	if !found {
 		namespace = fallbackNS
 	}
+	return GetNamespaceConfigMap(client, ConfigMapName, namespace)
+}
 
-	if !found && len(namespace) == 0 {
-		return nil, errors.Errorf("Can't find current context namespace, make sure that %s env is set", envVarPodNamespaceName)
+func GetNamespaceConfigMap(client client.Client, cmName string, namespace string) (*corev1.ConfigMap, error) {
+
+	if len(namespace) == 0 {
+		return nil, errors.Errorf("Can't find current context namespace, make sure that %s namespace exists", namespace)
 	}
 
 	existingConfigMap := &corev1.ConfigMap{
@@ -54,25 +60,42 @@ func GetCommonConfigMap(client client.Client, fallbackNS string) (*corev1.Config
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ConfigMapName,
+			Name:      cmName,
 			Namespace: namespace,
 		},
 		Data: map[string]string{},
 	}
 
-	err := client.Get(context.TODO(), types.NamespacedName{Name: ConfigMapName, Namespace: namespace}, existingConfigMap)
+	err := client.Get(context.TODO(), types.NamespacedName{Name: cmName, Namespace: namespace}, existingConfigMap)
 	if err != nil {
-		klog.V(log.E).ErrorS(err, "fetching configmap", "name", ConfigMapName)
+		copyOperatorConfigMapIntoNamespaceConfigMap(client, existingConfigMap)
+	}
+	if len(existingConfigMap.Data) == 2 {
+		commonConfig, _ := GetCommonConfigMap(client, "")
+		existingConfigMap.Data[configKeyDefaultExtension] = commonConfig.Data[configKeyDefaultExtension]
+		existingConfigMap.Data[configKeyDefaultBuilderResourceName] = commonConfig.Data[configKeyDefaultBuilderResourceName]
+		err = client.Update(context.TODO(), existingConfigMap)
+		if err != nil {
+			klog.V(log.E).ErrorS(err, "Error adding fields in the configmap")
+		}
 		return nil, err
 	}
 
 	err = isValidBuilderCommonConfigMap(existingConfigMap)
 	if err != nil {
-		klog.V(log.E).ErrorS(err, "configmap is not valid", "name", ConfigMapName)
+		klog.V(log.E).ErrorS(err, "configmap is not valid", "name", cmName)
 		return existingConfigMap, err
 	}
 
 	return existingConfigMap, nil
+}
+
+func copyOperatorConfigMapIntoNamespaceConfigMap(client client.Client, existingConfigMap *corev1.ConfigMap) {
+	commonConfig, _ := GetCommonConfigMap(client, "")
+	existingConfigMap.Data[configKeyDefaultExtension] = commonConfig.Data[configKeyDefaultExtension]
+	existingConfigMap.Data[configKeyDefaultBuilderResourceName] = commonConfig.Data[configKeyDefaultBuilderResourceName]
+	existingConfigMap.Data[resourceDockerfile] = commonConfig.Data[resourceDockerfile]
+	client.Create(context.TODO(), existingConfigMap)
 }
 
 // isValidBuilderCommonConfigMap  function that will verify that in the builder config maps there are the required keys, and they aren't empty
