@@ -126,6 +126,7 @@ pipeline {
                         withCredentials([usernamePassword(credentialsId: helper.getGitAuthorCredsID(), usernameVariable: 'GH_USER', passwordVariable: 'GH_TOKEN')]) {
                             sh """
                                 gh release upload ${helper.getGitTag()} "operator.yaml"
+                                gh release upload ${helper.getGitTag()} "operator-no-webhooks.yaml"
                             """
                         }
                     }

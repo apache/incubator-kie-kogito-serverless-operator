@@ -47,9 +47,6 @@ func (s *SonataFlow) Default() {
 	if len(s.ObjectMeta.Annotations[metadata.Version]) == 0 {
 		s.ObjectMeta.Annotations[metadata.Version] = "0.0.1"
 	}
-	if len(s.ObjectMeta.Annotations[metadata.SpecVersion]) == 0 {
-		s.ObjectMeta.Annotations[metadata.SpecVersion] = metadata.SpecVersion
-	}
 }
 
 // change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
