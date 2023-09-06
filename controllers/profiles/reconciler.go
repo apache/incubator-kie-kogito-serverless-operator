@@ -264,7 +264,7 @@ func handleMultipleBuildsAfterError(ctx context.Context, build *operatorapi.Sona
 	}
 
 	msg := fmt.Sprintf("Build attempt number %v is in failed state", build.Status.BuildAttemptsAfterError)
-	if build.Status.BuildAttemptsAfterError < activePlatform.Spec.Build.Template.BuildAttemptsAfterError {
+	if build.Status.BuildAttemptsAfterError < activePlatform.Spec.Build.Config.BuildAttemptsAfterError {
 		build.Status.BuildAttemptsAfterError = build.Status.BuildAttemptsAfterError + 1
 		updateErr := stateSupport.client.Status().Update(ctx, build)
 		klog.V(log.I).Info(msg)

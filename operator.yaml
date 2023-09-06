@@ -282,10 +282,6 @@ spec:
                   - name
                   type: object
                 type: array
-              buildAttemptsAfterError:
-                description: BuildAttemptsAfterError number of attempts after a build
-                  error, to avoid of momentary infra slop
-                type: integer
               resources:
                 description: Resources optional compute resource requirements for
                   the builder
@@ -429,15 +425,15 @@ spec:
                     description: Describes the platform configuration for building
                       workflows.
                     properties:
-                      BuildAttemptsAfterError:
-                        description: number of attempts after a build error, to avoid
-                          of momentary infra slop
-                        type: integer
                       baseImage:
                         description: a base image that can be used as base layer for
                           all images. It can be useful if you want to provide some
                           custom base image with further utility software
                         type: string
+                      buildAttemptsAfterError:
+                        description: number of attempts after a build error, to avoid
+                          of momentary infra slop
+                        type: integer
                       registry:
                         description: Registry the registry where to publish the built
                           image
