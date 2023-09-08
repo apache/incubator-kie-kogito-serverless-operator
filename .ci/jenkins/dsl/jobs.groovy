@@ -42,6 +42,7 @@ setupPromoteJob(JobType.RELEASE)
 
 void createSetupBranchJob() {
     def jobParams = JobParamsUtils.getBasicJobParams(this, 'kogito-serverless-operator', JobType.SETUP_BRANCH, "${jenkins_path}/Jenkinsfile.setup-branch", 'Kogito Serverless Cloud Operator Setup Branch')
+    JobParamsUtils.setupJobParamsAgentDockerBuilderImageConfiguration(this, jobParams)
     jobParams.env.putAll([
         JENKINS_EMAIL_CREDS_ID: "${JENKINS_EMAIL_CREDS_ID}",
         REPO_NAME: 'kogito-serverless-operator',
@@ -67,6 +68,7 @@ void createSetupBranchJob() {
 
 void setupDeployJob(JobType jobType) {
     def jobParams = JobParamsUtils.getBasicJobParams(this, 'kogito-serverless-operator-deploy', jobType, "${jenkins_path}/Jenkinsfile.deploy", 'Kogito Serverless Cloud Operator Deploy')
+    JobParamsUtils.setupJobParamsAgentDockerBuilderImageConfiguration(this, jobParams)
     jobParams.env.putAll([
         JENKINS_EMAIL_CREDS_ID: "${JENKINS_EMAIL_CREDS_ID}",
 
@@ -115,6 +117,7 @@ void setupDeployJob(JobType jobType) {
 
 void setupPromoteJob(JobType jobType) {
     def jobParams = JobParamsUtils.getBasicJobParams(this, 'kogito-serverless-operator-promote', jobType, "${jenkins_path}/Jenkinsfile.promote", 'Kogito Serverless Cloud Operator Promote')
+    JobParamsUtils.setupJobParamsAgentDockerBuilderImageConfiguration(this, jobParams)
     jobParams.env.putAll([
         JENKINS_EMAIL_CREDS_ID: "${JENKINS_EMAIL_CREDS_ID}",
         MAX_REGISTRY_RETRIES: 3,
@@ -162,6 +165,7 @@ void setupPromoteJob(JobType jobType) {
 
 void setupE2EJob(JobType jobType, String clusterName, Map extraEnv = [:]) {
     def jobParams = JobParamsUtils.getBasicJobParams(this, "kogito-serverless-operator.e2e.${clusterName}", jobType, "${jenkins_path}/Jenkinsfile.e2e.cluster", 'Kogito Serverless Cloud Operator Deploy')
+    JobParamsUtils.setupJobParamsAgentDockerBuilderImageConfiguration(this, jobParams)
     jobParams.env.putAll([
         JENKINS_EMAIL_CREDS_ID: "${JENKINS_EMAIL_CREDS_ID}",
         CLUSTER_NAME: clusterName,
