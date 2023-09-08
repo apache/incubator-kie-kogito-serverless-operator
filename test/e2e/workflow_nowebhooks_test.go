@@ -32,79 +32,27 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("SonataFlow Operator", Serial, func() {
+var _ = Describe("SonataFlow Operator - no webhooks", Serial, func() {
 
-	Describe("ensure that Operator and Operand(s) can run in restricted namespaces", Ordered, func() {
-		It("Prepare the environment", func() {
-			// Now, let's ensure that all namespaces can raise a Warn when we apply the manifests
-			// and that the namespace where the Operator and Operand will run are enforced as
-			// restricted so that we can ensure that both can be admitted and run with the enforcement
-
-			// See: https://kubernetes.io/docs/tutorials/security/seccomp/
-
-			/*
-				   TODO: Uncomment to enable when https://issues.redhat.com/browse/KOGITO-9110 will be available
-					By("labeling all namespaces to warn when we apply the manifest if would violate the PodStandards")
-					cmd = exec.Command("kubectl", "label", "--overwrite", "ns", "--all",
-						"pod-security.kubernetes.io/audit=restricted",
-						"pod-security.kubernetes.io/enforce-version=v1.22",
-						"pod-security.kubernetes.io/warn=restricted")
-					_, err := utils.Run(cmd)
-					ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-					By("labeling enforce the namespace where the Operator and Operand(s) will run")
-					cmd = exec.Command("kubectl", "label", "--overwrite", "ns", namespace,
-						"pod-security.kubernetes.io/audit=restricted",
-						"pod-security.kubernetes.io/enforce-version=v1.22",
-						"pod-security.kubernetes.io/enforce=restricted")
-					_, err = utils.Run(cmd)
-					Expect(err).To(Not(HaveOccurred()))
-
-			*/
-
+	Describe("ensure that Operator and Operand(s) can run in restricted namespaces - no webhooks", Ordered, func() {
+		It("Prepare the environment - no webhooks", func() {
 			var controllerPodName string
 			operatorImageName, err := utils.GetOperatorImageName()
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
+			By("installing CRDs")
+			cmd := exec.Command("make", "install-no-webhooks")
+			_, err = utils.Run(cmd)
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
 			By("deploying the controller-manager")
-			cmd := exec.Command("make", "deploy", fmt.Sprintf("IMG=%s", operatorImageName))
+			cmd = exec.Command("make", "deploy-no-webhooks", fmt.Sprintf("IMG=%s", operatorImageName))
 
 			outputMake, err := utils.Run(cmd)
 			fmt.Println(string(outputMake))
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-			/* // TODO: Uncomment to enable when https://issues.redhat.com/browse/KOGITO-9110 will be available
-
-			By("validating that manager Pod/container(s) are restricted")
-			// Get Podsecurity violation lines
-			lines, err := utils.StringToLines(string(outputMake))
-			ExpectWithOffset(1, err).NotTo(HaveOccurred())
-			var violationLines []string
-			applySeccompProfilePatch := false
-			for _, line := range lines {
-				if strings.Contains(line, "Warning: would violate PodSecurity") {
-					if strings.Contains(line, "must set securityContext.seccompProfile.type to") {
-						// Ignore this violation as it is expected
-						applySeccompProfilePatch = true
-					} else {
-						violationLines = append(violationLines, line)
-					}
-				}
-			}
-			Expect(violationLines).To(BeEmpty())
-
-			if applySeccompProfilePatch {
-				By("Applying seccompProfile")
-				cmd = exec.Command("kubectl", "patch", "deployment", "sonataflow-operator-controller-manager", "-p", `{"spec":{"template":{"spec":{"securityContext":{"seccompProfile":{"type":"RuntimeDefault"}}}}}}`, "-n", namespace)
-				_, err := utils.Run(cmd)
-				if utils.IsDebugEnabled() {
-					err = utils.OutputDeployment(namespace, "sonataflow-operator-controller-manager")
-				}
-				ExpectWithOffset(1, err).NotTo(HaveOccurred())
-			}
-			*/
-
-			By("validating that the controller-manager pod is running as expected")
+			By("validating that the controller-manager pod is running as expected - no webhooks")
 			verifyControllerUp := func() error {
 				var podOutput []byte
 				var err error
@@ -148,9 +96,10 @@ var _ = Describe("SonataFlow Operator", Serial, func() {
 		})
 
 		// ============= SONATAFLOW OPERATOR TESTS =============
+
 		projectDir, _ := utils.GetProjectDir()
 
-		It("should create a basic platform for Minikube", func() {
+		It("should create a basic platform for Minikube - no webhooks", func() {
 			By("creating an instance of the SonataFlowPlatform")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
@@ -160,8 +109,8 @@ var _ = Describe("SonataFlow Operator", Serial, func() {
 			}, time.Minute, time.Second).Should(Succeed())
 		})
 
-		It("should successfully deploy the Greeting Workflow in prod mode and verify if it's running", func() {
-			By("creating external resources DataInputSchema configMap")
+		It("should successfully deploy the Greeting Workflow in prod mode and verify if it's running - no webhooks", func() {
+			By("creating external resources DataInputSchema configMap - no webhooks")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
 					"test/testdata/"+test.SonataFlowGreetingsDataInputSchemaConfig), "-n", namespace)
@@ -169,7 +118,7 @@ var _ = Describe("SonataFlow Operator", Serial, func() {
 				return err
 			}, time.Minute, time.Second).Should(Succeed())
 
-			By("creating an instance of the SonataFlow Operand(CR)")
+			By("creating an instance of the SonataFlow Operand(CR) - no webhooks")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
 					"test/testdata/"+test.SonataFlowGreetingsWithDataInputSchemaCR), "-n", namespace)
@@ -177,7 +126,7 @@ var _ = Describe("SonataFlow Operator", Serial, func() {
 				return err
 			}, time.Minute, time.Second).Should(Succeed())
 
-			By("check the workflow is in running state")
+			By("check the workflow is in running state - no webhooks")
 			EventuallyWithOffset(1, func() bool { return verifyWorkflowIsInRunningState("greeting") }, 15*time.Minute, 30*time.Second).Should(BeTrue())
 
 			EventuallyWithOffset(1, func() error {
@@ -188,9 +137,9 @@ var _ = Describe("SonataFlow Operator", Serial, func() {
 			}, time.Minute, time.Second).Should(Succeed())
 		})
 
-		It("should successfully deploy the orderprocessing workflow in devmode and verify if it's running", func() {
+		It("should successfully deploy the orderprocessing workflow in devmode and verify if it's running - no webhooks", func() {
 
-			By("creating an instance of the SonataFlow Workflow in DevMode")
+			By("creating an instance of the SonataFlow Workflow in DevMode - no webhooks")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
 					test.GetSonataFlowE2eOrderProcessingFolder()), "-n", namespace)
@@ -198,7 +147,7 @@ var _ = Describe("SonataFlow Operator", Serial, func() {
 				return err
 			}, time.Minute, time.Second).Should(Succeed())
 
-			By("check the workflow is in running state")
+			By("check the workflow is in running state - no webhooks")
 			EventuallyWithOffset(1, func() bool { return verifyWorkflowIsInRunningState("orderprocessing") }, 15*time.Minute, 30*time.Second).Should(BeTrue())
 
 			cmdLog := exec.Command("kubectl", "logs", "orderprocessing", "-n", namespace)
@@ -206,7 +155,7 @@ var _ = Describe("SonataFlow Operator", Serial, func() {
 				GinkgoWriter.Println(fmt.Sprintf("devmode podlog %s", responseLog))
 			}
 
-			By("check that the workflow is addressable")
+			By("check that the workflow is addressable - no webhooks")
 			EventuallyWithOffset(1, func() bool { return verifyWorkflowIsAddressable("orderprocessing") }, 5*time.Minute, 30*time.Second).Should(BeTrue())
 
 			EventuallyWithOffset(1, func() error {
@@ -218,7 +167,7 @@ var _ = Describe("SonataFlow Operator", Serial, func() {
 		})
 
 		AfterAll(func() {
-			By("removing manager namespace")
+			By("removing manager namespace - no webhooks")
 			cmd := exec.Command("make", "undeploy")
 			_, _ = utils.Run(cmd)
 			By("uninstalling CRDs")

@@ -1,0 +1,40 @@
+resources:
+- manager.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- files:
+  - controller_manager_config.yaml
+  name: manager-config
+- files:
+  - Dockerfile=sonataflow_builder_dockerfile.yaml
+  literals:
+  - DEFAULT_BUILDER_RESOURCE_NAME=Dockerfile
+  - DEFAULT_WORKFLOW_EXTENSION=.sw.json
+  name: builder-config
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+images:
+- name: controller
+  newName: quay.io/kiegroup/kogito-serverless-operator-nightly
+  newTag: latest
+patchesJson6902:
+- patch: |-
+    - op: add
+      path: /spec/template/spec/containers/0/env
+      value:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: ENABLE_WEBHOOKS
+          value: "false"
+  target:
+    group: apps
+    kind: Deployment
+    name: controller-manager
+    namespace: system
+    version: v1
