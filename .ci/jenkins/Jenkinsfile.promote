@@ -161,7 +161,7 @@ void promoteImage(String oldImageName, String newImageName) {
 
 void updateInternalGoModuleWithTag(String moduleName, String tagName) {
     sh """
-        go get github.com/apache/kogito-serverless-operator/${moduleName}@${githubscm.getTagCommitHash(tagName)}
+        go get github.com/apache/incubator-kie-kogito-serverless-operator/${moduleName}@${githubscm.getTagCommitHash(tagName)}
         go mod tidy
     """
 }
