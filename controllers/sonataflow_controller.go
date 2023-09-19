@@ -20,6 +20,8 @@ import (
 
 	"k8s.io/klog/v2"
 
+	profiles "github.com/kiegroup/kogito-serverless-operator/controllers/profiles/builder"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
@@ -34,8 +36,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kiegroup/kogito-serverless-operator/api"
-
-	"github.com/kiegroup/kogito-serverless-operator/controllers/profiles"
 
 	"github.com/kiegroup/kogito-serverless-operator/log"
 

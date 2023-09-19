@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package profiles
+package dev
 
 import (
 	"context"
@@ -21,6 +21,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+
+	"github.com/kiegroup/kogito-serverless-operator/controllers/profiles/common"
 
 	operatorapi "github.com/kiegroup/kogito-serverless-operator/api/v1alpha08"
 
@@ -46,7 +48,7 @@ func Test_OverrideStartupProbe(t *testing.T) {
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
 
 	config := &rest.Config{}
-	devReconciler := newDevProfileReconciler(client, config)
+	devReconciler := NewProfileReconciler(client, config)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -74,7 +76,7 @@ func Test_recoverFromFailureNoDeployment(t *testing.T) {
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
 
 	config := &rest.Config{}
-	reconciler := newDevProfileReconciler(client, config)
+	reconciler := NewProfileReconciler(client, config)
 
 	// we are in failed state and have no objects
 	result, err := reconciler.Reconcile(context.TODO(), workflow)
@@ -116,7 +118,7 @@ func Test_newDevProfile(t *testing.T) {
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
 
 	config := &rest.Config{}
-	devReconciler := newDevProfileReconciler(client, config)
+	devReconciler := NewProfileReconciler(client, config)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -142,7 +144,7 @@ func Test_newDevProfile(t *testing.T) {
 	assert.Contains(t, propCM.Data[workflowproj.ApplicationPropertiesFileName], "quarkus.http.port")
 
 	service := test.MustGetService(t, client, workflow)
-	assert.Equal(t, int32(defaultHTTPWorkflowPortInt), service.Spec.Ports[0].TargetPort.IntVal)
+	assert.Equal(t, int32(common.DefaultHTTPWorkflowPortInt), service.Spec.Ports[0].TargetPort.IntVal)
 
 	workflow.Status.Manager().MarkTrue(api.RunningConditionType)
 	err = client.Status().Update(context.TODO(), workflow)
@@ -160,7 +162,7 @@ func Test_newDevProfile(t *testing.T) {
 
 	// check if the reconciliation ensures the object correctly
 	service = test.MustGetService(t, client, workflow)
-	assert.Equal(t, int32(defaultHTTPWorkflowPortInt), service.Spec.Ports[0].TargetPort.IntVal)
+	assert.Equal(t, int32(common.DefaultHTTPWorkflowPortInt), service.Spec.Ports[0].TargetPort.IntVal)
 
 	// now with the deployment
 	deployment = test.MustGetDeployment(t, client, workflow)
@@ -189,7 +191,7 @@ func Test_devProfileImageDefaultsNoPlatform(t *testing.T) {
 	workflow := test.GetBaseSonataFlowWithDevProfile(t.Name())
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
 	config := &rest.Config{}
-	devReconciler := newDevProfileReconciler(client, config)
+	devReconciler := NewProfileReconciler(client, config)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -207,7 +209,7 @@ func Test_devProfileWithImageSnapshotOverrideWithPlatform(t *testing.T) {
 
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow, platform).WithStatusSubresource(workflow, platform).Build()
 	config := &rest.Config{}
-	devReconciler := newDevProfileReconciler(client, config)
+	devReconciler := NewProfileReconciler(client, config)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -225,7 +227,7 @@ func Test_devProfileWithWPlatformWithoutDevBaseImageAndWithBaseImage(t *testing.
 
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow, platform).WithStatusSubresource(workflow, platform).Build()
 	config := &rest.Config{}
-	devReconciler := newDevProfileReconciler(client, config)
+	devReconciler := NewProfileReconciler(client, config)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -243,7 +245,7 @@ func Test_devProfileWithPlatformWithoutDevBaseImageAndWithoutBaseImage(t *testin
 
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow, platform).WithStatusSubresource(workflow, platform).Build()
 	config := &rest.Config{}
-	devReconciler := newDevProfileReconciler(client, config)
+	devReconciler := NewProfileReconciler(client, config)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -263,7 +265,7 @@ func Test_newDevProfileWithExternalConfigMaps(t *testing.T) {
 	config := &rest.Config{}
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
 
-	devReconciler := newDevProfileReconciler(client, config)
+	devReconciler := NewProfileReconciler(client, config)
 
 	camelXmlRouteFileName := "camelroute-xml"
 	xmlRoute := `<route routeConfigurationId="xmlError">
