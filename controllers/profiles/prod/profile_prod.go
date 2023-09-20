@@ -17,7 +17,6 @@ package prod
 import (
 	"time"
 
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
@@ -56,7 +55,7 @@ func newObjectEnsurers(support *common.StateSupport) *objectEnsurers {
 	}
 }
 
-func NewProfileReconciler(client client.Client, config *rest.Config) profiles.ProfileReconciler {
+func NewProfileReconciler(client client.Client) profiles.ProfileReconciler {
 	support := &common.StateSupport{
 		C: client,
 	}

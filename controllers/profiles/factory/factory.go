@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package builder
+package factory
 
 import (
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kiegroup/kogito-serverless-operator/api/metadata"
@@ -29,7 +28,7 @@ const (
 	defaultProfile = metadata.ProdProfile
 )
 
-type reconcilerBuilder func(client client.Client, config *rest.Config) profiles.ProfileReconciler
+type reconcilerBuilder func(client client.Client) profiles.ProfileReconciler
 
 var profileBuilders = map[metadata.ProfileType]reconcilerBuilder{
 	metadata.ProdProfile: prod.NewProfileReconciler,
@@ -48,6 +47,6 @@ func profileBuilder(workflow *operatorapi.SonataFlow) reconcilerBuilder {
 }
 
 // NewReconciler creates a new ProfileReconciler based on the given workflow and context.
-func NewReconciler(client client.Client, config *rest.Config, workflow *operatorapi.SonataFlow) profiles.ProfileReconciler {
-	return profileBuilder(workflow)(client, config)
+func NewReconciler(client client.Client, workflow *operatorapi.SonataFlow) profiles.ProfileReconciler {
+	return profileBuilder(workflow)(client)
 }

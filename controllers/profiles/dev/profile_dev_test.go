@@ -20,7 +20,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
 
 	"github.com/kiegroup/kogito-serverless-operator/controllers/profiles/common"
 
@@ -47,8 +46,7 @@ func Test_OverrideStartupProbe(t *testing.T) {
 
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
 
-	config := &rest.Config{}
-	devReconciler := NewProfileReconciler(client, config)
+	devReconciler := NewProfileReconciler(client)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -75,8 +73,7 @@ func Test_recoverFromFailureNoDeployment(t *testing.T) {
 	workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentFailureReason, "")
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
 
-	config := &rest.Config{}
-	reconciler := NewProfileReconciler(client, config)
+	reconciler := NewProfileReconciler(client)
 
 	// we are in failed state and have no objects
 	result, err := reconciler.Reconcile(context.TODO(), workflow)
@@ -117,8 +114,7 @@ func Test_newDevProfile(t *testing.T) {
 
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
 
-	config := &rest.Config{}
-	devReconciler := NewProfileReconciler(client, config)
+	devReconciler := NewProfileReconciler(client)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -190,8 +186,7 @@ func Test_newDevProfile(t *testing.T) {
 func Test_devProfileImageDefaultsNoPlatform(t *testing.T) {
 	workflow := test.GetBaseSonataFlowWithDevProfile(t.Name())
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
-	config := &rest.Config{}
-	devReconciler := NewProfileReconciler(client, config)
+	devReconciler := NewProfileReconciler(client)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -208,8 +203,7 @@ func Test_devProfileWithImageSnapshotOverrideWithPlatform(t *testing.T) {
 	platform := test.GetBasePlatformWithDevBaseImageInReadyPhase(workflow.Namespace)
 
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow, platform).WithStatusSubresource(workflow, platform).Build()
-	config := &rest.Config{}
-	devReconciler := NewProfileReconciler(client, config)
+	devReconciler := NewProfileReconciler(client)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -226,8 +220,7 @@ func Test_devProfileWithWPlatformWithoutDevBaseImageAndWithBaseImage(t *testing.
 	platform := test.GetBasePlatformWithBaseImageInReadyPhase(workflow.Namespace)
 
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow, platform).WithStatusSubresource(workflow, platform).Build()
-	config := &rest.Config{}
-	devReconciler := NewProfileReconciler(client, config)
+	devReconciler := NewProfileReconciler(client)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -244,8 +237,7 @@ func Test_devProfileWithPlatformWithoutDevBaseImageAndWithoutBaseImage(t *testin
 	platform := test.GetBasePlatformInReadyPhase(workflow.Namespace)
 
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow, platform).WithStatusSubresource(workflow, platform).Build()
-	config := &rest.Config{}
-	devReconciler := NewProfileReconciler(client, config)
+	devReconciler := NewProfileReconciler(client)
 
 	result, err := devReconciler.Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
@@ -262,10 +254,9 @@ func Test_newDevProfileWithExternalConfigMaps(t *testing.T) {
 	workflow.Spec.Resources.ConfigMaps = append(workflow.Spec.Resources.ConfigMaps,
 		operatorapi.ConfigMapWorkflowResource{ConfigMap: v1.LocalObjectReference{Name: configmapName}, WorkflowPath: "routes"})
 
-	config := &rest.Config{}
 	client := test.NewKogitoClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
 
-	devReconciler := NewProfileReconciler(client, config)
+	devReconciler := NewProfileReconciler(client)
 
 	camelXmlRouteFileName := "camelroute-xml"
 	xmlRoute := `<route routeConfigurationId="xmlError">
