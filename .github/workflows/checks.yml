@@ -106,5 +106,5 @@ jobs:
       - name: Check generations
         run: |
           make generate-all
-          changed_files=$(git status -s)
-          [[ -z "$changed_files" ]] ||  (printf "Generation has not been done on this PR. See modified files: \n$changed_files\n Did you run 'make generate-all' before sending the PR" && exit 1)
+          chmod +x ${GITHUB_WORKSPACE}/hack/check-created-at-annotation.sh
+          ${GITHUB_WORKSPACE}/hack/check-created-at-annotation.sh
