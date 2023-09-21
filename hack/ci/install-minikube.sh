@@ -45,8 +45,8 @@ else
 fi
 
 if [ -z "${install_path}" ]; then
-  install_path="${HOME}/Downloads"
-  [[ "${os}" == "darwin" ]]; install_path="${HOME}/Downloads"
+  install_path="${HOME}/runner/bin"
+  [[ "${os}" == "darwin" ]]; install_path="${HOME}/runner/bin"
 fi
 
 echo "---> Ensuring minikube installation at ${install_path}"
