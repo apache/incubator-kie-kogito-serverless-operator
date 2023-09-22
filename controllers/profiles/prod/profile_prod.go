@@ -82,6 +82,7 @@ func NewProfileForOpsReconciler(client client.Client) profiles.ProfileReconciler
 	}
 	// the reconciliation state machine
 	stateMachine := common.NewReconciliationStateMachine(
+		&ensureBuildSkipped{StateSupport: support},
 		&followDeployWorkflowState{StateSupport: support, ensurers: newObjectEnsurers(support)},
 	)
 	reconciler := &prodProfile{

@@ -41,10 +41,15 @@ func Test_Reconciler_ProdOps(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NotNil(t, result.RequeueAfter)
-	assert.True(t, workflow.Status.GetCondition(api.BuiltConditionType).IsUnknown())
+	assert.True(t, workflow.Status.GetCondition(api.BuiltConditionType).IsFalse())
+	assert.Equal(t, api.BuildSkipped, workflow.Status.GetCondition(api.BuiltConditionType).Reason)
 	// We need the deployment controller to tell us that the workflow is ready
 	// Since we don't have it in a mocked env, the result must be ready == false
 	assert.False(t, workflow.Status.IsReady())
+
+	// Reconcile again to run the ddeployment handler
+	result, err = NewProfileForOpsReconciler(client).Reconcile(context.TODO(), workflow)
+	assert.NoError(t, err)
 
 	// Let's check for the right creation of the workflow (one CM volume, one container with a custom image)
 	deployment := &appsv1.Deployment{}
