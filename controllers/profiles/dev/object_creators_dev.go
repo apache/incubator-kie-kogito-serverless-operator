@@ -57,13 +57,13 @@ func deploymentCreator(workflow *operatorapi.SonataFlow) (client.Object, error) 
 	}
 	deployment := obj.(*appsv1.Deployment)
 	_, idx := kubeutil.GetContainerByName(operatorapi.DefaultContainerName, &deployment.Spec.Template.Spec)
-	if workflow.Spec.PodSpecTemplate.FlowContainer.StartupProbe == nil {
+	if workflow.Spec.PodTemplate.Container.StartupProbe == nil {
 		deployment.Spec.Template.Spec.Containers[idx].StartupProbe.FailureThreshold = healthFailureThresholdDevMode
 	}
-	if workflow.Spec.PodSpecTemplate.FlowContainer.LivenessProbe == nil {
+	if workflow.Spec.PodTemplate.Container.LivenessProbe == nil {
 		deployment.Spec.Template.Spec.Containers[idx].LivenessProbe.FailureThreshold = healthFailureThresholdDevMode
 	}
-	if workflow.Spec.PodSpecTemplate.FlowContainer.ReadinessProbe == nil {
+	if workflow.Spec.PodTemplate.Container.ReadinessProbe == nil {
 		deployment.Spec.Template.Spec.Containers[idx].ReadinessProbe.FailureThreshold = healthFailureThresholdDevMode
 	}
 	return deployment, nil

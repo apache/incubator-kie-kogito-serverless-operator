@@ -80,8 +80,8 @@ func Test_ensureWorkflowPropertiesConfigMapMutator_DollarReplacement(t *testing.
 
 func TestMergePodSpec(t *testing.T) {
 	workflow := test.GetBaseSonataFlow(t.Name())
-	workflow.Spec.PodSpecTemplate = v1alpha08.FlowPodSpecTemplate{
-		FlowContainer: v1alpha08.FlowContainer{
+	workflow.Spec.PodTemplate = v1alpha08.FlowPodTemplateSpec{
+		Container: v1alpha08.FlowContainer{
 			// this one we can override
 			Image: "quay.io/example/my-workflow:1.0.0",
 			Ports: []corev1.ContainerPort{
@@ -96,7 +96,7 @@ func TestMergePodSpec(t *testing.T) {
 				{Name: "myvolume", ReadOnly: true, MountPath: "/tmp/any/path"},
 			},
 		},
-		PodSpecTemplate: v1alpha08.FlowPodSpec{
+		PodSpec: v1alpha08.FlowPodSpec{
 			ServiceAccountName: "superuser",
 			Containers: []corev1.Container{
 				{
@@ -133,8 +133,8 @@ func TestMergePodSpec(t *testing.T) {
 
 func TestMergePodSpec_OverrideContainers(t *testing.T) {
 	workflow := test.GetBaseSonataFlow(t.Name())
-	workflow.Spec.PodSpecTemplate = v1alpha08.FlowPodSpecTemplate{
-		PodSpecTemplate: v1alpha08.FlowPodSpec{
+	workflow.Spec.PodTemplate = v1alpha08.FlowPodTemplateSpec{
+		PodSpec: v1alpha08.FlowPodSpec{
 			// Try to override the workflow container via the podspec
 			Containers: []corev1.Container{
 				{

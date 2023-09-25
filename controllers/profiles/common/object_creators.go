@@ -78,7 +78,7 @@ func DeploymentCreator(workflow *operatorapi.SonataFlow) (client.Object, error) 
 			Labels:    lbl,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: workflow.Spec.PodSpecTemplate.Replicas,
+			Replicas: workflow.Spec.PodTemplate.Replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: lbl,
 			},
@@ -91,7 +91,7 @@ func DeploymentCreator(workflow *operatorapi.SonataFlow) (client.Object, error) 
 		},
 	}
 
-	if err := mergo.Merge(&deployment.Spec.Template.Spec, workflow.Spec.PodSpecTemplate.PodSpecTemplate.ToPodSpec(), mergo.WithOverride); err != nil {
+	if err := mergo.Merge(&deployment.Spec.Template.Spec, workflow.Spec.PodTemplate.PodSpec.ToPodSpec(), mergo.WithOverride); err != nil {
 		return nil, err
 	}
 
@@ -148,7 +148,7 @@ func defaultContainer(workflow *operatorapi.SonataFlow) (*corev1.Container, erro
 		SecurityContext: kubeutil.SecurityDefaults(),
 	}
 	// Merge with flowContainer
-	if err := mergo.Merge(&defaultFlowContainer, workflow.Spec.PodSpecTemplate.FlowContainer.ToContainer(), mergo.WithOverride); err != nil {
+	if err := mergo.Merge(&defaultFlowContainer, workflow.Spec.PodTemplate.Container.ToContainer(), mergo.WithOverride); err != nil {
 		return nil, err
 	}
 	// immutable

@@ -539,16 +539,16 @@ func (f *FlowPodSpec) ToPodSpec() corev1.PodSpec {
 	}
 }
 
-// FlowPodSpecTemplate describes the desired custom Kubernetes PodSpecTemplate definition for the deployed flow.
+// FlowPodTemplateSpec describes the desired custom Kubernetes PodTemplate definition for the deployed flow.
 //
 // The FlowContainer describes the container where the actual flow is running. It will override any default definitions.
 // For example, to override the image one can use `.spec.podSpecTemplate.flowContainer.image = my/image:tag`.
-type FlowPodSpecTemplate struct {
-	// FlowContainer is the Kubernetes container where the workflow application should run.
+type FlowPodTemplateSpec struct {
+	// Container is the Kubernetes container where the workflow application should run.
 	// One can change this attribute in order to override the defaults provided by the operator.
 	// +optional
-	FlowContainer   FlowContainer `json:"flowContainer,omitempty"`
-	PodSpecTemplate FlowPodSpec   `json:",omitempty"`
+	Container FlowContainer `json:"container,omitempty"`
+	PodSpec   FlowPodSpec   `json:",omitempty"`
 	// +optional
 	Replicas *int32 `json:"replicas,omitempty"`
 }
@@ -644,8 +644,8 @@ type SonataFlowSpec struct {
 	// Resources workflow resources that are linked to this workflow definition.
 	// For example, a collection of OpenAPI specification files.
 	Resources WorkflowResources `json:"resources,omitempty"`
-	// PodSpecTemplate describes the deployment details of this SonataFlow instance.
-	PodSpecTemplate FlowPodSpecTemplate `json:"podSpecTemplate,omitempty"`
+	// PodTemplate describes the deployment details of this SonataFlow instance.
+	PodTemplate FlowPodTemplateSpec `json:"podTemplate,omitempty"`
 }
 
 // SonataFlowStatus defines the observed state of SonataFlow
@@ -730,7 +730,7 @@ type SonataFlow struct {
 }
 
 func (s *SonataFlow) HasFlowContainerImage() bool {
-	return len(s.Spec.PodSpecTemplate.FlowContainer.Image) > 0
+	return len(s.Spec.PodTemplate.Container.Image) > 0
 }
 
 // SonataFlowList contains a list of SonataFlow
