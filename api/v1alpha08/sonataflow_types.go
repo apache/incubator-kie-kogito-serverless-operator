@@ -542,7 +542,7 @@ func (f *FlowPodSpec) ToPodSpec() corev1.PodSpec {
 // FlowPodTemplateSpec describes the desired custom Kubernetes PodTemplate definition for the deployed flow.
 //
 // The FlowContainer describes the container where the actual flow is running. It will override any default definitions.
-// For example, to override the image one can use `.spec.podSpecTemplate.flowContainer.image = my/image:tag`.
+// For example, to override the image one can use `.spec.podTemplate.container.image = my/image:tag`.
 type FlowPodTemplateSpec struct {
 	// Container is the Kubernetes container where the workflow application should run.
 	// One can change this attribute in order to override the defaults provided by the operator.

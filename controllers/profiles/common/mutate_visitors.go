@@ -27,7 +27,7 @@ import (
 )
 
 // ImageDeploymentMutateVisitor creates a visitor that mutates a vanilla Kubernetes Deployment to apply the given image in the DefaultContainerName container
-// Only overrides the image if .spec.podSpecTemplate.flowContainer.Image is empty.
+// Only overrides the image if .spec.podTemplate.container.Image is empty.
 func ImageDeploymentMutateVisitor(workflow *operatorapi.SonataFlow, image string) MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		// noop since we already have an image in the flow container defined by the user.

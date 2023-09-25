@@ -20,8 +20,8 @@ metadata:
     sonataflow.org/description: Simple example on k8s!
     sonataflow.org/version: 0.0.1
 spec:
-  podSpecTemplate:
-    flowContainer:
+  podTemplate:
+    container:
       image: quay.io/kiegroup/sonataflow-minimal-example:latest
   flow:
     start: HelloWorld
