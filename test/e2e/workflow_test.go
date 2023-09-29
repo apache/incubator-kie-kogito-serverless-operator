@@ -68,7 +68,6 @@ var _ = Describe("SonataFlow Operator", Serial, func() {
 
 			By("deploying the controller-manager")
 			cmd := exec.Command("make", "deploy", fmt.Sprintf("IMG=%s", operatorImageName))
-
 			outputMake, err := utils.Run(cmd)
 			fmt.Println(string(outputMake))
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())

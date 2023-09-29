@@ -40,14 +40,8 @@ var _ = Describe("SonataFlow Operator - no webhooks", Serial, func() {
 			operatorImageName, err := utils.GetOperatorImageName()
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-			By("installing CRDs")
-			cmd := exec.Command("make", "install-no-webhooks")
-			_, err = utils.Run(cmd)
-			ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
 			By("deploying the controller-manager")
-			cmd = exec.Command("make", "deploy-no-webhooks", fmt.Sprintf("IMG=%s", operatorImageName))
-
+			cmd := exec.Command("make", "deploy-no-webhooks", fmt.Sprintf("IMG=%s", operatorImageName))
 			outputMake, err := utils.Run(cmd)
 			fmt.Println(string(outputMake))
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
