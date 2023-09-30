@@ -96,20 +96,18 @@ func TestMergePodSpec(t *testing.T) {
 				{Name: "myvolume", ReadOnly: true, MountPath: "/tmp/any/path"},
 			},
 		},
-		PodSpec: v1alpha08.FlowPodSpec{
-			ServiceAccountName: "superuser",
-			Containers: []corev1.Container{
-				{
-					Name: "sidecar",
-				},
+		ServiceAccountName: "superuser",
+		Containers: []corev1.Container{
+			{
+				Name: "sidecar",
 			},
-			Volumes: []corev1.Volume{
-				{
-					Name: "myvolume",
-					VolumeSource: corev1.VolumeSource{
-						ConfigMap: &corev1.ConfigMapVolumeSource{
-							LocalObjectReference: corev1.LocalObjectReference{Name: "customproperties"},
-						},
+		},
+		Volumes: []corev1.Volume{
+			{
+				Name: "myvolume",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: &corev1.ConfigMapVolumeSource{
+						LocalObjectReference: corev1.LocalObjectReference{Name: "customproperties"},
 					},
 				},
 			},
@@ -134,18 +132,16 @@ func TestMergePodSpec(t *testing.T) {
 func TestMergePodSpec_OverrideContainers(t *testing.T) {
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflow.Spec.PodTemplate = v1alpha08.FlowPodTemplateSpec{
-		PodSpec: v1alpha08.FlowPodSpec{
-			// Try to override the workflow container via the podspec
-			Containers: []corev1.Container{
-				{
-					Name:  v1alpha08.DefaultContainerName,
-					Image: "quay.io/example/my-workflow:1.0.0",
-					Ports: []corev1.ContainerPort{
-						{Name: DefaultHTTPWorkflowPortName, ContainerPort: 9090},
-					},
-					Env: []corev1.EnvVar{
-						{Name: "ENV1", Value: "VALUE_CUSTOM"},
-					},
+		// Try to override the workflow container via the podspec
+		Containers: []corev1.Container{
+			{
+				Name:  v1alpha08.DefaultContainerName,
+				Image: "quay.io/example/my-workflow:1.0.0",
+				Ports: []corev1.ContainerPort{
+					{Name: DefaultHTTPWorkflowPortName, ContainerPort: 9090},
+				},
+				Env: []corev1.EnvVar{
+					{Name: "ENV1", Value: "VALUE_CUSTOM"},
 				},
 			},
 		},

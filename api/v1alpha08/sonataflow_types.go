@@ -210,8 +210,61 @@ func (f *FlowContainer) ToContainer() corev1.Container {
 	}
 }
 
-// FlowPodSpec describes the PodSpec for the internal workflow deployment based on the default Kubernetes PodSpec API
-type FlowPodSpec struct {
+func (f *FlowPodTemplateSpec) ToPodSpec() corev1.PodSpec {
+	return corev1.PodSpec{
+		Volumes:                       f.Volumes,
+		InitContainers:                f.InitContainers,
+		Containers:                    f.Containers,
+		RestartPolicy:                 f.RestartPolicy,
+		TerminationGracePeriodSeconds: f.TerminationGracePeriodSeconds,
+		ActiveDeadlineSeconds:         f.ActiveDeadlineSeconds,
+		DNSPolicy:                     f.DNSPolicy,
+		NodeSelector:                  f.NodeSelector,
+		ServiceAccountName:            f.ServiceAccountName,
+		AutomountServiceAccountToken:  f.AutomountServiceAccountToken,
+		NodeName:                      f.NodeName,
+		HostNetwork:                   f.HostNetwork,
+		HostPID:                       f.HostPID,
+		HostIPC:                       f.HostIPC,
+		ShareProcessNamespace:         f.ShareProcessNamespace,
+		SecurityContext:               f.SecurityContext,
+		ImagePullSecrets:              f.ImagePullSecrets,
+		Hostname:                      f.Hostname,
+		Subdomain:                     f.Subdomain,
+		Affinity:                      f.Affinity,
+		SchedulerName:                 f.SchedulerName,
+		Tolerations:                   f.Tolerations,
+		HostAliases:                   f.HostAliases,
+		PriorityClassName:             f.PriorityClassName,
+		Priority:                      f.Priority,
+		DNSConfig:                     f.DNSConfig,
+		ReadinessGates:                f.ReadinessGates,
+		RuntimeClassName:              f.RuntimeClassName,
+		EnableServiceLinks:            f.EnableServiceLinks,
+		PreemptionPolicy:              f.PreemptionPolicy,
+		Overhead:                      f.Overhead,
+		TopologySpreadConstraints:     f.TopologySpreadConstraints,
+		SetHostnameAsFQDN:             f.SetHostnameAsFQDN,
+		OS:                            f.OS,
+		HostUsers:                     f.HostUsers,
+		SchedulingGates:               f.SchedulingGates,
+		ResourceClaims:                f.ResourceClaims,
+	}
+}
+
+// FlowPodTemplateSpec describes the desired custom Kubernetes PodTemplate definition for the deployed flow.
+//
+// The FlowContainer describes the container where the actual flow is running. It will override any default definitions.
+// For example, to override the image one can use `.spec.podTemplate.container.image = my/image:tag`.
+type FlowPodTemplateSpec struct {
+	// Container is the Kubernetes container where the workflow application should run.
+	// One can change this attribute in order to override the defaults provided by the operator.
+	// +optional
+	Container FlowContainer `json:"container,omitempty"`
+
+	// +optional
+	Replicas *int32 `json:"replicas,omitempty"`
+
 	// List of volumes that can be mounted by containers belonging to the pod.
 	// More info: https://kubernetes.io/docs/concepts/storage/volumes
 	// +optional
@@ -495,62 +548,6 @@ type FlowPodSpec struct {
 	// +featureGate=DynamicResourceAllocation
 	// +optional
 	ResourceClaims []corev1.PodResourceClaim `json:"resourceClaims,omitempty" patchStrategy:"merge,retainKeys" patchMergeKey:"name" protobuf:"bytes,39,rep,name=resourceClaims"`
-}
-
-func (f *FlowPodSpec) ToPodSpec() corev1.PodSpec {
-	return corev1.PodSpec{
-		Volumes:                       f.Volumes,
-		InitContainers:                f.InitContainers,
-		Containers:                    f.Containers,
-		RestartPolicy:                 f.RestartPolicy,
-		TerminationGracePeriodSeconds: f.TerminationGracePeriodSeconds,
-		ActiveDeadlineSeconds:         f.ActiveDeadlineSeconds,
-		DNSPolicy:                     f.DNSPolicy,
-		NodeSelector:                  f.NodeSelector,
-		ServiceAccountName:            f.ServiceAccountName,
-		AutomountServiceAccountToken:  f.AutomountServiceAccountToken,
-		NodeName:                      f.NodeName,
-		HostNetwork:                   f.HostNetwork,
-		HostPID:                       f.HostPID,
-		HostIPC:                       f.HostIPC,
-		ShareProcessNamespace:         f.ShareProcessNamespace,
-		SecurityContext:               f.SecurityContext,
-		ImagePullSecrets:              f.ImagePullSecrets,
-		Hostname:                      f.Hostname,
-		Subdomain:                     f.Subdomain,
-		Affinity:                      f.Affinity,
-		SchedulerName:                 f.SchedulerName,
-		Tolerations:                   f.Tolerations,
-		HostAliases:                   f.HostAliases,
-		PriorityClassName:             f.PriorityClassName,
-		Priority:                      f.Priority,
-		DNSConfig:                     f.DNSConfig,
-		ReadinessGates:                f.ReadinessGates,
-		RuntimeClassName:              f.RuntimeClassName,
-		EnableServiceLinks:            f.EnableServiceLinks,
-		PreemptionPolicy:              f.PreemptionPolicy,
-		Overhead:                      f.Overhead,
-		TopologySpreadConstraints:     f.TopologySpreadConstraints,
-		SetHostnameAsFQDN:             f.SetHostnameAsFQDN,
-		OS:                            f.OS,
-		HostUsers:                     f.HostUsers,
-		SchedulingGates:               f.SchedulingGates,
-		ResourceClaims:                f.ResourceClaims,
-	}
-}
-
-// FlowPodTemplateSpec describes the desired custom Kubernetes PodTemplate definition for the deployed flow.
-//
-// The FlowContainer describes the container where the actual flow is running. It will override any default definitions.
-// For example, to override the image one can use `.spec.podTemplate.container.image = my/image:tag`.
-type FlowPodTemplateSpec struct {
-	// Container is the Kubernetes container where the workflow application should run.
-	// One can change this attribute in order to override the defaults provided by the operator.
-	// +optional
-	Container FlowContainer `json:"container,omitempty"`
-	PodSpec   FlowPodSpec   `json:",omitempty"`
-	// +optional
-	Replicas *int32 `json:"replicas,omitempty"`
 }
 
 // Flow describes the contents of the Workflow definition following the CNCF Serverless Workflow Specification.
