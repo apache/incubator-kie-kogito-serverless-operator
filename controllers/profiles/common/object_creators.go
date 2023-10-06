@@ -53,7 +53,7 @@ const (
 	healthStartedInitialDelaySeconds = 10
 )
 
-var defaultHTTPWorkflowPortIntStr = intstr.FromInt(DefaultHTTPWorkflowPortInt)
+var DefaultHTTPWorkflowPortIntStr = intstr.FromInt(DefaultHTTPWorkflowPortInt)
 
 // DeploymentCreator is an objectCreator for a base Kubernetes Deployments for profiles that need to deploy the workflow on a vanilla deployment.
 // It serves as a basis for a basic Quarkus Java application, expected to listen on http 8080.
@@ -115,7 +115,7 @@ func defaultContainer(workflow *operatorapi.SonataFlow) (*corev1.Container, erro
 			ProbeHandler: corev1.ProbeHandler{
 				HTTPGet: &corev1.HTTPGetAction{
 					Path: quarkusHealthPathLive,
-					Port: defaultHTTPWorkflowPortIntStr,
+					Port: DefaultHTTPWorkflowPortIntStr,
 				},
 			},
 			TimeoutSeconds: healthTimeoutSeconds,
@@ -124,7 +124,7 @@ func defaultContainer(workflow *operatorapi.SonataFlow) (*corev1.Container, erro
 			ProbeHandler: corev1.ProbeHandler{
 				HTTPGet: &corev1.HTTPGetAction{
 					Path: quarkusHealthPathReady,
-					Port: defaultHTTPWorkflowPortIntStr,
+					Port: DefaultHTTPWorkflowPortIntStr,
 				},
 			},
 			TimeoutSeconds: healthTimeoutSeconds,
@@ -133,7 +133,7 @@ func defaultContainer(workflow *operatorapi.SonataFlow) (*corev1.Container, erro
 			ProbeHandler: corev1.ProbeHandler{
 				HTTPGet: &corev1.HTTPGetAction{
 					Path: quarkusHealthPathStarted,
-					Port: defaultHTTPWorkflowPortIntStr,
+					Port: DefaultHTTPWorkflowPortIntStr,
 				},
 			},
 			InitialDelaySeconds: healthStartedInitialDelaySeconds,
@@ -183,7 +183,7 @@ func ServiceCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
 			Ports: []corev1.ServicePort{{
 				Protocol:   corev1.ProtocolTCP,
 				Port:       defaultHTTPServicePort,
-				TargetPort: defaultHTTPWorkflowPortIntStr,
+				TargetPort: DefaultHTTPWorkflowPortIntStr,
 			}},
 		},
 	}
@@ -201,5 +201,5 @@ func OpenShiftRouteCreator(workflow *operatorapi.SonataFlow) (client.Object, err
 
 // WorkflowPropsConfigMapCreator creates a ConfigMap to hold the external application properties
 func WorkflowPropsConfigMapCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
-	return workflowproj.CreateNewAppPropsConfigMap(workflow, ImmutableApplicationProperties(workflow)), nil
+	return workflowproj.CreateNewAppPropsConfigMap(workflow, ImmutableApplicationProperties(workflow, nil)), nil
 }
