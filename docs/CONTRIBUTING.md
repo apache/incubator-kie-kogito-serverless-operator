@@ -108,6 +108,14 @@ make run
 
 > **NOTE:** Run `make help` for more information on all potential `make` targets
 
+> **NOTE:** The Webhook is disabled by default when running it locally, however, if you need to test it, just set
+the ENABLE_WEBHOOKS env to true, like this example:
+> ```bash
+> make run ENABLE_WEBHOOKS=true
+> ```
+> For this, please follow the steps described in this [link](https://book.kubebuilder.io/cronjob-tutorial/running.html#running-webhooks-locally).
+
+
 More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
 ### How-tos
@@ -127,6 +135,15 @@ make container-build
 ```
 
 #### Deploy
+
+When not using OLM it is required to have certificates in place in order for the webhook to properly work.
+It is recommended to use the CertManager operator to handle this task.
+It is automatically done when executing the `make deploy` command. Or, manually, as described
+[here](https://book.kubebuilder.io/cronjob-tutorial/running-webhook.html).
+
+The make goal `deploy` will check if the CertManager Operator is installed, if not, it will be installed for you, and,
+when you're done, it will be cleaned up as part of the `undeploy` make goal.
+
 
 ```sh
 make deploy

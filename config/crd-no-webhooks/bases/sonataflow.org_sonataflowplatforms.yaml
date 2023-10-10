@@ -1,22 +1,12 @@
+---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    cert-manager.io/inject-ca-from: sonataflow-operator-system/sonataflow-operator-serving-cert
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: sonataflowplatforms.sonataflow.org
 spec:
-  conversion:
-    strategy: Webhook
-    webhook:
-      clientConfig:
-        service:
-          name: sonataflow-operator-webhook-service
-          namespace: sonataflow-operator-system
-          path: /convert
-      conversionReviewVersions:
-      - v1
   group: sonataflow.org
   names:
     kind: SonataFlowPlatform
@@ -61,8 +51,7 @@ spec:
             description: SonataFlowPlatformSpec defines the desired state of SonataFlowPlatform
             properties:
               build:
-                description: Build Attributes for building workflows in the target
-                  platform
+                description: Attributes for building workflows in the target platform
                 properties:
                   config:
                     description: Describes the platform configuration for building
@@ -423,7 +412,7 @@ spec:
                     type: object
                 type: object
               devMode:
-                description: DevMode Attributes for running workflows in devmode (immutable,
+                description: Attributes for running workflows in devmode (immutable,
                   no build required)
                 properties:
                   baseImage:
@@ -489,9 +478,3 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: null
-  storedVersions: null

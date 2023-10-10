@@ -98,6 +98,10 @@ help: ## Display this help.
 manifests: generate ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:allowDangerousTypes=true webhook paths="./api/..." paths="./controllers/..." output:crd:artifacts:config=config/crd/bases
 
+.PHONY: manifests-crd-no-webhooks
+manifests-crd-no-webhooks: generate ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:allowDangerousTypes=true webhook paths="./api/..." paths="./controllers/..." output:crd:artifacts:config=config/crd-no-webhooks/bases
+
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./container-builder/api/..."
@@ -119,7 +123,7 @@ test: manifests generate envtest vet fmt test-api ## Run tests.
 
 .PHONY: test-api
 test-api:
-	cd api && make test
+	cd api && make test KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)"
 
 ######
 # Test proxy commands
@@ -152,9 +156,10 @@ build: generate ## Build manager binary.
 build-4-debug: generate ## Build manager binary with debug options.
 	go build -gcflags="all=-N -l" -o bin/manager main.go
 
+ENABLE_WEBHOOKS ?= false
 .PHONY: run
 run: manifests generate ## Run a controller from your host.
-	go run ./main.go
+	ENABLE_WEBHOOKS=${ENABLE_WEBHOOKS} go run ./main.go
 
 .PHONY: debug
 debug: build-4-debug ## Run a controller from your host from binary
@@ -171,6 +176,10 @@ podman-build: test ## Build container image with the manager.
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+
+.PHONY: podman-push
+podman-push: ## Push container image with the manager.
+	podman push ${PODMAN_PUSH_PARAMS} ${IMG}
 
 # This is currently done directly into the CI
 # PLATFORMS defines the target platforms for the manager image be build to provide support to multiple
@@ -189,10 +198,6 @@ docker-buildx: test ## Build and push docker image for the manager for cross-pla
 	- docker buildx build --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross
 	- docker buildx rm project-v3-builder
 	rm Dockerfile.cross
-
-.PHONY: podman-push
-podman-push: ## Push container image with the manager.
-	podman push ${PODMAN_PUSH_PARAMS} ${IMG}
 
 .PHONY: container-build
 container-build: test ## Build the container image
@@ -215,23 +220,33 @@ endif
 install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/crd | kubectl create -f -
 
+.PHONY: install-no-webhooks
+install-no-webhooks: manifests-crd-no-webhooks kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+	$(KUSTOMIZE) build config/crd-no-webhooks | kubectl apply -f -
+
 .PHONY: uninstall
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: deploy
-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+deploy: manifests kustomize install-cert-manager ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl create -f -
+
+.PHONY: deploy-no-webhooks
+deploy-no-webhooks: manifests-crd-no-webhooks kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/default-no-webhooks | kubectl apply -f -
+
+.PHONY: undeploy
+undeploy: uninstall-cert-manager ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: generate-deploy
 generate-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default > operator.yaml
-
-.PHONY: undeploy
-undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+	$(KUSTOMIZE) build config/default-no-webhooks > operator-no-webhooks.yaml
 
 ##@ Build Dependencies
 
@@ -278,7 +293,7 @@ bundle-build: ## Build the bundle image.
 
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
-	$(MAKE) contianer-push IMG=$(BUNDLE_IMG)
+	$(MAKE) container-push IMG=$(BUNDLE_IMG)
 
 .PHONY: opm
 OPM = ./bin/opm
@@ -346,7 +361,15 @@ generate-all: generate generate-deploy bundle addheaders vet fmt
 
 .PHONY: test-e2e # You will need to have a Minikube/Kind cluster up in running to run this target, and run container-builder before the test
 test-e2e: install-operator-sdk
-	go test ./test/e2e/* -v -ginkgo.v
+	go test -timeout=20m ./test/e2e/* -v -ginkgo.v
 
 .PHONY: before-pr
 before-pr: test generate-all
+
+.PHONY: install-cert-manager
+install-cert-manager:
+	./hack/local/cert-manager.sh install
+
+.PHONY: uninstall-cert-manager
+uninstall-cert-manager:
+	./hack/local/cert-manager.sh uninstall
