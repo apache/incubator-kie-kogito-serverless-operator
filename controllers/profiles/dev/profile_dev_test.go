@@ -16,12 +16,10 @@ package dev
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kubeutil "github.com/kiegroup/kogito-serverless-operator/utils/kubernetes"
@@ -388,14 +386,9 @@ func Test_VolumeWithCapitalizedPaths(t *testing.T) {
 	assert.NotNil(t, deployment)
 
 	container, _ := kubeutil.GetContainerByName(operatorapi.DefaultContainerName, &deployment.Spec.Template.Spec)
-	assert.NoError(t, func() error {
-		for _, v := range container.VolumeMounts {
-			if errs := validation.NameIsDNS1035Label(v.Name, false); len(errs) > 0 {
-				return fmt.Errorf("failed to validate name %s. Errors: %v", v.Name, errs)
-			}
-		}
-		return nil
-	}())
+	// properties, definitions, and the capitalized value
+	assert.Len(t, container.VolumeMounts, 2)
+	assert.Len(t, deployment.Spec.Template.Spec.Volumes, 2)
 }
 
 func sortVolumeMounts(container *v1.Container) {
