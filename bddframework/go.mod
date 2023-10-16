@@ -30,9 +30,9 @@ require (
 )
 
 require (
+	github.com/RHsyseng/operator-utils v1.4.13
 	github.com/apache/incubator-kie-kogito-serverless-operator v0.0.0
 	github.com/google/uuid v1.3.0
-	github.com/RHsyseng/operator-utils v1.4.13
 	github.com/openshift/client-go v0.0.0-20230503144108-75015d2347cb
 	github.com/stretchr/testify v1.8.2
 )
