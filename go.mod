@@ -11,10 +11,10 @@ replace (
 
 // Direct dependencies (please keep organized, no indirects)
 require (
+	github.com/RHsyseng/operator-utils v1.4.13
 	github.com/apache/incubator-kie-kogito-serverless-operator/api v0.0.0
 	github.com/apache/incubator-kie-kogito-serverless-operator/container-builder v0.0.0
 	github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj v0.0.0
-	github.com/RHsyseng/operator-utils v1.4.13
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/magiconair/properties v1.8.7
 	github.com/onsi/ginkgo/v2 v2.9.5
