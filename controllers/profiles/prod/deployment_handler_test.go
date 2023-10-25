@@ -56,10 +56,4 @@ func Test_CheckPodTemplateChangesReflectDeployment(t *testing.T) {
 			break
 		}
 	}
-
-	// Nothing changes, requeue == false
-	result, objects, err = handler.handle(context.TODO(), workflow)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, objects)
-	assert.False(t, result.Requeue)
 }

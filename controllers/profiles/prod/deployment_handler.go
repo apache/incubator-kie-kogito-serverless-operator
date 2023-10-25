@@ -18,7 +18,6 @@ import (
 	"context"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -27,7 +26,6 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api"
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
 )
 
@@ -55,9 +53,7 @@ func (d *deploymentHandler) handleWithImage(ctx context.Context, workflow *opera
 		return ctrl.Result{}, nil, err
 	}
 
-	requeue := false
-
-	deployment, result, err :=
+	deployment, deploymentOp, err :=
 		d.ensurers.deployment.Ensure(
 			ctx,
 			workflow,
@@ -68,37 +64,34 @@ func (d *deploymentHandler) handleWithImage(ctx context.Context, workflow *opera
 		_, err = d.PerformStatusUpdate(ctx, workflow)
 		return reconcile.Result{}, nil, err
 	}
-	requeue = isOperationMutated(result)
 
-	service, result, err := d.ensurers.service.Ensure(ctx, workflow, common.ServiceMutateVisitor(workflow))
+	service, _, err := d.ensurers.service.Ensure(ctx, workflow, common.ServiceMutateVisitor(workflow))
 	if err != nil {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, "Unable to make the service available due to ", err)
 		_, err = d.PerformStatusUpdate(ctx, workflow)
 		return reconcile.Result{}, nil, err
 	}
-	requeue = requeue || isOperationMutated(result)
 
 	objs := []client.Object{deployment, service, propsCM}
 
-	if !requeue {
-		klog.V(log.I).InfoS("Skip reconcile: Deployment and service already exists in unchanged status",
-			"Deployment.Namespace", deployment.GetNamespace(), "Deployment.Name", deployment.GetName())
-		result, err := common.DeploymentHandler(d.C).SyncDeploymentStatus(ctx, workflow)
-		if err != nil {
-			return reconcile.Result{Requeue: false}, nil, err
-		}
-
+	if deploymentOp == controllerutil.OperationResultCreated {
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
 		if _, err := d.PerformStatusUpdate(ctx, workflow); err != nil {
 			return reconcile.Result{Requeue: false}, nil, err
 		}
-		return result, objs, nil
+		return reconcile.Result{RequeueAfter: common.RequeueAfterFollowDeployment, Requeue: true}, objs, nil
 	}
 
-	workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
+	// Follow deployment status
+	result, err := common.DeploymentHandler(d.C).SyncDeploymentStatus(ctx, workflow)
+	if err != nil {
+		return reconcile.Result{Requeue: false}, nil, err
+	}
+
 	if _, err := d.PerformStatusUpdate(ctx, workflow); err != nil {
 		return reconcile.Result{Requeue: false}, nil, err
 	}
-	return reconcile.Result{RequeueAfter: common.RequeueAfterFollowDeployment, Requeue: requeue}, objs, nil
+	return result, objs, nil
 }
 
 func (d *deploymentHandler) getDeploymentMutateVisitors(
@@ -114,8 +107,4 @@ func (d *deploymentHandler) getDeploymentMutateVisitors(
 	return []common.MutateVisitor{common.DeploymentMutateVisitor(workflow),
 		common.ImageDeploymentMutateVisitor(workflow, image),
 		mountProdConfigMapsMutateVisitor(configMap)}
-}
-
-func isOperationMutated(result controllerutil.OperationResult) bool {
-	return result == controllerutil.OperationResultCreated || result == controllerutil.OperationResultUpdated
 }
