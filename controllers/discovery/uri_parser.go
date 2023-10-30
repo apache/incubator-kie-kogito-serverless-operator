@@ -1,4 +1,4 @@
-package api
+package discovery
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ var openshiftGroupsExpr = regexp.MustCompile(openshiftGroupsPattern)
 var namespaceAndNameExpr = regexp.MustCompile(namespaceAndNamePattern)
 var queryStringExpr = regexp.MustCompile(queryStringPattern)
 
-func Parse(uri string) (*ResourceUri, error) {
+func ParseUri(uri string) (*ResourceUri, error) {
 	if split := kubernetesGroupsExpr.Split(uri, -1); len(split) == 2 {
 		return parseKubernetesUri(uri, kubernetesGroupsExpr.FindString(uri), split[1])
 	} else if split := knativeGroupsExpr.Split(uri, -1); len(split) == 2 {

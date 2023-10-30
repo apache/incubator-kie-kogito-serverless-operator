@@ -1,4 +1,4 @@
-package utils
+package discovery
 
 import (
 	corev1 "k8s.io/api/core/v1"
@@ -16,10 +16,10 @@ func isSecurePort(port int) bool {
 	return port == securePort || port == appSecurePort
 }
 
-// FindServicePort returns the best suited ServicePort to connect to a service.
+// findServicePort returns the best suited ServicePort to connect to a service.
 // The optional customPort can be used to determine which port should be used for the communication, when not set,
 // the best suited port is returned. For this last, a secure port has precedence over a no-secure port.
-func FindServicePort(servicePorts []corev1.ServicePort, customPort string) *corev1.ServicePort {
+func findServicePort(servicePorts []corev1.ServicePort, customPort string) *corev1.ServicePort {
 	// customPort is provided and is configured?
 	if len(customPort) > 0 {
 		if result := findServicePortByName(servicePorts, customPort); result != nil {
@@ -55,10 +55,10 @@ func isServicePortSecure(servicePort corev1.ServicePort) bool {
 	return servicePort.Name == httpsProtocol || isSecurePort(int(servicePort.Port))
 }
 
-// FindContainerPort returns the best suited PortPort to connect to a pod, or nil if the pod has no ports at all.
+// findContainerPort returns the best suited PortPort to connect to a pod, or nil if the pod has no ports at all.
 // The optional customPort can be used to determine which port should be used for the communication, when not set,
 // the best suited port is returned. For this last, a secure port has precedence over a non-secure port.
-func FindContainerPort(containerPorts []corev1.ContainerPort, customPort string) *corev1.ContainerPort {
+func findContainerPort(containerPorts []corev1.ContainerPort, customPort string) *corev1.ContainerPort {
 	// containers with no ports are permitted, we must check.
 	if len(containerPorts) == 0 {
 		return nil

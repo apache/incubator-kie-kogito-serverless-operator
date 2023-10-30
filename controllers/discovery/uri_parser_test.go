@@ -1,4 +1,4 @@
-package api
+package discovery
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -86,7 +86,7 @@ func TestParseKubernetesServicesURI(t *testing.T) {
 }
 
 func doTestParseKubernetesServicesURI(t *testing.T, url string, expectedUri *ResourceUri) {
-	result, err := Parse(url)
+	result, err := ParseUri(url)
 	if expectedUri == nil {
 		if result != nil {
 			assert.Nil(t, result, "parsing of url: %s should have failed, but returned: %s", url, result.String())

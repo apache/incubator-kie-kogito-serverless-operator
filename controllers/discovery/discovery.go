@@ -1,14 +1,26 @@
-package api
+package discovery
 
 import (
+	"context"
 	"fmt"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
 	KnativeScheme    = "knative"
 	KubernetesScheme = "kubernetes"
 	OpenshiftScheme  = "openshift"
+
+	// CustomPortLabel well known label name to select a particular target port
+	CustomPortLabel = "custom-port"
+
+	// KubernetesDNSAddress use this output format with kubernetes services and pods to resolve to the corresponding
+	// kubernetes DNS name. see: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
+	KubernetesDNSAddress = "KubernetesDNSAddress"
+
+	// KubernetesIPAddress default format, resolves objects addresses to the corresponding cluster IP address.
+	KubernetesIPAddress = "KubernetesIPAddress"
 
 	// kubernetes groups
 	kubernetesServices     = "kubernetes:services.v1"
@@ -23,16 +35,6 @@ const (
 	// openshift groups
 	openshiftRoutes            = "openshift:routes.v1.route.openshift.io"
 	openshiftDeploymentConfigs = "openshift:deploymentconfigs.v1.apps.openshift.io"
-
-	// CustomPortLabel well known label name to select a particular target port
-	CustomPortLabel = "custom-port"
-
-	// KubernetesDNSAddress use this output format with kubernetes services and pods to resolve to the corresponding
-	// kubernetes DNS name. see: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
-	KubernetesDNSAddress = "KubernetesDNSAddress"
-
-	// KubernetesIPAddress default format, resolves objects addresses to the corresponding cluster IP address.
-	KubernetesIPAddress = "KubernetesIPAddress"
 )
 
 type ResourceUri struct {
@@ -41,6 +43,44 @@ type ResourceUri struct {
 	Namespace    string
 	Name         string
 	CustomLabels map[string]string
+}
+
+// ServiceCatalog is the entry point to resolve resource addresses given a ResourceUri.
+type ServiceCatalog interface {
+	// Query returns the address corresponding to the resource identified by the uri. In the case of services or pods,
+	// the outputFormat can be used to determine the type of address to calculate.
+	// If the outputFormat is KubernetesDNSAddress, the returned value for a service will be like this: http://my-service.my-namespace.svc.cluster.local:8080,
+	// and the returned value for pod will be like this: http://10-244-1-135.my-namespace.pod.cluster.local:8080.
+	// If the outputFormat is KubernetesIPAddress, the returned value for pods and services, and other resource types,
+	// will be like this: http://10.245.1.132:8080
+	Query(uri ResourceUri, outputFormat string) (string, error)
+}
+
+type sonataFlowServiceCatalog struct {
+	kubernetesCatalog ServiceCatalog
+	knativeCatalog    ServiceCatalog
+	openshiftCatalog  ServiceCatalog
+}
+
+// NewServiceCatalog returns a new ServiceCatalog configured to resolve kubernetes, knative, and openshift resource addresses.
+func NewServiceCatalog(ctx context.Context, cli client.Client) ServiceCatalog {
+	return &sonataFlowServiceCatalog{
+		kubernetesCatalog: newK8SServiceCatalog(ctx, cli),
+		knativeCatalog:    newKnServiceCatalog(ctx, cli),
+	}
+}
+
+func (c *sonataFlowServiceCatalog) Query(uri ResourceUri, outputFormat string) (string, error) {
+	switch uri.Scheme {
+	case KubernetesScheme:
+		return c.kubernetesCatalog.Query(uri, outputFormat)
+	case KnativeScheme:
+		return "", fmt.Errorf("knative service discovery is not yet implemened")
+	case OpenshiftScheme:
+		return "", fmt.Errorf("openshift service discovery is not yet implemented")
+	default:
+		return "", fmt.Errorf("unknonw scheme was provided for service discovery: %s", uri.Scheme)
+	}
 }
 
 type ResourceUriBuilder struct {
@@ -94,17 +134,6 @@ func (b ResourceUriBuilder) WithLabel(labelName string, labelValue string) Resou
 
 func (b ResourceUriBuilder) Build() *ResourceUri {
 	return b.uri
-}
-
-// ServiceCatalog is the entry point to resolve resource addresses given a ResourceUri.
-type ServiceCatalog interface {
-	// Query returns the address corresponding to the resource identified by the uri. In the case of services or pods,
-	// the outputFormat can be used to determine the type of address to calculate.
-	// If the outputFormat is KubernetesDNSAddress, the returned value for a service will be like this: http://my-service.my-namespace.svc.cluster.local:8080,
-	// and the returned value for pod will be like this: http://10-244-1-135.my-namespace.pod.cluster.local:8080.
-	// If the outputFormat is KubernetesIPAddress, the returned value for pods and services, and other resource types,
-	// will be like this: http://10.245.1.132:8080
-	Query(uri ResourceUri, outputFormat string) (string, error)
 }
 
 func (r *ResourceUri) AddLabel(name string, value string) *ResourceUri {

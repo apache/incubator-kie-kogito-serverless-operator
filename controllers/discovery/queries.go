@@ -1,4 +1,4 @@
-package kubernetes
+package discovery
 
 import (
 	"context"
@@ -10,8 +10,8 @@ import (
 
 const podTemplateHashLabel = "pod-template-hash"
 
-// FindService finds a service by name in the given namespace.
-func FindService(ctx context.Context, cli client.Client, namespace string, name string) (*corev1.Service, error) {
+// findService finds a service by name in the given namespace.
+func findService(ctx context.Context, cli client.Client, namespace string, name string) (*corev1.Service, error) {
 	service := &corev1.Service{}
 	if err := cli.Get(ctx, buildObjectKey(namespace, name), service); err != nil {
 		return nil, err
@@ -19,8 +19,8 @@ func FindService(ctx context.Context, cli client.Client, namespace string, name 
 	return service, nil
 }
 
-// FindServiceByLabels finds a service by a set of matching labels in the given namespace.
-func FindServiceByLabels(ctx context.Context, cli client.Client, namespace string, labels map[string]string) (*corev1.ServiceList, error) {
+// findServiceByLabels finds a service by a set of matching labels in the given namespace.
+func findServiceByLabels(ctx context.Context, cli client.Client, namespace string, labels map[string]string) (*corev1.ServiceList, error) {
 	serviceList := &corev1.ServiceList{}
 	if err := cli.List(ctx, serviceList, client.InNamespace(namespace), client.MatchingLabels(labels)); err != nil {
 		return nil, err
@@ -28,8 +28,8 @@ func FindServiceByLabels(ctx context.Context, cli client.Client, namespace strin
 	return serviceList, nil
 }
 
-// FindPod finds a pod by name in the given namespace.
-func FindPod(ctx context.Context, cli client.Client, namespace string, name string) (*corev1.Pod, error) {
+// findPod finds a pod by name in the given namespace.
+func findPod(ctx context.Context, cli client.Client, namespace string, name string) (*corev1.Pod, error) {
 	pod := &corev1.Pod{}
 	if err := cli.Get(ctx, buildObjectKey(namespace, name), pod); err != nil {
 		return nil, err
@@ -37,10 +37,10 @@ func FindPod(ctx context.Context, cli client.Client, namespace string, name stri
 	return pod, nil
 }
 
-// FindPodAndReferenceServiceByPodLabels finds a pod by name in the given namespace at the same time it piggybacks it's
+// findPodAndReferenceServiceByPodLabels finds a pod by name in the given namespace at the same time it piggybacks it's
 // reference service if any. The reference service is determined by using the same set of labels as the pod.
-func FindPodAndReferenceServiceByPodLabels(ctx context.Context, cli client.Client, namespace string, podName string) (*corev1.Pod, *corev1.Service, error) {
-	if pod, err := FindPod(ctx, cli, namespace, podName); err != nil {
+func findPodAndReferenceServiceByPodLabels(ctx context.Context, cli client.Client, namespace string, podName string) (*corev1.Pod, *corev1.Service, error) {
+	if pod, err := findPod(ctx, cli, namespace, podName); err != nil {
 		return nil, nil, err
 	} else {
 		queryLabels := pod.Labels
@@ -48,7 +48,7 @@ func FindPodAndReferenceServiceByPodLabels(ctx context.Context, cli client.Clien
 		delete(queryLabels, podTemplateHashLabel)
 		if len(queryLabels) > 0 {
 			// check if we have a defined reference service
-			if serviceList, err2 := FindServiceByLabels(ctx, cli, namespace, queryLabels); err2 != nil {
+			if serviceList, err2 := findServiceByLabels(ctx, cli, namespace, queryLabels); err2 != nil {
 				return nil, nil, err
 			} else if len(serviceList.Items) > 0 {
 				return pod, &serviceList.Items[0], nil
@@ -58,8 +58,8 @@ func FindPodAndReferenceServiceByPodLabels(ctx context.Context, cli client.Clien
 	}
 }
 
-// FindDeployment finds a deployment by name in the given namespace.
-func FindDeployment(ctx context.Context, cli client.Client, namespace string, name string) (*appsv1.Deployment, error) {
+// findDeployment finds a deployment by name in the given namespace.
+func findDeployment(ctx context.Context, cli client.Client, namespace string, name string) (*appsv1.Deployment, error) {
 	deployment := &appsv1.Deployment{}
 	if err := cli.Get(ctx, buildObjectKey(namespace, name), deployment); err != nil {
 		return nil, err
@@ -67,8 +67,8 @@ func FindDeployment(ctx context.Context, cli client.Client, namespace string, na
 	return deployment, nil
 }
 
-// FindStatefulSet finds a stateful set by name in the given namespace.
-func FindStatefulSet(ctx context.Context, cli client.Client, namespace string, name string) (*appsv1.StatefulSet, error) {
+// findStatefulSet finds a stateful set by name in the given namespace.
+func findStatefulSet(ctx context.Context, cli client.Client, namespace string, name string) (*appsv1.StatefulSet, error) {
 	statefulSet := &appsv1.StatefulSet{}
 	if err := cli.Get(ctx, buildObjectKey(namespace, name), statefulSet); err != nil {
 		return nil, err
@@ -76,8 +76,8 @@ func FindStatefulSet(ctx context.Context, cli client.Client, namespace string, n
 	return statefulSet, nil
 }
 
-// FindIngress finds an ingress by name in the given namespace.
-func FindIngress(ctx context.Context, cli client.Client, namespace string, name string) (*networkingV1.Ingress, error) {
+// findIngress finds an ingress by name in the given namespace.
+func findIngress(ctx context.Context, cli client.Client, namespace string, name string) (*networkingV1.Ingress, error) {
 	ingress := &networkingV1.Ingress{}
 	if err := cli.Get(ctx, buildObjectKey(namespace, name), ingress); err != nil {
 		return nil, err

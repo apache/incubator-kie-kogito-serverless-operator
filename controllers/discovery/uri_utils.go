@@ -1,13 +1,12 @@
-package utils
+package discovery
 
 import (
 	"fmt"
-	"github.com/kiegroup/kogito-serverless-operator/controllers/catalog/api"
 	corev1 "k8s.io/api/core/v1"
 	"strings"
 )
 
-func ResolveServiceUri(service corev1.Service, customPort string, outputFormat string) (string, error) {
+func resolveServiceUri(service corev1.Service, customPort string, outputFormat string) (string, error) {
 	var port int
 	var protocol string
 	var host string
@@ -32,7 +31,7 @@ func ResolveServiceUri(service corev1.Service, customPort string, outputFormat s
 	if err != nil {
 		return "", err
 	}
-	if outputFormat == api.KubernetesDNSAddress {
+	if outputFormat == KubernetesDNSAddress {
 		return buildKubernetesServiceDNSUri(protocol, service.Namespace, service.Name, port), nil
 	} else {
 		return buildURI(protocol, host, port), nil
@@ -43,7 +42,7 @@ func ResolveServiceUri(service corev1.Service, customPort string, outputFormat s
 // The optional customPort can be used to determine which port should be used for the communication, when not set,
 // the best suited port is returned. For this last, a secure port has precedence over a no-secure port.
 func resolveClusterIPOrTypeNodeServiceUriParams(service corev1.Service, customPort string) (protocol string, host string, port int) {
-	servicePort := FindServicePort(service.Spec.Ports, customPort)
+	servicePort := findServicePort(service.Spec.Ports, customPort)
 	if isServicePortSecure(*servicePort) {
 		protocol = httpsProtocol
 	} else {
@@ -54,7 +53,7 @@ func resolveClusterIPOrTypeNodeServiceUriParams(service corev1.Service, customPo
 	return protocol, host, port
 }
 
-func ResolvePodUri(pod *corev1.Pod, customContainer, customPort string, outputFormat string) (string, error) {
+func resolvePodUri(pod *corev1.Pod, customContainer, customPort string, outputFormat string) (string, error) {
 	if podIp := pod.Status.PodIP; len(podIp) == 0 {
 		return "", fmt.Errorf("pod: %s in namespace: %s, has no allocated address", pod.Name, pod.Namespace)
 	} else {
@@ -65,14 +64,14 @@ func ResolvePodUri(pod *corev1.Pod, customContainer, customPort string, outputFo
 		if container == nil {
 			container = &pod.Spec.Containers[0]
 		}
-		if containerPort := FindContainerPort(container.Ports, customPort); containerPort == nil {
+		if containerPort := findContainerPort(container.Ports, customPort); containerPort == nil {
 			return "", fmt.Errorf("no container port was found for pod: %s in namespace: %s", pod.Name, pod.Namespace)
 		} else {
 			protocol := httpProtocol
 			if isSecure := isContainerPortSecure(*containerPort); isSecure {
 				protocol = httpsProtocol
 			}
-			if outputFormat == api.KubernetesDNSAddress {
+			if outputFormat == KubernetesDNSAddress {
 				return buildKubernetesPodDNSUri(protocol, pod.Namespace, podIp, int(containerPort.ContainerPort)), nil
 			} else {
 				return buildURI(protocol, podIp, int(containerPort.ContainerPort)), nil
