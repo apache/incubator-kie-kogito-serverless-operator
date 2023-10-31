@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
 	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils/openshift"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
@@ -33,16 +34,15 @@ import (
 type ObjectCreator func(workflow *operatorapi.SonataFlow) (client.Object, error)
 
 const (
-	DefaultHTTPWorkflowPortInt  = 8080
-	DefaultHTTPWorkflowPortName = "http"
-	defaultHTTPServicePort      = 80
+	DefaultHTTPWorkflowPortInt = 8080
+	defaultHTTPServicePort     = 80
 
 	// Quarkus Health Check Probe configuration.
 	// See: https://quarkus.io/guides/smallrye-health#running-the-health-check
 
 	quarkusHealthPathStarted = "/q/health/started"
-	quarkusHealthPathReady   = "/q/health/ready"
-	quarkusHealthPathLive    = "/q/health/live"
+	QuarkusHealthPathReady   = "/q/health/ready"
+	QuarkusHealthPathLive    = "/q/health/live"
 
 	// Default deployment health check configuration
 	// See: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
@@ -104,7 +104,7 @@ func getReplicasOrDefault(workflow *operatorapi.SonataFlow) *int32 {
 func defaultContainer(workflow *operatorapi.SonataFlow) (*corev1.Container, error) {
 	defaultContainerPort := corev1.ContainerPort{
 		ContainerPort: DefaultHTTPWorkflowPortInt,
-		Name:          DefaultHTTPWorkflowPortName,
+		Name:          utils.HttpScheme,
 		Protocol:      corev1.ProtocolTCP,
 	}
 	defaultFlowContainer := corev1.Container{
@@ -114,7 +114,7 @@ func defaultContainer(workflow *operatorapi.SonataFlow) (*corev1.Container, erro
 		LivenessProbe: &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
 				HTTPGet: &corev1.HTTPGetAction{
-					Path: quarkusHealthPathLive,
+					Path: QuarkusHealthPathLive,
 					Port: DefaultHTTPWorkflowPortIntStr,
 				},
 			},
@@ -123,7 +123,7 @@ func defaultContainer(workflow *operatorapi.SonataFlow) (*corev1.Container, erro
 		ReadinessProbe: &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
 				HTTPGet: &corev1.HTTPGetAction{
-					Path: quarkusHealthPathReady,
+					Path: QuarkusHealthPathReady,
 					Port: DefaultHTTPWorkflowPortIntStr,
 				},
 			},
@@ -152,7 +152,7 @@ func defaultContainer(workflow *operatorapi.SonataFlow) (*corev1.Container, erro
 	defaultFlowContainer.Name = operatorapi.DefaultContainerName
 	portIdx := -1
 	for i := range defaultFlowContainer.Ports {
-		if defaultFlowContainer.Ports[i].Name == DefaultHTTPWorkflowPortName ||
+		if defaultFlowContainer.Ports[i].Name == utils.HttpScheme ||
 			defaultFlowContainer.Ports[i].ContainerPort == DefaultHTTPWorkflowPortInt {
 			portIdx = i
 			break

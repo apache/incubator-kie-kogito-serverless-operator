@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
 	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
@@ -86,7 +87,7 @@ func TestMergePodSpec(t *testing.T) {
 			Image: "quay.io/example/my-workflow:1.0.0",
 			Ports: []corev1.ContainerPort{
 				// let's override a immutable attribute
-				{Name: DefaultHTTPWorkflowPortName, ContainerPort: 9090},
+				{Name: utils.HttpScheme, ContainerPort: 9090},
 			},
 			Env: []corev1.EnvVar{
 				// We should be able to override this too
@@ -141,7 +142,7 @@ func TestMergePodSpec_OverrideContainers(t *testing.T) {
 					Name:  v1alpha08.DefaultContainerName,
 					Image: "quay.io/example/my-workflow:1.0.0",
 					Ports: []corev1.ContainerPort{
-						{Name: DefaultHTTPWorkflowPortName, ContainerPort: 9090},
+						{Name: utils.HttpScheme, ContainerPort: 9090},
 					},
 					Env: []corev1.EnvVar{
 						{Name: "ENV1", Value: "VALUE_CUSTOM"},

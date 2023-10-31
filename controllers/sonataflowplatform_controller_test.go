@@ -117,6 +117,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			Value: common.PersistenceTypePostgressql,
 		}
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
+		assert.Equal(t, common.DataIndexName, dep.Spec.Template.Spec.Containers[0].Name)
 		assert.Equal(t, common.DataIndexImageBase+common.PersistenceTypeEphemeral, dep.Spec.Template.Spec.Containers[0].Image)
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
 
@@ -125,6 +126,8 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			SecretRef:  v1alpha08.PostgreSqlSecretOptions{Name: "test"},
 			ServiceRef: v1alpha08.PostgreSqlServiceOptions{Name: "test"},
 		}}
+		// Ensure correct container overriding anything set in PodSpec
+		ksp.Spec.Services.DataIndex.PodSpec.Containers = []corev1.Container{{Name: common.DataIndexName}}
 		assert.NoError(t, cl.Update(context.TODO(), ksp))
 
 		_, err = r.Reconcile(context.TODO(), req)

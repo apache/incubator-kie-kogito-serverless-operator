@@ -17,7 +17,6 @@ package platform
 import (
 	"context"
 	"strconv"
-	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -30,11 +29,11 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/container-builder/client"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
+	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
 	"github.com/imdario/mergo"
 )
-
-var httpPort = strings.ToLower(string(corev1.URISchemeHTTP))
 
 // NewServiceAction returns an action that deploys the services.
 func NewServiceAction() Action {
@@ -83,10 +82,10 @@ func createDataIndexComponents(ctx context.Context, client client.Client, platfo
 }
 
 func createDataIndexDeployment(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform) error {
-	probe := &corev1.Probe{
+	readyProbe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
-				Path:   "/q/health/ready",
+				Path:   common.QuarkusHealthPathReady,
 				Port:   common.DefaultHTTPWorkflowPortIntStr,
 				Scheme: corev1.URISchemeHTTP,
 			},
@@ -97,6 +96,8 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 		SuccessThreshold:    int32(1),
 		FailureThreshold:    int32(3),
 	}
+	liveProbe := readyProbe.DeepCopy()
+	liveProbe.ProbeHandler.HTTPGet.Path = common.QuarkusHealthPathLive
 	dataDeployContainer := &corev1.Container{
 		Name:  common.DataIndexName,
 		Image: common.DataIndexImageBase + common.PersistenceTypeEphemeral,
@@ -128,11 +129,11 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 				corev1.ResourceMemory: resource.MustParse("256Mi"),
 			},
 		},
-		ReadinessProbe: probe,
-		LivenessProbe:  probe,
+		ReadinessProbe: readyProbe,
+		LivenessProbe:  liveProbe,
 		Ports: []corev1.ContainerPort{
 			{
-				Name:          httpPort,
+				Name:          utils.HttpScheme,
 				ContainerPort: int32(common.DefaultHTTPWorkflowPortInt),
 				Protocol:      corev1.ProtocolTCP,
 			},
@@ -169,14 +170,13 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 				Labels: lbl,
 			},
 			Spec: corev1.PodSpec{
-				Containers: []corev1.Container{*dataDeployContainer},
 				Volumes: []corev1.Volume{
 					{
 						Name: "application-config",
 						VolumeSource: corev1.VolumeSource{
 							ConfigMap: &corev1.ConfigMapVolumeSource{
 								LocalObjectReference: corev1.LocalObjectReference{
-									Name: platform.Name + "-" + common.DataIndexName,
+									Name: getDataIndexName(platform),
 								},
 							},
 						},
@@ -188,11 +188,12 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 	if err := mergo.Merge(&dataDeploySpec.Template.Spec, platform.Spec.Services.DataIndex.PodSpec.ToPodSpec(), mergo.WithOverride); err != nil {
 		return err
 	}
+	kubeutil.AddOrReplaceContainer(common.DataIndexName, *dataDeployContainer, &dataDeploySpec.Template.Spec)
 
 	dataDeploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: platform.Namespace,
-			Name:      platform.Name + "-" + common.DataIndexName,
+			Name:      getDataIndexName(platform),
 			Labels:    lbl,
 		}}
 	if err := controllerutil.SetControllerReference(platform, dataDeploy, client.Scheme()); err != nil {
@@ -296,7 +297,7 @@ func createDataIndexService(ctx context.Context, client client.Client, platform 
 	dataSvcSpec := corev1.ServiceSpec{
 		Ports: []corev1.ServicePort{
 			{
-				Name:       httpPort,
+				Name:       utils.HttpScheme,
 				Protocol:   corev1.ProtocolTCP,
 				Port:       80,
 				TargetPort: common.DefaultHTTPWorkflowPortIntStr,
@@ -307,7 +308,7 @@ func createDataIndexService(ctx context.Context, client client.Client, platform 
 	dataSvc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: platform.Namespace,
-			Name:      platform.Name + "-" + common.DataIndexName,
+			Name:      getDataIndexName(platform),
 			Labels:    lbl,
 		}}
 	if err := controllerutil.SetControllerReference(platform, dataSvc, client.Scheme()); err != nil {
@@ -332,7 +333,7 @@ func createDataIndexService(ctx context.Context, client client.Client, platform 
 func createDataIndexConfigMap(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform) error {
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      platform.Name + "-" + common.DataIndexName,
+			Name:      getDataIndexName(platform),
 			Namespace: platform.Namespace,
 			Labels: map[string]string{
 				workflowproj.LabelApp: platform.Name,
@@ -357,4 +358,8 @@ func createDataIndexConfigMap(ctx context.Context, client client.Client, platfor
 	}
 
 	return nil
+}
+
+func getDataIndexName(platform *operatorapi.SonataFlowPlatform) string {
+	return platform.Name + "-" + common.DataIndexName
 }
