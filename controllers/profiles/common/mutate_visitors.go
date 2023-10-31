@@ -31,7 +31,7 @@ import (
 func ImageDeploymentMutateVisitor(workflow *operatorapi.SonataFlow, image string) MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		// noop since we already have an image in the flow container defined by the user.
-		if workflow.HasFlowContainerImage() {
+		if workflow.HasContainerSpecImage() {
 			return func() error {
 				return nil
 			}

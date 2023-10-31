@@ -185,7 +185,7 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 			},
 		},
 	}
-	if err := mergo.Merge(&dataDeploySpec.Template.Spec, platform.Spec.Services.DataIndex.FlowPodSpec.ToPodSpec(), mergo.WithOverride); err != nil {
+	if err := mergo.Merge(&dataDeploySpec.Template.Spec, platform.Spec.Services.DataIndex.PodSpec.ToPodSpec(), mergo.WithOverride); err != nil {
 		return err
 	}
 

@@ -26,16 +26,15 @@ type ServicesPlatformSpec struct {
 
 // ServicesPodTemplateSpec describes the desired custom Kubernetes PodTemplate definition for the deployed flow.
 //
-// The FlowContainer describes the container where the actual service is running. It will override any default definitions.
+// The ContainerSpec describes the container where the actual service is running. It will override any default definitions.
 // For example, to override the image one can use `.spec.services.dataIndex.container.image = my/image:tag`.
 type ServicesPodTemplateSpec struct {
 	// Container is the Kubernetes container where the service should run.
 	// One can change this attribute in order to override the defaults provided by the operator.
 	// +optional
-	Container *FlowContainer `json:"container,omitempty"`
-	// Describes the PodSpec for the internal service deployment based on the default Kubernetes PodSpec API
+	Container *ContainerSpec `json:"container,omitempty"`
 	// +optional
-	FlowPodSpec `json:",inline"`
+	PodSpec `json:",inline"`
 	// +optional
 	Replicas *int32 `json:"replicas,omitempty"`
 	// Determines whether "prod" profile workflows should be configured to use this service
@@ -49,8 +48,6 @@ type PersistenceOptions struct {
 	// Connect configured services to a postgresql database.
 	// +optional
 	PostgreSql *PersistencePostgreSql `json:"postgresql,omitempty"`
-	// +optional
-	// Infinispan *PersistenceInfinispan `json:"infinispan,omitempty"`
 }
 
 // PersistencePostgreSql ...
