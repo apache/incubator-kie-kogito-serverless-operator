@@ -1,8 +1,23 @@
+// Copyright 2023 Red Hat, Inc. and/or its affiliates
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package discovery
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var KubernetesServicesTestValues = map[string]*ResourceUri{
@@ -103,7 +118,7 @@ func assertEquals(t *testing.T, uri *ResourceUri, expectedUri *ResourceUri) {
 	assert.Equal(t, uri.Scheme, expectedUri.Scheme)
 	assert.Equal(t, uri.Namespace, expectedUri.Namespace)
 	assert.Equal(t, uri.Name, expectedUri.Name)
-	assert.Equal(t, uri.GetCustomPort(), expectedUri.GetCustomPort())
+	assert.Equal(t, uri.GetPort(), expectedUri.GetPort())
 	assert.Equal(t, uri.GVK.Group, expectedUri.GVK.Group)
 	assert.Equal(t, uri.GVK.Version, expectedUri.GVK.Version)
 	assert.Equal(t, uri.GVK.Kind, expectedUri.GVK.Kind)

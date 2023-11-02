@@ -1,12 +1,28 @@
+// Copyright 2023 Red Hat, Inc. and/or its affiliates
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package discovery
 
 import (
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
 	"strings"
+
+	"github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
+	corev1 "k8s.io/api/core/v1"
 )
 
-func resolveServiceUri(service corev1.Service, customPort string, outputFormat string) (string, error) {
+func resolveServiceUri(service *corev1.Service, customPort string, outputFormat string) (string, error) {
 	var port int
 	var protocol string
 	var host string
@@ -41,9 +57,9 @@ func resolveServiceUri(service corev1.Service, customPort string, outputFormat s
 // resolveClusterIPOrTypeNodeServiceUriParams returns the uri parameters for a service of type ClusterIP or TypeNode.
 // The optional customPort can be used to determine which port should be used for the communication, when not set,
 // the best suited port is returned. For this last, a secure port has precedence over a no-secure port.
-func resolveClusterIPOrTypeNodeServiceUriParams(service corev1.Service, customPort string) (protocol string, host string, port int) {
-	servicePort := findServicePort(service.Spec.Ports, customPort)
-	if isServicePortSecure(*servicePort) {
+func resolveClusterIPOrTypeNodeServiceUriParams(service *corev1.Service, customPort string) (protocol string, host string, port int) {
+	servicePort := findBestSuitedServicePort(service, customPort)
+	if isServicePortSecure(servicePort) {
 		protocol = httpsProtocol
 	} else {
 		protocol = httpProtocol
@@ -53,22 +69,22 @@ func resolveClusterIPOrTypeNodeServiceUriParams(service corev1.Service, customPo
 	return protocol, host, port
 }
 
-func resolvePodUri(pod *corev1.Pod, customContainer, customPort string, outputFormat string) (string, error) {
+func resolvePodUri(pod *corev1.Pod, customContainer string, customPort string, outputFormat string) (string, error) {
 	if podIp := pod.Status.PodIP; len(podIp) == 0 {
 		return "", fmt.Errorf("pod: %s in namespace: %s, has no allocated address", pod.Name, pod.Namespace)
 	} else {
 		var container *corev1.Container
 		if len(customContainer) > 0 {
-			container = findContainerByName(pod.Spec.Containers, customContainer)
+			container, _ = kubernetes.GetContainerByName(customContainer, &pod.Spec)
 		}
 		if container == nil {
 			container = &pod.Spec.Containers[0]
 		}
-		if containerPort := findContainerPort(container.Ports, customPort); containerPort == nil {
+		if containerPort := findBestSuitedContainerPort(container, customPort); containerPort == nil {
 			return "", fmt.Errorf("no container port was found for pod: %s in namespace: %s", pod.Name, pod.Namespace)
 		} else {
 			protocol := httpProtocol
-			if isSecure := isContainerPortSecure(*containerPort); isSecure {
+			if isSecure := isContainerPortSecure(containerPort); isSecure {
 				protocol = httpsProtocol
 			}
 			if outputFormat == KubernetesDNSAddress {
@@ -85,10 +101,10 @@ func buildURI(scheme string, host string, port int) string {
 }
 
 func buildKubernetesServiceDNSUri(scheme string, namespace string, name string, port int) string {
-	return fmt.Sprintf("%s://%s.%s.svc.cluster.local:%v", scheme, name, namespace, port)
+	return fmt.Sprintf("%s://%s.%s.svc:%v", scheme, name, namespace, port)
 }
 
 func buildKubernetesPodDNSUri(scheme string, namespace string, podIP string, port int) string {
 	hyphenedIp := strings.Replace(podIP, ".", "-", -1)
-	return fmt.Sprintf("%s://%s.%s.pod.cluster.local:%v", scheme, hyphenedIp, namespace, port)
+	return fmt.Sprintf("%s://%s.%s.pod:%v", scheme, hyphenedIp, namespace, port)
 }

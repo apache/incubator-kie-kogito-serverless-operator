@@ -1,8 +1,23 @@
+// Copyright 2023 Red Hat, Inc. and/or its affiliates
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package discovery
 
 import (
 	"context"
 	"fmt"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -12,8 +27,8 @@ const (
 	KubernetesScheme = "kubernetes"
 	OpenshiftScheme  = "openshift"
 
-	// CustomPortLabel well known label name to select a particular target port
-	CustomPortLabel = "custom-port"
+	// PortLabel well known label name to select a particular target port
+	PortLabel = "port"
 
 	// KubernetesDNSAddress use this output format with kubernetes services and pods to resolve to the corresponding
 	// kubernetes DNS name. see: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
@@ -49,11 +64,11 @@ type ResourceUri struct {
 type ServiceCatalog interface {
 	// Query returns the address corresponding to the resource identified by the uri. In the case of services or pods,
 	// the outputFormat can be used to determine the type of address to calculate.
-	// If the outputFormat is KubernetesDNSAddress, the returned value for a service will be like this: http://my-service.my-namespace.svc.cluster.local:8080,
+	// If the outputFormat is KubernetesDNSAddress, the returned value for a service will be like this: http://my-service.my-namespace.svc:8080,
 	// and the returned value for pod will be like this: http://10-244-1-135.my-namespace.pod.cluster.local:8080.
 	// If the outputFormat is KubernetesIPAddress, the returned value for pods and services, and other resource types,
 	// will be like this: http://10.245.1.132:8080
-	Query(uri ResourceUri, outputFormat string) (string, error)
+	Query(ctx context.Context, uri ResourceUri, outputFormat string) (string, error)
 }
 
 type sonataFlowServiceCatalog struct {
@@ -63,23 +78,23 @@ type sonataFlowServiceCatalog struct {
 }
 
 // NewServiceCatalog returns a new ServiceCatalog configured to resolve kubernetes, knative, and openshift resource addresses.
-func NewServiceCatalog(ctx context.Context, cli client.Client) ServiceCatalog {
+func NewServiceCatalog(cli client.Client) ServiceCatalog {
 	return &sonataFlowServiceCatalog{
-		kubernetesCatalog: newK8SServiceCatalog(ctx, cli),
-		knativeCatalog:    newKnServiceCatalog(ctx, cli),
+		kubernetesCatalog: newK8SServiceCatalog(cli),
+		knativeCatalog:    newKnServiceCatalog(cli),
 	}
 }
 
-func (c *sonataFlowServiceCatalog) Query(uri ResourceUri, outputFormat string) (string, error) {
+func (c *sonataFlowServiceCatalog) Query(ctx context.Context, uri ResourceUri, outputFormat string) (string, error) {
 	switch uri.Scheme {
 	case KubernetesScheme:
-		return c.kubernetesCatalog.Query(uri, outputFormat)
+		return c.kubernetesCatalog.Query(ctx, uri, outputFormat)
 	case KnativeScheme:
 		return "", fmt.Errorf("knative service discovery is not yet implemened")
 	case OpenshiftScheme:
 		return "", fmt.Errorf("openshift service discovery is not yet implemented")
 	default:
-		return "", fmt.Errorf("unknonw scheme was provided for service discovery: %s", uri.Scheme)
+		return "", fmt.Errorf("unknown scheme was provided for service discovery: %s", uri.Scheme)
 	}
 }
 
@@ -122,8 +137,8 @@ func (b ResourceUriBuilder) Name(name string) ResourceUriBuilder {
 	return b
 }
 
-func (b ResourceUriBuilder) CustomPort(customPort string) ResourceUriBuilder {
-	b.uri.SetCustomPort(customPort)
+func (b ResourceUriBuilder) Port(customPort string) ResourceUriBuilder {
+	b.uri.SetPort(customPort)
 	return b
 }
 
@@ -150,12 +165,12 @@ func (r *ResourceUri) GetLabel(name string) string {
 	return ""
 }
 
-func (r *ResourceUri) SetCustomPort(value string) *ResourceUri {
-	return r.AddLabel(CustomPortLabel, value)
+func (r *ResourceUri) SetPort(value string) *ResourceUri {
+	return r.AddLabel(PortLabel, value)
 }
 
-func (r *ResourceUri) GetCustomPort() string {
-	return r.GetLabel(CustomPortLabel)
+func (r *ResourceUri) GetPort() string {
+	return r.GetLabel(PortLabel)
 }
 
 func (r *ResourceUri) String() string {
