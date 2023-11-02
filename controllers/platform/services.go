@@ -235,10 +235,13 @@ func configurePostgreSql(ctx context.Context, client client.Client, dataDeployCo
 		dataSourcePort = *platform.Spec.Services.Persistence.PostgreSql.ServiceRef.Port
 	}
 	databaseName := "sonataflow"
-	if len(platform.Spec.Services.Persistence.PostgreSql.DatabaseName) > 0 {
-		databaseName = platform.Spec.Services.Persistence.PostgreSql.DatabaseName
+	if len(platform.Spec.Services.Persistence.PostgreSql.ServiceRef.DatabaseName) > 0 {
+		databaseName = platform.Spec.Services.Persistence.PostgreSql.ServiceRef.DatabaseName
 	}
 	dataSourceUrl := "jdbc:" + persistenceType + "://" + platform.Spec.Services.Persistence.PostgreSql.ServiceRef.Name + "." + databaseNamespace + ":" + strconv.Itoa(dataSourcePort) + "/" + databaseName + "?currentSchema=data-index-service"
+	if len(platform.Spec.Services.Persistence.PostgreSql.JdbcUrl) > 0 {
+		dataSourceUrl = platform.Spec.Services.Persistence.PostgreSql.JdbcUrl
+	}
 
 	secretRef := corev1.LocalObjectReference{
 		Name: platform.Spec.Services.Persistence.PostgreSql.SecretRef.Name,

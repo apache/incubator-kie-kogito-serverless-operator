@@ -50,18 +50,22 @@ type PersistenceOptions struct {
 	PostgreSql *PersistencePostgreSql `json:"postgresql,omitempty"`
 }
 
-// PersistencePostgreSql ...
+// PersistencePostgreSql configure postgresql connection for service(s).
+// +kubebuilder:validation:MinProperties=2
+// +kubebuilder:validation:MaxProperties=2
 type PersistencePostgreSql struct {
 	// Secret reference to the database user credentials
 	SecretRef PostgreSqlSecretOptions `json:"secretRef"`
-	// Service reference to postgresql datasource
-	ServiceRef PostgreSqlServiceOptions `json:"serviceRef"`
-	// Name of postgresql database to be used. Defaults to "sonataflow"
+	// Service reference to postgresql datasource. Mutually exclusive to jdbcUrl.
 	// +optional
-	DatabaseName string `json:"databaseName,omitempty"`
+	ServiceRef PostgreSqlServiceOptions `json:"serviceRef,omitempty"`
+	// PostgreSql JDBC URL. Mutually exclusive to serviceRef.
+	// e.g. "jdbc:postgresql://host:port/database?currentSchema=data-index-service"
+	// +optional
+	JdbcUrl string `json:"jdbcUrl,omitempty"`
 }
 
-// PostgreSqlSecretOptions ...
+// PostgreSqlSecretOptions use credential secret for postgresql connection.
 type PostgreSqlSecretOptions struct {
 	// Name of the postgresql credentials secret.
 	Name string `json:"name"`
@@ -73,7 +77,7 @@ type PostgreSqlSecretOptions struct {
 	PasswordKey string `json:"passwordKey,omitempty"`
 }
 
-// PostgreSqlServiceOptions ...
+// PostgreSqlServiceOptions use k8s service to configure postgresql jdbc url.
 type PostgreSqlServiceOptions struct {
 	// Name of the postgresql k8s service.
 	Name string `json:"name"`
@@ -83,4 +87,7 @@ type PostgreSqlServiceOptions struct {
 	// Port to use when connecting to the postgresql k8s service. Defaults to 5432.
 	// +optional
 	Port *int `json:"port,omitempty"`
+	// Name of postgresql database to be used. Defaults to "sonataflow"
+	// +optional
+	DatabaseName string `json:"databaseName,omitempty"`
 }

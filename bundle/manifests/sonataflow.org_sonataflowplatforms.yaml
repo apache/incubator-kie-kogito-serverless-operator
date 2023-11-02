@@ -7880,10 +7880,12 @@ spec:
                     properties:
                       postgresql:
                         description: Connect configured services to a postgresql database.
+                        maxProperties: 2
+                        minProperties: 2
                         properties:
-                          databaseName:
-                            description: Name of postgresql database to be used. Defaults
-                              to "sonataflow"
+                          jdbcUrl:
+                            description: PostgreSql JDBC URL. Mutually exclusive to
+                              serviceRef. e.g. "jdbc:postgresql://host:port/database?currentSchema=data-index-service"
                             type: string
                           secretRef:
                             description: Secret reference to the database user credentials
@@ -7901,8 +7903,13 @@ spec:
                             - name
                             type: object
                           serviceRef:
-                            description: Service reference to postgresql datasource
+                            description: Service reference to postgresql datasource.
+                              Mutually exclusive to jdbcUrl.
                             properties:
+                              databaseName:
+                                description: Name of postgresql database to be used.
+                                  Defaults to "sonataflow"
+                                type: string
                               name:
                                 description: Name of the postgresql k8s service.
                                 type: string
@@ -7919,7 +7926,6 @@ spec:
                             type: object
                         required:
                         - secretRef
-                        - serviceRef
                         type: object
                     type: object
                 type: object

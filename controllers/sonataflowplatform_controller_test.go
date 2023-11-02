@@ -67,7 +67,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.Equal(t, v1alpha08.PlatformCreatingReason, ksp.Status.GetTopLevelCondition().Reason)
 	})
 
-	t.Run("verify that a basic reconcile with data index service is performed without error", func(t *testing.T) {
+	t.Run("verify that a basic reconcile with data index service & persistence is performed without error", func(t *testing.T) {
 		namespace := t.Name()
 		// Create a SonataFlowPlatform object with metadata and spec.
 		ksp := test.GetBasePlatformInReadyPhase(namespace)
@@ -117,7 +117,6 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			Value: common.PersistenceTypePostgressql,
 		}
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
-		assert.Equal(t, common.DataIndexName, dep.Spec.Template.Spec.Containers[0].Name)
 		assert.Equal(t, common.DataIndexImageBase+common.PersistenceTypeEphemeral, dep.Spec.Template.Spec.Containers[0].Image)
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
 
@@ -137,7 +136,87 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: depName, Namespace: ksp.Namespace}, dep))
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
+		assert.Equal(t, common.DataIndexName, dep.Spec.Template.Spec.Containers[0].Name)
 		assert.Equal(t, common.DataIndexImageBase+common.PersistenceTypePostgressql, dep.Spec.Template.Spec.Containers[0].Image)
 		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
+	})
+
+	t.Run("verify that a basic reconcile with data index service & jdbcUrl is performed without error", func(t *testing.T) {
+		namespace := t.Name()
+		// Create a SonataFlowPlatform object with metadata and spec.
+		ksp := test.GetBasePlatformInReadyPhase(namespace)
+		ksp.Spec.Services = v1alpha08.ServicesPlatformSpec{
+			DataIndex: &v1alpha08.ServicesPodTemplateSpec{},
+		}
+
+		// Create a fake client to mock API calls.
+		cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(ksp).WithStatusSubresource(ksp).Build()
+		// Create a SonataFlowPlatformReconciler object with the scheme and fake client.
+		r := &SonataFlowPlatformReconciler{cl, cl, cl.Scheme(), &rest.Config{}, &record.FakeRecorder{}}
+
+		// Mock request to simulate Reconcile() being called on an event for a
+		// watched resource .
+		req := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      ksp.Name,
+				Namespace: ksp.Namespace,
+			},
+		}
+		_, err := r.Reconcile(context.TODO(), req)
+		if err != nil {
+			t.Fatalf("reconcile: (%v)", err)
+		}
+
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: ksp.Name, Namespace: ksp.Namespace}, ksp))
+
+		// Perform some checks on the created CR
+		assert.Equal(t, "quay.io/kiegroup", ksp.Spec.Build.Config.Registry.Address)
+		assert.Equal(t, "regcred", ksp.Spec.Build.Config.Registry.Secret)
+		assert.Equal(t, v1alpha08.OperatorBuildStrategy, ksp.Spec.Build.Config.BuildStrategy)
+		assert.NotNil(t, ksp.Spec.Services.DataIndex)
+		assert.Nil(t, ksp.Spec.Services.DataIndex.Replicas)
+		assert.NotNil(t, ksp.Spec.Services.DataIndex.Enabled)
+		assert.Equal(t, true, *ksp.Spec.Services.DataIndex.Enabled)
+		assert.Equal(t, v1alpha08.PlatformClusterKubernetes, ksp.Status.Cluster)
+
+		assert.Equal(t, "", ksp.Status.GetTopLevelCondition().Reason)
+
+		// Check data index deployment
+		dep := &appsv1.Deployment{}
+		depName := ksp.Name + "-" + common.DataIndexName
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: depName, Namespace: ksp.Namespace}, dep))
+
+		env := corev1.EnvVar{
+			Name:  "QUARKUS_DATASOURCE_DB_KIND",
+			Value: common.PersistenceTypePostgressql,
+		}
+		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
+		assert.Equal(t, common.DataIndexImageBase+common.PersistenceTypeEphemeral, dep.Spec.Template.Spec.Containers[0].Image)
+		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
+
+		// Check with persistence set
+		url := "jdbc:postgresql://host:port/database?currentSchema=data-index-service"
+		ksp.Spec.Services.Persistence = &v1alpha08.PersistenceOptions{PostgreSql: &v1alpha08.PersistencePostgreSql{
+			SecretRef: v1alpha08.PostgreSqlSecretOptions{Name: "test"},
+			JdbcUrl:   url,
+		}}
+		// Ensure correct container overriding anything set in PodSpec
+		ksp.Spec.Services.DataIndex.PodSpec.Containers = []corev1.Container{{Name: common.DataIndexName}}
+		assert.NoError(t, cl.Update(context.TODO(), ksp))
+
+		_, err = r.Reconcile(context.TODO(), req)
+		if err != nil {
+			t.Fatalf("reconcile: (%v)", err)
+		}
+
+		env2 := corev1.EnvVar{
+			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
+			Value: url,
+		}
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: depName, Namespace: ksp.Namespace}, dep))
+		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
+		assert.Equal(t, common.DataIndexImageBase+common.PersistenceTypePostgressql, dep.Spec.Template.Spec.Containers[0].Image)
+		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
+		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, env2)
 	})
 }
