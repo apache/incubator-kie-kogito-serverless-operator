@@ -99,7 +99,6 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 	liveProbe := readyProbe.DeepCopy()
 	liveProbe.ProbeHandler.HTTPGet.Path = common.QuarkusHealthPathLive
 	dataDeployContainer := &corev1.Container{
-		Name:  common.DataIndexName,
 		Image: common.DataIndexImageBase + common.PersistenceTypeEphemeral,
 		Env: []corev1.EnvVar{
 			{
@@ -117,10 +116,6 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 			{
 				Name:  "QUARKUS_HTTP_CORS_ORIGINS",
 				Value: "/.*/",
-			},
-			{
-				Name:  "QUARKUS_KAFKA_HEALTH_ENABLE",
-				Value: "false",
 			},
 		},
 		Resources: corev1.ResourceRequirements{
@@ -147,11 +142,11 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 		},
 	}
 	configurePersistence(ctx, client, dataDeployContainer, platform)
-	if platform.Spec.Services.DataIndex.Container != nil {
-		if err := mergo.Merge(dataDeployContainer, platform.Spec.Services.DataIndex.Container.ToContainer(), mergo.WithOverride); err != nil {
-			return err
-		}
+	if err := mergo.Merge(dataDeployContainer, platform.Spec.Services.DataIndex.Container.ToContainer(), mergo.WithOverride); err != nil {
+		return err
 	}
+	// immutable
+	dataDeployContainer.Name = common.DataIndexName
 
 	var replicas int32 = 1
 	if platform.Spec.Services.DataIndex.Replicas != nil {
@@ -238,7 +233,11 @@ func configurePostgreSql(ctx context.Context, client client.Client, dataDeployCo
 	if len(platform.Spec.Services.Persistence.PostgreSql.ServiceRef.DatabaseName) > 0 {
 		databaseName = platform.Spec.Services.Persistence.PostgreSql.ServiceRef.DatabaseName
 	}
-	dataSourceUrl := "jdbc:" + persistenceType + "://" + platform.Spec.Services.Persistence.PostgreSql.ServiceRef.Name + "." + databaseNamespace + ":" + strconv.Itoa(dataSourcePort) + "/" + databaseName + "?currentSchema=data-index-service"
+	databaseSchema := "data-index-service"
+	if len(platform.Spec.Services.Persistence.PostgreSql.ServiceRef.DatabaseSchema) > 0 {
+		databaseSchema = platform.Spec.Services.Persistence.PostgreSql.ServiceRef.DatabaseSchema
+	}
+	dataSourceUrl := "jdbc:" + persistenceType + "://" + platform.Spec.Services.Persistence.PostgreSql.ServiceRef.Name + "." + databaseNamespace + ":" + strconv.Itoa(dataSourcePort) + "/" + databaseName + "?currentSchema=" + databaseSchema
 	if len(platform.Spec.Services.Persistence.PostgreSql.JdbcUrl) > 0 {
 		dataSourceUrl = platform.Spec.Services.Persistence.PostgreSql.JdbcUrl
 	}

@@ -24,7 +24,7 @@ type ServicesPlatformSpec struct {
 	Persistence *PersistenceOptions `json:"persistence,omitempty"`
 }
 
-// ServicesPodTemplateSpec describes the desired custom Kubernetes PodTemplate definition for the deployed flow.
+// ServicesPodTemplateSpec describes the desired custom Kubernetes PodTemplate definition for the deployed SonataflowPlatform services.
 //
 // The ContainerSpec describes the container where the actual service is running. It will override any default definitions.
 // For example, to override the image one can use `.spec.services.dataIndex.container.image = my/image:tag`.
@@ -32,7 +32,7 @@ type ServicesPodTemplateSpec struct {
 	// Container is the Kubernetes container where the service should run.
 	// One can change this attribute in order to override the defaults provided by the operator.
 	// +optional
-	Container *ContainerSpec `json:"container,omitempty"`
+	Container ContainerSpec `json:"container,omitempty"`
 	// +optional
 	PodSpec `json:",inline"`
 	// +optional
@@ -90,4 +90,7 @@ type PostgreSqlServiceOptions struct {
 	// Name of postgresql database to be used. Defaults to "sonataflow"
 	// +optional
 	DatabaseName string `json:"databaseName,omitempty"`
+	// Schema of postgresql database to be used. Defaults to "data-index-service"
+	// +optional
+	DatabaseSchema string `json:"databaseSchema,omitempty"`
 }
