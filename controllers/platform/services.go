@@ -90,11 +90,11 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 				Scheme: corev1.URISchemeHTTP,
 			},
 		},
-		InitialDelaySeconds: int32(15),
+		InitialDelaySeconds: int32(45),
 		TimeoutSeconds:      int32(10),
 		PeriodSeconds:       int32(30),
 		SuccessThreshold:    int32(1),
-		FailureThreshold:    int32(3),
+		FailureThreshold:    int32(4),
 	}
 	liveProbe := readyProbe.DeepCopy()
 	liveProbe.ProbeHandler.HTTPGet.Path = common.QuarkusHealthPathLive
@@ -142,15 +142,15 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 		},
 	}
 	configurePersistence(dataDeployContainer, platform)
-	if err := mergo.Merge(dataDeployContainer, platform.Spec.Services.DataIndex.Container.ToContainer(), mergo.WithOverride); err != nil {
+	if err := mergo.Merge(dataDeployContainer, platform.Spec.Services.DataIndex.PodTemplate.Container.ToContainer(), mergo.WithOverride); err != nil {
 		return err
 	}
 	// immutable
 	dataDeployContainer.Name = common.DataIndexName
 
 	var replicas int32 = 1
-	if platform.Spec.Services.DataIndex.Replicas != nil {
-		replicas = *platform.Spec.Services.DataIndex.Replicas
+	if platform.Spec.Services.DataIndex.PodTemplate.Replicas != nil {
+		replicas = *platform.Spec.Services.DataIndex.PodTemplate.Replicas
 	}
 	lbl := map[string]string{
 		workflowproj.LabelApp: platform.Name,
@@ -180,7 +180,7 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 			},
 		},
 	}
-	if err := mergo.Merge(&dataDeploySpec.Template.Spec, platform.Spec.Services.DataIndex.PodSpec.ToPodSpec(), mergo.WithOverride); err != nil {
+	if err := mergo.Merge(&dataDeploySpec.Template.Spec, platform.Spec.Services.DataIndex.PodTemplate.PodSpec.ToPodSpec(), mergo.WithOverride); err != nil {
 		return err
 	}
 	kubeutil.AddOrReplaceContainer(common.DataIndexName, *dataDeployContainer, &dataDeploySpec.Template.Spec)

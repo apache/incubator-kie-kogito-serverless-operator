@@ -72,7 +72,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		// Create a SonataFlowPlatform object with metadata and spec.
 		ksp := test.GetBasePlatformInReadyPhase(namespace)
 		ksp.Spec.Services = v1alpha08.ServicesPlatformSpec{
-			DataIndex: &v1alpha08.ServicesPodTemplateSpec{},
+			DataIndex: &v1alpha08.ServiceSpec{},
 		}
 
 		// Create a fake client to mock API calls.
@@ -100,7 +100,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.Equal(t, "regcred", ksp.Spec.Build.Config.Registry.Secret)
 		assert.Equal(t, v1alpha08.OperatorBuildStrategy, ksp.Spec.Build.Config.BuildStrategy)
 		assert.NotNil(t, ksp.Spec.Services.DataIndex)
-		assert.Nil(t, ksp.Spec.Services.DataIndex.Replicas)
+		assert.Nil(t, ksp.Spec.Services.DataIndex.PodTemplate.Replicas)
 		assert.NotNil(t, ksp.Spec.Services.DataIndex.Enabled)
 		assert.Equal(t, true, *ksp.Spec.Services.DataIndex.Enabled)
 		assert.Equal(t, v1alpha08.PlatformClusterKubernetes, ksp.Status.Cluster)
@@ -126,7 +126,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			ServiceRef: v1alpha08.PostgreSqlServiceOptions{Name: "test"},
 		}}
 		// Ensure correct container overriding anything set in PodSpec
-		ksp.Spec.Services.DataIndex.PodSpec.Containers = []corev1.Container{{Name: common.DataIndexName}}
+		ksp.Spec.Services.DataIndex.PodTemplate.PodSpec.Containers = []corev1.Container{{Name: common.DataIndexName}}
 		assert.NoError(t, cl.Update(context.TODO(), ksp))
 
 		_, err = r.Reconcile(context.TODO(), req)
@@ -145,8 +145,16 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		namespace := t.Name()
 		// Create a SonataFlowPlatform object with metadata and spec.
 		ksp := test.GetBasePlatformInReadyPhase(namespace)
+		var replicas int32 = 2
 		ksp.Spec.Services = v1alpha08.ServicesPlatformSpec{
-			DataIndex: &v1alpha08.ServicesPodTemplateSpec{},
+			DataIndex: &v1alpha08.ServiceSpec{
+				PodTemplate: v1alpha08.ServicesPodTemplateSpec{
+					Replicas: &replicas,
+					Container: v1alpha08.ContainerSpec{
+						Command: []string{"test:latest"},
+					},
+				},
+			},
 		}
 
 		// Create a fake client to mock API calls.
@@ -174,7 +182,6 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.Equal(t, "regcred", ksp.Spec.Build.Config.Registry.Secret)
 		assert.Equal(t, v1alpha08.OperatorBuildStrategy, ksp.Spec.Build.Config.BuildStrategy)
 		assert.NotNil(t, ksp.Spec.Services.DataIndex)
-		assert.Nil(t, ksp.Spec.Services.DataIndex.Replicas)
 		assert.NotNil(t, ksp.Spec.Services.DataIndex.Enabled)
 		assert.Equal(t, true, *ksp.Spec.Services.DataIndex.Enabled)
 		assert.Equal(t, v1alpha08.PlatformClusterKubernetes, ksp.Status.Cluster)
@@ -201,7 +208,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			JdbcUrl:   url,
 		}}
 		// Ensure correct container overriding anything set in PodSpec
-		ksp.Spec.Services.DataIndex.PodSpec.Containers = []corev1.Container{{Name: common.DataIndexName}}
+		ksp.Spec.Services.DataIndex.PodTemplate.PodSpec.Containers = []corev1.Container{{Name: common.DataIndexName}}
 		assert.NoError(t, cl.Update(context.TODO(), ksp))
 
 		_, err = r.Reconcile(context.TODO(), req)
@@ -216,6 +223,8 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: depName, Namespace: ksp.Namespace}, dep))
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
 		assert.Equal(t, common.DataIndexImageBase+common.PersistenceTypePostgressql, dep.Spec.Template.Spec.Containers[0].Image)
+		assert.Equal(t, &replicas, dep.Spec.Replicas)
+		assert.Equal(t, []string{"test:latest"}, dep.Spec.Template.Spec.Containers[0].Command)
 		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
 		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, env2)
 	})

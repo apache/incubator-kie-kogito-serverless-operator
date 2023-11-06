@@ -61,7 +61,7 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	platform.Namespace = ns
 	platform.Spec = v1alpha08.SonataFlowPlatformSpec{
 		Services: v1alpha08.ServicesPlatformSpec{
-			DataIndex: &v1alpha08.ServicesPodTemplateSpec{
+			DataIndex: &v1alpha08.ServiceSpec{
 				Enabled: &enabled,
 			},
 		},
