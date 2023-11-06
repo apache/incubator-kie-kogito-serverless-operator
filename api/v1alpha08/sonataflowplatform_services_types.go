@@ -19,9 +19,6 @@ type ServicesPlatformSpec struct {
 	// Deploys the Data Index service for use by "prod" profile workflows.
 	// +optional
 	DataIndex *ServicesPodTemplateSpec `json:"dataIndex,omitempty"`
-	// Persists service(s) to a datasource of choice. Ephemeral by default.
-	// +optional
-	Persistence *PersistenceOptions `json:"persistence,omitempty"`
 }
 
 // ServicesPodTemplateSpec describes the desired custom Kubernetes PodTemplate definition for the deployed SonataflowPlatform services.
@@ -40,6 +37,9 @@ type ServicesPodTemplateSpec struct {
 	// Determines whether "prod" profile workflows should be configured to use this service
 	// +optional
 	Enabled *bool `json:"enabled,omitempty"`
+	// Persists service to a datasource of choice. Ephemeral by default.
+	// +optional
+	Persistence *PersistenceOptions `json:"persistence,omitempty"`
 }
 
 // PersistenceOptions configure the services to persist to a datasource of choice

@@ -141,7 +141,7 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 			},
 		},
 	}
-	configurePersistence(ctx, client, dataDeployContainer, platform)
+	configurePersistence(dataDeployContainer, platform)
 	if err := mergo.Merge(dataDeployContainer, platform.Spec.Services.DataIndex.Container.ToContainer(), mergo.WithOverride); err != nil {
 		return err
 	}
@@ -209,51 +209,49 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 	return nil
 }
 
-func configurePersistence(ctx context.Context, client client.Client, dataDeployContainer *corev1.Container, platform *operatorapi.SonataFlowPlatform) {
-	if platform.Spec.Services.Persistence != nil {
-		if platform.Spec.Services.Persistence.PostgreSql != nil {
-			configurePostgreSql(ctx, client, dataDeployContainer, platform)
+func configurePersistence(serviceContainer *corev1.Container, platform *operatorapi.SonataFlowPlatform) {
+	if platform.Spec.Services.DataIndex.Persistence != nil {
+		if platform.Spec.Services.DataIndex.Persistence.PostgreSql != nil {
+			serviceContainer.Image = common.DataIndexImageBase + common.PersistenceTypePostgressql
+			serviceContainer.Env = append(
+				serviceContainer.Env,
+				configurePostgreSqlEnv(platform.Spec.Services.DataIndex.Persistence.PostgreSql, "data-index-service", platform.Namespace)...,
+			)
 		}
 	}
 }
 
-func configurePostgreSql(ctx context.Context, client client.Client, dataDeployContainer *corev1.Container, platform *operatorapi.SonataFlowPlatform) {
-	persistenceType := common.PersistenceTypePostgressql
-	dataDeployContainer.Image = common.DataIndexImageBase + persistenceType
-
-	databaseNamespace := platform.Namespace
-	if len(platform.Spec.Services.Persistence.PostgreSql.ServiceRef.Namespace) > 0 {
-		databaseNamespace = platform.Spec.Services.Persistence.PostgreSql.ServiceRef.Namespace
+func configurePostgreSqlEnv(postgresql *operatorapi.PersistencePostgreSql, databaseSchema, databaseNamespace string) []corev1.EnvVar {
+	if len(postgresql.ServiceRef.DatabaseSchema) > 0 {
+		databaseSchema = postgresql.ServiceRef.DatabaseSchema
+	}
+	if len(postgresql.ServiceRef.Namespace) > 0 {
+		databaseNamespace = postgresql.ServiceRef.Namespace
 	}
 	dataSourcePort := 5432
-	if platform.Spec.Services.Persistence.PostgreSql.ServiceRef.Port != nil {
-		dataSourcePort = *platform.Spec.Services.Persistence.PostgreSql.ServiceRef.Port
+	if postgresql.ServiceRef.Port != nil {
+		dataSourcePort = *postgresql.ServiceRef.Port
 	}
 	databaseName := "sonataflow"
-	if len(platform.Spec.Services.Persistence.PostgreSql.ServiceRef.DatabaseName) > 0 {
-		databaseName = platform.Spec.Services.Persistence.PostgreSql.ServiceRef.DatabaseName
+	if len(postgresql.ServiceRef.DatabaseName) > 0 {
+		databaseName = postgresql.ServiceRef.DatabaseName
 	}
-	databaseSchema := "data-index-service"
-	if len(platform.Spec.Services.Persistence.PostgreSql.ServiceRef.DatabaseSchema) > 0 {
-		databaseSchema = platform.Spec.Services.Persistence.PostgreSql.ServiceRef.DatabaseSchema
+	dataSourceUrl := "jdbc:" + common.PersistenceTypePostgressql + "://" + postgresql.ServiceRef.Name + "." + databaseNamespace + ":" + strconv.Itoa(dataSourcePort) + "/" + databaseName + "?currentSchema=" + databaseSchema
+	if len(postgresql.JdbcUrl) > 0 {
+		dataSourceUrl = postgresql.JdbcUrl
 	}
-	dataSourceUrl := "jdbc:" + persistenceType + "://" + platform.Spec.Services.Persistence.PostgreSql.ServiceRef.Name + "." + databaseNamespace + ":" + strconv.Itoa(dataSourcePort) + "/" + databaseName + "?currentSchema=" + databaseSchema
-	if len(platform.Spec.Services.Persistence.PostgreSql.JdbcUrl) > 0 {
-		dataSourceUrl = platform.Spec.Services.Persistence.PostgreSql.JdbcUrl
-	}
-
 	secretRef := corev1.LocalObjectReference{
-		Name: platform.Spec.Services.Persistence.PostgreSql.SecretRef.Name,
+		Name: postgresql.SecretRef.Name,
 	}
 	quarkusDatasourceUsername := "POSTGRESQL_USER"
-	if len(platform.Spec.Services.Persistence.PostgreSql.SecretRef.UserKey) > 0 {
-		quarkusDatasourceUsername = platform.Spec.Services.Persistence.PostgreSql.SecretRef.UserKey
+	if len(postgresql.SecretRef.UserKey) > 0 {
+		quarkusDatasourceUsername = postgresql.SecretRef.UserKey
 	}
 	quarkusDatasourcePassword := "POSTGRESQL_PASSWORD"
-	if len(platform.Spec.Services.Persistence.PostgreSql.SecretRef.PasswordKey) > 0 {
-		quarkusDatasourcePassword = platform.Spec.Services.Persistence.PostgreSql.SecretRef.PasswordKey
+	if len(postgresql.SecretRef.PasswordKey) > 0 {
+		quarkusDatasourcePassword = postgresql.SecretRef.PasswordKey
 	}
-	persistEnvVars := []corev1.EnvVar{
+	return []corev1.EnvVar{
 		{
 			Name: "QUARKUS_DATASOURCE_USERNAME",
 			ValueFrom: &corev1.EnvVarSource{
@@ -274,7 +272,7 @@ func configurePostgreSql(ctx context.Context, client client.Client, dataDeployCo
 		},
 		{
 			Name:  "QUARKUS_DATASOURCE_DB_KIND",
-			Value: persistenceType,
+			Value: common.PersistenceTypePostgressql,
 		},
 		{
 			Name:  "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION",
@@ -289,7 +287,6 @@ func configurePostgreSql(ctx context.Context, client client.Client, dataDeployCo
 			Value: dataSourceUrl,
 		},
 	}
-	dataDeployContainer.Env = append(dataDeployContainer.Env, persistEnvVars...)
 }
 
 func createDataIndexService(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform) error {
@@ -331,7 +328,6 @@ func createDataIndexService(ctx context.Context, client client.Client, platform 
 	return nil
 }
 
-// createDataIndexConfigMap ...
 func createDataIndexConfigMap(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform) error {
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{

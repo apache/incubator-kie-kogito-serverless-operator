@@ -121,7 +121,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
 
 		// Check with persistence set
-		ksp.Spec.Services.Persistence = &v1alpha08.PersistenceOptions{PostgreSql: &v1alpha08.PersistencePostgreSql{
+		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistenceOptions{PostgreSql: &v1alpha08.PersistencePostgreSql{
 			SecretRef:  v1alpha08.PostgreSqlSecretOptions{Name: "test"},
 			ServiceRef: v1alpha08.PostgreSqlServiceOptions{Name: "test"},
 		}}
@@ -196,7 +196,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check with persistence set
 		url := "jdbc:postgresql://host:port/database?currentSchema=data-index-service"
-		ksp.Spec.Services.Persistence = &v1alpha08.PersistenceOptions{PostgreSql: &v1alpha08.PersistencePostgreSql{
+		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistenceOptions{PostgreSql: &v1alpha08.PersistencePostgreSql{
 			SecretRef: v1alpha08.PostgreSqlSecretOptions{Name: "test"},
 			JdbcUrl:   url,
 		}}
