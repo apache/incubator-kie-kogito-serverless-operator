@@ -81,7 +81,7 @@ func Test_ensureWorkflowPropertiesConfigMapMutator_DollarReplacement(t *testing.
 
 func TestMergePodSpec(t *testing.T) {
 	workflow := test.GetBaseSonataFlow(t.Name())
-	workflow.Spec.PodTemplate = v1alpha08.FlowPodTemplateSpec{
+	workflow.Spec.PodTemplate = v1alpha08.PodTemplateSpec{
 		Container: v1alpha08.ContainerSpec{
 			// this one we can override
 			Image: "quay.io/example/my-workflow:1.0.0",
@@ -134,7 +134,7 @@ func TestMergePodSpec(t *testing.T) {
 
 func TestMergePodSpec_OverrideContainers(t *testing.T) {
 	workflow := test.GetBaseSonataFlow(t.Name())
-	workflow.Spec.PodTemplate = v1alpha08.FlowPodTemplateSpec{
+	workflow.Spec.PodTemplate = v1alpha08.PodTemplateSpec{
 		PodSpec: v1alpha08.PodSpec{
 			// Try to override the workflow container via the podspec
 			Containers: []corev1.Container{

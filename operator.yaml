@@ -862,7 +862,7 @@ spec:
                         type: object
                       podTemplate:
                         description: PodTemplate describes the deployment details
-                          of this SonataFlow instance.
+                          of this platform service instance.
                         properties:
                           activeDeadlineSeconds:
                             description: Optional duration in seconds the pod may
@@ -1839,7 +1839,7 @@ spec:
                             type: boolean
                           container:
                             description: Container is the Kubernetes container where
-                              the service should run. One can change this attribute
+                              the application should run. One can change this attribute
                               in order to override the defaults provided by the operator.
                             properties:
                               args:
@@ -11710,9 +11710,9 @@ spec:
                       service account token should be automatically mounted.
                     type: boolean
                   container:
-                    description: Container is the Kubernetes container where the workflow
-                      application should run. One can change this attribute in order
-                      to override the defaults provided by the operator.
+                    description: Container is the Kubernetes container where the application
+                      should run. One can change this attribute in order to override
+                      the defaults provided by the operator.
                     properties:
                       args:
                         description: 'Arguments to the entrypoint. The container image''s

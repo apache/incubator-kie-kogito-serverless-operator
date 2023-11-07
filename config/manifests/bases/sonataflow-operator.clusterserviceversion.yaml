@@ -103,8 +103,8 @@ spec:
           no build required)
         displayName: DevMode
         path: devMode
-      - description: PodTemplate describes the deployment details of this SonataFlow
-          instance.
+      - description: PodTemplate describes the deployment details of this platform
+          service instance.
         displayName: podTemplate
         path: services.dataIndex.podTemplate
       statusDescriptors:

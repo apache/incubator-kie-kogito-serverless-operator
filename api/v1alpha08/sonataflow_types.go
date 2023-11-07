@@ -539,12 +539,12 @@ func (f *PodSpec) ToPodSpec() corev1.PodSpec {
 	}
 }
 
-// FlowPodTemplateSpec describes the desired custom Kubernetes PodTemplate definition for the deployed flow.
+// PodTemplateSpec describes the desired custom Kubernetes PodTemplate definition for the deployed flow or service.
 //
-// The ContainerSpec describes the container where the actual flow is running. It will override any default definitions.
+// The ContainerSpec describes the container where the actual flow or service is running. It will override any default definitions.
 // For example, to override the image one can use `.spec.podTemplate.container.image = my/image:tag`.
-type FlowPodTemplateSpec struct {
-	// Container is the Kubernetes container where the workflow application should run.
+type PodTemplateSpec struct {
+	// Container is the Kubernetes container where the application should run.
 	// One can change this attribute in order to override the defaults provided by the operator.
 	// +optional
 	Container ContainerSpec `json:"container,omitempty"`
@@ -651,7 +651,7 @@ type SonataFlowSpec struct {
 	Resources WorkflowResources `json:"resources,omitempty"`
 	// PodTemplate describes the deployment details of this SonataFlow instance.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="podTemplate"
-	PodTemplate FlowPodTemplateSpec `json:"podTemplate,omitempty"`
+	PodTemplate PodTemplateSpec `json:"podTemplate,omitempty"`
 }
 
 // SonataFlowStatus defines the observed state of SonataFlow

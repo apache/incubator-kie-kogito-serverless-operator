@@ -30,24 +30,9 @@ type ServiceSpec struct {
 	// Persists service to a datasource of choice. Ephemeral by default.
 	// +optional
 	Persistence *PersistenceOptions `json:"persistence,omitempty"`
-	// PodTemplate describes the deployment details of this SonataFlow instance.
+	// PodTemplate describes the deployment details of this platform service instance.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="podTemplate"
-	PodTemplate ServicesPodTemplateSpec `json:"podTemplate,omitempty"`
-}
-
-// ServicesPodTemplateSpec describes the desired custom Kubernetes PodTemplate definition for the deployed SonataflowPlatform services.
-//
-// The ContainerSpec describes the container where the actual service is running. It will override any default definitions.
-// For example, to override the image one can use `.spec.services.dataIndex.container.image = my/image:tag`.
-type ServicesPodTemplateSpec struct {
-	// Container is the Kubernetes container where the service should run.
-	// One can change this attribute in order to override the defaults provided by the operator.
-	// +optional
-	Container ContainerSpec `json:"container,omitempty"`
-	// +optional
-	PodSpec `json:",inline"`
-	// +optional
-	Replicas *int32 `json:"replicas,omitempty"`
+	PodTemplate PodTemplateSpec `json:"podTemplate,omitempty"`
 }
 
 // PersistenceOptions configure the services to persist to a datasource of choice

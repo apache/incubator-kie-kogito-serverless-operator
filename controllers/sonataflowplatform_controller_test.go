@@ -109,8 +109,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check data index deployment
 		dep := &appsv1.Deployment{}
-		depName := ksp.Name + "-" + common.DataIndexName
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: depName, Namespace: ksp.Namespace}, dep))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetDataIndexName(ksp), Namespace: ksp.Namespace}, dep))
 
 		env := corev1.EnvVar{
 			Name:  "QUARKUS_DATASOURCE_DB_KIND",
@@ -126,7 +125,8 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			ServiceRef: v1alpha08.PostgreSqlServiceOptions{Name: "test"},
 		}}
 		// Ensure correct container overriding anything set in PodSpec
-		ksp.Spec.Services.DataIndex.PodTemplate.PodSpec.Containers = []corev1.Container{{Name: common.DataIndexName}}
+		ksp.Spec.Services.DataIndex.PodTemplate.Container = v1alpha08.ContainerSpec{TerminationMessagePath: "testing"}
+		ksp.Spec.Services.DataIndex.PodTemplate.Containers = []corev1.Container{{Name: common.DataIndexName + "2", TerminationMessagePath: "testing"}}
 		assert.NoError(t, cl.Update(context.TODO(), ksp))
 
 		_, err = r.Reconcile(context.TODO(), req)
@@ -134,11 +134,14 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			t.Fatalf("reconcile: (%v)", err)
 		}
 
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: depName, Namespace: ksp.Namespace}, dep))
-		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
-		assert.Equal(t, common.DataIndexName, dep.Spec.Template.Spec.Containers[0].Name)
-		assert.Equal(t, common.DataIndexImageBase+common.PersistenceTypePostgressql, dep.Spec.Template.Spec.Containers[0].Image)
-		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetDataIndexName(ksp), Namespace: ksp.Namespace}, dep))
+		assert.Len(t, dep.Spec.Template.Spec.Containers, 2)
+		assert.Equal(t, common.DataIndexName+"2", dep.Spec.Template.Spec.Containers[0].Name)
+		assert.Equal(t, "testing", dep.Spec.Template.Spec.Containers[0].TerminationMessagePath)
+		assert.Equal(t, common.DataIndexName, dep.Spec.Template.Spec.Containers[1].Name)
+		assert.Equal(t, "testing", dep.Spec.Template.Spec.Containers[1].TerminationMessagePath)
+		assert.Equal(t, common.DataIndexImageBase+common.PersistenceTypePostgressql, dep.Spec.Template.Spec.Containers[1].Image)
+		assert.Contains(t, dep.Spec.Template.Spec.Containers[1].Env, env)
 	})
 
 	t.Run("verify that a basic reconcile with data index service & jdbcUrl is performed without error", func(t *testing.T) {
@@ -148,7 +151,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		var replicas int32 = 2
 		ksp.Spec.Services = v1alpha08.ServicesPlatformSpec{
 			DataIndex: &v1alpha08.ServiceSpec{
-				PodTemplate: v1alpha08.ServicesPodTemplateSpec{
+				PodTemplate: v1alpha08.PodTemplateSpec{
 					Replicas: &replicas,
 					Container: v1alpha08.ContainerSpec{
 						Command: []string{"test:latest"},
@@ -190,8 +193,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check data index deployment
 		dep := &appsv1.Deployment{}
-		depName := ksp.Name + "-" + common.DataIndexName
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: depName, Namespace: ksp.Namespace}, dep))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetDataIndexName(ksp), Namespace: ksp.Namespace}, dep))
 
 		env := corev1.EnvVar{
 			Name:  "QUARKUS_DATASOURCE_DB_KIND",
@@ -220,7 +222,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
 			Value: url,
 		}
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: depName, Namespace: ksp.Namespace}, dep))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetDataIndexName(ksp), Namespace: ksp.Namespace}, dep))
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
 		assert.Equal(t, common.DataIndexImageBase+common.PersistenceTypePostgressql, dep.Spec.Template.Spec.Containers[0].Image)
 		assert.Equal(t, &replicas, dep.Spec.Replicas)

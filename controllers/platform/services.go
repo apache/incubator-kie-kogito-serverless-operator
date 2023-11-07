@@ -171,7 +171,7 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 						VolumeSource: corev1.VolumeSource{
 							ConfigMap: &corev1.ConfigMapVolumeSource{
 								LocalObjectReference: corev1.LocalObjectReference{
-									Name: getDataIndexName(platform),
+									Name: common.GetDataIndexName(platform),
 								},
 							},
 						},
@@ -188,7 +188,7 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 	dataDeploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: platform.Namespace,
-			Name:      getDataIndexName(platform),
+			Name:      common.GetDataIndexName(platform),
 			Labels:    lbl,
 		}}
 	if err := controllerutil.SetControllerReference(platform, dataDeploy, client.Scheme()); err != nil {
@@ -307,7 +307,7 @@ func createDataIndexService(ctx context.Context, client client.Client, platform 
 	dataSvc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: platform.Namespace,
-			Name:      getDataIndexName(platform),
+			Name:      common.GetDataIndexName(platform),
 			Labels:    lbl,
 		}}
 	if err := controllerutil.SetControllerReference(platform, dataSvc, client.Scheme()); err != nil {
@@ -331,7 +331,7 @@ func createDataIndexService(ctx context.Context, client client.Client, platform 
 func createDataIndexConfigMap(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform) error {
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      getDataIndexName(platform),
+			Name:      common.GetDataIndexName(platform),
 			Namespace: platform.Namespace,
 			Labels: map[string]string{
 				workflowproj.LabelApp: platform.Name,
@@ -356,8 +356,4 @@ func createDataIndexConfigMap(ctx context.Context, client client.Client, platfor
 	}
 
 	return nil
-}
-
-func getDataIndexName(platform *operatorapi.SonataFlowPlatform) string {
-	return platform.Name + "-" + common.DataIndexName
 }
