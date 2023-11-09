@@ -35,7 +35,7 @@ const (
 		"|" + kubernetesStatefulSets +
 		"|" + kubernetesIngresses + ")"
 
-	knativeGroupsPattern = "^(knative:|" + knativeServices + ")"
+	knativeGroupsPattern = "^(" + knativeServices + ")"
 
 	openshiftGroupsPattern = "^(" + openshiftDeploymentConfigs +
 		"|" + openshiftRoutes + ")"
@@ -52,7 +52,7 @@ func ParseUri(uri string) (*ResourceUri, error) {
 		return parseKubernetesUri(uri, kubernetesGroupsExpr.FindString(uri), split[1])
 	} else if split := knativeGroupsExpr.Split(uri, -1); len(split) == 2 {
 		return parseKnativeUri(knativeGroupsExpr.FindString(uri), split[1])
-	} else if split := openshiftGroupsExpr.Split(uri, -1); len(split[1]) == 2 {
+	} else if split := openshiftGroupsExpr.Split(uri, -1); len(split) == 2 {
 		return parseOpenshiftUri(openshiftGroupsExpr.FindString(uri), split[1])
 	}
 	return nil, fmt.Errorf("invalid uri: %s, not correspond to any of the available schemes format: %s, %s, %s", uri, KubernetesScheme, KnativeScheme, OpenshiftScheme)
