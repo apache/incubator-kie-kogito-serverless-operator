@@ -20,11 +20,11 @@ import (
 )
 
 const (
-	httpProtocol  = "http"
-	httpsProtocol = "https"
-	webProtocol   = "web"
-	securePort    = 443
-	appSecurePort = 8443
+	httpProtocolName  = "http"
+	httpsProtocolName = "https"
+	webProtocolName   = "web"
+	securePort        = 443
+	appSecurePort     = 8443
 )
 
 func isSecurePort(port int) bool {
@@ -42,23 +42,23 @@ func findBestSuitedServicePort(service *corev1.Service, customPort string) *core
 		}
 	}
 	// has ssl port?
-	if result, _ := kubernetes.GetServicePortByName(httpsProtocol, service); result != nil {
+	if result, _ := kubernetes.GetServicePortByName(httpsProtocolName, service); result != nil {
 		return result
 	}
 	// has http port?
-	if result, _ := kubernetes.GetServicePortByName(httpProtocol, service); result != nil {
+	if result, _ := kubernetes.GetServicePortByName(httpProtocolName, service); result != nil {
 		return result
 	}
 	// has web port?
-	if result, _ := kubernetes.GetServicePortByName(webProtocol, service); result != nil {
+	if result, _ := kubernetes.GetServicePortByName(webProtocolName, service); result != nil {
 		return result
 	}
 	// by definition a service must always have at least one port, get the first port.
 	return &service.Spec.Ports[0]
 }
 
-func isServicePortSecure(servicePort *corev1.ServicePort) bool {
-	return servicePort.Name == httpsProtocol || isSecurePort(int(servicePort.Port))
+func isSecureServicePort(servicePort *corev1.ServicePort) bool {
+	return servicePort.Name == httpsProtocolName || isSecurePort(int(servicePort.Port))
 }
 
 // findBestSuitedContainerPort returns the best suited PortPort to connect to a pod, or nil if the pod has no ports at all.
@@ -76,21 +76,21 @@ func findBestSuitedContainerPort(container *corev1.Container, customPort string)
 		}
 	}
 	// has ssl port?
-	if result, _ := kubernetes.GetContainerPortByName(httpsProtocol, container); result != nil {
+	if result, _ := kubernetes.GetContainerPortByName(httpsProtocolName, container); result != nil {
 		return result
 	}
 	// has http port?
-	if result, _ := kubernetes.GetContainerPortByName(httpProtocol, container); result != nil {
+	if result, _ := kubernetes.GetContainerPortByName(httpProtocolName, container); result != nil {
 		return result
 	}
 	// has web port?
-	if result, _ := kubernetes.GetContainerPortByName(webProtocol, container); result != nil {
+	if result, _ := kubernetes.GetContainerPortByName(webProtocolName, container); result != nil {
 		return result
 	}
 	// when defined, a ContainerPort must always have containerPort (Required value)
 	return &container.Ports[0]
 }
 
-func isContainerPortSecure(containerPort *corev1.ContainerPort) bool {
-	return containerPort.Name == httpsProtocol || isSecurePort(int(containerPort.ContainerPort))
+func isSecureContainerPort(containerPort *corev1.ContainerPort) bool {
+	return containerPort.Name == httpsProtocolName || isSecurePort(int(containerPort.ContainerPort))
 }

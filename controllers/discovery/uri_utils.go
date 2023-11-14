@@ -32,7 +32,7 @@ func resolveServiceUri(service *corev1.Service, customPort string, outputFormat 
 	case corev1.ServiceTypeExternalName:
 		// ExternalName may not work properly with SSL:
 		// https://kubernetes.io/docs/concepts/services-networking/service/#externalname
-		protocol = httpProtocol
+		protocol = httpProtocolName
 		host = service.Spec.ExternalName
 		port = 80
 	case corev1.ServiceTypeClusterIP:
@@ -40,17 +40,17 @@ func resolveServiceUri(service *corev1.Service, customPort string, outputFormat 
 	case corev1.ServiceTypeNodePort:
 		protocol, host, port = resolveClusterIPOrTypeNodeServiceUriParams(service, customPort)
 	case corev1.ServiceTypeLoadBalancer:
-		err = fmt.Errorf("%s type is not yet supported", service.Spec.Type)
+		err = fmt.Errorf("Service type %s is not yet supported", service.Spec.Type)
 	default:
-		err = fmt.Errorf("%s type is not yet supported", service.Spec.Type)
+		err = fmt.Errorf("Service type %s is not yet supported", service.Spec.Type)
 	}
 	if err != nil {
 		return "", err
 	}
-	if outputFormat == KubernetesDNSAddress {
-		return buildKubernetesServiceDNSUri(protocol, service.Namespace, service.Name, port), nil
-	} else {
+	if service.Spec.Type == corev1.ServiceTypeExternalName || outputFormat == KubernetesIPAddress {
 		return buildURI(protocol, host, port), nil
+	} else {
+		return buildKubernetesServiceDNSUri(protocol, service.Namespace, service.Name, port), nil
 	}
 }
 
@@ -59,10 +59,10 @@ func resolveServiceUri(service *corev1.Service, customPort string, outputFormat 
 // the best suited port is returned. For this last, a secure port has precedence over a no-secure port.
 func resolveClusterIPOrTypeNodeServiceUriParams(service *corev1.Service, customPort string) (protocol string, host string, port int) {
 	servicePort := findBestSuitedServicePort(service, customPort)
-	if isServicePortSecure(servicePort) {
-		protocol = httpsProtocol
+	if isSecureServicePort(servicePort) {
+		protocol = httpsProtocolName
 	} else {
-		protocol = httpProtocol
+		protocol = httpProtocolName
 	}
 	host = service.Spec.ClusterIP
 	port = int(servicePort.Port)
@@ -83,9 +83,9 @@ func resolvePodUri(pod *corev1.Pod, customContainer string, customPort string, o
 		if containerPort := findBestSuitedContainerPort(container, customPort); containerPort == nil {
 			return "", fmt.Errorf("no container port was found for pod: %s in namespace: %s", pod.Name, pod.Namespace)
 		} else {
-			protocol := httpProtocol
-			if isSecure := isContainerPortSecure(containerPort); isSecure {
-				protocol = httpsProtocol
+			protocol := httpProtocolName
+			if isSecure := isSecureContainerPort(containerPort); isSecure {
+				protocol = httpsProtocolName
 			}
 			if outputFormat == KubernetesDNSAddress {
 				return buildKubernetesPodDNSUri(protocol, pod.Namespace, podIp, int(containerPort.ContainerPort)), nil
