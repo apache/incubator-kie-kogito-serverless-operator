@@ -107,7 +107,11 @@ type SonataFlowBuildStatus struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +optional
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="InnerBuild"
-	InnerBuild runtime.RawExtension `json:"innerBuild,omitempty" patchStrategy:"replace"`
+	InnerBuild runtime.RawExtension `json:"innerBuild,omitempty"`
+
+	// remove the patchStrategy:"replace when running openapi-gen from workflowproj-apiserver
+	// see https://github.com/kubernetes/kube-openapi/blob/master/pkg/generators/openapi.go#L49
+	// once they remove this validation we can get back with it
 }
 
 // SetInnerBuild use to define a new object pointer to the inner build.

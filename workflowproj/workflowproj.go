@@ -34,6 +34,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/api"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/metadata"
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 )
@@ -224,7 +225,7 @@ func (w *workflowProjectHandler) parseRawWorkflow() error {
 
 	SetWorkflowProfile(w.project.Workflow, metadata.DevProfile)
 	SetDefaultLabels(w.project.Workflow, w.project.Workflow)
-	if err = SetTypeToObject(w.project.Workflow, w.scheme); err != nil {
+	if err = api.SetTypeToObject(w.project.Workflow, w.scheme); err != nil {
 		return err
 	}
 
@@ -240,7 +241,7 @@ func (w *workflowProjectHandler) parseRawAppProperties() error {
 		return err
 	}
 	w.project.Properties = CreateNewAppPropsConfigMap(w.project.Workflow, string(appPropsContent))
-	if err = SetTypeToObject(w.project.Properties, w.scheme); err != nil {
+	if err = api.SetTypeToObject(w.project.Properties, w.scheme); err != nil {
 		return err
 	}
 	return nil
@@ -280,7 +281,7 @@ func (w *workflowProjectHandler) parseRawResources() error {
 
 func (w *workflowProjectHandler) addResourceConfigMapToProject(cm *corev1.ConfigMap, path string) error {
 	if cm.Data != nil {
-		if err := SetTypeToObject(cm, w.scheme); err != nil {
+		if err := api.SetTypeToObject(cm, w.scheme); err != nil {
 			return err
 		}
 		w.project.Workflow.Spec.Resources.ConfigMaps = append(w.project.Workflow.Spec.Resources.ConfigMaps,

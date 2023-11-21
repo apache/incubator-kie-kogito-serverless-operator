@@ -60,6 +60,32 @@ rules:
 - apiGroups:
   - sonataflow.org
   resources:
+  - sonataflowprojs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - sonataflow.org
+  resources:
+  - sonataflowprojs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - sonataflow.org
+  resources:
+  - sonataflowprojs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - sonataflow.org
+  resources:
   - sonataflows
   verbs:
   - create

@@ -1,0 +1,12 @@
+apiVersion: sonataflow.org/v1alpha08
+kind: SonataFlowProj
+metadata:
+  labels:
+    app.kubernetes.io/name: sonataflowproj
+    app.kubernetes.io/instance: sonataflowproj-sample
+    app.kubernetes.io/part-of: sonataflow-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: sonataflow-operator
+  name: sonataflowproj-sample
+spec:
+  # TODO(user): Add fields here

@@ -28,7 +28,7 @@ import (
 
 	cncfmodel "github.com/serverlessworkflow/sdk-go/v2/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	controllerruntime "sigs.k8s.io/controller-runtime"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/metadata"
@@ -122,7 +122,7 @@ func warnIfSpecVersionNotSupported(workflow *cncfmodel.Workflow, context context
 		return
 	}
 	if metadata.SpecVersion != workflow.SpecVersion {
-		controllerruntime.LoggerFrom(context).Info("SpecVersion not supported", "Workflow SpecVersion", workflow.Version)
+		klog.InfoS("SpecVersion not supported", "Workflow SpecVersion", workflow.Version)
 	}
 }
 

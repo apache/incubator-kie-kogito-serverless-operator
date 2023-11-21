@@ -26,5 +26,6 @@ kubectl create -f ./bundle/manifests/sonataflow.org_sonataflowplatforms.yaml
 kubectl create -f ./bundle/manifests/sonataflow.org_sonataflowbuilds.yaml
 kubectl create -f ./bundle/manifests/sonataflow.org_sonataflows.yaml
 kubectl apply -f ./bundle/manifests/sonataflow-operator-builder-config_v1_configmap.yaml
+kubectl apply -f ./bundle/manifests/sonataflow.org_sonataflowprojs.yaml
 
 make debug
