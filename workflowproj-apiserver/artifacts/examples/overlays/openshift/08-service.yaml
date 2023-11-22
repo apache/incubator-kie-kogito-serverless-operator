@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-kind: ServiceAccount
 apiVersion: v1
+kind: Service
 metadata:
   name: workflowproj-apiserver
   namespace: sonataflow-operator-system
+  annotations:
+    service.beta.openshift.io/serving-cert-secret-name: workflowproj-apiserver-cert

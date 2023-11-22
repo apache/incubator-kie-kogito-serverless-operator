@@ -17,19 +17,9 @@ kind: Deployment
 metadata:
   name: workflowproj-server
   namespace: sonataflow-operator-system
-  labels:
-    apiserver: "true"
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      apiserver: "true"
   template:
-    metadata:
-      labels:
-        apiserver: "true"
     spec:
-      serviceAccountName: workflowproj-apiserver
       volumes:
         - name: tls
           secret:
@@ -38,8 +28,7 @@ spec:
             defaultMode: 420
       containers:
         - name: workflowproj-server
-          image: dev.local/workflowproj-apiserver:latest
-          imagePullPolicy: Always
+          image: workflowproj-apiserver
           args:
             - '--secure-port=8443'
             # We use the certificate provided by the internal OCP CA

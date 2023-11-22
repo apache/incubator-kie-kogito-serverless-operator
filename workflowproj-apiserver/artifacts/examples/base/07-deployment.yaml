@@ -36,7 +36,7 @@ spec:
           # or
           # docker pull registry.k8s.io/e2e-test-images/sample-apiserver:1.17.4
           # docker tag registry.k8s.io/e2e-test-images/sample-apiserver:1.17.4 kube-sample-apiserver:latest
-          image: dev.local/workflowproj-apiserver:latest
+          image: workflowproj-apiserver
           imagePullPolicy: Never
           args:
             - '--secure-port=8443'
