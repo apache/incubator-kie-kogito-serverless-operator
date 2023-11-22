@@ -19,6 +19,9 @@ type ServicesPlatformSpec struct {
 	// Deploys the Data Index service for use by "prod" profile workflows.
 	// +optional
 	DataIndex *ServiceSpec `json:"dataIndex,omitempty"`
+	// Deploys the Job service for use by "prod" profile workflows.
+	// +optional
+	JobService *ServiceSpec `json:"job,omitempty"`
 }
 
 // ServiceSpec defines the desired state of a platform service
