@@ -1,16 +1,21 @@
-// Copyright 2023 Red Hat, Inc. and/or its affiliates
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 package discovery
 
@@ -23,6 +28,9 @@ import (
 )
 
 const (
+	// PortQueryParam well known query param to select a particular target port
+	PortQueryParam = "port"
+
 	// valid namespace, name, or label name.
 	dns1123LabelFmt         string = "[a-z0-9]([-a-z0-9]*[a-z0-9])?"
 	namespaceAndNamePattern        = "^/((" + dns1123LabelFmt + ")+)(/(" + dns1123LabelFmt + ")+)?"
@@ -74,7 +82,10 @@ func parseKubernetesUri(uri string, schemaAndGroup string, after string) (*Resou
 		if queryParams, err = parseQueryParams(uri, split[1]); err != nil {
 			return nil, err
 		}
-
+		var port string
+		if port = queryParams[PortQueryParam]; len(port) > 0 {
+			delete(queryParams, PortQueryParam)
+		}
 		gvk, _ := parseGVK(schemaAndGroup)
 		return &ResourceUri{
 			Scheme:       KubernetesScheme,
@@ -82,6 +93,7 @@ func parseKubernetesUri(uri string, schemaAndGroup string, after string) (*Resou
 			Namespace:    namespace,
 			Name:         name,
 			CustomLabels: queryParams,
+			Port:         port,
 		}, nil
 
 	} else {
