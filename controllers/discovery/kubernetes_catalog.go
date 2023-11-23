@@ -55,9 +55,9 @@ func (c k8sServiceCatalog) Query(ctx context.Context, uri ResourceUri, outputFor
 	case statefulSetKind:
 		return c.resolveStatefulSetQuery(ctx, uri, outputFormat)
 	case ingressKind:
-		return c.resolveIngressQuery(ctx, uri, outputFormat)
+		return c.resolveIngressQuery(ctx, uri)
 	default:
-		return "", fmt.Errorf("resolution of kind: %s is not yet implemented", uri.GVK.Kind)
+		return "", fmt.Errorf("resolution of kind: %s is not implemented", uri.GVK.Kind)
 	}
 }
 
@@ -76,7 +76,7 @@ func (c k8sServiceCatalog) resolvePodQuery(ctx context.Context, uri ResourceUri,
 		return "", err
 	} else {
 		if serviceList != nil && len(serviceList.Items) > 0 {
-			referenceService := selectBestSuitedServiceByCustomLabels(serviceList, uri.CustomLabels)
+			referenceService := selectBestSuitedServiceByCustomLabels(serviceList, uri.GetCustomLabels())
 			return resolveServiceUri(referenceService, uri.GetPort(), outputFormat)
 		} else {
 			return resolvePodUri(pod, "", uri.GetPort(), outputFormat)
@@ -90,29 +90,11 @@ func (c k8sServiceCatalog) resolveDeploymentQuery(ctx context.Context, uri Resou
 	} else {
 		if serviceList, err := findServicesBySelectorTarget(ctx, c.Client, uri.Namespace, deployment.Spec.Selector.MatchLabels); err != nil {
 			return "", err
-		} else if len(serviceList.Items) > 0 {
-			referenceService := selectBestSuitedServiceByCustomLabels(serviceList, uri.CustomLabels)
-			return resolveServiceUri(referenceService, uri.GetPort(), outputFormat)
-		} else if deployment.Spec.Replicas == nil || *deployment.Spec.Replicas == 0 {
-			return "", fmt.Errorf("no replicas where configured for the deployment: %s in namespace: %s", uri.Name, uri.Namespace)
-		} else if *deployment.Spec.Replicas > 1 {
-			return "", fmt.Errorf("too many replicas: %d where configured for the deployment: %s in namespace: %s, an address can not be determined", *deployment.Spec.Replicas, uri.Name, uri.Namespace)
+		} else if len(serviceList.Items) == 0 {
+			return "", fmt.Errorf("no service was found for the deployment: %s in namespace: %s", uri.Name, uri.Namespace)
 		} else {
-			if replicaSet, err := findReplicaSetByOwnerReferenceId(ctx, c.Client, uri.Namespace, string(deployment.ObjectMeta.UID)); err != nil {
-				return "", err
-			} else if replicaSet == nil {
-				return "", fmt.Errorf("no replicaset was found for the deployment: %s in namespace: %s", uri.Name, uri.Namespace)
-			} else {
-				if podList, err := findPodsByOwnerReferenceId(ctx, c.Client, uri.Namespace, string(replicaSet.UID)); err != nil {
-					return "", err
-				} else if len(podList.Items) == 0 {
-					return "", fmt.Errorf("no pods where found the configured replicaset for the deployment: %s in namespace: %s", uri.Name, uri.Namespace)
-				} else if len(podList.Items) > 1 {
-					return "", fmt.Errorf("too many pods: %d where found the configured replicaset for the deployment: %s in namespace: %s, an address can not be deterined", len(podList.Items), uri.Name, uri.Namespace)
-				} else {
-					return resolvePodUri(&podList.Items[0], "", uri.GetPort(), outputFormat)
-				}
-			}
+			referenceService := selectBestSuitedServiceByCustomLabels(serviceList, uri.GetCustomLabels())
+			return resolveServiceUri(referenceService, uri.GetPort(), outputFormat)
 		}
 	}
 }
@@ -123,28 +105,16 @@ func (c k8sServiceCatalog) resolveStatefulSetQuery(ctx context.Context, uri Reso
 	} else {
 		if serviceList, err := findServicesBySelectorTarget(ctx, c.Client, uri.Namespace, statefulSet.Spec.Selector.MatchLabels); err != nil {
 			return "", err
-		} else if len(serviceList.Items) > 0 {
-			referenceService := selectBestSuitedServiceByCustomLabels(serviceList, uri.CustomLabels)
-			return resolveServiceUri(referenceService, uri.GetPort(), outputFormat)
-		} else if statefulSet.Spec.Replicas == nil || *statefulSet.Spec.Replicas == 0 {
-			return "", fmt.Errorf("no replicas where configured for the statefulset: %s in namespace: %s", uri.Name, uri.Namespace)
-		} else if *statefulSet.Spec.Replicas > 1 {
-			return "", fmt.Errorf("too many replicas: %d where configured for the statefulset: %s in namespace: %s, an address can not be determined", *statefulSet.Spec.Replicas, uri.Name, uri.Namespace)
+		} else if len(serviceList.Items) == 0 {
+			return "", fmt.Errorf("no service was found for the statefulset: %s in namespace: %s", uri.Name, uri.Namespace)
 		} else {
-			if podList, err := findPodsByOwnerReferenceId(ctx, c.Client, uri.Namespace, string(statefulSet.UID)); err != nil {
-				return "", err
-			} else if len(podList.Items) == 0 {
-				return "", fmt.Errorf("no pods where found for the statefulset: %s in namespace: %s", uri.Name, uri.Namespace)
-			} else if len(podList.Items) > 1 {
-				return "", fmt.Errorf("too many pods: %d where found for the statefulset: %s in namespace: %s, an address can not be deterined", len(podList.Items), uri.Name, uri.Namespace)
-			} else {
-				return resolvePodUri(&podList.Items[0], "", uri.GetPort(), outputFormat)
-			}
+			referenceService := selectBestSuitedServiceByCustomLabels(serviceList, uri.GetCustomLabels())
+			return resolveServiceUri(referenceService, uri.GetPort(), outputFormat)
 		}
 	}
 }
 
-func (c k8sServiceCatalog) resolveIngressQuery(ctx context.Context, uri ResourceUri, outputFormat string) (string, error) {
+func (c k8sServiceCatalog) resolveIngressQuery(ctx context.Context, uri ResourceUri) (string, error) {
 	if ingress, err := findIngress(ctx, c.Client, uri.Namespace, uri.Name); err != nil {
 		return "", err
 	} else {

@@ -21,13 +21,12 @@ package discovery
 
 import (
 	"context"
+	"fmt"
 	"testing"
-
-	v1 "k8s.io/api/networking/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/networking/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -38,17 +37,19 @@ func Test_NewResourceUriBuilder(t *testing.T) {
 		Version("v1").
 		Namespace(namespace1).
 		Name(service1Name).
-		Port("custom-port").
-		WithLabel(label1, valueLabel1).Build()
+		WithPort("custom-port-value").
+		WithQueryParam(label1, valueLabel1).Build()
 
 	assert.Equal(t, "deployments", resourceUri.GVK.Kind)
 	assert.Equal(t, "apps", resourceUri.GVK.Group)
 	assert.Equal(t, "v1", resourceUri.GVK.Version)
 	assert.Equal(t, namespace1, resourceUri.Namespace)
 	assert.Equal(t, service1Name, resourceUri.Name)
-	assert.Equal(t, 1, len(resourceUri.CustomLabels))
-	assert.Equal(t, "custom-port", resourceUri.Port)
-	assert.Equal(t, valueLabel1, resourceUri.CustomLabels[label1])
+	assert.Equal(t, 2, len(resourceUri.QueryParams))
+	assert.Equal(t, "custom-port-value", resourceUri.GetPort())
+	assert.Equal(t, valueLabel1, resourceUri.QueryParams[label1])
+	assert.Equal(t, 1, len(resourceUri.GetCustomLabels()))
+	assert.Equal(t, valueLabel1, resourceUri.GetCustomLabels()[label1])
 }
 
 func Test_QueryKubernetesServiceDNSMode(t *testing.T) {
@@ -127,62 +128,21 @@ func doTesQueryKubernetesDeploymentWithService(t *testing.T, outputFormat string
 }
 
 func Test_QueryKubernetesDeploymentWithoutServiceDNSMode(t *testing.T) {
-	doTesQueryKubernetesDeploymentWithoutService(t, int32(1), 1, KubernetesDNSAddress, "http://10-1-12-14.namespace1.pod:8080", "")
+	doTestQueryKubernetesDeploymentWithoutService(t, KubernetesDNSAddress)
 }
 
 func Test_QueryKubernetesDeploymentWithoutServiceIPAddressMode(t *testing.T) {
-	doTesQueryKubernetesDeploymentWithoutService(t, int32(1), 1, KubernetesIPAddress, "http://10.1.12.14:8080", "")
+	doTestQueryKubernetesDeploymentWithoutService(t, KubernetesIPAddress)
 }
 
-func Test_QueryKubernetesDeploymentWithoutServiceNoReplicas(t *testing.T) {
-	doTesQueryKubernetesDeploymentWithoutService(t, int32(0), 0, KubernetesDNSAddress, "", "no replicas where configured for the deployment: "+deployment1Name)
-}
-
-func Test_QueryKubernetesDeploymentWithoutServiceTooManyReplicas(t *testing.T) {
-	doTesQueryKubernetesDeploymentWithoutService(t, int32(2), 0, KubernetesDNSAddress, "", "too many replicas: 2 where configured for the deployment: "+deployment1Name)
-}
-
-func Test_QueryKubernetesDeploymentWithoutServiceNoPods(t *testing.T) {
-	doTesQueryKubernetesDeploymentWithoutService(t, int32(1), 0, KubernetesDNSAddress, "", "no pods where found the configured replicaset for the deployment: "+deployment1Name)
-}
-
-func Test_QueryKubernetesDeploymentWithoutServiceTooManyPods(t *testing.T) {
-	doTesQueryKubernetesDeploymentWithoutService(t, int32(1), 2, KubernetesDNSAddress, "", "too many pods: 2 where found the configured replicaset for the deployment: "+deployment1Name)
-}
-
-func doTesQueryKubernetesDeploymentWithoutService(t *testing.T, replicas int32, pods int, outputFormat string, expectedUri string, expectedErrorMessage string) {
+func doTestQueryKubernetesDeploymentWithoutService(t *testing.T, outputFormat string) {
 	selector := map[string]string{
 		label1: valueLabel1,
 		label2: valueLabel2,
 	}
 
 	deployment := mockDeployment(namespace1, deployment1Name, nil, &selector)
-	deployment.Spec.Replicas = &replicas
-	replicaSet := mockReplicaSet(namespace1, replicaSet1Name, string(deployment.UID))
-	var pod1, pod2 *corev1.Pod = nil, nil
-	if pods >= 1 {
-		pod1 = mockPodWithContainers(namespace1, pod1Name,
-			*mockContainerWithPorts(container1Name, mockContainerPort("http", tcp, 8080)))
-		pod1.OwnerReferences = []metav1.OwnerReference{{UID: replicaSet.UID}}
-		pod1.Status.PodIP = "10.1.12.14"
-	}
-
-	if pods >= 2 {
-		pod2 = mockPodWithContainers(namespace1, pod2Name,
-			*mockContainerWithPorts(container1Name, mockContainerPort("http", tcp, 8080)))
-		pod2.OwnerReferences = []metav1.OwnerReference{{UID: replicaSet.UID}}
-		pod2.Status.PodIP = "10.1.12.15"
-	}
-
-	cliBuilder := fake.NewClientBuilder().WithRuntimeObjects(deployment, replicaSet)
-	if pod1 != nil {
-		cliBuilder.WithRuntimeObjects(pod1)
-	}
-	if pod2 != nil {
-		cliBuilder.WithRuntimeObjects(pod2)
-	}
-	cli := cliBuilder.Build()
-	ctg := NewServiceCatalog(cli)
+	ctg := NewServiceCatalog(fake.NewClientBuilder().WithRuntimeObjects(deployment).Build())
 
 	uri := *NewResourceUriBuilder(KubernetesScheme).
 		Group("apps").
@@ -190,22 +150,19 @@ func doTesQueryKubernetesDeploymentWithoutService(t *testing.T, replicas int32, 
 		Kind("deployments").
 		Namespace(namespace1).
 		Name(deployment1Name).Build()
-	if len(expectedErrorMessage) == 0 {
-		doTestQuery(t, ctg, uri, outputFormat, expectedUri)
-	} else {
-		doTestQueryWithError(t, ctg, uri, outputFormat, expectedErrorMessage)
-	}
+
+	doTestQueryWithError(t, ctg, uri, outputFormat, fmt.Sprintf("no service was found for the deployment: %s", uri.Name))
 }
 
 func Test_QueryKubernetesStatefulSetWithServiceDNSMode(t *testing.T) {
-	doTesQueryKubernetesStatefulSetWithService(t, KubernetesDNSAddress, "http://service1Name.namespace1.svc:80")
+	doTestQueryKubernetesStatefulSetWithService(t, KubernetesDNSAddress, "http://service1Name.namespace1.svc:80")
 }
 
 func Test_QueryKubernetesStatefulSetWithServiceIPAddressMode(t *testing.T) {
-	doTesQueryKubernetesStatefulSetWithService(t, KubernetesIPAddress, "http://10.1.18.19:80")
+	doTestQueryKubernetesStatefulSetWithService(t, KubernetesIPAddress, "http://10.1.18.19:80")
 }
 
-func doTesQueryKubernetesStatefulSetWithService(t *testing.T, outputFormat string, expectedUri string) {
+func doTestQueryKubernetesStatefulSetWithService(t *testing.T, outputFormat string, expectedUri string) {
 	selector := map[string]string{
 		label1: valueLabel1,
 		label2: valueLabel2,
@@ -231,61 +188,21 @@ func doTesQueryKubernetesStatefulSetWithService(t *testing.T, outputFormat strin
 }
 
 func Test_QueryKubernetesStatefulSetWithoutServiceDNSMode(t *testing.T) {
-	doTestQueryKubernetesStatefulSetWithoutService(t, int32(1), 1, KubernetesDNSAddress, "http://10-1-20-21.namespace1.pod:8080", "")
+	doTestQueryKubernetesStatefulSetWithoutService(t, KubernetesDNSAddress)
 }
 
 func Test_QueryKubernetesStatefulSetWithoutServiceIPAddressMode(t *testing.T) {
-	doTestQueryKubernetesStatefulSetWithoutService(t, int32(1), 1, KubernetesIPAddress, "http://10.1.20.21:8080", "")
+	doTestQueryKubernetesStatefulSetWithoutService(t, KubernetesIPAddress)
 }
 
-func Test_QueryKubernetesStatefulSetWithoutServiceNoReplicas(t *testing.T) {
-	doTestQueryKubernetesStatefulSetWithoutService(t, int32(0), 0, KubernetesDNSAddress, "", "no replicas where configured for the statefulset: "+statefulSet1Name)
-}
-
-func Test_QueryKubernetesStatefulSetWithoutServiceTooManyReplicas(t *testing.T) {
-	doTestQueryKubernetesStatefulSetWithoutService(t, int32(2), 0, KubernetesDNSAddress, "", "too many replicas: 2 where configured for the statefulset: "+statefulSet1Name)
-}
-
-func Test_QueryKubernetesStatefulSetWithoutServiceNoPods(t *testing.T) {
-	doTestQueryKubernetesStatefulSetWithoutService(t, int32(1), 0, KubernetesDNSAddress, "", "no pods where found for the statefulset: "+statefulSet1Name)
-}
-
-func Test_QueryKubernetesStatefulSetWithoutServiceTooManyPods(t *testing.T) {
-	doTestQueryKubernetesStatefulSetWithoutService(t, int32(1), 2, KubernetesDNSAddress, "", "too many pods: 2 where found for the statefulset: "+statefulSet1Name)
-}
-
-func doTestQueryKubernetesStatefulSetWithoutService(t *testing.T, replicas int32, pods int, outputFormat string, expectedUri string, expectedErrorMessage string) {
+func doTestQueryKubernetesStatefulSetWithoutService(t *testing.T, outputFormat string) {
 	selector := map[string]string{
 		label1: valueLabel1,
 		label2: valueLabel2,
 	}
 
 	statefulSet := mockStatefulSet(namespace1, statefulSet1Name, nil, &selector)
-	statefulSet.Spec.Replicas = &replicas
-	var pod1, pod2 *corev1.Pod = nil, nil
-	if pods >= 1 {
-		pod1 = mockPodWithContainers(namespace1, pod1Name,
-			*mockContainerWithPorts(container1Name, mockContainerPort("http", tcp, 8080)))
-		pod1.OwnerReferences = []metav1.OwnerReference{{UID: statefulSet.UID}}
-		pod1.Status.PodIP = "10.1.20.21"
-	}
-
-	if pods >= 2 {
-		pod2 = mockPodWithContainers(namespace1, pod2Name,
-			*mockContainerWithPorts(container1Name, mockContainerPort("http", tcp, 8080)))
-		pod2.OwnerReferences = []metav1.OwnerReference{{UID: statefulSet.UID}}
-		pod2.Status.PodIP = "10.1.20.22"
-	}
-
-	cliBuilder := fake.NewClientBuilder().WithRuntimeObjects(statefulSet)
-	if pod1 != nil {
-		cliBuilder.WithRuntimeObjects(pod1)
-	}
-	if pod2 != nil {
-		cliBuilder.WithRuntimeObjects(pod2)
-	}
-	cli := cliBuilder.Build()
-	ctg := NewServiceCatalog(cli)
+	ctg := NewServiceCatalog(fake.NewClientBuilder().WithRuntimeObjects(statefulSet).Build())
 
 	uri := *NewResourceUriBuilder(KubernetesScheme).
 		Group("apps").
@@ -293,11 +210,7 @@ func doTestQueryKubernetesStatefulSetWithoutService(t *testing.T, replicas int32
 		Kind("statefulsets").
 		Namespace(namespace1).
 		Name(statefulSet1Name).Build()
-	if len(expectedErrorMessage) == 0 {
-		doTestQuery(t, ctg, uri, outputFormat, expectedUri)
-	} else {
-		doTestQueryWithError(t, ctg, uri, outputFormat, expectedErrorMessage)
-	}
+	doTestQueryWithError(t, ctg, uri, outputFormat, fmt.Sprintf("no service was found for the statefulset: %s", uri.Name))
 }
 
 func Test_QueryKubernetesIngressHostNoTLS(t *testing.T) {

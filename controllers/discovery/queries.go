@@ -108,24 +108,6 @@ func findPod(ctx context.Context, cli client.Client, namespace string, name stri
 	return pod, nil
 }
 
-// findPodsByOwnerReferenceId finds pods by ownerReference.UId in the given namespace.
-func findPodsByOwnerReferenceId(ctx context.Context, cli client.Client, namespace string, ownerReferenceId string) (*corev1.PodList, error) {
-	podList := &corev1.PodList{}
-	items := make([]corev1.Pod, 0)
-	if err := cli.List(ctx, podList, client.InNamespace(namespace)); err != nil {
-		return nil, err
-	} else {
-		for _, pod := range podList.Items {
-			for _, ownerReference := range pod.OwnerReferences {
-				if string(ownerReference.UID) == ownerReferenceId {
-					items = append(items, pod)
-				}
-			}
-		}
-	}
-	return &corev1.PodList{Items: items}, nil
-}
-
 // findPodAndReferenceServices finds a pod by name in the given namespace, at the same time it piggybacks potential
 // reference services if any. The reference services are determined by looking if the corresponding selector labels
 // matches the pod labels.
@@ -169,21 +151,4 @@ func findIngress(ctx context.Context, cli client.Client, namespace string, name 
 		return nil, err
 	}
 	return ingress, nil
-}
-
-// findReplicaSetByOwnerReferenceId finds a replicaset by ownerReference.UID in the given namespace.
-func findReplicaSetByOwnerReferenceId(ctx context.Context, cli client.Client, namespace string, ownerReferenceId string) (*appsv1.ReplicaSet, error) {
-	replicaSetList := &appsv1.ReplicaSetList{}
-	if err := cli.List(ctx, replicaSetList, client.InNamespace(namespace)); err != nil {
-		return nil, err
-	} else {
-		for _, replicaSet := range replicaSetList.Items {
-			for _, ownerReference := range replicaSet.OwnerReferences {
-				if string(ownerReference.UID) == ownerReferenceId {
-					return &replicaSet, nil
-				}
-			}
-		}
-	}
-	return nil, nil
 }

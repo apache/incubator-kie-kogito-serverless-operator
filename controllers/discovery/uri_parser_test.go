@@ -45,7 +45,7 @@ var KubernetesServicesTestValues = map[string]*ResourceUri{
 		Kind("services").
 		Version("v1").
 		Name("my-service").
-		WithLabel("label-a", "value-a").Build(),
+		WithQueryParam("label-a", "value-a").Build(),
 
 	"kubernetes:services.v1/my-service?label-a=value-a&": nil,
 
@@ -57,8 +57,8 @@ var KubernetesServicesTestValues = map[string]*ResourceUri{
 		Kind("services").
 		Version("v1").
 		Name("my-service").
-		WithLabel("label-a", "value-a").
-		WithLabel("label-b", "value-b").Build(),
+		WithQueryParam("label-a", "value-a").
+		WithQueryParam("label-b", "value-b").Build(),
 
 	"kubernetes:services.v1/my-namespace/": nil,
 
@@ -82,7 +82,7 @@ var KubernetesServicesTestValues = map[string]*ResourceUri{
 		Version("v1").
 		Namespace("my-namespace").
 		Name("my-service").
-		WithLabel("label-a", "value-a").Build(),
+		WithQueryParam("label-a", "value-a").Build(),
 
 	"kubernetes:services.v1/my-namespace/my-service?label-a=value-a&": nil,
 
@@ -95,9 +95,9 @@ var KubernetesServicesTestValues = map[string]*ResourceUri{
 		Version("v1").
 		Namespace("my-namespace").
 		Name("my-service").
-		WithLabel("label-a", "value-a").
-		WithLabel("label-b", "value-b").
-		Port("custom-port-value").Build(),
+		WithQueryParam("label-a", "value-a").
+		WithQueryParam("label-b", "value-b").
+		WithPort("custom-port-value").Build(),
 }
 
 func TestParseKubernetesServicesURI(t *testing.T) {
@@ -128,9 +128,9 @@ func assertEquals(t *testing.T, uri *ResourceUri, expectedUri *ResourceUri) {
 	assert.Equal(t, uri.GVK.Group, expectedUri.GVK.Group)
 	assert.Equal(t, uri.GVK.Version, expectedUri.GVK.Version)
 	assert.Equal(t, uri.GVK.Kind, expectedUri.GVK.Kind)
-	assert.Equal(t, len(uri.CustomLabels), len(expectedUri.CustomLabels))
-	for k, v := range uri.CustomLabels {
-		assert.True(t, len(expectedUri.CustomLabels[k]) > 0, "label %s is not present in expectedUri: %s", k, expectedUri.String())
-		assert.Equal(t, v, expectedUri.CustomLabels[k], "value for label %s in expectedUri should be %s, but is %s", k, v, expectedUri.CustomLabels[k])
+	assert.Equal(t, len(uri.QueryParams), len(expectedUri.QueryParams))
+	for k, v := range uri.QueryParams {
+		assert.True(t, len(expectedUri.QueryParams[k]) > 0, "label %s is not present in expectedUri: %s", k, expectedUri.String())
+		assert.Equal(t, v, expectedUri.QueryParams[k], "value for label %s in expectedUri should be %s, but is %s", k, v, expectedUri.QueryParams[k])
 	}
 }

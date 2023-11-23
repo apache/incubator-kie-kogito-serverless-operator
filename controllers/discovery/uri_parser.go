@@ -28,9 +28,6 @@ import (
 )
 
 const (
-	// PortQueryParam well known query param to select a particular target port
-	PortQueryParam = "port"
-
 	// valid namespace, name, or label name.
 	dns1123LabelFmt         string = "[a-z0-9]([-a-z0-9]*[a-z0-9])?"
 	namespaceAndNamePattern        = "^/((" + dns1123LabelFmt + ")+)(/(" + dns1123LabelFmt + ")+)?"
@@ -82,18 +79,13 @@ func parseKubernetesUri(uri string, schemaAndGroup string, after string) (*Resou
 		if queryParams, err = parseQueryParams(uri, split[1]); err != nil {
 			return nil, err
 		}
-		var port string
-		if port = queryParams[PortQueryParam]; len(port) > 0 {
-			delete(queryParams, PortQueryParam)
-		}
 		gvk, _ := parseGVK(schemaAndGroup)
 		return &ResourceUri{
-			Scheme:       KubernetesScheme,
-			GVK:          *gvk,
-			Namespace:    namespace,
-			Name:         name,
-			CustomLabels: queryParams,
-			Port:         port,
+			Scheme:      KubernetesScheme,
+			GVK:         *gvk,
+			Namespace:   namespace,
+			Name:        name,
+			QueryParams: queryParams,
 		}, nil
 
 	} else {

@@ -32,6 +32,10 @@ const (
 	KubernetesScheme = "kubernetes"
 	OpenshiftScheme  = "openshift"
 
+	// PortQueryParam well known query param to select a particular target port, for example when a service is being
+	// discovered and there are many ports to select.
+	PortQueryParam = "port"
+
 	// KubernetesDNSAddress use this output format with kubernetes services and pods to resolve to the corresponding
 	// kubernetes DNS name. see: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
 	KubernetesDNSAddress = "KubernetesDNSAddress"
@@ -55,12 +59,11 @@ const (
 )
 
 type ResourceUri struct {
-	Scheme       string
-	GVK          v1.GroupVersionKind
-	Namespace    string
-	Name         string
-	Port         string
-	CustomLabels map[string]string
+	Scheme      string
+	GVK         v1.GroupVersionKind
+	Namespace   string
+	Name        string
+	QueryParams map[string]string
 }
 
 // ServiceCatalog is the entry point to resolve resource addresses given a ResourceUri.
@@ -108,9 +111,9 @@ type ResourceUriBuilder struct {
 func NewResourceUriBuilder(scheme string) ResourceUriBuilder {
 	return ResourceUriBuilder{
 		uri: &ResourceUri{
-			Scheme:       scheme,
-			GVK:          v1.GroupVersionKind{},
-			CustomLabels: map[string]string{},
+			Scheme:      scheme,
+			GVK:         v1.GroupVersionKind{},
+			QueryParams: map[string]string{},
 		},
 	}
 }
@@ -140,13 +143,13 @@ func (b ResourceUriBuilder) Name(name string) ResourceUriBuilder {
 	return b
 }
 
-func (b ResourceUriBuilder) Port(customPort string) ResourceUriBuilder {
+func (b ResourceUriBuilder) WithPort(customPort string) ResourceUriBuilder {
 	b.uri.SetPort(customPort)
 	return b
 }
 
-func (b ResourceUriBuilder) WithLabel(labelName string, labelValue string) ResourceUriBuilder {
-	b.uri.CustomLabels[labelName] = labelValue
+func (b ResourceUriBuilder) WithQueryParam(param string, value string) ResourceUriBuilder {
+	b.uri.AddQueryParam(param, value)
 	return b
 }
 
@@ -154,27 +157,43 @@ func (b ResourceUriBuilder) Build() *ResourceUri {
 	return b.uri
 }
 
-func (r *ResourceUri) AddLabel(name string, value string) *ResourceUri {
+func (r *ResourceUri) AddQueryParam(name string, value string) {
 	if len(value) > 0 {
-		r.CustomLabels[name] = value
+		r.QueryParams[name] = value
 	}
-	return r
 }
 
-func (r *ResourceUri) GetLabel(name string) string {
+func (r *ResourceUri) GetQueryParam(name string) string {
 	if len(name) > 0 {
-		return r.CustomLabels[name]
+		return r.QueryParams[name]
 	}
 	return ""
 }
 
-func (r *ResourceUri) SetPort(value string) *ResourceUri {
-	r.Port = value
-	return r
+func (r *ResourceUri) SetPort(value string) {
+	r.AddQueryParam(PortQueryParam, value)
 }
 
 func (r *ResourceUri) GetPort() string {
-	return r.Port
+	return r.GetQueryParam(PortQueryParam)
+}
+
+// GetCustomLabels returns all the query parameters that not considered well known query parameters, and thus, has no
+// particular semantic during the discovery. These arbitrary parameters are normally considered as labels, and when
+// present, and the service discovery must give a preference over a set of resources, they can be used to do a filtering.
+// by labels.
+func (r *ResourceUri) GetCustomLabels() map[string]string {
+	customQueryParams := make(map[string]string)
+	for k, v := range r.QueryParams {
+		if !isWellKnownQueryParam(k) && len(v) > 0 {
+			customQueryParams[k] = v
+		}
+	}
+	return customQueryParams
+}
+
+func isWellKnownQueryParam(k string) bool {
+	return k == PortQueryParam
 }
 
 func (r *ResourceUri) String() string {
@@ -188,7 +207,7 @@ func (r *ResourceUri) String() string {
 	uri = appendWithDelimiter(uri, r.Namespace, "/")
 	uri = appendWithDelimiter(uri, r.Name, "/")
 
-	return appendWithDelimiter(uri, buildLabelsString(r.CustomLabels, "&"), "?")
+	return appendWithDelimiter(uri, buildLabelsString(r.QueryParams, "&"), "?")
 }
 
 func appendWithDelimiter(value string, toAppend string, delimiter string) string {

@@ -23,13 +23,10 @@ import (
 	"context"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/types"
-
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingV1 "k8s.io/api/networking/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -245,32 +242,6 @@ func Test_findIngressNotFound(t *testing.T) {
 	cli := fake.NewClientBuilder().Build()
 	_, err := findIngress(context.TODO(), cli, namespace1, ingress1Name)
 	assert.ErrorContains(t, err, "\"ingress1Name\" not found")
-}
-
-func Test_findPodsByOwnerReferenceId(t *testing.T) {
-	pod1 := mockPod1(nil)
-	pod1.OwnerReferences = []metav1.OwnerReference{{UID: types.UID(uidOwner1)}}
-	pod2 := mockPod2(nil)
-	pod2.OwnerReferences = []metav1.OwnerReference{{UID: types.UID(uidOwner2)}}
-	pod3 := mockPod3(nil)
-	pod3.OwnerReferences = []metav1.OwnerReference{{UID: types.UID(uidOwner1)}}
-	cli := fake.NewClientBuilder().WithRuntimeObjects(pod1, pod2, pod3).Build()
-	podList, err := findPodsByOwnerReferenceId(context.TODO(), cli, namespace1, uidOwner1)
-	assert.NoError(t, err)
-	assert.Len(t, podList.Items, 2)
-	assert.Equal(t, pod1, &podList.Items[0])
-	assert.Equal(t, pod3, &podList.Items[1])
-}
-
-func Test_findReplicaSetByOwnerReferenceId(t *testing.T) {
-	replicaSet1 := mockReplicaSet(namespace1, replicaSet1Name, uidOwner1)
-	replicaSet2 := mockReplicaSet(namespace1, replicaSet2Name, uidOwner1)
-	replicaSet3 := mockReplicaSet(namespace1, replicaSet3Name, uidOwner2)
-
-	cli := fake.NewClientBuilder().WithRuntimeObjects(replicaSet1, replicaSet2, replicaSet3).Build()
-	replicaSet, err := findReplicaSetByOwnerReferenceId(context.TODO(), cli, namespace1, uidOwner2)
-	assert.NoError(t, err)
-	assert.Equal(t, replicaSet3, replicaSet)
 }
 
 func mockService1(selectorLabels *map[string]string) *corev1.Service {
