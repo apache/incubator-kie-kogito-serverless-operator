@@ -77,7 +77,7 @@ func (action *serviceAction) Handle(ctx context.Context, platform *operatorapi.S
 
 // Values for job service taken from
 // https://github.com/parodos-dev/orchestrator-helm-chart/blob/52d09eda56fdbed3060782df29847c97f172600f/charts/orchestrator/values.yaml#L68-L72
-func getResourceLimits(stype int) corev1.ResourceRequirements {
+func getResourceLimits(stype common.ServiceType) corev1.ResourceRequirements {
 	switch stype {
 	case common.DataIndexService:
 		return corev1.ResourceRequirements{
@@ -101,7 +101,7 @@ func getResourceLimits(stype int) corev1.ResourceRequirements {
 	return corev1.ResourceRequirements{}
 }
 
-func createServiceComponents(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType int) error {
+func createServiceComponents(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType common.ServiceType) error {
 	if err := createConfigMap(ctx, client, platform, serviceType); err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func createServiceComponents(ctx context.Context, client client.Client, platform
 	return createService(ctx, client, platform, serviceType)
 }
 
-func getReplicaCountForService(serviceSpec operatorapi.ServicesPlatformSpec, serviceType int) int32 {
+func getReplicaCountForService(serviceSpec operatorapi.ServicesPlatformSpec, serviceType common.ServiceType) int32 {
 	var spec *operatorapi.ServiceSpec
 	switch serviceType {
 	case common.DataIndexService:
@@ -125,7 +125,7 @@ func getReplicaCountForService(serviceSpec operatorapi.ServicesPlatformSpec, ser
 	return 1
 
 }
-func createDeployment(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType int) error {
+func createDeployment(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType common.ServiceType) error {
 	readyProbe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -245,7 +245,7 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 	return nil
 }
 
-func mergeContainerSpec(containerSpec *corev1.Container, servicePlatformSpec operatorapi.ServicesPlatformSpec, serviceType int) error {
+func mergeContainerSpec(containerSpec *corev1.Container, servicePlatformSpec operatorapi.ServicesPlatformSpec, serviceType common.ServiceType) error {
 	switch serviceType {
 	case common.DataIndexService:
 		return mergo.Merge(containerSpec, servicePlatformSpec.DataIndex.PodTemplate.Container.ToContainer(), mergo.WithOverride)
@@ -255,7 +255,7 @@ func mergeContainerSpec(containerSpec *corev1.Container, servicePlatformSpec ope
 	return fmt.Errorf("unknown service type %d", serviceType)
 }
 
-func mergePodSpec(podSpec *corev1.PodSpec, servicePlatformSpec operatorapi.ServicesPlatformSpec, serviceType int) error {
+func mergePodSpec(podSpec *corev1.PodSpec, servicePlatformSpec operatorapi.ServicesPlatformSpec, serviceType common.ServiceType) error {
 	switch serviceType {
 	case common.DataIndexService:
 		return mergo.Merge(podSpec, servicePlatformSpec.DataIndex.PodTemplate.PodSpec.ToPodSpec(), mergo.WithOverride)
@@ -265,7 +265,7 @@ func mergePodSpec(podSpec *corev1.PodSpec, servicePlatformSpec operatorapi.Servi
 	return fmt.Errorf("unknown service type %d", serviceType)
 }
 
-func configurePersistence(serviceContainer *corev1.Container, platformNamespacedName types.NamespacedName, serviceSpec operatorapi.ServicesPlatformSpec, serviceType int) {
+func configurePersistence(serviceContainer *corev1.Container, platformNamespacedName types.NamespacedName, serviceSpec operatorapi.ServicesPlatformSpec, serviceType common.ServiceType) {
 	switch serviceType {
 	case common.DataIndexService:
 		if serviceSpec.DataIndex.Persistence != nil && serviceSpec.DataIndex.Persistence.PostgreSql != nil {
@@ -352,7 +352,7 @@ func configurePostgreSqlEnv(postgresql *operatorapi.PersistencePostgreSql, datab
 	}
 }
 
-func createService(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType int) error {
+func createService(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType common.ServiceType) error {
 	lbl := map[string]string{
 		workflowproj.LabelApp: platform.Name,
 	}
@@ -391,7 +391,7 @@ func createService(ctx context.Context, client client.Client, platform *operator
 	return nil
 }
 
-func createConfigMap(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType int) error {
+func createConfigMap(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType common.ServiceType) error {
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      common.GetServiceCmName(platform, serviceType),

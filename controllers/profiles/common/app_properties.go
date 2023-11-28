@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/discovery"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/version"
 
 	"github.com/magiconair/properties"
 
@@ -49,7 +50,6 @@ const (
 	DataIndexServiceName                     = "data-index-service"
 	DataIndexName                            = "data-index"
 	JobServiceName                           = "jobs-service"
-	ImageTag                                 = "1.44"
 	PersistenceTypeEphemeral                 = "ephemeral"
 	PersistenceTypePostgressql               = "postgresql"
 	microprofileServiceCatalogPropertyPrefix = "org.kie.kogito.addons.discovery."
@@ -69,13 +69,15 @@ var (
 	_                         AppPropertyHandler = &appPropertyHandler{}
 )
 
+type ServiceType int
+
 const (
-	DataIndexService = iota
+	DataIndexService ServiceType = iota
 	JobService
 )
 
 // GetContainerName returns the name of the service's container in the deployment.
-func GetContainerName(stype int) string {
+func GetContainerName(stype ServiceType) string {
 	switch stype {
 	case DataIndexService:
 		return DataIndexServiceName
@@ -87,14 +89,18 @@ func GetContainerName(stype int) string {
 
 // GetServiceImageName returns the image name of the service's container. It takes in the service and persistence types and returns a string
 // that contains the FQDN of the image, including the tag.
-func GetServiceImageName(persistenceName string, stype int) string {
+func GetServiceImageName(persistenceName string, stype ServiceType) string {
+	var tag = version.GetMajorMinor()
+	if version.IsSnapshot() {
+		tag = "latest"
+	}
 	switch stype {
 	case DataIndexService:
 		// returns "quay.io/kiegroup/kogito-data-index-<persistence_layer>:<tag>"
-		return fmt.Sprintf("%s-%s-%s:%s", imageNamePrefix, DataIndexName, persistenceName, ImageTag)
+		return fmt.Sprintf("%s-%s-%s:%s", imageNamePrefix, DataIndexName, persistenceName, tag)
 	case JobService:
 		// returns "quay.io/kiegroup/kogito-jobs-service-<persistece_layer>:<tag>"
-		return fmt.Sprintf("%s-%s-%s:%s", imageNamePrefix, JobServiceName, persistenceName, ImageTag)
+		return fmt.Sprintf("%s-%s-%s:%s", imageNamePrefix, JobServiceName, persistenceName, tag)
 	}
 	return ""
 }
@@ -244,7 +250,7 @@ func ImmutableApplicationProperties(workflow *operatorapi.SonataFlow, platform *
 	return NewAppPropertyHandler(workflow, platform).Build()
 }
 
-func GetServiceName(platformName string, serviceType int) string {
+func GetServiceName(platformName string, serviceType ServiceType) string {
 	switch serviceType {
 	case DataIndexService:
 		return fmt.Sprintf("%s-%s", platformName, DataIndexServiceName)
@@ -254,7 +260,7 @@ func GetServiceName(platformName string, serviceType int) string {
 	return ""
 }
 
-func GetServiceCmName(platform *operatorapi.SonataFlowPlatform, serviceType int) string {
+func GetServiceCmName(platform *operatorapi.SonataFlowPlatform, serviceType ServiceType) string {
 	return fmt.Sprintf("%s-props", GetServiceName(platform.Name, serviceType))
 }
 
