@@ -45,27 +45,59 @@ const (
 	kafkaSmallRyeHealthProperty      = "quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled"
 	dataIndexServiceUrlProtocol      = "http"
 
-	DataIndexImageBase = "quay.io/kiegroup/kogito-data-index-"
-	DataIndexName      = "data-index-service"
-
-	PersistenceTypeEphemeral   = "ephemeral"
-	PersistenceTypePostgressql = "postgresql"
-
+	imageNamePrefix                          = "quay.io/kiegroup/kogito"
+	DataIndexServiceName                     = "data-index-service"
+	DataIndexName                            = "data-index"
+	JobServiceName                           = "jobs-service"
+	ImageTag                                 = "1.44"
+	PersistenceTypeEphemeral                 = "ephemeral"
+	PersistenceTypePostgressql               = "postgresql"
 	microprofileServiceCatalogPropertyPrefix = "org.kie.kogito.addons.discovery."
 	discoveryLikePropertyPattern             = "^\\${(kubernetes|knative|openshift):(.*)}$"
 )
 
-var immutableApplicationProperties = "quarkus.http.port=" + DefaultHTTPWorkflowPortIntStr.String() + "\n" +
-	"quarkus.http.host=0.0.0.0\n" +
-	// We disable the Knative health checks to not block the dev pod to run if Knative objects are not available
-	// See: https://kiegroup.github.io/kogito-docs/serverlessworkflow/latest/eventing/consume-produce-events-with-knative-eventing.html#ref-knative-eventing-add-on-source-configuration
-	"org.kie.kogito.addons.knative.eventing.health-enabled=false\n" +
-	"quarkus.devservices.enabled=false\n" +
-	"quarkus.kogito.devservices.enabled=false\n"
+var (
+	immutableApplicationProperties = "quarkus.http.port=" + DefaultHTTPWorkflowPortIntStr.String() + "\n" +
+		"quarkus.http.host=0.0.0.0\n" +
+		// We disable the Knative health checks to not block the dev pod to run if Knative objects are not available
+		// See: https://kiegroup.github.io/kogito-docs/serverlessworkflow/latest/eventing/consume-produce-events-with-knative-eventing.html#ref-knative-eventing-add-on-source-configuration
+		"org.kie.kogito.addons.knative.eventing.health-enabled=false\n" +
+		"quarkus.devservices.enabled=false\n" +
+		"quarkus.kogito.devservices.enabled=false\n"
 
-var discoveryLikePropertyExpr = regexp.MustCompile(discoveryLikePropertyPattern)
+	discoveryLikePropertyExpr                    = regexp.MustCompile(discoveryLikePropertyPattern)
+	_                         AppPropertyHandler = &appPropertyHandler{}
+)
 
-var _ AppPropertyHandler = &appPropertyHandler{}
+const (
+	DataIndexService = iota
+	JobService
+)
+
+// GetContainerName returns the name of the service's container in the deployment.
+func GetContainerName(stype int) string {
+	switch stype {
+	case DataIndexService:
+		return DataIndexServiceName
+	case JobService:
+		return JobServiceName
+	}
+	return ""
+}
+
+// GetServiceImageName returns the image name of the service's container. It takes in the service and persistence types and returns a string
+// that contains the FQDN of the image, including the tag.
+func GetServiceImageName(persistenceName string, stype int) string {
+	switch stype {
+	case DataIndexService:
+		// returns "quay.io/kiegroup/kogito-data-index-<persistence_layer>:<tag>"
+		return fmt.Sprintf("%s-%s-%s:%s", imageNamePrefix, DataIndexName, persistenceName, ImageTag)
+	case JobService:
+		// returns "quay.io/kiegroup/kogito-jobs-service-<persistece_layer>:<tag>"
+		return fmt.Sprintf("%s-%s-%s:%s", imageNamePrefix, JobServiceName, persistenceName, ImageTag)
+	}
+	return ""
+}
 
 type AppPropertyHandler interface {
 	WithUserProperties(userProperties string) AppPropertyHandler
@@ -156,7 +188,7 @@ func (a *appPropertyHandler) withDataIndexServiceUrl() AppPropertyHandler {
 	if profiles.IsProdProfile(a.workflow) && dataIndexEnabled(a.platform) {
 		a.addDefaultMutableProperty(
 			dataIndexServiceUrlProperty,
-			fmt.Sprintf("%s://%s.%s/processes", dataIndexServiceUrlProtocol, GetDataIndexName(a.platform), a.platform.Namespace),
+			fmt.Sprintf("%s://%s.%s/processes", dataIndexServiceUrlProtocol, GetServiceName(a.platform.Name, DataIndexService), a.platform.Namespace),
 		)
 	}
 
@@ -212,12 +244,18 @@ func ImmutableApplicationProperties(workflow *operatorapi.SonataFlow, platform *
 	return NewAppPropertyHandler(workflow, platform).Build()
 }
 
-func GetDataIndexName(platform *operatorapi.SonataFlowPlatform) string {
-	return platform.Name + "-" + DataIndexName
+func GetServiceName(platformName string, serviceType int) string {
+	switch serviceType {
+	case DataIndexService:
+		return fmt.Sprintf("%s-%s", platformName, DataIndexServiceName)
+	case JobService:
+		return fmt.Sprintf("%s-%s", platformName, JobServiceName)
+	}
+	return ""
 }
 
-func GetDataIndexCmName(platform *operatorapi.SonataFlowPlatform) string {
-	return GetDataIndexName(platform) + "-props"
+func GetServiceCmName(platform *operatorapi.SonataFlowPlatform, serviceType int) string {
+	return fmt.Sprintf("%s-props", GetServiceName(platform.Name, serviceType))
 }
 
 func (a *appPropertyHandler) requireServiceDiscovery() bool {

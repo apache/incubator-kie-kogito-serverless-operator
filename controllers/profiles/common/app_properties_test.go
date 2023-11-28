@@ -128,7 +128,7 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	generatedProps, propsErr = properties.LoadString(props)
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 9, len(generatedProps.Keys()))
-	assert.Equal(t, "http://"+platform.Name+"-"+DataIndexName+"."+platform.Namespace+"/processes", generatedProps.GetString(dataIndexServiceUrlProperty, ""))
+	assert.Equal(t, "http://"+platform.Name+"-"+DataIndexServiceName+"."+platform.Namespace+"/processes", generatedProps.GetString(dataIndexServiceUrlProperty, ""))
 
 	// disabling data index bypasses config of outgoing events url
 	platform.Spec.Services.DataIndex.Enabled = nil

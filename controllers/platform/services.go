@@ -16,12 +16,14 @@ package platform
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -58,30 +60,72 @@ func (action *serviceAction) Handle(ctx context.Context, platform *operatorapi.S
 		return nil, err
 	}
 
-	if err := createDataIndexComponents(ctx, action.client, platform); err != nil {
-		return nil, err
+	if platform.Spec.Services.DataIndex != nil {
+		if err := createServiceComponents(ctx, action.client, platform, common.DataIndexService); err != nil {
+			return nil, err
+		}
+	}
+
+	if platform.Spec.Services.JobService != nil {
+		if err := createServiceComponents(ctx, action.client, platform, common.JobService); err != nil {
+			return nil, err
+		}
 	}
 
 	return platform, nil
 }
 
-func createDataIndexComponents(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform) error {
-	if platform.Spec.Services.DataIndex != nil {
-		if err := createDataIndexConfigMap(ctx, client, platform); err != nil {
-			return err
+// Values for job service taken from
+// https://github.com/parodos-dev/orchestrator-helm-chart/blob/52d09eda56fdbed3060782df29847c97f172600f/charts/orchestrator/values.yaml#L68-L72
+func getResourceLimits(stype int) corev1.ResourceRequirements {
+	switch stype {
+	case common.DataIndexService:
+		return corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("100m"),
+				corev1.ResourceMemory: resource.MustParse("256Mi"),
+			},
 		}
-		if err := createDataIndexDeployment(ctx, client, platform); err != nil {
-			return err
-		}
-		if err := createDataIndexService(ctx, client, platform); err != nil {
-			return err
+	case common.JobService:
+		return corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("250m"),
+				corev1.ResourceMemory: resource.MustParse("64Mi"),
+			},
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("500m"),
+				corev1.ResourceMemory: resource.MustParse("1Gi"),
+			},
 		}
 	}
-
-	return nil
+	return corev1.ResourceRequirements{}
 }
 
-func createDataIndexDeployment(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform) error {
+func createServiceComponents(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType int) error {
+	if err := createConfigMap(ctx, client, platform, serviceType); err != nil {
+		return err
+	}
+	if err := createDeployment(ctx, client, platform, serviceType); err != nil {
+		return err
+	}
+	return createService(ctx, client, platform, serviceType)
+}
+
+func getReplicaCountForService(serviceSpec operatorapi.ServicesPlatformSpec, serviceType int) int32 {
+	var spec *operatorapi.ServiceSpec
+	switch serviceType {
+	case common.DataIndexService:
+		spec = serviceSpec.DataIndex
+	case common.JobService:
+		spec = serviceSpec.JobService
+	}
+	if spec.PodTemplate.Replicas != nil {
+		return *spec.PodTemplate.Replicas
+	}
+	return 1
+
+}
+func createDeployment(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType int) error {
 	readyProbe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -99,7 +143,7 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 	liveProbe := readyProbe.DeepCopy()
 	liveProbe.ProbeHandler.HTTPGet.Path = common.QuarkusHealthPathLive
 	dataDeployContainer := &corev1.Container{
-		Image: common.DataIndexImageBase + common.PersistenceTypeEphemeral,
+		Image: common.GetServiceImageName(common.PersistenceTypeEphemeral, serviceType),
 		Env: []corev1.EnvVar{
 			{
 				Name:  "KOGITO_DATA_INDEX_QUARKUS_PROFILE",
@@ -114,12 +158,7 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 				Value: "/.*/",
 			},
 		},
-		Resources: corev1.ResourceRequirements{
-			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("100m"),
-				corev1.ResourceMemory: resource.MustParse("256Mi"),
-			},
-		},
+		Resources:      getResourceLimits(serviceType),
 		ReadinessProbe: readyProbe,
 		LivenessProbe:  liveProbe,
 		Ports: []corev1.ContainerPort{
@@ -137,17 +176,16 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 			},
 		},
 	}
-	configurePersistence(dataDeployContainer, platform)
-	if err := mergo.Merge(dataDeployContainer, platform.Spec.Services.DataIndex.PodTemplate.Container.ToContainer(), mergo.WithOverride); err != nil {
+	configurePersistence(dataDeployContainer, types.NamespacedName{Namespace: platform.Namespace, Name: platform.Name}, platform.Spec.Services, serviceType)
+	err := mergeContainerSpec(dataDeployContainer, platform.Spec.Services, serviceType)
+	if err != nil {
 		return err
 	}
-	// immutable
-	dataDeployContainer.Name = common.DataIndexName
 
-	var replicas int32 = 1
-	if platform.Spec.Services.DataIndex.PodTemplate.Replicas != nil {
-		replicas = *platform.Spec.Services.DataIndex.PodTemplate.Replicas
-	}
+	// immutable
+	dataDeployContainer.Name = common.GetContainerName(serviceType)
+
+	replicas := getReplicaCountForService(platform.Spec.Services, serviceType)
 	lbl := map[string]string{
 		workflowproj.LabelApp: platform.Name,
 	}
@@ -167,7 +205,7 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 						VolumeSource: corev1.VolumeSource{
 							ConfigMap: &corev1.ConfigMapVolumeSource{
 								LocalObjectReference: corev1.LocalObjectReference{
-									Name: common.GetDataIndexCmName(platform),
+									Name: common.GetServiceCmName(platform, serviceType),
 								},
 							},
 						},
@@ -176,15 +214,17 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 			},
 		},
 	}
-	if err := mergo.Merge(&dataDeploySpec.Template.Spec, platform.Spec.Services.DataIndex.PodTemplate.PodSpec.ToPodSpec(), mergo.WithOverride); err != nil {
+
+	err = mergePodSpec(&dataDeploySpec.Template.Spec, platform.Spec.Services, serviceType)
+	if err != nil {
 		return err
 	}
-	kubeutil.AddOrReplaceContainer(common.DataIndexName, *dataDeployContainer, &dataDeploySpec.Template.Spec)
+	kubeutil.AddOrReplaceContainer(dataDeployContainer.Name, *dataDeployContainer, &dataDeploySpec.Template.Spec)
 
 	dataDeploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: platform.Namespace,
-			Name:      common.GetDataIndexName(platform),
+			Name:      common.GetServiceName(platform.Name, serviceType),
 			Labels:    lbl,
 		}}
 	if err := controllerutil.SetControllerReference(platform, dataDeploy, client.Scheme()); err != nil {
@@ -205,14 +245,41 @@ func createDataIndexDeployment(ctx context.Context, client client.Client, platfo
 	return nil
 }
 
-func configurePersistence(serviceContainer *corev1.Container, platform *operatorapi.SonataFlowPlatform) {
-	if platform.Spec.Services.DataIndex.Persistence != nil {
-		if platform.Spec.Services.DataIndex.Persistence.PostgreSql != nil {
-			serviceContainer.Image = common.DataIndexImageBase + common.PersistenceTypePostgressql
+func mergeContainerSpec(containerSpec *corev1.Container, servicePlatformSpec operatorapi.ServicesPlatformSpec, serviceType int) error {
+	switch serviceType {
+	case common.DataIndexService:
+		return mergo.Merge(containerSpec, servicePlatformSpec.DataIndex.PodTemplate.Container.ToContainer(), mergo.WithOverride)
+	case common.JobService:
+		return mergo.Merge(containerSpec, servicePlatformSpec.JobService.PodTemplate.Container.ToContainer(), mergo.WithOverride)
+	}
+	return fmt.Errorf("unknown service type %d", serviceType)
+}
+
+func mergePodSpec(podSpec *corev1.PodSpec, servicePlatformSpec operatorapi.ServicesPlatformSpec, serviceType int) error {
+	switch serviceType {
+	case common.DataIndexService:
+		return mergo.Merge(podSpec, servicePlatformSpec.DataIndex.PodTemplate.PodSpec.ToPodSpec(), mergo.WithOverride)
+	case common.JobService:
+		return mergo.Merge(podSpec, servicePlatformSpec.JobService.PodTemplate.PodSpec.ToPodSpec(), mergo.WithOverride)
+	}
+	return fmt.Errorf("unknown service type %d", serviceType)
+}
+
+func configurePersistence(serviceContainer *corev1.Container, platformNamespacedName types.NamespacedName, serviceSpec operatorapi.ServicesPlatformSpec, serviceType int) {
+	switch serviceType {
+	case common.DataIndexService:
+		if serviceSpec.DataIndex.Persistence != nil && serviceSpec.DataIndex.Persistence.PostgreSql != nil {
+			serviceContainer.Image = common.GetServiceImageName(common.PersistenceTypePostgressql, serviceType)
 			serviceContainer.Env = append(
 				serviceContainer.Env,
-				configurePostgreSqlEnv(platform.Spec.Services.DataIndex.Persistence.PostgreSql, "data-index-service", platform.Namespace)...,
-			)
+				configurePostgreSqlEnv(serviceSpec.DataIndex.Persistence.PostgreSql, common.GetServiceName(platformNamespacedName.Name, serviceType), platformNamespacedName.Namespace)...)
+		}
+	case common.JobService:
+		if serviceSpec.JobService.Persistence != nil && serviceSpec.JobService.Persistence.PostgreSql != nil {
+			serviceContainer.Image = common.GetServiceImageName(common.PersistenceTypePostgressql, serviceType)
+			serviceContainer.Env = append(
+				serviceContainer.Env,
+				configurePostgreSqlEnv(serviceSpec.JobService.Persistence.PostgreSql, common.GetServiceName(platformNamespacedName.Name, serviceType), platformNamespacedName.Namespace)...)
 		}
 	}
 }
@@ -285,7 +352,7 @@ func configurePostgreSqlEnv(postgresql *operatorapi.PersistencePostgreSql, datab
 	}
 }
 
-func createDataIndexService(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform) error {
+func createService(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType int) error {
 	lbl := map[string]string{
 		workflowproj.LabelApp: platform.Name,
 	}
@@ -303,7 +370,7 @@ func createDataIndexService(ctx context.Context, client client.Client, platform 
 	dataSvc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: platform.Namespace,
-			Name:      common.GetDataIndexName(platform),
+			Name:      common.GetServiceName(platform.Name, serviceType),
 			Labels:    lbl,
 		}}
 	if err := controllerutil.SetControllerReference(platform, dataSvc, client.Scheme()); err != nil {
@@ -324,10 +391,10 @@ func createDataIndexService(ctx context.Context, client client.Client, platform 
 	return nil
 }
 
-func createDataIndexConfigMap(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform) error {
+func createConfigMap(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType int) error {
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      common.GetDataIndexCmName(platform),
+			Name:      common.GetServiceCmName(platform, serviceType),
 			Namespace: platform.Namespace,
 			Labels: map[string]string{
 				workflowproj.LabelApp: platform.Name,
