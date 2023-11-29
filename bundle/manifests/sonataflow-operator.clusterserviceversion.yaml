@@ -213,7 +213,7 @@ spec:
       - description: PodTemplate describes the deployment details of this platform
           service instance.
         displayName: podTemplate
-        path: services.job.podTemplate
+        path: services.jobService.podTemplate
       statusDescriptors:
       - description: Cluster what kind of cluster you're running (ie, plain Kubernetes
           or OpenShift)

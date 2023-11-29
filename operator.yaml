@@ -8662,7 +8662,7 @@ spec:
                             type: array
                         type: object
                     type: object
-                  job:
+                  jobService:
                     description: Deploys the Job service for use by "prod" profile
                       workflows.
                     properties:
