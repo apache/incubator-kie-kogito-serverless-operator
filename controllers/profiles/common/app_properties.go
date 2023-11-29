@@ -45,6 +45,8 @@ const (
 	dataIndexServiceUrlProperty      = "mp.messaging.outgoing.kogito-processinstances-events.url"
 	kafkaSmallRyeHealthProperty      = "quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled"
 	dataIndexServiceUrlProtocol      = "http"
+	jobServiceURLProperty            = "mp.messaging.outgoing.kogito-job-service-job-request-events.url"
+	jobServiceURLProtocol            = "http"
 
 	imageNamePrefix                          = "quay.io/kiegroup/kogito"
 	DataIndexServiceName                     = "data-index-service"
@@ -201,6 +203,15 @@ func (a *appPropertyHandler) withDataIndexServiceUrl() AppPropertyHandler {
 	return a
 }
 
+// withJobServiceURL adds the property 'mp.messaging.outgoing.kogito-job-service-job-request-events.url' to the application property
+func (a *appPropertyHandler) withJobServiceURL() AppPropertyHandler {
+	if profiles.IsProdProfile(a.workflow) && jobServiceEnabled(a.platform) {
+		a.addDefaultMutableProperty(
+			jobServiceURLProperty, fmt.Sprintf("%s://%s.%s/v2/jobs/events", jobServiceURLProtocol, GetServiceName(a.platform.Name, JobService), a.platform.Namespace))
+	}
+	return a
+}
+
 // withKafkaHealthCheckDisabled adds the property kafkaSmallRyeHealthProperty to the application properties.
 // See Service Discovery https://kubernetes.io/docs/concepts/services-networking/service/#dns
 func (a *appPropertyHandler) withKafkaHealthCheckDisabled() AppPropertyHandler {
@@ -221,6 +232,10 @@ func dataIndexEnabled(platform *operatorapi.SonataFlowPlatform) bool {
 		platform.Spec.Services.DataIndex.Enabled != nil && *platform.Spec.Services.DataIndex.Enabled
 }
 
+func jobServiceEnabled(platform *operatorapi.SonataFlowPlatform) bool {
+	return platform != nil && platform.Spec.Services.JobService != nil && platform.Spec.Services.JobService.Enabled != nil && *platform.Spec.Services.JobService.Enabled
+}
+
 // NewAppPropertyHandler creates the default workflow configurations property handler
 // The set of properties is initialized with the operator provided immutable properties.
 // The set of defaultMutableProperties is initialized with the operator provided properties that the user might override.
@@ -230,6 +245,7 @@ func NewAppPropertyHandler(workflow *operatorapi.SonataFlow, platform *operatora
 		platform: platform,
 	}
 	handler.withDataIndexServiceUrl()
+	handler.withJobServiceURL()
 	return handler.withKogitoServiceUrl()
 }
 

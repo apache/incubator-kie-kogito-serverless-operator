@@ -34,7 +34,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/metadata"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/test"
 )
 
@@ -98,9 +97,12 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	enabled := true
 	platform := test.GetBasePlatform()
 	platform.Namespace = ns
-	platform.Spec = v1alpha08.SonataFlowPlatformSpec{
-		Services: v1alpha08.ServicesPlatformSpec{
-			DataIndex: &v1alpha08.ServiceSpec{
+	platform.Spec = operatorapi.SonataFlowPlatformSpec{
+		Services: operatorapi.ServicesPlatformSpec{
+			DataIndex: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+			},
+			JobService: &operatorapi.ServiceSpec{
 				Enabled: &enabled,
 			},
 		},
@@ -121,22 +123,34 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.Equal(t, "false", generatedProps.GetString("quarkus.devservices.enabled", ""))
 	assert.Equal(t, "false", generatedProps.GetString("quarkus.kogito.devservices.enabled", ""))
 	assert.Equal(t, "", generatedProps.GetString(dataIndexServiceUrlProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(jobServiceURLProperty, ""))
 
 	// prod profile enables config of outgoing events url
 	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.ProdProfile)})
 	props = NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
 	generatedProps, propsErr = properties.LoadString(props)
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 9, len(generatedProps.Keys()))
+	assert.Equal(t, 10, len(generatedProps.Keys()))
 	assert.Equal(t, "http://"+platform.Name+"-"+DataIndexServiceName+"."+platform.Namespace+"/processes", generatedProps.GetString(dataIndexServiceUrlProperty, ""))
+	assert.Equal(t, "http://"+platform.Name+"-"+JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(jobServiceURLProperty, ""))
 
 	// disabling data index bypasses config of outgoing events url
 	platform.Spec.Services.DataIndex.Enabled = nil
 	props = NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
 	generatedProps, propsErr = properties.LoadString(props)
 	assert.NoError(t, propsErr)
+	assert.Equal(t, 9, len(generatedProps.Keys()))
+	assert.Equal(t, "", generatedProps.GetString(dataIndexServiceUrlProperty, ""))
+	assert.Equal(t, "http://"+platform.Name+"-"+JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(jobServiceURLProperty, ""))
+
+	// disabling job service bypasses config of outgoing events url
+	platform.Spec.Services.JobService.Enabled = nil
+	props = NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
+	generatedProps, propsErr = properties.LoadString(props)
+	assert.NoError(t, propsErr)
 	assert.Equal(t, 8, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(dataIndexServiceUrlProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(jobServiceURLProperty, ""))
 
 	// check that service app properties are being properly set
 	props = NewServiceAppPropertyHandler(platform).WithUserProperties(userProperties).Build()
