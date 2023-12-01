@@ -130,18 +130,26 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	props = NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
 	generatedProps, propsErr = properties.LoadString(props)
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 10, len(generatedProps.Keys()))
+	assert.Equal(t, 14, len(generatedProps.Keys()))
 	assert.Equal(t, "http://"+platform.Name+"-"+DataIndexServiceName+"."+platform.Namespace+"/processes", generatedProps.GetString(dataIndexServiceUrlProperty, ""))
 	assert.Equal(t, "http://"+platform.Name+"-"+JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(jobServiceURLProperty, ""))
+	assert.Equal(t, "false", generatedProps.GetString(jobServiceKafkaSinkInjectionHealthCheck, ""))
+	assert.Equal(t, fmt.Sprintf("%s://localhost:5432/%s?search_path=%s", PersistenceTypePostgressql, GetServiceName(platform.Name, JobService), defaultDatabaseName), generatedProps.GetString(jobServiceDataSourceReactiveURLProperty, ""))
+	assert.Equal(t, "true", generatedProps.GetString(jobServiceStatusChangeEventsProperty, ""))
+	assert.Equal(t, fmt.Sprintf("%s://%s.%s/jobs", dataIndexServiceUrlProtocol, GetServiceName(platform.Name, DataIndexService), platform.Namespace), generatedProps.GetString(jobServiceStatusChangeEventsURL, ""))
 
 	// disabling data index bypasses config of outgoing events url
 	platform.Spec.Services.DataIndex.Enabled = nil
 	props = NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
 	generatedProps, propsErr = properties.LoadString(props)
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 9, len(generatedProps.Keys()))
+	assert.Equal(t, 11, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(dataIndexServiceUrlProperty, ""))
 	assert.Equal(t, "http://"+platform.Name+"-"+JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(jobServiceURLProperty, ""))
+	assert.Equal(t, "false", generatedProps.GetString(jobServiceKafkaSinkInjectionHealthCheck, ""))
+	assert.Equal(t, fmt.Sprintf("%s://localhost:5432/%s?search_path=%s", PersistenceTypePostgressql, GetServiceName(platform.Name, JobService), defaultDatabaseName), generatedProps.GetString(jobServiceDataSourceReactiveURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsURL, ""))
 
 	// disabling job service bypasses config of outgoing events url
 	platform.Spec.Services.JobService.Enabled = nil
@@ -151,6 +159,10 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.Equal(t, 8, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(dataIndexServiceUrlProperty, ""))
 	assert.Equal(t, "", generatedProps.GetString(jobServiceURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(jobServiceKafkaSinkInjectionHealthCheck, ""))
+	assert.Equal(t, "", generatedProps.GetString(jobServiceDataSourceReactiveURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsURL, ""))
 
 	// check that service app properties are being properly set
 	props = NewServiceAppPropertyHandler(platform).WithUserProperties(userProperties).Build()

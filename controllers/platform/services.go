@@ -37,6 +37,35 @@ import (
 	"github.com/imdario/mergo"
 )
 
+var (
+	serviceEnvValues = map[common.ServiceType][]corev1.EnvVar{
+		common.DataIndexService: {
+			{
+				Name:  "KOGITO_DATA_INDEX_QUARKUS_PROFILE",
+				Value: "http-events-support",
+			},
+			{
+				Name:  "QUARKUS_HTTP_CORS",
+				Value: "true",
+			},
+			{
+				Name:  "QUARKUS_HTTP_CORS_ORIGINS",
+				Value: "/.*/",
+			},
+		},
+		common.JobService: {
+			{
+				Name:  "QUARKUS_HTTP_CORS",
+				Value: "true",
+			},
+			{
+				Name:  "QUARKUS_HTTP_CORS_ORIGINS",
+				Value: "/.*/",
+			},
+		},
+	}
+)
+
 // NewServiceAction returns an action that deploys the services.
 func NewServiceAction() Action {
 	return &serviceAction{}
@@ -125,6 +154,7 @@ func getReplicaCountForService(serviceSpec operatorapi.ServicesPlatformSpec, ser
 	return 1
 
 }
+
 func createDeployment(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType common.ServiceType) error {
 	readyProbe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
@@ -143,21 +173,8 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 	liveProbe := readyProbe.DeepCopy()
 	liveProbe.ProbeHandler.HTTPGet.Path = common.QuarkusHealthPathLive
 	dataDeployContainer := &corev1.Container{
-		Image: common.GetServiceImageName(common.PersistenceTypeEphemeral, serviceType),
-		Env: []corev1.EnvVar{
-			{
-				Name:  "KOGITO_DATA_INDEX_QUARKUS_PROFILE",
-				Value: "http-events-support",
-			},
-			{
-				Name:  "QUARKUS_HTTP_CORS",
-				Value: "true",
-			},
-			{
-				Name:  "QUARKUS_HTTP_CORS_ORIGINS",
-				Value: "/.*/",
-			},
-		},
+		Image:          common.GetServiceImageName(common.PersistenceTypeEphemeral, serviceType),
+		Env:            serviceEnvValues[serviceType],
 		Resources:      getResourceLimits(serviceType),
 		ReadinessProbe: readyProbe,
 		LivenessProbe:  liveProbe,

@@ -39,14 +39,18 @@ import (
 )
 
 const (
-	ConfigMapWorkflowPropsVolumeName = "workflow-properties"
-	kogitoServiceUrlProperty         = "kogito.service.url"
-	kogitoServiceUrlProtocol         = "http"
-	dataIndexServiceUrlProperty      = "mp.messaging.outgoing.kogito-processinstances-events.url"
-	kafkaSmallRyeHealthProperty      = "quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled"
-	dataIndexServiceUrlProtocol      = "http"
-	jobServiceURLProperty            = "mp.messaging.outgoing.kogito-job-service-job-request-events.url"
-	jobServiceURLProtocol            = "http"
+	ConfigMapWorkflowPropsVolumeName        = "workflow-properties"
+	kogitoServiceUrlProperty                = "kogito.service.url"
+	kogitoServiceUrlProtocol                = "http"
+	dataIndexServiceUrlProperty             = "mp.messaging.outgoing.kogito-processinstances-events.url"
+	kafkaSmallRyeHealthProperty             = "quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled"
+	dataIndexServiceUrlProtocol             = "http"
+	jobServiceURLProperty                   = "mp.messaging.outgoing.kogito-job-service-job-request-events.url"
+	jobServiceKafkaSinkInjectionHealthCheck = `quarkus.smallrye-health.check."org.kie.kogito.jobs.service.messaging.http.health.knative.KSinkInjectionHealthCheck".enabled`
+	jobServiceStatusChangeEventsProperty    = "kogito.jobs-service.http.job-status-change-events"
+	jobServiceStatusChangeEventsURL         = "mp.messaging.outgoing.kogito-job-service-job-status-events-http.url"
+	jobServiceURLProtocol                   = "http"
+	jobServiceDataSourceReactiveURLProperty = "quarkus.datasource.reactive.url"
 
 	imageNamePrefix                          = "quay.io/kiegroup/kogito"
 	DataIndexServiceName                     = "data-index-service"
@@ -56,6 +60,9 @@ const (
 	PersistenceTypePostgressql               = "postgresql"
 	microprofileServiceCatalogPropertyPrefix = "org.kie.kogito.addons.discovery."
 	discoveryLikePropertyPattern             = "^\\${(kubernetes|knative|openshift):(.*)}$"
+
+	defaultDatabaseName   string = "sonataflow"
+	defaultPostgreSQLPort int    = 5432
 )
 
 var (
@@ -203,11 +210,49 @@ func (a *appPropertyHandler) withDataIndexServiceUrl() AppPropertyHandler {
 	return a
 }
 
+func generateReactiveURL(postgresSpec *operatorapi.PersistencePostgreSql, schema string, namespace string, dbName string, port int) string {
+	databaseSchema := schema
+	if len(postgresSpec.ServiceRef.DatabaseSchema) > 0 {
+		databaseSchema = postgresSpec.ServiceRef.DatabaseSchema
+	}
+	databaseNamespace := namespace
+	if len(postgresSpec.ServiceRef.Namespace) > 0 {
+		databaseNamespace = postgresSpec.ServiceRef.Namespace
+	}
+	dataSourcePort := port
+	if postgresSpec.ServiceRef.Port != nil {
+		dataSourcePort = *postgresSpec.ServiceRef.Port
+	}
+	databaseName := dbName
+	if len(postgresSpec.ServiceRef.DatabaseName) > 0 {
+		databaseName = postgresSpec.ServiceRef.DatabaseName
+	}
+	dataSourceURL := fmt.Sprintf("%s://%s:%d/%s?search_path=%s", PersistenceTypePostgressql, postgresSpec.ServiceRef.Name+"."+databaseNamespace, dataSourcePort, databaseName, databaseSchema)
+	if len(postgresSpec.JdbcUrl) > 0 {
+		dataSourceURL = postgresSpec.JdbcUrl
+	}
+	return dataSourceURL
+}
+
 // withJobServiceURL adds the property 'mp.messaging.outgoing.kogito-job-service-job-request-events.url' to the application property
 func (a *appPropertyHandler) withJobServiceURL() AppPropertyHandler {
 	if profiles.IsProdProfile(a.workflow) && jobServiceEnabled(a.platform) {
 		a.addDefaultMutableProperty(
 			jobServiceURLProperty, fmt.Sprintf("%s://%s.%s/v2/jobs/events", jobServiceURLProtocol, GetServiceName(a.platform.Name, JobService), a.platform.Namespace))
+		// disable Kafka Sink for knative events until supported
+		a.addDefaultMutableProperty(jobServiceKafkaSinkInjectionHealthCheck, "false")
+		// add data source reactive URL
+		js := a.platform.Spec.Services.JobService
+		// dataSourceReactiveURL := fmt.Sprintf("%s://localhost:%d/%s?search_path=%s", PersistenceTypePostgressql, defaultPostgreSQLPort, GetServiceName(a.platform.Name, JobService), defaultDatabaseName)
+		if js.Persistence != nil && js.Persistence.PostgreSql != nil {
+			dataSourceReactiveURL := generateReactiveURL(js.Persistence.PostgreSql, GetServiceName(a.platform.Name, JobService), a.platform.Namespace, defaultDatabaseName, defaultPostgreSQLPort)
+			a.addDefaultMutableProperty(jobServiceDataSourceReactiveURLProperty, dataSourceReactiveURL)
+		}
+		// a.addDefaultMutableProperty(jobServiceDataSourceReactiveURLProperty, dataSourceReactiveURL)
+		if profiles.IsProdProfile(a.workflow) && dataIndexEnabled(a.platform) {
+			a.addDefaultMutableProperty(jobServiceStatusChangeEventsProperty, "true")
+			a.addDefaultMutableProperty(jobServiceStatusChangeEventsURL, fmt.Sprintf("%s://%s.%s/jobs", dataIndexServiceUrlProtocol, GetServiceName(a.platform.Name, DataIndexService), a.platform.Namespace))
+		}
 	}
 	return a
 }

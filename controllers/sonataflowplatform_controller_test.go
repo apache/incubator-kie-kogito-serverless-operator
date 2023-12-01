@@ -37,6 +37,18 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 )
 
+var (
+	envDBKind = corev1.EnvVar{
+		Name:  "QUARKUS_DATASOURCE_DB_KIND",
+		Value: common.PersistenceTypePostgressql,
+	}
+
+	envDataIndex = corev1.EnvVar{
+		Name:  "KOGITO_DATA_INDEX_QUARKUS_PROFILE",
+		Value: "http-events-support",
+	}
+)
+
 func TestSonataFlowPlatformController(t *testing.T) {
 	t.Run("verify that a basic reconcile is performed without error", func(t *testing.T) {
 		// Create a SonataFlowPlatform object with metadata and spec.
@@ -281,13 +293,10 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		dep := &appsv1.Deployment{}
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.JobService), Namespace: ksp.Namespace}, dep))
 
-		env := corev1.EnvVar{
-			Name:  "QUARKUS_DATASOURCE_DB_KIND",
-			Value: common.PersistenceTypePostgressql,
-		}
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
 		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypeEphemeral, common.JobService), dep.Spec.Template.Spec.Containers[0].Image)
-		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
+		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDBKind)
+		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDataIndex)
 
 		// Check with persistence set
 		ksp.Spec.Services.JobService.Persistence = &v1alpha08.PersistenceOptions{PostgreSql: &v1alpha08.PersistencePostgreSql{
@@ -311,7 +320,8 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.Equal(t, common.JobServiceName, dep.Spec.Template.Spec.Containers[1].Name)
 		assert.Equal(t, "testing", dep.Spec.Template.Spec.Containers[1].TerminationMessagePath)
 		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypePostgressql, common.JobService), dep.Spec.Template.Spec.Containers[1].Image)
-		assert.Contains(t, dep.Spec.Template.Spec.Containers[1].Env, env)
+		assert.Contains(t, dep.Spec.Template.Spec.Containers[1].Env, envDBKind)
+		assert.NotContains(t, dep.Spec.Template.Spec.Containers[1].Env, envDataIndex)
 	})
 
 	t.Run("verify that a basic reconcile with job service & jdbcUrl is performed without error", func(t *testing.T) {
@@ -365,13 +375,10 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		dep := &appsv1.Deployment{}
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.JobService), Namespace: ksp.Namespace}, dep))
 
-		env := corev1.EnvVar{
-			Name:  "QUARKUS_DATASOURCE_DB_KIND",
-			Value: common.PersistenceTypePostgressql,
-		}
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
 		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypeEphemeral, common.JobService), dep.Spec.Template.Spec.Containers[0].Image)
-		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
+		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDBKind)
+		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDataIndex)
 
 		// Check with persistence set
 		url := "jdbc:postgresql://host:port/database?currentSchema=data-index-service"
@@ -388,17 +395,13 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			t.Fatalf("reconcile: (%v)", err)
 		}
 
-		env2 := corev1.EnvVar{
-			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
-			Value: url,
-		}
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.JobService), Namespace: ksp.Namespace}, dep))
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
 		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypePostgressql, common.JobService), dep.Spec.Template.Spec.Containers[0].Image)
 		assert.Equal(t, &replicas, dep.Spec.Replicas)
 		assert.Equal(t, []string{"test:latest"}, dep.Spec.Template.Spec.Containers[0].Command)
-		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
-		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, env2)
+		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, envDBKind)
+		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDataIndex)
 	})
 
 	t.Run("verify that a default deployment of a job and data index service will is performed without error", func(t *testing.T) {
@@ -448,25 +451,19 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		dep := &appsv1.Deployment{}
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.DataIndexService), Namespace: ksp.Namespace}, dep))
 
-		env := corev1.EnvVar{
-			Name:  "QUARKUS_DATASOURCE_DB_KIND",
-			Value: common.PersistenceTypePostgressql,
-		}
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
 		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypeEphemeral, common.DataIndexService), dep.Spec.Template.Spec.Containers[0].Image)
-		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
+		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDBKind)
+		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, envDataIndex)
 
 		// Check job service deployment
 		dep = &appsv1.Deployment{}
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.JobService), Namespace: ksp.Namespace}, dep))
 
-		env = corev1.EnvVar{
-			Name:  "QUARKUS_DATASOURCE_DB_KIND",
-			Value: common.PersistenceTypePostgressql,
-		}
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
 		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypeEphemeral, common.JobService), dep.Spec.Template.Spec.Containers[0].Image)
-		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
+		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDBKind)
+		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDataIndex)
 
 	})
 }
