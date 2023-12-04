@@ -211,6 +211,9 @@ func (a *appPropertyHandler) withDataIndexServiceUrl() AppPropertyHandler {
 }
 
 func generateReactiveURL(postgresSpec *operatorapi.PersistencePostgreSql, schema string, namespace string, dbName string, port int) string {
+	if len(postgresSpec.JdbcUrl) > 0 && strings.Contains(postgresSpec.JdbcUrl, "currentSchema=") {
+		return strings.Replace(strings.TrimPrefix(postgresSpec.JdbcUrl, "jdbc:"), "currentSchema=", "search_path=", -1)
+	}
 	databaseSchema := schema
 	if len(postgresSpec.ServiceRef.DatabaseSchema) > 0 {
 		databaseSchema = postgresSpec.ServiceRef.DatabaseSchema
@@ -227,11 +230,7 @@ func generateReactiveURL(postgresSpec *operatorapi.PersistencePostgreSql, schema
 	if len(postgresSpec.ServiceRef.DatabaseName) > 0 {
 		databaseName = postgresSpec.ServiceRef.DatabaseName
 	}
-	dataSourceURL := fmt.Sprintf("%s://%s:%d/%s?search_path=%s", PersistenceTypePostgressql, postgresSpec.ServiceRef.Name+"."+databaseNamespace, dataSourcePort, databaseName, databaseSchema)
-	if len(postgresSpec.JdbcUrl) > 0 {
-		dataSourceURL = postgresSpec.JdbcUrl
-	}
-	return dataSourceURL
+	return fmt.Sprintf("%s://%s:%d/%s?search_path=%s", PersistenceTypePostgressql, postgresSpec.ServiceRef.Name+"."+databaseNamespace, dataSourcePort, databaseName, databaseSchema)
 }
 
 // withJobServiceURL adds the property 'mp.messaging.outgoing.kogito-job-service-job-request-events.url' to the application property
@@ -243,7 +242,6 @@ func (a *appPropertyHandler) withJobServiceURL() AppPropertyHandler {
 		a.addDefaultMutableProperty(jobServiceKafkaSinkInjectionHealthCheck, "false")
 		// add data source reactive URL
 		js := a.platform.Spec.Services.JobService
-		// dataSourceReactiveURL := fmt.Sprintf("%s://localhost:%d/%s?search_path=%s", PersistenceTypePostgressql, defaultPostgreSQLPort, GetServiceName(a.platform.Name, JobService), defaultDatabaseName)
 		if js.Persistence != nil && js.Persistence.PostgreSql != nil {
 			dataSourceReactiveURL := generateReactiveURL(js.Persistence.PostgreSql, GetServiceName(a.platform.Name, JobService), a.platform.Namespace, defaultDatabaseName, defaultPostgreSQLPort)
 			a.addDefaultMutableProperty(jobServiceDataSourceReactiveURLProperty, dataSourceReactiveURL)

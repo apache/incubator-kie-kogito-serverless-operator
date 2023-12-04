@@ -130,24 +130,23 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	props = NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
 	generatedProps, propsErr = properties.LoadString(props)
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 14, len(generatedProps.Keys()))
+	assert.Equal(t, 13, len(generatedProps.Keys()))
 	assert.Equal(t, "http://"+platform.Name+"-"+DataIndexServiceName+"."+platform.Namespace+"/processes", generatedProps.GetString(dataIndexServiceUrlProperty, ""))
 	assert.Equal(t, "http://"+platform.Name+"-"+JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(jobServiceURLProperty, ""))
 	assert.Equal(t, "false", generatedProps.GetString(jobServiceKafkaSinkInjectionHealthCheck, ""))
-	assert.Equal(t, fmt.Sprintf("%s://localhost:5432/%s?search_path=%s", PersistenceTypePostgressql, GetServiceName(platform.Name, JobService), defaultDatabaseName), generatedProps.GetString(jobServiceDataSourceReactiveURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(jobServiceDataSourceReactiveURLProperty, ""))
 	assert.Equal(t, "true", generatedProps.GetString(jobServiceStatusChangeEventsProperty, ""))
-	assert.Equal(t, fmt.Sprintf("%s://%s.%s/jobs", dataIndexServiceUrlProtocol, GetServiceName(platform.Name, DataIndexService), platform.Namespace), generatedProps.GetString(jobServiceStatusChangeEventsURL, ""))
+	assert.Equal(t, generatedProps.GetString(jobServiceStatusChangeEventsURL, ""), fmt.Sprintf("%s://%s.%s/jobs", dataIndexServiceUrlProtocol, GetServiceName(platform.Name, DataIndexService), platform.Namespace))
 
 	// disabling data index bypasses config of outgoing events url
 	platform.Spec.Services.DataIndex.Enabled = nil
 	props = NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
 	generatedProps, propsErr = properties.LoadString(props)
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 11, len(generatedProps.Keys()))
+	assert.Equal(t, 10, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(dataIndexServiceUrlProperty, ""))
 	assert.Equal(t, "http://"+platform.Name+"-"+JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(jobServiceURLProperty, ""))
 	assert.Equal(t, "false", generatedProps.GetString(jobServiceKafkaSinkInjectionHealthCheck, ""))
-	assert.Equal(t, fmt.Sprintf("%s://localhost:5432/%s?search_path=%s", PersistenceTypePostgressql, GetServiceName(platform.Name, JobService), defaultDatabaseName), generatedProps.GetString(jobServiceDataSourceReactiveURLProperty, ""))
 	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsProperty, ""))
 	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsURL, ""))
 
@@ -174,6 +173,49 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.Equal(t, "value2", generatedProps.GetString("property2", ""))
 	//quarkus.http.port remains with the default value since it's immutable.
 	assert.Equal(t, "8080", generatedProps.GetString("quarkus.http.port", ""))
+
+	// check that the reactive URL is generated from the postgreSQL JDBC URL when not provided
+	platform.Spec.Services.JobService = &operatorapi.ServiceSpec{
+		Enabled: &enabled,
+		Persistence: &operatorapi.PersistenceOptions{
+			PostgreSql: &operatorapi.PersistencePostgreSql{
+				ServiceRef: operatorapi.PostgreSqlServiceOptions{
+					Name: "jobs-service",
+				},
+			},
+		},
+	}
+	props = NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
+	generatedProps, propsErr = properties.LoadString(props)
+	assert.NoError(t, propsErr)
+	assert.Equal(t, 11, len(generatedProps.Keys()))
+	assert.Equal(t, "", generatedProps.GetString(dataIndexServiceUrlProperty, ""))
+	assert.Equal(t, "http://"+platform.Name+"-"+JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(jobServiceURLProperty, ""))
+	assert.Equal(t, "false", generatedProps.GetString(jobServiceKafkaSinkInjectionHealthCheck, ""))
+	assert.Equal(t, "postgresql://jobs-service.default:5432/sonataflow?search_path=sonataflow-platform-jobs-service", generatedProps.GetString(jobServiceDataSourceReactiveURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsURL, ""))
+
+	// check that the reactive URL is generated from the postgreSQL JDBC URL when provided
+	platform.Spec.Services.JobService = &operatorapi.ServiceSpec{
+		Enabled: &enabled,
+		Persistence: &operatorapi.PersistenceOptions{
+			PostgreSql: &operatorapi.PersistencePostgreSql{
+				JdbcUrl: "jdbc:postgresql://timeouts-showcase-database:5432/postgres?currentSchema=jobs-service",
+			},
+		},
+	}
+	props = NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
+	generatedProps, propsErr = properties.LoadString(props)
+	assert.NoError(t, propsErr)
+	assert.Equal(t, 11, len(generatedProps.Keys()))
+	assert.Equal(t, "", generatedProps.GetString(dataIndexServiceUrlProperty, ""))
+	assert.Equal(t, "http://"+platform.Name+"-"+JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(jobServiceURLProperty, ""))
+	assert.Equal(t, "false", generatedProps.GetString(jobServiceKafkaSinkInjectionHealthCheck, ""))
+	assert.Equal(t, "postgresql://timeouts-showcase-database:5432/postgres?search_path=jobs-service", generatedProps.GetString(jobServiceDataSourceReactiveURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsURL, ""))
+
 }
 
 func Test_appPropertyHandler_WithUserPropertiesWithServiceDiscovery(t *testing.T) {
