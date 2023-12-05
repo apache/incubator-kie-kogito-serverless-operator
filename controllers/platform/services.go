@@ -16,14 +16,10 @@ package platform
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -34,36 +30,6 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
 	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
-	"github.com/imdario/mergo"
-)
-
-var (
-	serviceEnvValues = map[common.ServiceType][]corev1.EnvVar{
-		common.DataIndexService: {
-			{
-				Name:  "KOGITO_DATA_INDEX_QUARKUS_PROFILE",
-				Value: "http-events-support",
-			},
-			{
-				Name:  "QUARKUS_HTTP_CORS",
-				Value: "true",
-			},
-			{
-				Name:  "QUARKUS_HTTP_CORS_ORIGINS",
-				Value: "/.*/",
-			},
-		},
-		common.JobService: {
-			{
-				Name:  "QUARKUS_HTTP_CORS",
-				Value: "true",
-			},
-			{
-				Name:  "QUARKUS_HTTP_CORS_ORIGINS",
-				Value: "/.*/",
-			},
-		},
-	}
 )
 
 // NewServiceAction returns an action that deploys the services.
@@ -90,13 +56,13 @@ func (action *serviceAction) Handle(ctx context.Context, platform *operatorapi.S
 	}
 
 	if platform.Spec.Services.DataIndex != nil {
-		if err := createServiceComponents(ctx, action.client, platform, common.DataIndexService); err != nil {
+		if err := createServiceComponents(ctx, action.client, platform, common.NewDataIndexService(platform)); err != nil {
 			return nil, err
 		}
 	}
 
 	if platform.Spec.Services.JobService != nil {
-		if err := createServiceComponents(ctx, action.client, platform, common.JobService); err != nil {
+		if err := createServiceComponents(ctx, action.client, platform, common.NewJobService(platform)); err != nil {
 			return nil, err
 		}
 	}
@@ -104,33 +70,7 @@ func (action *serviceAction) Handle(ctx context.Context, platform *operatorapi.S
 	return platform, nil
 }
 
-// Values for job service taken from
-// https://github.com/parodos-dev/orchestrator-helm-chart/blob/52d09eda56fdbed3060782df29847c97f172600f/charts/orchestrator/values.yaml#L68-L72
-func getResourceLimits(stype common.ServiceType) corev1.ResourceRequirements {
-	switch stype {
-	case common.DataIndexService:
-		return corev1.ResourceRequirements{
-			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("100m"),
-				corev1.ResourceMemory: resource.MustParse("256Mi"),
-			},
-		}
-	case common.JobService:
-		return corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("250m"),
-				corev1.ResourceMemory: resource.MustParse("64Mi"),
-			},
-			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("500m"),
-				corev1.ResourceMemory: resource.MustParse("1Gi"),
-			},
-		}
-	}
-	return corev1.ResourceRequirements{}
-}
-
-func createServiceComponents(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType common.ServiceType) error {
+func createServiceComponents(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType common.PlatformService) error {
 	if err := createConfigMap(ctx, client, platform, serviceType); err != nil {
 		return err
 	}
@@ -140,22 +80,7 @@ func createServiceComponents(ctx context.Context, client client.Client, platform
 	return createService(ctx, client, platform, serviceType)
 }
 
-func getReplicaCountForService(serviceSpec operatorapi.ServicesPlatformSpec, serviceType common.ServiceType) int32 {
-	var spec *operatorapi.ServiceSpec
-	switch serviceType {
-	case common.DataIndexService:
-		spec = serviceSpec.DataIndex
-	case common.JobService:
-		spec = serviceSpec.JobService
-	}
-	if spec.PodTemplate.Replicas != nil {
-		return *spec.PodTemplate.Replicas
-	}
-	return 1
-
-}
-
-func createDeployment(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType common.ServiceType) error {
+func createDeployment(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, svc common.PlatformService) error {
 	readyProbe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -173,9 +98,9 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 	liveProbe := readyProbe.DeepCopy()
 	liveProbe.ProbeHandler.HTTPGet.Path = common.QuarkusHealthPathLive
 	dataDeployContainer := &corev1.Container{
-		Image:          common.GetServiceImageName(common.PersistenceTypeEphemeral, serviceType),
-		Env:            serviceEnvValues[serviceType],
-		Resources:      getResourceLimits(serviceType),
+		Image:          svc.GetServiceImageName(common.PersistenceTypeEphemeral),
+		Env:            svc.GetEnvironmentVariables(),
+		Resources:      svc.GetPodResourceRequirements(),
 		ReadinessProbe: readyProbe,
 		LivenessProbe:  liveProbe,
 		Ports: []corev1.ContainerPort{
@@ -193,16 +118,16 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 			},
 		},
 	}
-	configurePersistence(dataDeployContainer, types.NamespacedName{Namespace: platform.Namespace, Name: platform.Name}, platform.Spec.Services, serviceType)
-	err := mergeContainerSpec(dataDeployContainer, platform.Spec.Services, serviceType)
+	dataDeployContainer = svc.ConfigurePersistence(dataDeployContainer)
+	dataDeployContainer, err := svc.MergeContainerSpec(dataDeployContainer)
 	if err != nil {
 		return err
 	}
 
 	// immutable
-	dataDeployContainer.Name = common.GetContainerName(serviceType)
+	dataDeployContainer.Name = svc.GetContainerName()
 
-	replicas := getReplicaCountForService(platform.Spec.Services, serviceType)
+	replicas := svc.GetReplicaCount()
 	lbl := map[string]string{
 		workflowproj.LabelApp: platform.Name,
 	}
@@ -222,7 +147,7 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 						VolumeSource: corev1.VolumeSource{
 							ConfigMap: &corev1.ConfigMapVolumeSource{
 								LocalObjectReference: corev1.LocalObjectReference{
-									Name: common.GetServiceCmName(platform, serviceType),
+									Name: svc.GetServiceCmName(),
 								},
 							},
 						},
@@ -232,7 +157,7 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 		},
 	}
 
-	err = mergePodSpec(&dataDeploySpec.Template.Spec, platform.Spec.Services, serviceType)
+	dataDeploySpec.Template.Spec, err = svc.MergePodSpec(dataDeploySpec.Template.Spec)
 	if err != nil {
 		return err
 	}
@@ -241,7 +166,7 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 	dataDeploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: platform.Namespace,
-			Name:      common.GetServiceName(platform.Name, serviceType),
+			Name:      svc.GetServiceName(),
 			Labels:    lbl,
 		}}
 	if err := controllerutil.SetControllerReference(platform, dataDeploy, client.Scheme()); err != nil {
@@ -262,114 +187,7 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 	return nil
 }
 
-func mergeContainerSpec(containerSpec *corev1.Container, servicePlatformSpec operatorapi.ServicesPlatformSpec, serviceType common.ServiceType) error {
-	switch serviceType {
-	case common.DataIndexService:
-		return mergo.Merge(containerSpec, servicePlatformSpec.DataIndex.PodTemplate.Container.ToContainer(), mergo.WithOverride)
-	case common.JobService:
-		return mergo.Merge(containerSpec, servicePlatformSpec.JobService.PodTemplate.Container.ToContainer(), mergo.WithOverride)
-	}
-	return fmt.Errorf("unknown service type %d", serviceType)
-}
-
-func mergePodSpec(podSpec *corev1.PodSpec, servicePlatformSpec operatorapi.ServicesPlatformSpec, serviceType common.ServiceType) error {
-	switch serviceType {
-	case common.DataIndexService:
-		return mergo.Merge(podSpec, servicePlatformSpec.DataIndex.PodTemplate.PodSpec.ToPodSpec(), mergo.WithOverride)
-	case common.JobService:
-		return mergo.Merge(podSpec, servicePlatformSpec.JobService.PodTemplate.PodSpec.ToPodSpec(), mergo.WithOverride)
-	}
-	return fmt.Errorf("unknown service type %d", serviceType)
-}
-
-func configurePersistence(serviceContainer *corev1.Container, platformNamespacedName types.NamespacedName, serviceSpec operatorapi.ServicesPlatformSpec, serviceType common.ServiceType) {
-	switch serviceType {
-	case common.DataIndexService:
-		if serviceSpec.DataIndex.Persistence != nil && serviceSpec.DataIndex.Persistence.PostgreSql != nil {
-			serviceContainer.Image = common.GetServiceImageName(common.PersistenceTypePostgressql, serviceType)
-			serviceContainer.Env = append(
-				serviceContainer.Env,
-				configurePostgreSqlEnv(serviceSpec.DataIndex.Persistence.PostgreSql, common.GetServiceName(platformNamespacedName.Name, serviceType), platformNamespacedName.Namespace)...)
-		}
-	case common.JobService:
-		if serviceSpec.JobService.Persistence != nil && serviceSpec.JobService.Persistence.PostgreSql != nil {
-			serviceContainer.Image = common.GetServiceImageName(common.PersistenceTypePostgressql, serviceType)
-			serviceContainer.Env = append(
-				serviceContainer.Env,
-				configurePostgreSqlEnv(serviceSpec.JobService.Persistence.PostgreSql, common.GetServiceName(platformNamespacedName.Name, serviceType), platformNamespacedName.Namespace)...)
-		}
-	}
-}
-
-func configurePostgreSqlEnv(postgresql *operatorapi.PersistencePostgreSql, databaseSchema, databaseNamespace string) []corev1.EnvVar {
-	if len(postgresql.ServiceRef.DatabaseSchema) > 0 {
-		databaseSchema = postgresql.ServiceRef.DatabaseSchema
-	}
-	if len(postgresql.ServiceRef.Namespace) > 0 {
-		databaseNamespace = postgresql.ServiceRef.Namespace
-	}
-	dataSourcePort := 5432
-	if postgresql.ServiceRef.Port != nil {
-		dataSourcePort = *postgresql.ServiceRef.Port
-	}
-	databaseName := "sonataflow"
-	if len(postgresql.ServiceRef.DatabaseName) > 0 {
-		databaseName = postgresql.ServiceRef.DatabaseName
-	}
-	dataSourceUrl := "jdbc:" + common.PersistenceTypePostgressql + "://" + postgresql.ServiceRef.Name + "." + databaseNamespace + ":" + strconv.Itoa(dataSourcePort) + "/" + databaseName + "?currentSchema=" + databaseSchema
-	if len(postgresql.JdbcUrl) > 0 {
-		dataSourceUrl = postgresql.JdbcUrl
-	}
-	secretRef := corev1.LocalObjectReference{
-		Name: postgresql.SecretRef.Name,
-	}
-	quarkusDatasourceUsername := "POSTGRESQL_USER"
-	if len(postgresql.SecretRef.UserKey) > 0 {
-		quarkusDatasourceUsername = postgresql.SecretRef.UserKey
-	}
-	quarkusDatasourcePassword := "POSTGRESQL_PASSWORD"
-	if len(postgresql.SecretRef.PasswordKey) > 0 {
-		quarkusDatasourcePassword = postgresql.SecretRef.PasswordKey
-	}
-	return []corev1.EnvVar{
-		{
-			Name: "QUARKUS_DATASOURCE_USERNAME",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					Key:                  quarkusDatasourceUsername,
-					LocalObjectReference: secretRef,
-				},
-			},
-		},
-		{
-			Name: "QUARKUS_DATASOURCE_PASSWORD",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					Key:                  quarkusDatasourcePassword,
-					LocalObjectReference: secretRef,
-				},
-			},
-		},
-		{
-			Name:  "QUARKUS_DATASOURCE_DB_KIND",
-			Value: common.PersistenceTypePostgressql,
-		},
-		{
-			Name:  "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION",
-			Value: "update",
-		},
-		{
-			Name:  "QUARKUS_FLYWAY_MIGRATE_AT_START",
-			Value: "true",
-		},
-		{
-			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
-			Value: dataSourceUrl,
-		},
-	}
-}
-
-func createService(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType common.ServiceType) error {
+func createService(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, svc common.PlatformService) error {
 	lbl := map[string]string{
 		workflowproj.LabelApp: platform.Name,
 	}
@@ -387,7 +205,7 @@ func createService(ctx context.Context, client client.Client, platform *operator
 	dataSvc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: platform.Namespace,
-			Name:      common.GetServiceName(platform.Name, serviceType),
+			Name:      svc.GetServiceName(),
 			Labels:    lbl,
 		}}
 	if err := controllerutil.SetControllerReference(platform, dataSvc, client.Scheme()); err != nil {
@@ -408,10 +226,10 @@ func createService(ctx context.Context, client client.Client, platform *operator
 	return nil
 }
 
-func createConfigMap(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType common.ServiceType) error {
+func createConfigMap(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, svc common.PlatformService) error {
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      common.GetServiceCmName(platform, serviceType),
+			Name:      svc.GetServiceCmName(),
 			Namespace: platform.Namespace,
 			Labels: map[string]string{
 				workflowproj.LabelApp: platform.Name,

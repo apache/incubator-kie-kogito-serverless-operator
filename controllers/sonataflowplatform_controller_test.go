@@ -126,14 +126,15 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check data index deployment
 		dep := &appsv1.Deployment{}
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.DataIndexService), Namespace: ksp.Namespace}, dep))
+		di := common.NewDataIndexService(ksp)
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: di.GetServiceName(), Namespace: ksp.Namespace}, dep))
 
 		env := corev1.EnvVar{
 			Name:  "QUARKUS_DATASOURCE_DB_KIND",
 			Value: common.PersistenceTypePostgressql,
 		}
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
-		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypeEphemeral, common.DataIndexService), dep.Spec.Template.Spec.Containers[0].Image)
+		assert.Equal(t, di.GetServiceImageName(common.PersistenceTypeEphemeral), dep.Spec.Template.Spec.Containers[0].Image)
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
 
 		// Check with persistence set
@@ -151,13 +152,13 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			t.Fatalf("reconcile: (%v)", err)
 		}
 
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.DataIndexService), Namespace: ksp.Namespace}, dep))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: di.GetServiceName(), Namespace: ksp.Namespace}, dep))
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 2)
 		assert.Equal(t, common.DataIndexServiceName+"2", dep.Spec.Template.Spec.Containers[0].Name)
 		assert.Equal(t, "testing", dep.Spec.Template.Spec.Containers[0].TerminationMessagePath)
 		assert.Equal(t, common.DataIndexServiceName, dep.Spec.Template.Spec.Containers[1].Name)
 		assert.Equal(t, "testing", dep.Spec.Template.Spec.Containers[1].TerminationMessagePath)
-		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypePostgressql, common.DataIndexService), dep.Spec.Template.Spec.Containers[1].Image)
+		assert.Equal(t, di.GetServiceImageName(common.PersistenceTypePostgressql), dep.Spec.Template.Spec.Containers[1].Image)
 		assert.Contains(t, dep.Spec.Template.Spec.Containers[1].Env, env)
 	})
 
@@ -176,6 +177,8 @@ func TestSonataFlowPlatformController(t *testing.T) {
 				},
 			},
 		}
+
+		di := common.NewDataIndexService(ksp)
 
 		// Create a fake client to mock API calls.
 		cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(ksp).WithStatusSubresource(ksp).Build()
@@ -210,14 +213,14 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check data index deployment
 		dep := &appsv1.Deployment{}
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.DataIndexService), Namespace: ksp.Namespace}, dep))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: di.GetServiceName(), Namespace: ksp.Namespace}, dep))
 
 		env := corev1.EnvVar{
 			Name:  "QUARKUS_DATASOURCE_DB_KIND",
 			Value: common.PersistenceTypePostgressql,
 		}
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
-		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypeEphemeral, common.DataIndexService), dep.Spec.Template.Spec.Containers[0].Image)
+		assert.Equal(t, di.GetServiceImageName(common.PersistenceTypeEphemeral), dep.Spec.Template.Spec.Containers[0].Image)
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
 
 		// Check with persistence set
@@ -239,9 +242,9 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
 			Value: url,
 		}
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.DataIndexService), Namespace: ksp.Namespace}, dep))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: di.GetServiceName(), Namespace: ksp.Namespace}, dep))
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
-		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypePostgressql, common.DataIndexService), dep.Spec.Template.Spec.Containers[0].Image)
+		assert.Equal(t, di.GetServiceImageName(common.PersistenceTypePostgressql), dep.Spec.Template.Spec.Containers[0].Image)
 		assert.Equal(t, &replicas, dep.Spec.Replicas)
 		assert.Equal(t, []string{"test:latest"}, dep.Spec.Template.Spec.Containers[0].Command)
 		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
@@ -291,10 +294,11 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check data index deployment
 		dep := &appsv1.Deployment{}
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.JobService), Namespace: ksp.Namespace}, dep))
+		js := common.NewJobService(ksp)
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: js.GetServiceName(), Namespace: ksp.Namespace}, dep))
 
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
-		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypeEphemeral, common.JobService), dep.Spec.Template.Spec.Containers[0].Image)
+		assert.Equal(t, js.GetServiceImageName(common.PersistenceTypeEphemeral), dep.Spec.Template.Spec.Containers[0].Image)
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDBKind)
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDataIndex)
 
@@ -313,13 +317,13 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			t.Fatalf("reconcile: (%v)", err)
 		}
 
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.JobService), Namespace: ksp.Namespace}, dep))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: js.GetServiceName(), Namespace: ksp.Namespace}, dep))
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 2)
 		assert.Equal(t, common.JobServiceName+"2", dep.Spec.Template.Spec.Containers[0].Name)
 		assert.Equal(t, "testing", dep.Spec.Template.Spec.Containers[0].TerminationMessagePath)
 		assert.Equal(t, common.JobServiceName, dep.Spec.Template.Spec.Containers[1].Name)
 		assert.Equal(t, "testing", dep.Spec.Template.Spec.Containers[1].TerminationMessagePath)
-		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypePostgressql, common.JobService), dep.Spec.Template.Spec.Containers[1].Image)
+		assert.Equal(t, js.GetServiceImageName(common.PersistenceTypePostgressql), dep.Spec.Template.Spec.Containers[1].Image)
 		assert.Contains(t, dep.Spec.Template.Spec.Containers[1].Env, envDBKind)
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[1].Env, envDataIndex)
 	})
@@ -339,6 +343,8 @@ func TestSonataFlowPlatformController(t *testing.T) {
 				},
 			},
 		}
+
+		js := common.NewJobService(ksp)
 
 		// Create a fake client to mock API calls.
 		cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(ksp).WithStatusSubresource(ksp).Build()
@@ -373,10 +379,10 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check job service deployment
 		dep := &appsv1.Deployment{}
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.JobService), Namespace: ksp.Namespace}, dep))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: js.GetServiceName(), Namespace: ksp.Namespace}, dep))
 
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
-		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypeEphemeral, common.JobService), dep.Spec.Template.Spec.Containers[0].Image)
+		assert.Equal(t, js.GetServiceImageName(common.PersistenceTypeEphemeral), dep.Spec.Template.Spec.Containers[0].Image)
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDBKind)
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDataIndex)
 
@@ -395,9 +401,9 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			t.Fatalf("reconcile: (%v)", err)
 		}
 
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.JobService), Namespace: ksp.Namespace}, dep))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: js.GetServiceName(), Namespace: ksp.Namespace}, dep))
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
-		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypePostgressql, common.JobService), dep.Spec.Template.Spec.Containers[0].Image)
+		assert.Equal(t, js.GetServiceImageName(common.PersistenceTypePostgressql), dep.Spec.Template.Spec.Containers[0].Image)
 		assert.Equal(t, &replicas, dep.Spec.Replicas)
 		assert.Equal(t, []string{"test:latest"}, dep.Spec.Template.Spec.Containers[0].Command)
 		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, envDBKind)
@@ -413,6 +419,8 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			JobService: &v1alpha08.ServiceSpec{},
 		}
 
+		di := common.NewDataIndexService(ksp)
+		js := common.NewJobService(ksp)
 		// Create a fake client to mock API calls.
 		cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(ksp).WithStatusSubresource(ksp).Build()
 		// Create a SonataFlowPlatformReconciler object with the scheme and fake client.
@@ -449,19 +457,19 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check data index deployment
 		dep := &appsv1.Deployment{}
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.DataIndexService), Namespace: ksp.Namespace}, dep))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: di.GetServiceName(), Namespace: ksp.Namespace}, dep))
 
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
-		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypeEphemeral, common.DataIndexService), dep.Spec.Template.Spec.Containers[0].Image)
+		assert.Equal(t, di.GetServiceImageName(common.PersistenceTypeEphemeral), dep.Spec.Template.Spec.Containers[0].Image)
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDBKind)
 		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, envDataIndex)
 
 		// Check job service deployment
 		dep = &appsv1.Deployment{}
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: common.GetServiceName(ksp.Name, common.JobService), Namespace: ksp.Namespace}, dep))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: js.GetServiceName(), Namespace: ksp.Namespace}, dep))
 
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
-		assert.Equal(t, common.GetServiceImageName(common.PersistenceTypeEphemeral, common.JobService), dep.Spec.Template.Spec.Containers[0].Image)
+		assert.Equal(t, js.GetServiceImageName(common.PersistenceTypeEphemeral), dep.Spec.Template.Spec.Containers[0].Image)
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDBKind)
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDataIndex)
 

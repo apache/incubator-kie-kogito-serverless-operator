@@ -108,6 +108,8 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 		},
 	}
 
+	di := NewDataIndexService(platform)
+
 	props := NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
 	generatedProps, propsErr := properties.LoadString(props)
 	assert.NoError(t, propsErr)
@@ -136,7 +138,7 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.Equal(t, "false", generatedProps.GetString(jobServiceKafkaSinkInjectionHealthCheck, ""))
 	assert.Equal(t, "", generatedProps.GetString(jobServiceDataSourceReactiveURLProperty, ""))
 	assert.Equal(t, "true", generatedProps.GetString(jobServiceStatusChangeEventsProperty, ""))
-	assert.Equal(t, generatedProps.GetString(jobServiceStatusChangeEventsURL, ""), fmt.Sprintf("%s://%s.%s/jobs", dataIndexServiceUrlProtocol, GetServiceName(platform.Name, DataIndexService), platform.Namespace))
+	assert.Equal(t, generatedProps.GetString(jobServiceStatusChangeEventsURL, ""), fmt.Sprintf("%s://%s.%s/jobs", dataIndexServiceUrlProtocol, di.GetServiceName(), platform.Namespace))
 
 	// disabling data index bypasses config of outgoing events url
 	platform.Spec.Services.DataIndex.Enabled = nil
