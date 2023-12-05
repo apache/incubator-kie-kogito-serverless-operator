@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"time"
 
+	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
 	"k8s.io/klog/v2"
 
 	buildv1 "github.com/openshift/api/build/v1"
@@ -87,11 +88,18 @@ func (r *SonataFlowBuildReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
-	if phase == operatorapi.BuildPhaseNone {
-		if err = buildManager.Schedule(build); err != nil {
+	if phase == operatorapi.BuildPhaseNone || kubeutil.GetAnnotationAsBool(build, operatorapi.BuildRestartAnnotation) {
+		if err := buildManager.Schedule(build); err != nil {
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{RequeueAfter: requeueAfterForNewBuild}, r.manageStatusUpdate(ctx, build)
+		if err := r.manageStatusUpdate(ctx, build); err != nil {
+			return ctrl.Result{}, err
+		}
+		kubeutil.SetAnnotation(build, operatorapi.BuildRestartAnnotation, "false")
+		if err := r.Update(ctx, build); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{RequeueAfter: requeueAfterForNewBuild}, nil
 		// TODO: this smells, why not just else? review in the future: https://issues.redhat.com/browse/KOGITO-8785
 	} else if phase != operatorapi.BuildPhaseSucceeded && phase != operatorapi.BuildPhaseError && phase != operatorapi.BuildPhaseFailed {
 		beforeReconcileStatus := build.Status.DeepCopy()

@@ -135,6 +135,11 @@ func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatora
 	return ctrl.Result{RequeueAfter: constants.RequeueAfterIsRunning}, objs, nil
 }
 
+func (e *ensureRunningWorkflowState) PostReconcile(ctx context.Context, workflow *operatorapi.SonataFlow) error {
+	//By default, we don't want to perform anything after the reconciliation, and so we will simply return no error
+	return nil
+}
+
 type followWorkflowDeploymentState struct {
 	*common.StateSupport
 	enrichers *statusEnrichers
@@ -246,4 +251,9 @@ func (r *recoverFromFailureState) Do(ctx context.Context, workflow *operatorapi.
 		return ctrl.Result{Requeue: false}, nil, err
 	}
 	return ctrl.Result{RequeueAfter: constants.RequeueRecoverDeploymentErrorInterval}, nil, nil
+}
+
+func (r *recoverFromFailureState) PostReconcile(ctx context.Context, workflow *operatorapi.SonataFlow) error {
+	//By default, we don't want to perform anything after the reconciliation, and so we will simply return no error
+	return nil
 }
