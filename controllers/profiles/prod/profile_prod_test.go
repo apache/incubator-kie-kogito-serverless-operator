@@ -130,7 +130,7 @@ func Test_reconcilerProdBuildConditions(t *testing.T) {
 	assert.Equal(t, requeueWhileWaitForBuild, result.RequeueAfter)
 	assert.False(t, workflow.Status.IsBuildRunningOrUnknown())
 	assert.False(t, workflow.Status.IsReady())
-	assert.Equal(t, api.WaitingForBuildReason, workflow.Status.GetTopLevelCondition().Reason)
+	assert.Equal(t, api.WaitingForDeploymentReason, workflow.Status.GetTopLevelCondition().Reason)
 
 	// now we create the objects
 	result, err = NewProfileReconciler(client, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow)

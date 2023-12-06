@@ -97,7 +97,7 @@ type followBuildStatusState struct {
 }
 
 func (h *followBuildStatusState) CanReconcile(workflow *operatorapi.SonataFlow) bool {
-	return workflow.Status.IsBuildRunningOrUnknown()
+	return workflow.Status.IsBuildRunningOrUnknown() || workflow.Status.IsWaitingForBuild()
 }
 
 func (h *followBuildStatusState) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
@@ -116,6 +116,7 @@ func (h *followBuildStatusState) Do(ctx context.Context, workflow *operatorapi.S
 		klog.V(log.I).InfoS("Workflow build has finished")
 		//If we have finished a build and the workflow is not running, we will start the provisioning phase
 		workflow.Status.Manager().MarkTrue(api.BuiltConditionType)
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "Build has finished")
 		_, err = h.PerformStatusUpdate(ctx, workflow)
 		h.Recorder.Eventf(workflow, corev1.EventTypeNormal, api.BuildSuccessfulReason, "Workflow %s build has been finished successfully.", workflow.Name)
 	} else if build.Status.BuildPhase == operatorapi.BuildPhaseFailed || build.Status.BuildPhase == operatorapi.BuildPhaseError {

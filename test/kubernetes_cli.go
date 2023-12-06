@@ -83,6 +83,13 @@ func MustGetWorkflow(t *testing.T, client ctrl.WithWatch, name types.NamespacedN
 	return mustGet(t, client, workflow, workflow).(*operatorapi.SonataFlow)
 }
 
+func MustGetBuild(t *testing.T, client ctrl.WithWatch, name types.NamespacedName) *operatorapi.SonataFlowBuild {
+	build := &operatorapi.SonataFlowBuild{}
+	err := client.Get(context.TODO(), name, build)
+	assert.NoError(t, err)
+	return build
+}
+
 func mustGet(t *testing.T, client ctrl.WithWatch, workflow *operatorapi.SonataFlow, obj ctrl.Object) ctrl.Object {
 	err := client.Get(context.TODO(), ctrl.ObjectKeyFromObject(workflow), obj)
 	assert.NoError(t, err)

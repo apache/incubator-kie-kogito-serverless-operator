@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/workflows"
 	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
 	"k8s.io/klog/v2"
 
@@ -89,18 +90,7 @@ func (r *SonataFlowBuildReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	if phase == operatorapi.BuildPhaseNone || kubeutil.GetAnnotationAsBool(build, operatorapi.BuildRestartAnnotation) {
-		if err := buildManager.Schedule(build); err != nil {
-			return ctrl.Result{}, err
-		}
-		if err := r.manageStatusUpdate(ctx, build); err != nil {
-			return ctrl.Result{}, err
-		}
-		kubeutil.SetAnnotation(build, operatorapi.BuildRestartAnnotation, "false")
-		if err := r.Update(ctx, build); err != nil {
-			return ctrl.Result{}, err
-		}
-		return ctrl.Result{RequeueAfter: requeueAfterForNewBuild}, nil
-		// TODO: this smells, why not just else? review in the future: https://issues.redhat.com/browse/KOGITO-8785
+		return r.scheduleNewBuild(ctx, buildManager, build)
 	} else if phase != operatorapi.BuildPhaseSucceeded && phase != operatorapi.BuildPhaseError && phase != operatorapi.BuildPhaseFailed {
 		beforeReconcileStatus := build.Status.DeepCopy()
 		if err = buildManager.Reconcile(build); err != nil {
@@ -115,6 +105,32 @@ func (r *SonataFlowBuildReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *SonataFlowBuildReconciler) scheduleNewBuild(ctx context.Context, buildManager builder.BuildManager, build *operatorapi.SonataFlowBuild) (ctrl.Result, error) {
+	if err := buildManager.Schedule(build); err != nil {
+		return ctrl.Result{}, err
+	}
+	if err := r.manageStatusUpdate(ctx, build); err != nil {
+		return ctrl.Result{}, err
+	}
+	if kubeutil.GetAnnotationAsBool(build, operatorapi.BuildRestartAnnotation) {
+		// Remove restart annotation to not enter in infinity reconciliation loop
+		kubeutil.SetAnnotation(build, operatorapi.BuildRestartAnnotation, "false")
+		if err := r.Update(ctx, build); err != nil {
+			return ctrl.Result{}, err
+		}
+		// Signals to the workflow that we are rebuilding
+		workflowManager, err := workflows.NewManager(r.Client, ctx, build.Namespace, build.Name)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		if err := workflowManager.SetBuiltStatusToWaitForBuild("Build marked to restart"); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
+	return ctrl.Result{RequeueAfter: requeueAfterForNewBuild}, nil
 }
 
 func (r *SonataFlowBuildReconciler) manageStatusUpdate(ctx context.Context, instance *operatorapi.SonataFlowBuild) error {

@@ -135,7 +135,6 @@ func buildEnqueueRequestsFromMapFunc(c client.Client, b *operatorapi.SonataFlowB
 	var requests []reconcile.Request
 
 	if b.Status.BuildPhase == operatorapi.BuildPhaseSucceeded {
-
 		// Fetch the Workflow instance
 		workflow := &operatorapi.SonataFlow{}
 		namespacedName := types.NamespacedName{
