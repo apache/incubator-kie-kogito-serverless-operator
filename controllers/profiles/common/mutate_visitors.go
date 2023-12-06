@@ -23,6 +23,7 @@ import (
 	"context"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/discovery"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/properties"
 	"github.com/imdario/mergo"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -114,13 +115,13 @@ func WorkflowPropertiesMutateVisitor(ctx context.Context, catalog discovery.Serv
 			_, hasKey := cm.Data[workflowproj.ApplicationPropertiesFileName]
 			if !hasKey {
 				cm.Data = make(map[string]string, 1)
-				cm.Data[workflowproj.ApplicationPropertiesFileName] = ImmutableApplicationProperties(workflow, platform)
+				cm.Data[workflowproj.ApplicationPropertiesFileName] = properties.ImmutableApplicationProperties(workflow, platform)
 				return nil
 			}
 
 			// In the future, if this needs change, instead we can receive an AppPropertyHandler in this mutator
 			cm.Data[workflowproj.ApplicationPropertiesFileName] =
-				NewAppPropertyHandler(workflow, platform).
+				properties.NewAppPropertyHandler(workflow, platform).
 					WithUserProperties(cm.Data[workflowproj.ApplicationPropertiesFileName]).
 					WithServiceDiscovery(ctx, catalog).
 					Build()

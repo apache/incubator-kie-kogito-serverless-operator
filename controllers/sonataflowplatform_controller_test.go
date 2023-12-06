@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/platform/services"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/test"
 
@@ -40,7 +41,7 @@ import (
 var (
 	envDBKind = corev1.EnvVar{
 		Name:  "QUARKUS_DATASOURCE_DB_KIND",
-		Value: common.PersistenceTypePostgressql,
+		Value: common.PersistenceTypePostgreSQL,
 	}
 
 	envDataIndex = corev1.EnvVar{
@@ -126,12 +127,12 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check data index deployment
 		dep := &appsv1.Deployment{}
-		di := common.NewDataIndexService(ksp)
+		di := services.NewDataIndexService(ksp)
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: di.GetServiceName(), Namespace: ksp.Namespace}, dep))
 
 		env := corev1.EnvVar{
 			Name:  "QUARKUS_DATASOURCE_DB_KIND",
-			Value: common.PersistenceTypePostgressql,
+			Value: common.PersistenceTypePostgreSQL,
 		}
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
 		assert.Equal(t, di.GetServiceImageName(common.PersistenceTypeEphemeral), dep.Spec.Template.Spec.Containers[0].Image)
@@ -144,7 +145,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		}}
 		// Ensure correct container overriding anything set in PodSpec
 		ksp.Spec.Services.DataIndex.PodTemplate.Container = v1alpha08.ContainerSpec{TerminationMessagePath: "testing"}
-		ksp.Spec.Services.DataIndex.PodTemplate.Containers = []corev1.Container{{Name: common.DataIndexServiceName + "2", TerminationMessagePath: "testing"}}
+		ksp.Spec.Services.DataIndex.PodTemplate.Containers = []corev1.Container{{Name: services.DataIndexServiceName + "2", TerminationMessagePath: "testing"}}
 		assert.NoError(t, cl.Update(context.TODO(), ksp))
 
 		_, err = r.Reconcile(context.TODO(), req)
@@ -154,11 +155,11 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: di.GetServiceName(), Namespace: ksp.Namespace}, dep))
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 2)
-		assert.Equal(t, common.DataIndexServiceName+"2", dep.Spec.Template.Spec.Containers[0].Name)
+		assert.Equal(t, services.DataIndexServiceName+"2", dep.Spec.Template.Spec.Containers[0].Name)
 		assert.Equal(t, "testing", dep.Spec.Template.Spec.Containers[0].TerminationMessagePath)
-		assert.Equal(t, common.DataIndexServiceName, dep.Spec.Template.Spec.Containers[1].Name)
+		assert.Equal(t, services.DataIndexServiceName, dep.Spec.Template.Spec.Containers[1].Name)
 		assert.Equal(t, "testing", dep.Spec.Template.Spec.Containers[1].TerminationMessagePath)
-		assert.Equal(t, di.GetServiceImageName(common.PersistenceTypePostgressql), dep.Spec.Template.Spec.Containers[1].Image)
+		assert.Equal(t, di.GetServiceImageName(common.PersistenceTypePostgreSQL), dep.Spec.Template.Spec.Containers[1].Image)
 		assert.Contains(t, dep.Spec.Template.Spec.Containers[1].Env, env)
 	})
 
@@ -178,7 +179,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			},
 		}
 
-		di := common.NewDataIndexService(ksp)
+		di := services.NewDataIndexService(ksp)
 
 		// Create a fake client to mock API calls.
 		cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(ksp).WithStatusSubresource(ksp).Build()
@@ -217,7 +218,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		env := corev1.EnvVar{
 			Name:  "QUARKUS_DATASOURCE_DB_KIND",
-			Value: common.PersistenceTypePostgressql,
+			Value: common.PersistenceTypePostgreSQL,
 		}
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
 		assert.Equal(t, di.GetServiceImageName(common.PersistenceTypeEphemeral), dep.Spec.Template.Spec.Containers[0].Image)
@@ -230,7 +231,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			JdbcUrl:   url,
 		}}
 		// Ensure correct container overriding anything set in PodSpec
-		ksp.Spec.Services.DataIndex.PodTemplate.PodSpec.Containers = []corev1.Container{{Name: common.DataIndexServiceName}}
+		ksp.Spec.Services.DataIndex.PodTemplate.PodSpec.Containers = []corev1.Container{{Name: services.DataIndexServiceName}}
 		assert.NoError(t, cl.Update(context.TODO(), ksp))
 
 		_, err = r.Reconcile(context.TODO(), req)
@@ -244,7 +245,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		}
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: di.GetServiceName(), Namespace: ksp.Namespace}, dep))
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
-		assert.Equal(t, di.GetServiceImageName(common.PersistenceTypePostgressql), dep.Spec.Template.Spec.Containers[0].Image)
+		assert.Equal(t, di.GetServiceImageName(common.PersistenceTypePostgreSQL), dep.Spec.Template.Spec.Containers[0].Image)
 		assert.Equal(t, &replicas, dep.Spec.Replicas)
 		assert.Equal(t, []string{"test:latest"}, dep.Spec.Template.Spec.Containers[0].Command)
 		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
@@ -294,7 +295,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check data index deployment
 		dep := &appsv1.Deployment{}
-		js := common.NewJobService(ksp)
+		js := services.NewJobService(ksp)
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: js.GetServiceName(), Namespace: ksp.Namespace}, dep))
 
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
@@ -309,7 +310,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		}}
 		// Ensure correct container overriding anything set in PodSpec
 		ksp.Spec.Services.JobService.PodTemplate.Container = v1alpha08.ContainerSpec{TerminationMessagePath: "testing"}
-		ksp.Spec.Services.JobService.PodTemplate.Containers = []corev1.Container{{Name: common.JobServiceName + "2", TerminationMessagePath: "testing"}}
+		ksp.Spec.Services.JobService.PodTemplate.Containers = []corev1.Container{{Name: services.JobServiceName + "2", TerminationMessagePath: "testing"}}
 		assert.NoError(t, cl.Update(context.TODO(), ksp))
 
 		_, err = r.Reconcile(context.TODO(), req)
@@ -319,11 +320,11 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: js.GetServiceName(), Namespace: ksp.Namespace}, dep))
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 2)
-		assert.Equal(t, common.JobServiceName+"2", dep.Spec.Template.Spec.Containers[0].Name)
+		assert.Equal(t, services.JobServiceName+"2", dep.Spec.Template.Spec.Containers[0].Name)
 		assert.Equal(t, "testing", dep.Spec.Template.Spec.Containers[0].TerminationMessagePath)
-		assert.Equal(t, common.JobServiceName, dep.Spec.Template.Spec.Containers[1].Name)
+		assert.Equal(t, services.JobServiceName, dep.Spec.Template.Spec.Containers[1].Name)
 		assert.Equal(t, "testing", dep.Spec.Template.Spec.Containers[1].TerminationMessagePath)
-		assert.Equal(t, js.GetServiceImageName(common.PersistenceTypePostgressql), dep.Spec.Template.Spec.Containers[1].Image)
+		assert.Equal(t, js.GetServiceImageName(common.PersistenceTypePostgreSQL), dep.Spec.Template.Spec.Containers[1].Image)
 		assert.Contains(t, dep.Spec.Template.Spec.Containers[1].Env, envDBKind)
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[1].Env, envDataIndex)
 	})
@@ -344,7 +345,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			},
 		}
 
-		js := common.NewJobService(ksp)
+		js := services.NewJobService(ksp)
 
 		// Create a fake client to mock API calls.
 		cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(ksp).WithStatusSubresource(ksp).Build()
@@ -393,7 +394,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			JdbcUrl:   url,
 		}}
 		// Ensure correct container overriding anything set in PodSpec
-		ksp.Spec.Services.JobService.PodTemplate.PodSpec.Containers = []corev1.Container{{Name: common.JobServiceName}}
+		ksp.Spec.Services.JobService.PodTemplate.PodSpec.Containers = []corev1.Container{{Name: services.JobServiceName}}
 		assert.NoError(t, cl.Update(context.TODO(), ksp))
 
 		_, err = r.Reconcile(context.TODO(), req)
@@ -403,7 +404,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: js.GetServiceName(), Namespace: ksp.Namespace}, dep))
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
-		assert.Equal(t, js.GetServiceImageName(common.PersistenceTypePostgressql), dep.Spec.Template.Spec.Containers[0].Image)
+		assert.Equal(t, js.GetServiceImageName(common.PersistenceTypePostgreSQL), dep.Spec.Template.Spec.Containers[0].Image)
 		assert.Equal(t, &replicas, dep.Spec.Replicas)
 		assert.Equal(t, []string{"test:latest"}, dep.Spec.Template.Spec.Containers[0].Command)
 		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, envDBKind)
@@ -419,8 +420,8 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			JobService: &v1alpha08.ServiceSpec{},
 		}
 
-		di := common.NewDataIndexService(ksp)
-		js := common.NewJobService(ksp)
+		di := services.NewDataIndexService(ksp)
+		js := services.NewJobService(ksp)
 		// Create a fake client to mock API calls.
 		cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(ksp).WithStatusSubresource(ksp).Build()
 		// Create a SonataFlowPlatformReconciler object with the scheme and fake client.

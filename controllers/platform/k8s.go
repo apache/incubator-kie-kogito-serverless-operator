@@ -1,35 +1,23 @@
-// Copyright 2023 Red Hat, Inc. and/or its affiliates
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package platform
 
 import (
 	"context"
 
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
+	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/container-builder/client"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/platform/services"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/properties"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/container-builder/client"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
 	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // NewServiceAction returns an action that deploys the services.
@@ -56,13 +44,13 @@ func (action *serviceAction) Handle(ctx context.Context, platform *operatorapi.S
 	}
 
 	if platform.Spec.Services.DataIndex != nil {
-		if err := createServiceComponents(ctx, action.client, platform, common.NewDataIndexService(platform)); err != nil {
+		if err := createServiceComponents(ctx, action.client, platform, services.NewDataIndexService(platform)); err != nil {
 			return nil, err
 		}
 	}
 
 	if platform.Spec.Services.JobService != nil {
-		if err := createServiceComponents(ctx, action.client, platform, common.NewJobService(platform)); err != nil {
+		if err := createServiceComponents(ctx, action.client, platform, services.NewJobService(platform)); err != nil {
 			return nil, err
 		}
 	}
@@ -70,7 +58,7 @@ func (action *serviceAction) Handle(ctx context.Context, platform *operatorapi.S
 	return platform, nil
 }
 
-func createServiceComponents(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType common.PlatformService) error {
+func createServiceComponents(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType services.PlatformService) error {
 	if err := createConfigMap(ctx, client, platform, serviceType); err != nil {
 		return err
 	}
@@ -80,7 +68,7 @@ func createServiceComponents(ctx context.Context, client client.Client, platform
 	return createService(ctx, client, platform, serviceType)
 }
 
-func createDeployment(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, svc common.PlatformService) error {
+func createDeployment(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, svc services.PlatformService) error {
 	readyProbe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -187,7 +175,7 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 	return nil
 }
 
-func createService(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, svc common.PlatformService) error {
+func createService(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, svc services.PlatformService) error {
 	lbl := map[string]string{
 		workflowproj.LabelApp: platform.Name,
 	}
@@ -226,7 +214,7 @@ func createService(ctx context.Context, client client.Client, platform *operator
 	return nil
 }
 
-func createConfigMap(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, svc common.PlatformService) error {
+func createConfigMap(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, svc services.PlatformService) error {
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      svc.GetServiceCmName(),
@@ -236,7 +224,7 @@ func createConfigMap(ctx context.Context, client client.Client, platform *operat
 			},
 		},
 		Data: map[string]string{
-			workflowproj.ApplicationPropertiesFileName: common.NewServiceAppPropertyHandler(platform).Build(),
+			workflowproj.ApplicationPropertiesFileName: properties.NewServiceAppPropertyHandler(platform).Build(),
 		},
 	}
 	if err := controllerutil.SetControllerReference(platform, configMap, client.Scheme()); err != nil {
@@ -246,7 +234,7 @@ func createConfigMap(ctx context.Context, client client.Client, platform *operat
 	// Create or Update the service
 	if op, err := controllerutil.CreateOrUpdate(ctx, client, configMap, func() error {
 		configMap.Data[workflowproj.ApplicationPropertiesFileName] =
-			common.NewServiceAppPropertyHandler(platform).
+			properties.NewServiceAppPropertyHandler(platform).
 				WithUserProperties(configMap.Data[workflowproj.ApplicationPropertiesFileName]).
 				Build()
 

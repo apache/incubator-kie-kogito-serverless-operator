@@ -30,4 +30,8 @@ const (
 	// RequeueRecoverDeploymentErrorInterval interval between recovering from failures
 	RequeueRecoverDeploymentErrorInterval = RecoverDeploymentErrorInterval * time.Minute
 	RecoverDeploymentErrorInterval        = 10
+
+	ConfigMapWorkflowPropsVolumeName = "workflow-properties"
+	PersistenceTypePostgreSQL        = "postgresql"
+	PersistenceTypeEphemeral         = "ephemeral"
 )
