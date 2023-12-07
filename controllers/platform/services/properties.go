@@ -48,8 +48,8 @@ func generateReactiveURL(postgresSpec *operatorapi.PersistencePostgreSql, schema
 	return fmt.Sprintf("%s://%s:%d/%s?search_path=%s", constants.PersistenceTypePostgreSQL, postgresSpec.ServiceRef.Name+"."+databaseNamespace, dataSourcePort, databaseName, databaseSchema)
 }
 
-// withDataIndexServiceUrl adds the property dataIndexServiceUrlProperty to the application properties.
-// See Service Discovery https://kubernetes.io/docs/concepts/services-networking/service/#dns
+// GenerateDataIndexApplicationProperties returns the application properties required for the Data Index Service to work when deployed in a production profile
+// and data index' service's spec field `Enabled` set to true
 func GenerateDataIndexApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) *properties.Properties {
 	props := properties.NewProperties()
 	if profiles.IsProdProfile(workflow) && dataIndexEnabled(platform) {
@@ -62,7 +62,8 @@ func GenerateDataIndexApplicationProperties(workflow *operatorapi.SonataFlow, pl
 	return props
 }
 
-// withJobServiceURL adds the property 'mp.messaging.outgoing.kogito-job-service-job-request-events.url' to the application property
+// GenerateJobServiceApplicationProperties returns the application properties required for the Job Service to work in a production profile and job service's
+// service's spec field `Enabled` set to true
 func GenerateJobServiceApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) *properties.Properties {
 	props := properties.NewProperties()
 	if profiles.IsProdProfile(workflow) && jobServiceEnabled(platform) {
