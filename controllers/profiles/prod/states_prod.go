@@ -69,7 +69,7 @@ func (h *newBuilderState) Do(ctx context.Context, workflow *operatorapi.SonataFl
 	if err != nil {
 		//If we are not able to retrieve or create a Build CR for this Workflow we will mark
 		klog.V(log.E).ErrorS(err, "Failed to retrieve or create a Build CR")
-		workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.WaitingForBuildReason,
+		workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.BuildFailedReason,
 			"Failed to retrieve or create a Build CR", workflow.Namespace)
 		_, err = h.PerformStatusUpdate(ctx, workflow)
 		return ctrl.Result{}, nil, err
@@ -109,14 +109,19 @@ func (h *followBuildStatusState) Do(ctx context.Context, workflow *operatorapi.S
 		if _, err = h.PerformStatusUpdate(ctx, workflow); err != nil {
 			return ctrl.Result{}, nil, err
 		}
-		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, nil, nil
+		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, nil, err
 	}
 
 	if build.Status.BuildPhase == operatorapi.BuildPhaseSucceeded {
 		klog.V(log.I).InfoS("Workflow build has finished")
+		if workflow.Status.IsReady() {
+			if err := common.DeploymentManager(h.C).RolloutDeployment(ctx, workflow); err != nil {
+				return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, nil, err
+			}
+		}
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "Build has finished, rolling out deployment")
 		//If we have finished a build and the workflow is not running, we will start the provisioning phase
 		workflow.Status.Manager().MarkTrue(api.BuiltConditionType)
-		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "Build has finished")
 		_, err = h.PerformStatusUpdate(ctx, workflow)
 		h.Recorder.Eventf(workflow, corev1.EventTypeNormal, api.BuildSuccessfulReason, "Workflow %s build has been finished successfully.", workflow.Name)
 	} else if build.Status.BuildPhase == operatorapi.BuildPhaseFailed || build.Status.BuildPhase == operatorapi.BuildPhaseError {
@@ -182,7 +187,7 @@ func (h *deployWithBuildWorkflowState) Do(ctx context.Context, workflow *operato
 	}
 
 	// didn't change, business as usual
-	return newDeploymentHandler(h.StateSupport, h.ensurers).handleWithImage(ctx, workflow, build.Status.ImageTag)
+	return newDeploymentReconciler(h.StateSupport, h.ensurers).reconcileWithBuiltImage(ctx, workflow, build.Status.ImageTag)
 }
 
 func (h *deployWithBuildWorkflowState) PostReconcile(ctx context.Context, workflow *operatorapi.SonataFlow) error {

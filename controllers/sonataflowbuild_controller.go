@@ -97,7 +97,7 @@ func (r *SonataFlowBuildReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			return ctrl.Result{}, err
 		}
 		if !reflect.DeepEqual(build.Status, beforeReconcileStatus) {
-			if err = r.manageStatusUpdate(ctx, build); err != nil {
+			if err = r.manageStatusUpdate(ctx, build, beforeReconcileStatus.BuildPhase); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
@@ -111,7 +111,7 @@ func (r *SonataFlowBuildReconciler) scheduleNewBuild(ctx context.Context, buildM
 	if err := buildManager.Schedule(build); err != nil {
 		return ctrl.Result{}, err
 	}
-	if err := r.manageStatusUpdate(ctx, build); err != nil {
+	if err := r.manageStatusUpdate(ctx, build, ""); err != nil {
 		return ctrl.Result{}, err
 	}
 	if kubeutil.GetAnnotationAsBool(build, operatorapi.BuildRestartAnnotation) {
@@ -125,7 +125,7 @@ func (r *SonataFlowBuildReconciler) scheduleNewBuild(ctx context.Context, buildM
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		if err := workflowManager.SetBuiltStatusToWaitForBuild("Build marked to restart"); err != nil {
+		if err := workflowManager.SetBuiltStatusToRunning("Build marked to restart"); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -133,10 +133,11 @@ func (r *SonataFlowBuildReconciler) scheduleNewBuild(ctx context.Context, buildM
 	return ctrl.Result{RequeueAfter: requeueAfterForNewBuild}, nil
 }
 
-func (r *SonataFlowBuildReconciler) manageStatusUpdate(ctx context.Context, instance *operatorapi.SonataFlowBuild) error {
+func (r *SonataFlowBuildReconciler) manageStatusUpdate(ctx context.Context, instance *operatorapi.SonataFlowBuild, beforeReconcilePhase operatorapi.BuildPhase) error {
 	err := r.Status().Update(ctx, instance)
-	if err == nil {
-		r.Recorder.Event(instance, corev1.EventTypeNormal, "Updated", fmt.Sprintf("Updated buildphase to  %s", instance.Status.BuildPhase))
+	// Don't need to spam events if the phase hasn't changed
+	if err == nil && beforeReconcilePhase != instance.Status.BuildPhase {
+		r.Recorder.Event(instance, corev1.EventTypeNormal, "Updated", fmt.Sprintf("Updated buildphase to %s", instance.Status.BuildPhase))
 	}
 	return err
 }

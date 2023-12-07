@@ -150,7 +150,7 @@ func (f *followWorkflowDeploymentState) CanReconcile(workflow *operatorapi.Sonat
 }
 
 func (f *followWorkflowDeploymentState) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
-	result, err := common.DeploymentHandler(f.C).SyncDeploymentStatus(ctx, workflow)
+	result, err := common.DeploymentManager(f.C).SyncDeploymentStatus(ctx, workflow)
 	if err != nil {
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, nil, err
 	}

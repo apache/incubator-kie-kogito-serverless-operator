@@ -28,7 +28,7 @@ var _ WorkflowManager = &workflowManager{}
 // WorkflowManager offers a management interface for operations with SonataFlows instances outside the controller's package.
 // Meant to be used by other packages that don't have access to a SonataFlow instance coming from a reconciliation cycle.
 type WorkflowManager interface {
-	SetBuiltStatusToWaitForBuild(message string) error
+	SetBuiltStatusToRunning(message string) error
 	GetWorkflow() *v1alpha08.SonataFlow
 }
 
@@ -42,8 +42,8 @@ func (w *workflowManager) GetWorkflow() *v1alpha08.SonataFlow {
 	return w.workflow
 }
 
-func (w *workflowManager) SetBuiltStatusToWaitForBuild(message string) error {
-	w.workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.WaitingForBuildReason, message)
+func (w *workflowManager) SetBuiltStatusToRunning(message string) error {
+	w.workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.BuildIsRunningReason, message)
 	return w.client.Status().Update(w.ctx, w.workflow)
 }
 

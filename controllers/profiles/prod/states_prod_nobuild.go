@@ -62,7 +62,7 @@ func (f *followDeployWorkflowState) CanReconcile(workflow *operatorapi.SonataFlo
 }
 
 func (f *followDeployWorkflowState) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
-	return newDeploymentHandler(f.StateSupport, f.ensurers).handle(ctx, workflow)
+	return newDeploymentReconciler(f.StateSupport, f.ensurers).reconcile(ctx, workflow)
 }
 
 func (f *followDeployWorkflowState) PostReconcile(ctx context.Context, workflow *operatorapi.SonataFlow) error {
