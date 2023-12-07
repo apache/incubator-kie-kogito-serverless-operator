@@ -22,34 +22,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/version"
 	"github.com/imdario/mergo"
 )
 
-const (
-	DataIndexServiceName = "data-index-service"
-	JobServiceName       = "jobs-service"
-	imageNamePrefix      = "quay.io/kiegroup/kogito"
-	DataIndexName        = "data-index"
-
-	persistenceTypePostgreSQL = "postgresql"
-
-	DataIndexServiceUrlProperty = "mp.messaging.outgoing.kogito-processinstances-events.url"
-
-	DataIndexServiceUrlProtocol             = "http"
-	jobServiceURLProperty                   = "mp.messaging.outgoing.kogito-job-service-job-request-events.url"
-	jobServiceKafkaSinkInjectionHealthCheck = `quarkus.smallrye-health.check."org.kie.kogito.jobs.service.messaging.http.health.knative.KSinkInjectionHealthCheck".enabled`
-	jobServiceStatusChangeEventsProperty    = "kogito.jobs-service.http.job-status-change-events"
-	jobServiceStatusChangeEventsURL         = "mp.messaging.outgoing.kogito-job-service-job-status-events-http.url"
-	jobServiceURLProtocol                   = "http"
-	jobServiceDataSourceReactiveURLProperty = "quarkus.datasource.reactive.url"
-
-	defaultDatabaseName   string = "sonataflow"
-	defaultPostgreSQLPort int    = 5432
-)
-
-type PlatformService interface {
+type Platform interface {
 	// GetContainerName returns the name of the service's container in the deployment.
 	GetContainerName() string
 	// GetServiceImageName returns the image name of the service's container. It takes in the service and persistence types and returns a string
@@ -89,7 +68,7 @@ func NewDataIndexService(platform *operatorapi.SonataFlowPlatform) DataIndex {
 }
 
 func (d DataIndex) GetContainerName() string {
-	return DataIndexServiceName
+	return constants.DataIndexServiceName
 }
 
 func (d DataIndex) GetServiceImageName(persistenceName string) string {
@@ -98,11 +77,11 @@ func (d DataIndex) GetServiceImageName(persistenceName string) string {
 		tag = "latest"
 	}
 	// returns "quay.io/kiegroup/kogito-data-index-<persistence_layer>:<tag>"
-	return fmt.Sprintf("%s-%s-%s:%s", imageNamePrefix, DataIndexName, persistenceName, tag)
+	return fmt.Sprintf("%s-%s-%s:%s", constants.ImageNamePrefix, constants.DataIndexName, persistenceName, tag)
 }
 
 func (d DataIndex) GetServiceName() string {
-	return fmt.Sprintf("%s-%s", d.platform.Name, DataIndexServiceName)
+	return fmt.Sprintf("%s-%s", d.platform.Name, constants.DataIndexServiceName)
 }
 
 func (d DataIndex) GetEnvironmentVariables() []corev1.EnvVar {
@@ -141,7 +120,7 @@ func (d DataIndex) ConfigurePersistence(containerSpec *corev1.Container) *corev1
 
 	if d.platform.Spec.Services.DataIndex.Persistence != nil && d.platform.Spec.Services.DataIndex.Persistence.PostgreSql != nil {
 		c := containerSpec.DeepCopy()
-		c.Image = d.GetServiceImageName(persistenceTypePostgreSQL)
+		c.Image = d.GetServiceImageName(constants.PersistenceTypePostgreSQL)
 		c.Env = append(c.Env, configurePostgreSqlEnv(d.platform.Spec.Services.DataIndex.Persistence.PostgreSql, d.GetServiceName(), d.platform.Namespace)...)
 		return c
 	}
@@ -174,7 +153,7 @@ func NewJobService(platform *operatorapi.SonataFlowPlatform) JobService {
 }
 
 func (j JobService) GetContainerName() string {
-	return JobServiceName
+	return constants.JobServiceName
 }
 
 func (j JobService) GetServiceImageName(persistenceName string) string {
@@ -183,11 +162,11 @@ func (j JobService) GetServiceImageName(persistenceName string) string {
 		tag = "latest"
 	}
 	// returns "quay.io/kiegroup/kogito-jobs-service-<persistece_layer>:<tag>"
-	return fmt.Sprintf("%s-%s-%s:%s", imageNamePrefix, JobServiceName, persistenceName, tag)
+	return fmt.Sprintf("%s-%s-%s:%s", constants.ImageNamePrefix, constants.JobServiceName, persistenceName, tag)
 }
 
 func (j JobService) GetServiceName() string {
-	return fmt.Sprintf("%s-%s", j.platform.Name, JobServiceName)
+	return fmt.Sprintf("%s-%s", j.platform.Name, constants.JobServiceName)
 }
 
 func (j JobService) GetServiceCmName() string {
@@ -237,7 +216,7 @@ func (j JobService) ConfigurePersistence(containerSpec *corev1.Container) *corev
 
 	if j.platform.Spec.Services.JobService.Persistence != nil && j.platform.Spec.Services.JobService.Persistence.PostgreSql != nil {
 		c := containerSpec.DeepCopy()
-		c.Image = j.GetServiceImageName(persistenceTypePostgreSQL)
+		c.Image = j.GetServiceImageName(constants.PersistenceTypePostgreSQL)
 		c.Env = append(c.Env, configurePostgreSqlEnv(j.platform.Spec.Services.JobService.Persistence.PostgreSql, j.GetServiceName(), j.platform.Namespace)...)
 		return c
 	}
@@ -265,7 +244,7 @@ func configurePostgreSqlEnv(postgresql *operatorapi.PersistencePostgreSql, datab
 	if len(postgresql.ServiceRef.DatabaseName) > 0 {
 		databaseName = postgresql.ServiceRef.DatabaseName
 	}
-	dataSourceUrl := "jdbc:" + persistenceTypePostgreSQL + "://" + postgresql.ServiceRef.Name + "." + databaseNamespace + ":" + strconv.Itoa(dataSourcePort) + "/" + databaseName + "?currentSchema=" + databaseSchema
+	dataSourceUrl := "jdbc:" + constants.PersistenceTypePostgreSQL + "://" + postgresql.ServiceRef.Name + "." + databaseNamespace + ":" + strconv.Itoa(dataSourcePort) + "/" + databaseName + "?currentSchema=" + databaseSchema
 	if len(postgresql.JdbcUrl) > 0 {
 		dataSourceUrl = postgresql.JdbcUrl
 	}
@@ -301,7 +280,7 @@ func configurePostgreSqlEnv(postgresql *operatorapi.PersistencePostgreSql, datab
 		},
 		{
 			Name:  "QUARKUS_DATASOURCE_DB_KIND",
-			Value: persistenceTypePostgreSQL,
+			Value: constants.PersistenceTypePostgreSQL,
 		},
 		{
 			Name:  "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION",

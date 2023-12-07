@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package common
+package constants
 
 import "time"
 
@@ -31,7 +31,5 @@ const (
 	RequeueRecoverDeploymentErrorInterval = RecoverDeploymentErrorInterval * time.Minute
 	RecoverDeploymentErrorInterval        = 10
 
-	ConfigMapWorkflowPropsVolumeName = "workflow-properties"
-	PersistenceTypePostgreSQL        = "postgresql"
-	PersistenceTypeEphemeral         = "ephemeral"
+	DefaultHTTPWorkflowPortInt = 8080
 )

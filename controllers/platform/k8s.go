@@ -1,3 +1,17 @@
+// Copyright 2023 Apache Software Foundation (ASF)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package platform
 
 import (
@@ -7,6 +21,7 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/container-builder/client"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/platform/services"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/properties"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
@@ -58,17 +73,17 @@ func (action *serviceAction) Handle(ctx context.Context, platform *operatorapi.S
 	return platform, nil
 }
 
-func createServiceComponents(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, serviceType services.PlatformService) error {
-	if err := createConfigMap(ctx, client, platform, serviceType); err != nil {
+func createServiceComponents(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, ps services.Platform) error {
+	if err := createConfigMap(ctx, client, platform, ps); err != nil {
 		return err
 	}
-	if err := createDeployment(ctx, client, platform, serviceType); err != nil {
+	if err := createDeployment(ctx, client, platform, ps); err != nil {
 		return err
 	}
-	return createService(ctx, client, platform, serviceType)
+	return createService(ctx, client, platform, ps)
 }
 
-func createDeployment(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, svc services.PlatformService) error {
+func createDeployment(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, ps services.Platform) error {
 	readyProbe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -86,15 +101,15 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 	liveProbe := readyProbe.DeepCopy()
 	liveProbe.ProbeHandler.HTTPGet.Path = common.QuarkusHealthPathLive
 	dataDeployContainer := &corev1.Container{
-		Image:          svc.GetServiceImageName(common.PersistenceTypeEphemeral),
-		Env:            svc.GetEnvironmentVariables(),
-		Resources:      svc.GetPodResourceRequirements(),
+		Image:          ps.GetServiceImageName(constants.PersistenceTypeEphemeral),
+		Env:            ps.GetEnvironmentVariables(),
+		Resources:      ps.GetPodResourceRequirements(),
 		ReadinessProbe: readyProbe,
 		LivenessProbe:  liveProbe,
 		Ports: []corev1.ContainerPort{
 			{
 				Name:          utils.HttpScheme,
-				ContainerPort: int32(common.DefaultHTTPWorkflowPortInt),
+				ContainerPort: int32(constants.DefaultHTTPWorkflowPortInt),
 				Protocol:      corev1.ProtocolTCP,
 			},
 		},
@@ -106,16 +121,16 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 			},
 		},
 	}
-	dataDeployContainer = svc.ConfigurePersistence(dataDeployContainer)
-	dataDeployContainer, err := svc.MergeContainerSpec(dataDeployContainer)
+	dataDeployContainer = ps.ConfigurePersistence(dataDeployContainer)
+	dataDeployContainer, err := ps.MergeContainerSpec(dataDeployContainer)
 	if err != nil {
 		return err
 	}
 
 	// immutable
-	dataDeployContainer.Name = svc.GetContainerName()
+	dataDeployContainer.Name = ps.GetContainerName()
 
-	replicas := svc.GetReplicaCount()
+	replicas := ps.GetReplicaCount()
 	lbl := map[string]string{
 		workflowproj.LabelApp: platform.Name,
 	}
@@ -135,7 +150,7 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 						VolumeSource: corev1.VolumeSource{
 							ConfigMap: &corev1.ConfigMapVolumeSource{
 								LocalObjectReference: corev1.LocalObjectReference{
-									Name: svc.GetServiceCmName(),
+									Name: ps.GetServiceCmName(),
 								},
 							},
 						},
@@ -145,7 +160,7 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 		},
 	}
 
-	dataDeploySpec.Template.Spec, err = svc.MergePodSpec(dataDeploySpec.Template.Spec)
+	dataDeploySpec.Template.Spec, err = ps.MergePodSpec(dataDeploySpec.Template.Spec)
 	if err != nil {
 		return err
 	}
@@ -154,7 +169,7 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 	dataDeploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: platform.Namespace,
-			Name:      svc.GetServiceName(),
+			Name:      ps.GetServiceName(),
 			Labels:    lbl,
 		}}
 	if err := controllerutil.SetControllerReference(platform, dataDeploy, client.Scheme()); err != nil {
@@ -175,7 +190,7 @@ func createDeployment(ctx context.Context, client client.Client, platform *opera
 	return nil
 }
 
-func createService(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, svc services.PlatformService) error {
+func createService(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, ps services.Platform) error {
 	lbl := map[string]string{
 		workflowproj.LabelApp: platform.Name,
 	}
@@ -193,7 +208,7 @@ func createService(ctx context.Context, client client.Client, platform *operator
 	dataSvc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: platform.Namespace,
-			Name:      svc.GetServiceName(),
+			Name:      ps.GetServiceName(),
 			Labels:    lbl,
 		}}
 	if err := controllerutil.SetControllerReference(platform, dataSvc, client.Scheme()); err != nil {
@@ -214,10 +229,10 @@ func createService(ctx context.Context, client client.Client, platform *operator
 	return nil
 }
 
-func createConfigMap(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, svc services.PlatformService) error {
+func createConfigMap(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, ps services.Platform) error {
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      svc.GetServiceCmName(),
+			Name:      ps.GetServiceCmName(),
 			Namespace: platform.Namespace,
 			Labels: map[string]string{
 				workflowproj.LabelApp: platform.Name,

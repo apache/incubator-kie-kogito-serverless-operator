@@ -28,6 +28,7 @@ import (
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/discovery"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/platform/services"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 
 	"github.com/magiconair/properties"
 
@@ -37,27 +38,16 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
 )
 
-const (
-	kogitoServiceUrlProperty    = "kogito.service.url"
-	kogitoServiceUrlProtocol    = "http"
-	KafkaSmallRyeHealthProperty = "quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled"
-
-	microprofileServiceCatalogPropertyPrefix = "org.kie.kogito.addons.discovery."
-	discoveryLikePropertyPattern             = "^\\${(kubernetes|knative|openshift):(.*)}$"
-	persistenceTypePostgreSQL                = "postgresql"
-)
-
 var (
-	DefaultHTTPWorkflowPortInt     = 8080
 	immutableApplicationProperties = fmt.Sprintf("quarkus.http.port=%d\n"+
 		"quarkus.http.host=0.0.0.0\n"+
 		// We disable the Knative health checks to not block the dev pod to run if Knative objects are not available
 		// See: https://kiegroup.github.io/kogito-docs/serverlessworkflow/latest/eventing/consume-produce-events-with-knative-eventing.html#ref-knative-eventing-add-on-source-configuration
 		"org.kie.kogito.addons.knative.eventing.health-enabled=false\n"+
 		"quarkus.devservices.enabled=false\n"+
-		"quarkus.kogito.devservices.enabled=false\n", DefaultHTTPWorkflowPortInt)
+		"quarkus.kogito.devservices.enabled=false\n", constants.DefaultHTTPWorkflowPortInt)
 
-	discoveryLikePropertyExpr                    = regexp.MustCompile(discoveryLikePropertyPattern)
+	discoveryLikePropertyExpr                    = regexp.MustCompile(constants.DiscoveryLikePropertyPattern)
 	_                         AppPropertyHandler = &appPropertyHandler{}
 )
 
@@ -137,18 +127,18 @@ func (a *appPropertyHandler) Build() string {
 func (a *appPropertyHandler) withKogitoServiceUrl() AppPropertyHandler {
 	var kogitoServiceUrl string
 	if len(a.workflow.Namespace) > 0 {
-		kogitoServiceUrl = fmt.Sprintf("%s://%s.%s", kogitoServiceUrlProtocol, a.workflow.Name, a.workflow.Namespace)
+		kogitoServiceUrl = fmt.Sprintf("%s://%s.%s", constants.KogitoServiceUrlProtocol, a.workflow.Name, a.workflow.Namespace)
 	} else {
-		kogitoServiceUrl = fmt.Sprintf("%s://%s", kogitoServiceUrlProtocol, a.workflow.Name)
+		kogitoServiceUrl = fmt.Sprintf("%s://%s", constants.KogitoServiceUrlProtocol, a.workflow.Name)
 	}
-	return a.addDefaultMutableProperty(kogitoServiceUrlProperty, kogitoServiceUrl)
+	return a.addDefaultMutableProperty(constants.KogitoServiceUrlProperty, kogitoServiceUrl)
 }
 
 // withKafkaHealthCheckDisabled adds the property kafkaSmallRyeHealthProperty to the application properties.
 // See Service Discovery https://kubernetes.io/docs/concepts/services-networking/service/#dns
 func (a *appPropertyHandler) withKafkaHealthCheckDisabled() AppPropertyHandler {
 	a.addDefaultMutableProperty(
-		KafkaSmallRyeHealthProperty,
+		constants.KafkaSmallRyeHealthProperty,
 		"false",
 	)
 	return a
@@ -242,7 +232,7 @@ func generateDiscoveryProperties(ctx context.Context, catalog discovery.ServiceC
 
 func removeDiscoveryProperties(props *properties.Properties) {
 	for _, k := range props.Keys() {
-		if strings.HasPrefix(k, microprofileServiceCatalogPropertyPrefix) {
+		if strings.HasPrefix(k, constants.MicroprofileServiceCatalogPropertyPrefix) {
 			props.Delete(k)
 		}
 	}
@@ -252,7 +242,7 @@ func generateMicroprofileServiceCatalogProperty(serviceUri string) string {
 	escapedServiceUri := escapeValue(serviceUri, ":")
 	escapedServiceUri = escapeValue(escapedServiceUri, "/")
 	escapedServiceUri = escapeValue(escapedServiceUri, "=")
-	property := microprofileServiceCatalogPropertyPrefix + escapedServiceUri
+	property := constants.MicroprofileServiceCatalogPropertyPrefix + escapedServiceUri
 	return property
 }
 

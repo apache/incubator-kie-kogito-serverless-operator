@@ -30,6 +30,7 @@ import (
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/discovery"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/platform/services"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 
 	"github.com/magiconair/properties"
 
@@ -47,13 +48,6 @@ const (
 	myService2Address = "http://10.110.90.2:80"
 	myService3        = "my-service3"
 	myService3Address = "http://10.110.90.3:80"
-
-	jobServiceURLProperty                   = "mp.messaging.outgoing.kogito-job-service-job-request-events.url"
-	jobServiceKafkaSinkInjectionHealthCheck = `quarkus.smallrye-health.check."org.kie.kogito.jobs.service.messaging.http.health.knative.KSinkInjectionHealthCheck".enabled`
-	jobServiceStatusChangeEventsProperty    = "kogito.jobs-service.http.job-status-change-events"
-	jobServiceStatusChangeEventsURL         = "mp.messaging.outgoing.kogito-job-service-job-status-events-http.url"
-	jobServiceURLProtocol                   = "http"
-	jobServiceDataSourceReactiveURLProperty = "quarkus.datasource.reactive.url"
 )
 
 type mockCatalogService struct {
@@ -75,7 +69,7 @@ func (c *mockCatalogService) Query(ctx context.Context, uri discovery.ResourceUr
 func Test_appPropertyHandler_WithKogitoServiceUrl(t *testing.T) {
 	workflow := test.GetBaseSonataFlow("default")
 	props := ImmutableApplicationProperties(workflow, nil)
-	assert.Contains(t, props, kogitoServiceUrlProperty)
+	assert.Contains(t, props, constants.KogitoServiceUrlProperty)
 	assert.Contains(t, props, "http://"+workflow.Name+"."+workflow.Namespace)
 }
 
@@ -221,8 +215,8 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.Equal(t, "false", generatedProps.GetString("org.kie.kogito.addons.knative.eventing.health-enabled", ""))
 	assert.Equal(t, "false", generatedProps.GetString("quarkus.devservices.enabled", ""))
 	assert.Equal(t, "false", generatedProps.GetString("quarkus.kogito.devservices.enabled", ""))
-	assert.Equal(t, "", generatedProps.GetString(services.DataIndexServiceUrlProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(jobServiceURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceURLProperty, ""))
 
 	// prod profile enables config of outgoing events url
 	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.ProdProfile)})
@@ -230,12 +224,12 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	generatedProps, propsErr = properties.LoadString(props)
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 13, len(generatedProps.Keys()))
-	assert.Equal(t, "http://"+platform.Name+"-"+services.DataIndexServiceName+"."+platform.Namespace+"/processes", generatedProps.GetString(services.DataIndexServiceUrlProperty, ""))
-	assert.Equal(t, "http://"+platform.Name+"-"+services.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(jobServiceURLProperty, ""))
-	assert.Equal(t, "false", generatedProps.GetString(jobServiceKafkaSinkInjectionHealthCheck, ""))
-	assert.Equal(t, "", generatedProps.GetString(jobServiceDataSourceReactiveURLProperty, ""))
-	assert.Equal(t, "true", generatedProps.GetString(jobServiceStatusChangeEventsProperty, ""))
-	assert.Equal(t, generatedProps.GetString(jobServiceStatusChangeEventsURL, ""), fmt.Sprintf("%s://%s.%s/jobs", services.DataIndexServiceUrlProtocol, di.GetServiceName(), platform.Namespace))
+	assert.Equal(t, "http://"+platform.Name+"-"+constants.DataIndexServiceName+"."+platform.Namespace+"/processes", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
+	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceURLProperty, ""))
+	assert.Equal(t, "false", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceDataSourceReactiveURLProperty, ""))
+	assert.Equal(t, "true", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
+	assert.Equal(t, generatedProps.GetString(constants.JobServiceStatusChangeEventsURL, ""), fmt.Sprintf("%s://%s.%s/jobs", constants.DataIndexServiceURLProtocol, di.GetServiceName(), platform.Namespace))
 
 	// disabling data index bypasses config of outgoing events url
 	platform.Spec.Services.DataIndex.Enabled = nil
@@ -243,11 +237,11 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	generatedProps, propsErr = properties.LoadString(props)
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 10, len(generatedProps.Keys()))
-	assert.Equal(t, "", generatedProps.GetString(services.DataIndexServiceUrlProperty, ""))
-	assert.Equal(t, "http://"+platform.Name+"-"+services.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(jobServiceURLProperty, ""))
-	assert.Equal(t, "false", generatedProps.GetString(jobServiceKafkaSinkInjectionHealthCheck, ""))
-	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsURL, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
+	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceURLProperty, ""))
+	assert.Equal(t, "false", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsURL, ""))
 
 	// disabling job service bypasses config of outgoing events url
 	platform.Spec.Services.JobService.Enabled = nil
@@ -255,19 +249,19 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	generatedProps, propsErr = properties.LoadString(props)
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 8, len(generatedProps.Keys()))
-	assert.Equal(t, "", generatedProps.GetString(services.DataIndexServiceUrlProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(jobServiceURLProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(jobServiceKafkaSinkInjectionHealthCheck, ""))
-	assert.Equal(t, "", generatedProps.GetString(jobServiceDataSourceReactiveURLProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsURL, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceDataSourceReactiveURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsURL, ""))
 
 	// check that service app properties are being properly set
 	props = NewServiceAppPropertyHandler(platform).WithUserProperties(userProperties).Build()
 	generatedProps, propsErr = properties.LoadString(props)
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 9, len(generatedProps.Keys()))
-	assert.Equal(t, "false", generatedProps.GetString(KafkaSmallRyeHealthProperty, ""))
+	assert.Equal(t, "false", generatedProps.GetString(constants.KafkaSmallRyeHealthProperty, ""))
 	assert.Equal(t, "value1", generatedProps.GetString("property1", ""))
 	assert.Equal(t, "value2", generatedProps.GetString("property2", ""))
 	//quarkus.http.port remains with the default value since it's immutable.
@@ -288,12 +282,12 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	generatedProps, propsErr = properties.LoadString(props)
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 11, len(generatedProps.Keys()))
-	assert.Equal(t, "", generatedProps.GetString(services.DataIndexServiceUrlProperty, ""))
-	assert.Equal(t, "http://"+platform.Name+"-"+services.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(jobServiceURLProperty, ""))
-	assert.Equal(t, "false", generatedProps.GetString(jobServiceKafkaSinkInjectionHealthCheck, ""))
-	assert.Equal(t, "postgresql://jobs-service.default:5432/sonataflow?search_path=sonataflow-platform-jobs-service", generatedProps.GetString(jobServiceDataSourceReactiveURLProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsURL, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
+	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceURLProperty, ""))
+	assert.Equal(t, "false", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
+	assert.Equal(t, "postgresql://jobs-service.default:5432/sonataflow?search_path=sonataflow-platform-jobs-service", generatedProps.GetString(constants.JobServiceDataSourceReactiveURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsURL, ""))
 
 	// check that the reactive URL is generated from the postgreSQL JDBC URL when provided
 	platform.Spec.Services.JobService = &operatorapi.ServiceSpec{
@@ -308,11 +302,11 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	generatedProps, propsErr = properties.LoadString(props)
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 11, len(generatedProps.Keys()))
-	assert.Equal(t, "", generatedProps.GetString(services.DataIndexServiceUrlProperty, ""))
-	assert.Equal(t, "http://"+platform.Name+"-"+services.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(jobServiceURLProperty, ""))
-	assert.Equal(t, "false", generatedProps.GetString(jobServiceKafkaSinkInjectionHealthCheck, ""))
-	assert.Equal(t, "postgresql://timeouts-showcase-database:5432/postgres?search_path=jobs-service", generatedProps.GetString(jobServiceDataSourceReactiveURLProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(jobServiceStatusChangeEventsURL, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
+	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceURLProperty, ""))
+	assert.Equal(t, "false", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
+	assert.Equal(t, "postgresql://timeouts-showcase-database:5432/postgres?search_path=jobs-service", generatedProps.GetString(constants.JobServiceDataSourceReactiveURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsURL, ""))
 
 }
