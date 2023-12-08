@@ -115,9 +115,11 @@ func (h *followBuildStatusState) Do(ctx context.Context, workflow *operatorapi.S
 	if build.Status.BuildPhase == operatorapi.BuildPhaseSucceeded {
 		klog.V(log.I).InfoS("Workflow build has finished")
 		if workflow.Status.IsReady() {
+			// Rollout our deployment to take the latest changes in the new image.
 			if err := common.DeploymentManager(h.C).RolloutDeployment(ctx, workflow); err != nil {
 				return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, nil, err
 			}
+			h.Recorder.Eventf(workflow, corev1.EventTypeNormal, api.WaitingForDeploymentReason, "Rolling out workflow %s deployment.", workflow.Name)
 		}
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "Build has finished, rolling out deployment")
 		//If we have finished a build and the workflow is not running, we will start the provisioning phase

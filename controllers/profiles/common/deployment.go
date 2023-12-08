@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -60,9 +61,16 @@ type deploymentHandler struct {
 func (d *deploymentHandler) RolloutDeployment(ctx context.Context, workflow *operatorapi.SonataFlow) error {
 	deployment := &appsv1.Deployment{}
 	if err := d.c.Get(ctx, client.ObjectKeyFromObject(workflow), deployment); err != nil {
-		return kubeutil.MarkDeploymentToRollout(deployment)
+		// Deployment not found, nothing to do.
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return err
 	}
-	return nil
+	if err := kubeutil.MarkDeploymentToRollout(deployment); err != nil {
+		return err
+	}
+	return d.c.Update(ctx, deployment)
 }
 
 func (d *deploymentHandler) SyncDeploymentStatus(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, error) {
