@@ -48,7 +48,7 @@ String getTempTag() {
 void checkoutRepo(String repoName = '', String directory = '') {
     repoName = repoName ?: getRepoName()
     closure = {
-        deleteDir()
+        //deleteDir()
         checkout(githubscm.resolveRepository(repoName, getGitAuthor(), getBuildBranch(), false, getGitAuthorCredsId()))
         // need to manually checkout branch since on a detached branch after checkout command
         //sh "git checkout ${getBuildBranch()}"
