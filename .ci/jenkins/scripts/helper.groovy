@@ -49,7 +49,7 @@ void checkoutRepo(String repoName = '', String directory = '') {
     repoName = repoName ?: getRepoName()
     closure = {
         deleteDir()
-        checkout(githubscm.resolveRepository(repoName, getGitAuthor(), getBuildBranch(), false))
+        checkout(githubscm.resolveRepository(repoName, getGitAuthor(), getBuildBranch(), false, getGitAuthorCredsId()))
         // need to manually checkout branch since on a detached branch after checkout command
         //sh "git checkout ${getBuildBranch()}"
     }
@@ -70,7 +70,7 @@ void loginRegistry(String paramsPrefix = defaultImageParamsPrefix) {
 }
 
 void createTag(String tagName = getGitTag()) {
-    githubscm.tagLocalAndRemoteRepository('origin', tagName, getGitAuthorCredsID(), '', true)
+    githubscm.tagLocalAndRemoteRepository('origin', tagName, getGitAuthorPushCredsId(), '', true)
 }
 
 // Set images public on quay. Useful when new images are introduced.
@@ -237,8 +237,12 @@ String getGitAuthor() {
     return "${GIT_AUTHOR}"
 }
 
-String getGitAuthorCredsID() {
-    return env.AUTHOR_CREDS_ID
+String getGitAuthorCredsId() {
+    return env.GIT_AUTHOR_CREDS_ID
+}
+
+String getGitAuthorPushCredsId() {
+    return env.GIT_AUTHOR_PUSH_CREDS_ID
 }
 
 String getPRBranch() {
