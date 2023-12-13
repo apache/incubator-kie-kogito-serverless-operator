@@ -152,15 +152,19 @@ func (a *appPropertyHandler) addDefaultMutableProperty(name string, value string
 // NewAppPropertyHandler creates the default workflow configurations property handler
 // The set of properties is initialized with the operator provided immutable properties.
 // The set of defaultMutableProperties is initialized with the operator provided properties that the user might override.
-func NewAppPropertyHandler(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) AppPropertyHandler {
+func NewAppPropertyHandler(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (AppPropertyHandler, error) {
 	handler := &appPropertyHandler{
 		workflow: workflow,
 		platform: platform,
 	}
 	props := services.GenerateDataIndexApplicationProperties(workflow, platform)
-	props.Merge(services.GenerateJobServiceApplicationProperties(workflow, platform))
+	p, err := services.GenerateJobServiceApplicationProperties(workflow, platform)
+	if err != nil {
+		return nil, err
+	}
+	props.Merge(p)
 	handler.defaultMutableProperties = props.String()
-	return handler.withKogitoServiceUrl()
+	return handler.withKogitoServiceUrl(), nil
 }
 
 // NewServicePropertyHandler creates the default service configurations property handler
@@ -176,8 +180,13 @@ func NewServiceAppPropertyHandler(platform *operatorapi.SonataFlowPlatform) AppP
 
 // ImmutableApplicationProperties immutable default application properties that can be used with any workflow based on Quarkus.
 // Alias for NewAppPropertyHandler(workflow).Build()
-func ImmutableApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) string {
-	return NewAppPropertyHandler(workflow, platform).Build()
+func ImmutableApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (string, error) {
+	p, err := NewAppPropertyHandler(workflow, platform)
+	if err != nil {
+		return "", err
+	}
+	return p.Build(), nil
+
 }
 
 func (a *appPropertyHandler) requireServiceDiscovery() bool {

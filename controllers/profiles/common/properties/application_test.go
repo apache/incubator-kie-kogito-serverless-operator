@@ -68,7 +68,8 @@ func (c *mockCatalogService) Query(ctx context.Context, uri discovery.ResourceUr
 
 func Test_appPropertyHandler_WithKogitoServiceUrl(t *testing.T) {
 	workflow := test.GetBaseSonataFlow("default")
-	props := ImmutableApplicationProperties(workflow, nil)
+	props, err := ImmutableApplicationProperties(workflow, nil)
+	assert.NoError(t, err)
 	assert.Contains(t, props, constants.KogitoServiceUrlProperty)
 	assert.Contains(t, props, "http://"+workflow.Name+"."+workflow.Namespace)
 }
@@ -77,8 +78,9 @@ func Test_appPropertyHandler_WithUserPropertiesWithNoUserOverrides(t *testing.T)
 	//just add some user provided properties, no overrides.
 	userProperties := "property1=value1\nproperty2=value2"
 	workflow := test.GetBaseSonataFlow("default")
-	props := NewAppPropertyHandler(workflow, nil).WithUserProperties(userProperties).Build()
-	generatedProps, propsErr := properties.LoadString(props)
+	props, err := NewAppPropertyHandler(workflow, nil)
+	assert.NoError(t, err)
+	generatedProps, propsErr := properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 8, len(generatedProps.Keys()))
 	assert.Equal(t, "value1", generatedProps.GetString("property1", ""))
@@ -99,11 +101,12 @@ func Test_appPropertyHandler_WithUserPropertiesWithServiceDiscovery(t *testing.T
 	userProperties = userProperties + "service2=${kubernetes:services.v1/my-service2}\n"
 
 	workflow := test.GetBaseSonataFlow(defaultNamespace)
-	props := NewAppPropertyHandler(workflow, nil).
+	props, err := NewAppPropertyHandler(workflow, nil)
+	assert.NoError(t, err)
+	generatedProps, propsErr := properties.LoadString(props.
 		WithUserProperties(userProperties).
 		WithServiceDiscovery(context.TODO(), &mockCatalogService{}).
-		Build()
-	generatedProps, propsErr := properties.LoadString(props)
+		Build())
 	generatedProps.DisableExpansion = true
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 12, len(generatedProps.Keys()))
@@ -201,8 +204,9 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 
 	di := services.NewDataIndexService(platform)
 
-	props := NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
-	generatedProps, propsErr := properties.LoadString(props)
+	props, err := NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	generatedProps, propsErr := properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 8, len(generatedProps.Keys()))
 	assert.Equal(t, "value1", generatedProps.GetString("property1", ""))
@@ -220,8 +224,9 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 
 	// prod profile enables config of outgoing events url
 	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.ProdProfile)})
-	props = NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
-	generatedProps, propsErr = properties.LoadString(props)
+	props, err = NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	generatedProps, propsErr = properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 13, len(generatedProps.Keys()))
 	assert.Equal(t, "http://"+platform.Name+"-"+constants.DataIndexServiceName+"."+platform.Namespace+"/processes", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
@@ -233,8 +238,9 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 
 	// disabling data index bypasses config of outgoing events url
 	platform.Spec.Services.DataIndex.Enabled = nil
-	props = NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
-	generatedProps, propsErr = properties.LoadString(props)
+	props, err = NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	generatedProps, propsErr = properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 10, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
@@ -245,8 +251,9 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 
 	// disabling job service bypasses config of outgoing events url
 	platform.Spec.Services.JobService.Enabled = nil
-	props = NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
-	generatedProps, propsErr = properties.LoadString(props)
+	props, err = NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	generatedProps, propsErr = properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 8, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
@@ -257,8 +264,7 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsURL, ""))
 
 	// check that service app properties are being properly set
-	props = NewServiceAppPropertyHandler(platform).WithUserProperties(userProperties).Build()
-	generatedProps, propsErr = properties.LoadString(props)
+	generatedProps, propsErr = properties.LoadString(NewServiceAppPropertyHandler(platform).WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 9, len(generatedProps.Keys()))
 	assert.Equal(t, "false", generatedProps.GetString(constants.KafkaSmallRyeHealthProperty, ""))
@@ -278,8 +284,9 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 			},
 		},
 	}
-	props = NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
-	generatedProps, propsErr = properties.LoadString(props)
+	props, err = NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	generatedProps, propsErr = properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 11, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
@@ -298,8 +305,9 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 			},
 		},
 	}
-	props = NewAppPropertyHandler(workflow, platform).WithUserProperties(userProperties).Build()
-	generatedProps, propsErr = properties.LoadString(props)
+	props, err = NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	generatedProps, propsErr = properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 11, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))

@@ -115,17 +115,22 @@ func WorkflowPropertiesMutateVisitor(ctx context.Context, catalog discovery.Serv
 			_, hasKey := cm.Data[workflowproj.ApplicationPropertiesFileName]
 			if !hasKey {
 				cm.Data = make(map[string]string, 1)
-				cm.Data[workflowproj.ApplicationPropertiesFileName] = properties.ImmutableApplicationProperties(workflow, platform)
+				props, err := properties.ImmutableApplicationProperties(workflow, platform)
+				if err != nil {
+					return err
+				}
+				cm.Data[workflowproj.ApplicationPropertiesFileName] = props
 				return nil
 			}
 
 			// In the future, if this needs change, instead we can receive an AppPropertyHandler in this mutator
-			cm.Data[workflowproj.ApplicationPropertiesFileName] =
-				properties.NewAppPropertyHandler(workflow, platform).
-					WithUserProperties(cm.Data[workflowproj.ApplicationPropertiesFileName]).
-					WithServiceDiscovery(ctx, catalog).
-					Build()
-
+			props, err := properties.NewAppPropertyHandler(workflow, platform)
+			if err != nil {
+				return err
+			}
+			cm.Data[workflowproj.ApplicationPropertiesFileName] = props.WithUserProperties(cm.Data[workflowproj.ApplicationPropertiesFileName]).
+				WithServiceDiscovery(ctx, catalog).
+				Build()
 			return nil
 		}
 	}

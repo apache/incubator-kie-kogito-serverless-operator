@@ -16,6 +16,7 @@ package services
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
@@ -25,9 +26,40 @@ import (
 	"github.com/magiconair/properties"
 )
 
-func generateReactiveURL(postgresSpec *operatorapi.PersistencePostgreSql, schema string, namespace string, dbName string, port int) string {
-	if len(postgresSpec.JdbcUrl) > 0 && strings.Contains(postgresSpec.JdbcUrl, "currentSchema=") {
-		return strings.Replace(strings.TrimPrefix(postgresSpec.JdbcUrl, "jdbc:"), "currentSchema=", "search_path=", -1)
+func generateReactiveURL(postgresSpec *operatorapi.PersistencePostgreSql, schema string, namespace string, dbName string, port int) (string, error) {
+	if len(postgresSpec.JdbcUrl) > 0 {
+		s := strings.TrimLeft(postgresSpec.JdbcUrl, "jdbc:")
+		u, err := url.Parse(s)
+		if err != nil {
+			return "", err
+		}
+		ret := fmt.Sprintf("%s://", u.Scheme)
+		if len(u.User.Username()) > 0 {
+			p, ok := u.User.Password()
+			if ok {
+				ret = fmt.Sprintf("%s%s:%s@", ret, u.User.Username(), p)
+			}
+		}
+		ret = fmt.Sprintf("%s%s%s?", ret, u.Host, u.Path)
+		kv, err := url.ParseQuery(u.RawQuery)
+		if err != nil {
+			return "", err
+		}
+		spv := schema
+		if v, ok := kv["search_path"]; ok {
+			for _, val := range v {
+				if len(val) != 0 {
+					spv = v[0]
+				}
+			}
+		} else if v, ok := kv["currentSchema"]; ok {
+			for _, val := range v {
+				if len(val) != 0 {
+					spv = v[0]
+				}
+			}
+		}
+		return fmt.Sprintf("%ssearch_path=%s", ret, spv), nil
 	}
 	databaseSchema := schema
 	if len(postgresSpec.ServiceRef.DatabaseSchema) > 0 {
@@ -45,14 +77,14 @@ func generateReactiveURL(postgresSpec *operatorapi.PersistencePostgreSql, schema
 	if len(postgresSpec.ServiceRef.DatabaseName) > 0 {
 		databaseName = postgresSpec.ServiceRef.DatabaseName
 	}
-	return fmt.Sprintf("%s://%s:%d/%s?search_path=%s", constants.PersistenceTypePostgreSQL, postgresSpec.ServiceRef.Name+"."+databaseNamespace, dataSourcePort, databaseName, databaseSchema)
+	return fmt.Sprintf("%s://%s:%d/%s?search_path=%s", constants.PersistenceTypePostgreSQL, postgresSpec.ServiceRef.Name+"."+databaseNamespace, dataSourcePort, databaseName, databaseSchema), nil
 }
 
 // GenerateDataIndexApplicationProperties returns the application properties required for the Data Index Service to work when deployed in a production profile
 // and data index' service's spec field `Enabled` set to true
 func GenerateDataIndexApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) *properties.Properties {
 	props := properties.NewProperties()
-	if profiles.IsProdProfile(workflow) && dataIndexEnabled(platform) {
+	if workflow != nil && profiles.IsProdProfile(workflow) && dataIndexEnabled(platform) {
 		di := NewDataIndexService(platform)
 		props.Set(
 			constants.DataIndexServiceURLProperty,
@@ -64,9 +96,9 @@ func GenerateDataIndexApplicationProperties(workflow *operatorapi.SonataFlow, pl
 
 // GenerateJobServiceApplicationProperties returns the application properties required for the Job Service to work in a production profile and job service's
 // service's spec field `Enabled` set to true
-func GenerateJobServiceApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) *properties.Properties {
+func GenerateJobServiceApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (*properties.Properties, error) {
 	props := properties.NewProperties()
-	if profiles.IsProdProfile(workflow) && jobServiceEnabled(platform) {
+	if workflow != nil && profiles.IsProdProfile(workflow) && jobServiceEnabled(platform) {
 		js := JobService{platform: platform}
 		props.Set(
 			constants.JobServiceURLProperty, fmt.Sprintf("%s://%s.%s/v2/jobs/events", constants.JobServiceURLProtocol, js.GetServiceName(), platform.Namespace))
@@ -75,17 +107,19 @@ func GenerateJobServiceApplicationProperties(workflow *operatorapi.SonataFlow, p
 		// add data source reactive URL
 		jspec := platform.Spec.Services.JobService
 		if jspec.Persistence != nil && jspec.Persistence.PostgreSql != nil {
-			dataSourceReactiveURL := generateReactiveURL(jspec.Persistence.PostgreSql, js.GetServiceName(), platform.Namespace, constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
+			dataSourceReactiveURL, err := generateReactiveURL(jspec.Persistence.PostgreSql, js.GetServiceName(), platform.Namespace, constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
+			if err != nil {
+				return nil, err
+			}
 			props.Set(constants.JobServiceDataSourceReactiveURLProperty, dataSourceReactiveURL)
 		}
-		// a.addDefaultMutableProperty(jobServiceDataSourceReactiveURLProperty, dataSourceReactiveURL)
-		if profiles.IsProdProfile(workflow) && dataIndexEnabled(platform) {
+		if dataIndexEnabled(platform) {
 			di := NewDataIndexService(platform)
 			props.Set(constants.JobServiceStatusChangeEventsProperty, "true")
 			props.Set(constants.JobServiceStatusChangeEventsURL, fmt.Sprintf("%s://%s.%s/jobs", constants.DataIndexServiceURLProtocol, di.GetServiceName(), platform.Namespace))
 		}
 	}
-	return props
+	return props, nil
 }
 
 func dataIndexEnabled(platform *operatorapi.SonataFlowPlatform) bool {
