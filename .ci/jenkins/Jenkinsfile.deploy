@@ -4,8 +4,6 @@ helper = null
 
 commitDone = false
 
-def localRegistryUrl = '';
-
 pipeline {
     agent {
         docker { 
@@ -55,10 +53,10 @@ pipeline {
 
                     // Prepare for multiplatform build
                     int freePort = cloud.findFreePort()
-                    localRegistryUrl = cloud.startLocalRegistry(freePort)
+                    env.localRegistryUrl = cloud.startLocalRegistry(freePort)
 
                     // TODO docker buildx could be preinstalled onto the docker image
-                    cloud.prepareForDockerMultiplatformBuild([localRegistryUrl],[cloud.getDockerIOMirrorRegistryConfig()], false)
+                    cloud.prepareForDockerMultiplatformBuild([env.localRegistryUrl],[cloud.getDockerIOMirrorRegistryConfig()], false)
                 }
             }
             post {
@@ -261,7 +259,7 @@ String getBuiltImage() {
 }
 
 String getTempBuiltImageTag() {
-    return "${localRegistryUrl}/kogito-serverless-operator:${getOperatorVersion()}"
+    return "${env.localRegistryUrl}/kogito-serverless-operator:${getOperatorVersion()}"
 }
 
 void runPythonCommand(String cmd, boolean stdout = false) {
