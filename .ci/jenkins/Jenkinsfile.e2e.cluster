@@ -77,7 +77,7 @@ pipeline {
                 script {
                     executeInCluster {
                         try {
-                            sh """
+                            sh """#!/bin/bash -l
                                 export CLUSTER_PLATFORM=${getClusterName()}
                                 export OPERATOR_IMAGE_NAME=${getTestImage()}
                                 make test-e2e
