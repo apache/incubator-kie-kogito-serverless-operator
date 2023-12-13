@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 
 	"github.com/magiconair/properties"
@@ -82,9 +81,9 @@ func generateReactiveURL(postgresSpec *operatorapi.PersistencePostgreSql, schema
 
 // GenerateDataIndexApplicationProperties returns the application properties required for the Data Index Service to work when deployed in a production profile
 // and data index' service's spec field `Enabled` set to true
-func GenerateDataIndexApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) *properties.Properties {
+func GenerateDataIndexApplicationProperties(platform *operatorapi.SonataFlowPlatform) *properties.Properties {
 	props := properties.NewProperties()
-	if workflow != nil && profiles.IsProdProfile(workflow) && dataIndexEnabled(platform) {
+	if dataIndexEnabled(platform) {
 		di := NewDataIndexService(platform)
 		props.Set(
 			constants.DataIndexServiceURLProperty,
@@ -96,9 +95,9 @@ func GenerateDataIndexApplicationProperties(workflow *operatorapi.SonataFlow, pl
 
 // GenerateJobServiceApplicationProperties returns the application properties required for the Job Service to work in a production profile and job service's
 // service's spec field `Enabled` set to true
-func GenerateJobServiceApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (*properties.Properties, error) {
+func GenerateJobServiceApplicationProperties(platform *operatorapi.SonataFlowPlatform) (*properties.Properties, error) {
 	props := properties.NewProperties()
-	if workflow != nil && profiles.IsProdProfile(workflow) && jobServiceEnabled(platform) {
+	if jobServiceEnabled(platform) {
 		js := JobService{platform: platform}
 		props.Set(
 			constants.JobServiceURLProperty, fmt.Sprintf("%s://%s.%s/v2/jobs/events", constants.JobServiceURLProtocol, js.GetServiceName(), platform.Namespace))

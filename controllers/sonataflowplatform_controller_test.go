@@ -405,7 +405,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: js.GetServiceName(), Namespace: ksp.Namespace}, dep))
 		assert.Len(t, dep.Spec.Template.Spec.Containers, 1)
 		assert.Equal(t, js.GetServiceImageName(constants.PersistenceTypePostgreSQL), dep.Spec.Template.Spec.Containers[0].Image)
-		assert.Equal(t, &replicas, dep.Spec.Replicas)
+		assert.Equal(t, int32(1), *dep.Spec.Replicas)
 		assert.Equal(t, []string{"test:latest"}, dep.Spec.Template.Spec.Containers[0].Command)
 		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, envDBKind)
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDataIndex)
