@@ -23,6 +23,8 @@ pipeline {
         PR_BRANCH_HASH = "${util.generateHash(10)}"
 
         IMAGE_BUILD_PLATFORMS = 'linux/amd64,linux/arm64'
+
+        CONTAINER_ENGINE = 'docker'
     }
 
     stages {
