@@ -165,6 +165,7 @@ void updateInternalGoModuleWithTag(String moduleName, String tagName) {
 
 void commitAndPush(String remote, String commitMsg, Closure preCommit) {
     if (githubscm.isThereAnyChanges()) {
+        githubscm.setUserConfigFromCreds(getGitAuthorPushCredsId())
         githubscm.commitChanges(commitMsg, preCommit)
         githubscm.pushObject(remote, helper.getBuildBranch(), helper.getGitAuthorPushCredsId())
     } else {

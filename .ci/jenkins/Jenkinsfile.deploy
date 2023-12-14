@@ -95,6 +95,7 @@ pipeline {
                 script {
                     runPythonCommand("make bump-version new_version=${helper.getProjectVersion()}")
 
+                    githubscm.setUserConfigFromCreds(getGitAuthorPushCredsId())
                     // Commit changes
                     githubscm.commitChanges(getCommitMessage(), {
                         sh '''
