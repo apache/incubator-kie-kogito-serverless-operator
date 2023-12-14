@@ -45,10 +45,13 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Install Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: true
+      
+      - name: Setup GOPATH
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> "$GITHUB_ENV"
 
       - name: Cache Minikube Download
         id: cache-minikube-download

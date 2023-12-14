@@ -102,6 +102,21 @@ metadata:
               }
             }
           }
+        },
+        {
+          "apiVersion": "sonataflow.org/v1alpha08",
+          "kind": "SonataFlowProj",
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/created-by": "sonataflow-operator",
+              "app.kubernetes.io/instance": "sonataflowproj-sample",
+              "app.kubernetes.io/managed-by": "kustomize",
+              "app.kubernetes.io/name": "sonataflowproj",
+              "app.kubernetes.io/part-of": "sonataflow-operator"
+            },
+            "name": "sonataflowproj-sample"
+          },
+          "spec": null
         }
       ]
     capabilities: Basic Install
@@ -221,6 +236,11 @@ spec:
       - description: Version the operator version controlling this Platform
         displayName: version
         path: version
+      version: v1alpha08
+    - description: SonataFlowProj is the Schema for the sonataflowprojs API
+      displayName: Sonata Flow Proj
+      kind: SonataFlowProj
+      name: sonataflowprojs.sonataflow.org
       version: v1alpha08
     - description: SonataFlow is the descriptor representation for a workflow application
         based on the CNCF Serverless Workflow specification.
@@ -404,6 +424,32 @@ spec:
           - sonataflow.org
           resources:
           - sonataflowplatforms/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - sonataflow.org
+          resources:
+          - sonataflowprojs
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - sonataflow.org
+          resources:
+          - sonataflowprojs/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - sonataflow.org
+          resources:
+          - sonataflowprojs/status
           verbs:
           - get
           - patch

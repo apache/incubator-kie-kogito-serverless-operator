@@ -1,4 +1,4 @@
-# permissions for end users to edit sonataflowworkflows.
+# permissions for end users to edit sonataflow.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -7,7 +7,7 @@ rules:
   - apiGroups:
       - sonataflow.org
     resources:
-      - sonataflowworkflows
+      - sonataflows
     verbs:
       - create
       - delete
@@ -19,6 +19,6 @@ rules:
   - apiGroups:
       - sonataflow.org
     resources:
-      - sonataflowworkflows/status
+      - sonataflows/status
     verbs:
       - get

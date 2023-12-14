@@ -115,6 +115,13 @@ func main() {
 		klog.V(log.E).ErrorS(err, "unable to create controller", "controller", "SonataFlowPlatform")
 		os.Exit(1)
 	}
+	if err = (&controllers.SonataFlowProjReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		klog.V(log.E).ErrorS(err, "unable to create controller", "controller", "SonataFlowProj")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if utils.IsOpenShift() {

@@ -22,7 +22,6 @@ package workflowproj
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/metadata"
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
@@ -37,26 +36,6 @@ const (
 	// LabelWorkflow specialized label managed by the controller
 	LabelWorkflow = metadata.Domain + "/workflow-app"
 )
-
-// SetTypeToObject sets the Kind and ApiVersion to a given object since the default constructor won't do it.
-// See: https://github.com/kubernetes/client-go/issues/308#issuecomment-700099260
-func SetTypeToObject(obj runtime.Object, s *runtime.Scheme) error {
-	gvks, _, err := s.ObjectKinds(obj)
-	if err != nil {
-		return err
-	}
-	for _, gvk := range gvks {
-		if len(gvk.Kind) == 0 {
-			continue
-		}
-		if len(gvk.Version) == 0 || gvk.Version == runtime.APIVersionInternal {
-			continue
-		}
-		obj.GetObjectKind().SetGroupVersionKind(gvk)
-		break
-	}
-	return nil
-}
 
 // GetWorkflowPropertiesConfigMapName gets the default ConfigMap name that holds the application property for the given workflow
 func GetWorkflowPropertiesConfigMapName(workflow *operatorapi.SonataFlow) string {
