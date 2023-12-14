@@ -38,6 +38,9 @@ const (
 	KogitoServiceUrlProtocol    = "http"
 	KafkaSmallRyeHealthProperty = "quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled"
 
+	MicroprofileServiceCatalogPropertyPrefix = "org.kie.kogito.addons.discovery."
+	DiscoveryLikePropertyPattern             = "^\\${(kubernetes|knative|openshift):(.*)}$"
+
 	DataIndexServiceName = "data-index-service"
 	JobServiceName       = "jobs-service"
 	ImageNamePrefix      = "quay.io/kiegroup/kogito"

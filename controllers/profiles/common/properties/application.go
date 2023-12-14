@@ -38,10 +38,6 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
 )
 
-const (
-	discoveryLikePropertyPattern = "^\\${(kubernetes|knative|openshift):(.*)}$"
-)
-
 var (
 	immutableApplicationProperties = fmt.Sprintf("quarkus.http.port=%d\n"+
 		"quarkus.http.host=0.0.0.0\n"+
@@ -51,7 +47,7 @@ var (
 		"quarkus.devservices.enabled=false\n"+
 		"quarkus.kogito.devservices.enabled=false\n", constants.DefaultHTTPWorkflowPortInt)
 
-	discoveryLikePropertyExpr                    = regexp.MustCompile(discoveryLikePropertyPattern)
+	discoveryLikePropertyExpr                    = regexp.MustCompile(constants.DiscoveryLikePropertyPattern)
 	_                         AppPropertyHandler = &appPropertyHandler{}
 )
 
@@ -161,8 +157,8 @@ func NewAppPropertyHandler(workflow *operatorapi.SonataFlow, platform *operatora
 		workflow: workflow,
 		platform: platform,
 	}
-	props := services.GenerateDataIndexApplicationProperties(platform)
-	p, err := services.GenerateJobServiceApplicationProperties(platform)
+	props := services.GenerateDataIndexApplicationProperties(workflow, platform)
+	p, err := services.GenerateJobServiceApplicationProperties(workflow, platform)
 	if err != nil {
 		return nil, err
 	}

@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/api/metadata"
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -207,7 +208,7 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.NoError(t, err)
 	generatedProps, propsErr := properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 13, len(generatedProps.Keys()))
+	assert.Equal(t, 8, len(generatedProps.Keys()))
 	assert.Equal(t, "value1", generatedProps.GetString("property1", ""))
 	assert.Equal(t, "value2", generatedProps.GetString("property2", ""))
 	//kogito.service.url takes the user provided value since it's a default mutable property.
@@ -218,8 +219,18 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.Equal(t, "false", generatedProps.GetString("org.kie.kogito.addons.knative.eventing.health-enabled", ""))
 	assert.Equal(t, "false", generatedProps.GetString("quarkus.devservices.enabled", ""))
 	assert.Equal(t, "false", generatedProps.GetString("quarkus.kogito.devservices.enabled", ""))
-	assert.Equal(t, "http://sonataflow-platform-data-index-service.default/processes", generatedProps.GetString(constants.DataIndexServiceURLProperty, "http://sonataflow-platform-data-index-service.default/processes"))
-	assert.Equal(t, "http://sonataflow-platform-jobs-service.default/v2/jobs/events", generatedProps.GetString(constants.JobServiceURLProperty, "http://sonataflow-platform-jobs-service.default/v2/jobs/events"))
+	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceURLProperty, ""))
+
+	// prod profile enables config of outgoing events url
+	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.ProdProfile)})
+	props, err = NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	generatedProps, propsErr = properties.LoadString(props.WithUserProperties(userProperties).Build())
+	assert.NoError(t, propsErr)
+	assert.Equal(t, 13, len(generatedProps.Keys()))
+	assert.Equal(t, "http://"+platform.Name+"-"+constants.DataIndexServiceName+"."+platform.Namespace+"/processes", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
+	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceURLProperty, ""))
 	assert.Equal(t, "false", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceDataSourceReactiveURLProperty, ""))
 	assert.Equal(t, "true", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))

@@ -121,7 +121,7 @@ func (d DataIndex) ConfigurePersistence(containerSpec *corev1.Container) *corev1
 	if d.platform.Spec.Services.DataIndex.Persistence != nil && d.platform.Spec.Services.DataIndex.Persistence.PostgreSql != nil {
 		c := containerSpec.DeepCopy()
 		c.Image = d.GetServiceImageName(constants.PersistenceTypePostgreSQL)
-		c.Env = append(c.Env, d.configurePostgreSqlEnv(d.platform.Spec.Services.DataIndex.Persistence.PostgreSql, d.GetServiceName(), d.platform.Namespace)...)
+		c.Env = append(c.Env, configurePostgreSqlEnv(d.platform.Spec.Services.DataIndex.Persistence.PostgreSql, d.GetServiceName(), d.platform.Namespace)...)
 		return c
 	}
 	return containerSpec
@@ -142,74 +142,6 @@ func (d DataIndex) GetReplicaCount() int32 {
 
 func (d DataIndex) GetServiceCmName() string {
 	return fmt.Sprintf("%s-props", d.GetServiceName())
-}
-
-func (d DataIndex) configurePostgreSqlEnv(postgresql *operatorapi.PersistencePostgreSql, databaseSchema, databaseNamespace string) []corev1.EnvVar {
-	if len(postgresql.ServiceRef.DatabaseSchema) > 0 {
-		databaseSchema = postgresql.ServiceRef.DatabaseSchema
-	}
-	if len(postgresql.ServiceRef.Namespace) > 0 {
-		databaseNamespace = postgresql.ServiceRef.Namespace
-	}
-	dataSourcePort := 5432
-	if postgresql.ServiceRef.Port != nil {
-		dataSourcePort = *postgresql.ServiceRef.Port
-	}
-	databaseName := "sonataflow"
-	if len(postgresql.ServiceRef.DatabaseName) > 0 {
-		databaseName = postgresql.ServiceRef.DatabaseName
-	}
-	dataSourceUrl := "jdbc:" + constants.PersistenceTypePostgreSQL + "://" + postgresql.ServiceRef.Name + "." + databaseNamespace + ":" + strconv.Itoa(dataSourcePort) + "/" + databaseName + "?currentSchema=" + databaseSchema
-	if len(postgresql.JdbcUrl) > 0 {
-		dataSourceUrl = postgresql.JdbcUrl
-	}
-	secretRef := corev1.LocalObjectReference{
-		Name: postgresql.SecretRef.Name,
-	}
-	quarkusDatasourceUsername := "POSTGRESQL_USER"
-	if len(postgresql.SecretRef.UserKey) > 0 {
-		quarkusDatasourceUsername = postgresql.SecretRef.UserKey
-	}
-	quarkusDatasourcePassword := "POSTGRESQL_PASSWORD"
-	if len(postgresql.SecretRef.PasswordKey) > 0 {
-		quarkusDatasourcePassword = postgresql.SecretRef.PasswordKey
-	}
-	return []corev1.EnvVar{
-		{
-			Name: "QUARKUS_DATASOURCE_USERNAME",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					Key:                  quarkusDatasourceUsername,
-					LocalObjectReference: secretRef,
-				},
-			},
-		},
-		{
-			Name: "QUARKUS_DATASOURCE_PASSWORD",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					Key:                  quarkusDatasourcePassword,
-					LocalObjectReference: secretRef,
-				},
-			},
-		},
-		{
-			Name:  "QUARKUS_DATASOURCE_DB_KIND",
-			Value: constants.PersistenceTypePostgreSQL,
-		},
-		{
-			Name:  "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION",
-			Value: "update",
-		},
-		{
-			Name:  "QUARKUS_FLYWAY_MIGRATE_AT_START",
-			Value: "true",
-		},
-		{
-			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
-			Value: dataSourceUrl,
-		},
-	}
 }
 
 type JobService struct {
@@ -268,6 +200,9 @@ func (j JobService) GetPodResourceRequirements() corev1.ResourceRequirements {
 }
 
 func (j JobService) GetReplicaCount() int32 {
+	if j.platform.Spec.Services.JobService.PodTemplate.Replicas != nil {
+		return *j.platform.Spec.Services.JobService.PodTemplate.Replicas
+	}
 	return 1
 }
 
@@ -282,7 +217,7 @@ func (j JobService) ConfigurePersistence(containerSpec *corev1.Container) *corev
 	if j.platform.Spec.Services.JobService.Persistence != nil && j.platform.Spec.Services.JobService.Persistence.PostgreSql != nil {
 		c := containerSpec.DeepCopy()
 		c.Image = j.GetServiceImageName(constants.PersistenceTypePostgreSQL)
-		c.Env = append(c.Env, j.configurePostgreSqlEnv(j.platform.Spec.Services.JobService.Persistence.PostgreSql, j.GetServiceName(), j.platform.Namespace)...)
+		c.Env = append(c.Env, configurePostgreSqlEnv(j.platform.Spec.Services.JobService.Persistence.PostgreSql, j.GetServiceName(), j.platform.Namespace)...)
 		return c
 	}
 	return containerSpec
@@ -294,7 +229,7 @@ func (j JobService) MergePodSpec(podSpec corev1.PodSpec) (corev1.PodSpec, error)
 	return *c, err
 }
 
-func (j JobService) configurePostgreSqlEnv(postgresql *operatorapi.PersistencePostgreSql, databaseSchema, databaseNamespace string) []corev1.EnvVar {
+func configurePostgreSqlEnv(postgresql *operatorapi.PersistencePostgreSql, databaseSchema, databaseNamespace string) []corev1.EnvVar {
 	if len(postgresql.ServiceRef.DatabaseSchema) > 0 {
 		databaseSchema = postgresql.ServiceRef.DatabaseSchema
 	}
@@ -346,6 +281,10 @@ func (j JobService) configurePostgreSqlEnv(postgresql *operatorapi.PersistencePo
 		{
 			Name:  "QUARKUS_DATASOURCE_DB_KIND",
 			Value: constants.PersistenceTypePostgreSQL,
+		},
+		{
+			Name:  "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION",
+			Value: "update",
 		},
 		{
 			Name:  "QUARKUS_FLYWAY_MIGRATE_AT_START",
