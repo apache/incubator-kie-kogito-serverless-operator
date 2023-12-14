@@ -38,6 +38,10 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
 )
 
+const (
+	discoveryLikePropertyPattern = "^\\${(kubernetes|knative|openshift):(.*)}$"
+)
+
 var (
 	immutableApplicationProperties = fmt.Sprintf("quarkus.http.port=%d\n"+
 		"quarkus.http.host=0.0.0.0\n"+
@@ -47,7 +51,7 @@ var (
 		"quarkus.devservices.enabled=false\n"+
 		"quarkus.kogito.devservices.enabled=false\n", constants.DefaultHTTPWorkflowPortInt)
 
-	discoveryLikePropertyExpr                    = regexp.MustCompile(constants.DiscoveryLikePropertyPattern)
+	discoveryLikePropertyExpr                    = regexp.MustCompile(discoveryLikePropertyPattern)
 	_                         AppPropertyHandler = &appPropertyHandler{}
 )
 

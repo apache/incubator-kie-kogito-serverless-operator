@@ -40,12 +40,12 @@ func generateReactiveURL(postgresSpec *operatorapi.PersistencePostgreSql, schema
 				ret = fmt.Sprintf("%s%s:%s@", ret, u.User.Username(), p)
 			}
 		}
-		ret = fmt.Sprintf("%s%s%s?", ret, u.Host, u.Path)
+		ret = fmt.Sprintf("%s%s%s", ret, u.Host, u.Path)
 		kv, err := url.ParseQuery(u.RawQuery)
 		if err != nil {
 			return "", err
 		}
-		spv := schema
+		var spv string
 		if v, ok := kv["search_path"]; ok {
 			for _, val := range v {
 				if len(val) != 0 {
@@ -59,7 +59,10 @@ func generateReactiveURL(postgresSpec *operatorapi.PersistencePostgreSql, schema
 				}
 			}
 		}
-		return fmt.Sprintf("%ssearch_path=%s", ret, spv), nil
+		if len(spv) > 0 {
+			return fmt.Sprintf("%s?search_path=%s", ret, spv), nil
+		}
+		return ret, nil
 	}
 	databaseSchema := schema
 	if len(postgresSpec.ServiceRef.DatabaseSchema) > 0 {
@@ -84,7 +87,7 @@ func generateReactiveURL(postgresSpec *operatorapi.PersistencePostgreSql, schema
 // and data index' service's spec field `Enabled` set to true
 func GenerateDataIndexApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) *properties.Properties {
 	props := properties.NewProperties()
-	if workflow != nil && profiles.IsProdProfile(workflow) && dataIndexEnabled(platform) {
+	if workflow != nil && !profiles.IsDevProfile(workflow) && dataIndexEnabled(platform) {
 		di := NewDataIndexService(platform)
 		props.Set(
 			constants.DataIndexServiceURLProperty,
@@ -98,7 +101,7 @@ func GenerateDataIndexApplicationProperties(workflow *operatorapi.SonataFlow, pl
 // service's spec field `Enabled` set to true
 func GenerateJobServiceApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (*properties.Properties, error) {
 	props := properties.NewProperties()
-	if workflow != nil && profiles.IsProdProfile(workflow) && jobServiceEnabled(platform) {
+	if workflow != nil && !profiles.IsDevProfile(workflow) && jobServiceEnabled(platform) {
 		js := JobService{platform: platform}
 		props.Set(
 			constants.JobServiceURLProperty, fmt.Sprintf("%s://%s.%s/v2/jobs/events", constants.JobServiceURLProtocol, js.GetServiceName(), platform.Namespace))
@@ -111,7 +114,9 @@ func GenerateJobServiceApplicationProperties(workflow *operatorapi.SonataFlow, p
 			if err != nil {
 				return nil, err
 			}
-			props.Set(constants.JobServiceDataSourceReactiveURLProperty, dataSourceReactiveURL)
+			if len(dataSourceReactiveURL) > 0 {
+				props.Set(constants.JobServiceDataSourceReactiveURLProperty, dataSourceReactiveURL)
+			}
 		}
 		if dataIndexEnabled(platform) {
 			di := NewDataIndexService(platform)

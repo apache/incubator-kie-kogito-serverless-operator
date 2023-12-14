@@ -188,6 +188,7 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	userProperties := "property1=value1\nproperty2=value2\nquarkus.http.port=9090\nkogito.service.url=http://myUrl.override.com\nquarkus.http.port=9090"
 	ns := "default"
 	workflow := test.GetBaseSonataFlow(ns)
+	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.DevProfile)})
 	enabled := true
 	platform := test.GetBasePlatform()
 	platform.Namespace = ns

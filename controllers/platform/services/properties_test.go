@@ -1,3 +1,17 @@
+// Copyright 2023 Apache Software Foundation (ASF)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package services
 
 import (
@@ -30,11 +44,11 @@ var _ = Describe("Platform properties", func() {
 			Entry("Empty JDBC string in spec",
 				generatePostgreSQLOptions(setServiceName("svcName")), "postgresql://svcName.default:5432/sonataflow?search_path=schema", false),
 			Entry("JDBC in spec with duplicated jdbc prefix and no currentSchema in URL parameter",
-				generatePostgreSQLOptions(setJDBC("jdbc:jdbc:postgres://host.com:5432/path?k=v#f")), "postgres://host.com:5432/path?search_path=schema", false),
+				generatePostgreSQLOptions(setJDBC("jdbc:jdbc:postgres://host.com:5432/path?k=v#f")), "postgres://host.com:5432/path", false),
 			Entry("JDBC in spec with username and password and no currentSchema in URL parameter",
-				generatePostgreSQLOptions(setJDBC("jdbc:postgres://user:pass@host.com:5432/dbName?k=v#f")), "postgres://user:pass@host.com:5432/dbName?search_path=schema", false),
+				generatePostgreSQLOptions(setJDBC("jdbc:postgres://user:pass@host.com:5432/dbName?k=v#f")), "postgres://user:pass@host.com:5432/dbName", false),
 			Entry("JDBC in spec without currentSchema in URL parameter",
-				generatePostgreSQLOptions(setJDBC("jdbc:postgresql://postgres:5432/sonataflow")), "postgresql://postgres:5432/sonataflow?search_path=schema", false),
+				generatePostgreSQLOptions(setJDBC("jdbc:postgresql://postgres:5432/sonataflow")), "postgresql://postgres:5432/sonataflow", false),
 			Entry("JDBC in spec with duplicated currentSchema in URL parameter",
 				generatePostgreSQLOptions(setJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema&currentSchema=myschema2")), "postgresql://postgres:5432/sonataflow?search_path=myschema", false),
 			Entry("JDBC in spec with currentSchema first and search_path later in URL parameter",
@@ -42,7 +56,7 @@ var _ = Describe("Platform properties", func() {
 			Entry("JDBC in spec with search_path first and currentSchema later in URL parameter",
 				generatePostgreSQLOptions(setJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema&search_path=myschema2")), "postgresql://postgres:5432/sonataflow?search_path=myschema2", false),
 			Entry("JDBC in spec with empty value in currentSchema parameter",
-				generatePostgreSQLOptions(setJDBC("jdbc:postgresql://postgres:342/sonataflow?currentSchema")), "postgresql://postgres:342/sonataflow?search_path=schema", false),
+				generatePostgreSQLOptions(setJDBC("jdbc:postgresql://postgres:342/sonataflow?currentSchema")), "postgresql://postgres:342/sonataflow", false),
 			Entry("JDBC in spec with currentSchema in URL parameter",
 				generatePostgreSQLOptions(setJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")), "postgresql://postgres:5432/sonataflow?search_path=myschema", false),
 			Entry("With only database service namespace defined",
@@ -69,15 +83,15 @@ var _ = Describe("Platform properties", func() {
 			props := GenerateDataIndexApplicationProperties(sf, plfm)
 			Expect(props).To(Equal(expectedProperties))
 		},
-			Entry("Data index enabled in production and workflow with production profile", generateFlow(setProductionProfileInFlow), generatePlatform(setDataIndexEnabledValue(true), setPlatformNamespace("default"), setPlatformName("foo")), func() *properties.Properties {
+			Entry("Data index enabled in production and workflow with production profile", generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setDataIndexEnabledValue(true), setPlatformNamespace("default"), setPlatformName("foo")), func() *properties.Properties {
 				dataIndexProdProperties = properties.NewProperties()
 				dataIndexProdProperties.Set(constants.DataIndexServiceURLProperty, "http://foo-data-index-service.default/processes")
 				return dataIndexProdProperties
 			}()),
-			Entry("Data index enabled in production and workflow without production profile", generateFlow(), generatePlatform(setDataIndexEnabledValue(true), setPlatformNamespace("default"), setPlatformName("foo")), emptyProperties),
-			Entry("Data index enabled field undefined and workflow without production profile", generateFlow(), generatePlatform(setPlatformNamespace("default"), setPlatformName("foo")), emptyProperties),
-			Entry("Data index disabled in production and workflow has production profile", generateFlow(setProductionProfileInFlow), generatePlatform(setDataIndexEnabledValue(false)), emptyProperties),
-			Entry("Data index enabled field undefined and workflow with production profile", generateFlow(setProductionProfileInFlow), generatePlatform(), emptyProperties),
+			Entry("Data index enabled in production and workflow with dev profile", generateFlow(setProfileInFlow(metadata.DevProfile)), generatePlatform(setDataIndexEnabledValue(true), setPlatformNamespace("default"), setPlatformName("foo")), emptyProperties),
+			Entry("Data index enabled field undefined and workflow with dev profile", generateFlow(setProfileInFlow(metadata.DevProfile)), generatePlatform(setPlatformNamespace("default"), setPlatformName("foo")), emptyProperties),
+			Entry("Data index disabled in production and workflow has production profile", generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setDataIndexEnabledValue(false)), emptyProperties),
+			Entry("Data index enabled field undefined and workflow with production profile", generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(), emptyProperties),
 		)
 
 		DescribeTable("Generate job service application properties",
@@ -86,12 +100,12 @@ var _ = Describe("Platform properties", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(props).To(Equal(expectedProperties))
 			},
-			Entry("Job service disabled in production and workflow without production profile", generateFlow(), generatePlatform(setJobServiceEnabledValue(false)), properties.NewProperties()),
-			Entry("Job service enabled field undefined and workflow without production profile", generateFlow(), generatePlatform(), properties.NewProperties()),
-			Entry("Job service enabled in production and workflow without production profile", generateFlow(), generatePlatform(setJobServiceEnabledValue(true)), properties.NewProperties()),
-			Entry("Job service disabled in production and workflow with production profile", generateFlow(setProductionProfileInFlow), generatePlatform(), properties.NewProperties()),
+			Entry("Job service disabled in production and workflow with dev profile", generateFlow(setProfileInFlow(metadata.DevProfile)), generatePlatform(setJobServiceEnabledValue(false)), properties.NewProperties()),
+			Entry("Job service enabled field undefined and workflow with dev profile", generateFlow(setProfileInFlow(metadata.DevProfile)), generatePlatform(), properties.NewProperties()),
+			Entry("Job service enabled in production and workflow with dev profile", generateFlow(setProfileInFlow(metadata.DevProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformNamespace("default"), setPlatformName("foo")), emptyProperties),
+			Entry("Job service disabled in production and workflow with production profile", generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(), properties.NewProperties()),
 			Entry("Job service enabled in production and workflow with production profile with ephemeral persistence and data index not enabled for production",
-				generateFlow(setProductionProfileInFlow), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default")),
+				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default")),
 				func() *properties.Properties {
 					p := properties.NewProperties()
 					p.Set(constants.JobServiceURLProperty, "http://foo-jobs-service.default/v2/jobs/events")
@@ -99,7 +113,7 @@ var _ = Describe("Platform properties", func() {
 					return p
 				}()),
 			Entry("Job service enabled in production and workflow with production profile with postgreSQL persistence and data index not enabled for production",
-				generateFlow(setProductionProfileInFlow), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
 				func() *properties.Properties {
 					p := properties.NewProperties()
 					p.Set(constants.JobServiceURLProperty, "http://foo-jobs-service.default/v2/jobs/events")
@@ -108,7 +122,7 @@ var _ = Describe("Platform properties", func() {
 					return p
 				}()),
 			Entry("Job service enabled in production and workflow with production profile with ephemeral persistence and data index enabled for production",
-				generateFlow(setProductionProfileInFlow), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setDataIndexEnabledValue(true)),
+				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setDataIndexEnabledValue(true)),
 				func() *properties.Properties {
 					p := properties.NewProperties()
 					p.Set(constants.JobServiceURLProperty, "http://foo-jobs-service.default/v2/jobs/events")
@@ -118,7 +132,7 @@ var _ = Describe("Platform properties", func() {
 					return p
 				}()),
 			Entry("Job service enabled in production and workflow with production profile with postgreSQL persistence and data index enabled for production",
-				generateFlow(setProductionProfileInFlow), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexEnabledValue(true)),
+				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexEnabledValue(true)),
 				func() *properties.Properties {
 					p := properties.NewProperties()
 					p.Set(constants.JobServiceURLProperty, "http://foo-jobs-service.default/v2/jobs/events")
@@ -128,8 +142,8 @@ var _ = Describe("Platform properties", func() {
 					p.Set(constants.JobServiceStatusChangeEventsURL, "http://foo-data-index-service.default/jobs")
 					return p
 				}()),
-			Entry("Job service disabled in production and workflow with production profile with postgreSQL persistence and data index enabled for production",
-				generateFlow(), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexEnabledValue(true)),
+			Entry("Job service disabled in production and workflow with dev profile defined with postgreSQL persistence and data index enabled for production",
+				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(false), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexEnabledValue(true)),
 				properties.NewProperties()),
 		)
 
@@ -147,11 +161,13 @@ func generateFlow(opts ...wfOptionFn) *operatorapi.SonataFlow {
 	return wf
 }
 
-func setProductionProfileInFlow(wf *operatorapi.SonataFlow) {
-	if wf.Annotations == nil {
-		wf.Annotations = make(map[string]string)
+func setProfileInFlow(p metadata.ProfileType) wfOptionFn {
+	return func(wf *operatorapi.SonataFlow) {
+		if wf.Annotations == nil {
+			wf.Annotations = make(map[string]string)
+		}
+		wf.Annotations[metadata.Profile] = p.String()
 	}
-	wf.Annotations[metadata.Profile] = metadata.ProdProfile.String()
 }
 
 type plfmOptionFn func(p *operatorapi.SonataFlowPlatform)

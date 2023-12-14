@@ -12,16 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package services
+package constants
 
-import (
-	"testing"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+const (
+	MicroprofileServiceCatalogPropertyPrefix = "org.kie.kogito.addons.discovery."
 )
-
-func TestServices(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Services Suite")
-}
