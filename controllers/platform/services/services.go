@@ -23,6 +23,7 @@ import (
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
+	"github.com/magiconair/properties"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/version"
 	"github.com/imdario/mergo"
@@ -57,13 +58,15 @@ type Platform interface {
 	//MergePodSpec performs a merge with override between the podSpec argument and the expected values based on the service's pod template specification. The returning
 	// object is the result of the merge
 	MergePodSpec(podSpec corev1.PodSpec) (corev1.PodSpec, error)
+	// GenerateProperties returns a property object that contains the application properties required by the service
+	GenerateProperties() (*properties.Properties, error)
 }
 
 type DataIndex struct {
 	platform *operatorapi.SonataFlowPlatform
 }
 
-func NewDataIndexService(platform *operatorapi.SonataFlowPlatform) DataIndex {
+func NewDataIndexService(platform *operatorapi.SonataFlowPlatform) Platform {
 	return DataIndex{platform: platform}
 }
 
@@ -145,23 +148,23 @@ func (d DataIndex) GetServiceCmName() string {
 }
 
 func (d DataIndex) configurePostgreSqlEnv(postgresql *operatorapi.PersistencePostgreSql, databaseSchema, databaseNamespace string) []corev1.EnvVar {
-	if len(postgresql.ServiceRef.DatabaseSchema) > 0 {
-		databaseSchema = postgresql.ServiceRef.DatabaseSchema
-	}
-	if len(postgresql.ServiceRef.Namespace) > 0 {
-		databaseNamespace = postgresql.ServiceRef.Namespace
-	}
-	dataSourcePort := 5432
-	if postgresql.ServiceRef.Port != nil {
-		dataSourcePort = *postgresql.ServiceRef.Port
-	}
+	dataSourcePort := constants.DefaultPostgreSQLPort
 	databaseName := "sonataflow"
-	if len(postgresql.ServiceRef.DatabaseName) > 0 {
-		databaseName = postgresql.ServiceRef.DatabaseName
-	}
-	dataSourceUrl := "jdbc:" + constants.PersistenceTypePostgreSQL + "://" + postgresql.ServiceRef.Name + "." + databaseNamespace + ":" + strconv.Itoa(dataSourcePort) + "/" + databaseName + "?currentSchema=" + databaseSchema
-	if len(postgresql.JdbcUrl) > 0 {
-		dataSourceUrl = postgresql.JdbcUrl
+	dataSourceURL := postgresql.JdbcUrl
+	if postgresql.ServiceRef != nil {
+		if len(postgresql.ServiceRef.DatabaseSchema) > 0 {
+			databaseSchema = postgresql.ServiceRef.DatabaseSchema
+		}
+		if len(postgresql.ServiceRef.Namespace) > 0 {
+			databaseNamespace = postgresql.ServiceRef.Namespace
+		}
+		if postgresql.ServiceRef.Port != nil {
+			dataSourcePort = *postgresql.ServiceRef.Port
+		}
+		if len(postgresql.ServiceRef.DatabaseName) > 0 {
+			databaseName = postgresql.ServiceRef.DatabaseName
+		}
+		dataSourceURL = "jdbc:" + constants.PersistenceTypePostgreSQL + "://" + postgresql.ServiceRef.Name + "." + databaseNamespace + ":" + strconv.Itoa(dataSourcePort) + "/" + databaseName + "?currentSchema=" + databaseSchema
 	}
 	secretRef := corev1.LocalObjectReference{
 		Name: postgresql.SecretRef.Name,
@@ -207,16 +210,25 @@ func (d DataIndex) configurePostgreSqlEnv(postgresql *operatorapi.PersistencePos
 		},
 		{
 			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
-			Value: dataSourceUrl,
+			Value: dataSourceURL,
 		},
 	}
+}
+
+func (d DataIndex) GenerateProperties() (*properties.Properties, error) {
+	props := properties.NewProperties()
+	props.Set(
+		constants.DataIndexServiceURLProperty,
+		fmt.Sprintf("%s://%s.%s/processes", constants.DataIndexServiceURLProtocol, d.GetServiceName(), d.platform.Namespace),
+	)
+	return props, nil
 }
 
 type JobService struct {
 	platform *operatorapi.SonataFlowPlatform
 }
 
-func NewJobService(platform *operatorapi.SonataFlowPlatform) JobService {
+func NewJobService(platform *operatorapi.SonataFlowPlatform) Platform {
 	return JobService{platform: platform}
 }
 
@@ -295,24 +307,25 @@ func (j JobService) MergePodSpec(podSpec corev1.PodSpec) (corev1.PodSpec, error)
 }
 
 func (j JobService) configurePostgreSqlEnv(postgresql *operatorapi.PersistencePostgreSql, databaseSchema, databaseNamespace string) []corev1.EnvVar {
-	if len(postgresql.ServiceRef.DatabaseSchema) > 0 {
-		databaseSchema = postgresql.ServiceRef.DatabaseSchema
-	}
-	if len(postgresql.ServiceRef.Namespace) > 0 {
-		databaseNamespace = postgresql.ServiceRef.Namespace
-	}
-	dataSourcePort := 5432
-	if postgresql.ServiceRef.Port != nil {
-		dataSourcePort = *postgresql.ServiceRef.Port
-	}
+	dataSourcePort := constants.DefaultPostgreSQLPort
 	databaseName := "sonataflow"
-	if len(postgresql.ServiceRef.DatabaseName) > 0 {
-		databaseName = postgresql.ServiceRef.DatabaseName
+	dataSourceURL := postgresql.JdbcUrl
+	if postgresql.ServiceRef != nil {
+		if len(postgresql.ServiceRef.DatabaseSchema) > 0 {
+			databaseSchema = postgresql.ServiceRef.DatabaseSchema
+		}
+		if len(postgresql.ServiceRef.Namespace) > 0 {
+			databaseNamespace = postgresql.ServiceRef.Namespace
+		}
+		if postgresql.ServiceRef.Port != nil {
+			dataSourcePort = *postgresql.ServiceRef.Port
+		}
+		if len(postgresql.ServiceRef.DatabaseName) > 0 {
+			databaseName = postgresql.ServiceRef.DatabaseName
+		}
+		dataSourceURL = "jdbc:" + constants.PersistenceTypePostgreSQL + "://" + postgresql.ServiceRef.Name + "." + databaseNamespace + ":" + strconv.Itoa(dataSourcePort) + "/" + databaseName + "?currentSchema=" + databaseSchema
 	}
-	dataSourceUrl := "jdbc:" + constants.PersistenceTypePostgreSQL + "://" + postgresql.ServiceRef.Name + "." + databaseNamespace + ":" + strconv.Itoa(dataSourcePort) + "/" + databaseName + "?currentSchema=" + databaseSchema
-	if len(postgresql.JdbcUrl) > 0 {
-		dataSourceUrl = postgresql.JdbcUrl
-	}
+
 	secretRef := corev1.LocalObjectReference{
 		Name: postgresql.SecretRef.Name,
 	}
@@ -353,7 +366,36 @@ func (j JobService) configurePostgreSqlEnv(postgresql *operatorapi.PersistencePo
 		},
 		{
 			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
-			Value: dataSourceUrl,
+			Value: dataSourceURL,
 		},
 	}
+}
+
+func (j JobService) GenerateProperties() (*properties.Properties, error) {
+	props := properties.NewProperties()
+	props.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+	props.Set(constants.KogitoProcessDefinitionsEnabled, "false")
+	props.Set(constants.KogitoEventsUserTaskEnabled, "false")
+	props.Set(constants.KogitoEventsVariablesEnabled, "false")
+	props.Set(
+		constants.JobServiceRequestEventsURL, fmt.Sprintf("%s://%s.%s/v2/jobs/events", constants.JobServiceURLProtocol, j.GetServiceName(), j.platform.Namespace))
+	// disable Kafka Sink for knative events until supported
+	props.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
+	// add data source reactive URL
+	jspec := j.platform.Spec.Services.JobService
+	if jspec.Persistence != nil && jspec.Persistence.PostgreSql != nil {
+		dataSourceReactiveURL, err := generateReactiveURL(jspec.Persistence.PostgreSql, j.GetServiceName(), j.platform.Namespace, constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
+		if err != nil {
+			return nil, err
+		}
+		if len(dataSourceReactiveURL) > 0 {
+			props.Set(constants.JobServiceDataSourceReactiveURLProperty, dataSourceReactiveURL)
+		}
+	}
+	if dataIndexEnabled(j.platform) {
+		di := NewDataIndexService(j.platform)
+		props.Set(constants.JobServiceStatusChangeEventsProperty, "true")
+		props.Set(constants.JobServiceStatusChangeEventsURL, fmt.Sprintf("%s://%s.%s/jobs", constants.DataIndexServiceURLProtocol, di.GetServiceName(), j.platform.Namespace))
+	}
+	return props, nil
 }

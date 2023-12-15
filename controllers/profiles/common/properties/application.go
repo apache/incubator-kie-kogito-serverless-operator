@@ -161,7 +161,10 @@ func NewAppPropertyHandler(workflow *operatorapi.SonataFlow, platform *operatora
 		workflow: workflow,
 		platform: platform,
 	}
-	props := services.GenerateDataIndexApplicationProperties(workflow, platform)
+	props, err := services.GenerateDataIndexApplicationProperties(workflow, platform)
+	if err != nil {
+		return nil, err
+	}
 	p, err := services.GenerateJobServiceApplicationProperties(workflow, platform)
 	if err != nil {
 		return nil, err
@@ -174,12 +177,17 @@ func NewAppPropertyHandler(workflow *operatorapi.SonataFlow, platform *operatora
 // NewServicePropertyHandler creates the default service configurations property handler
 // The set of properties is initialized with the operator provided immutable properties.
 // The set of defaultMutableProperties is initialized with the operator provided properties that the user might override.
-func NewServiceAppPropertyHandler(platform *operatorapi.SonataFlowPlatform) AppPropertyHandler {
+func NewServiceAppPropertyHandler(platform *operatorapi.SonataFlowPlatform, ps services.Platform) (AppPropertyHandler, error) {
 	handler := &appPropertyHandler{
 		platform:  platform,
 		isService: true,
 	}
-	return handler.withKafkaHealthCheckDisabled()
+	props, err := ps.GenerateProperties()
+	if err != nil {
+		return nil, err
+	}
+	handler.defaultMutableProperties = props.String()
+	return handler.withKafkaHealthCheckDisabled(), nil
 }
 
 // ImmutableApplicationProperties immutable default application properties that can be used with any workflow based on Quarkus.

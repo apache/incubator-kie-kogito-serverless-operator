@@ -54,7 +54,7 @@ type PersistencePostgreSql struct {
 	SecretRef PostgreSqlSecretOptions `json:"secretRef"`
 	// Service reference to postgresql datasource. Mutually exclusive to jdbcUrl.
 	// +optional
-	ServiceRef PostgreSqlServiceOptions `json:"serviceRef,omitempty"`
+	ServiceRef *PostgreSqlServiceOptions `json:"serviceRef,omitempty"`
 	// PostgreSql JDBC URL. Mutually exclusive to serviceRef.
 	// e.g. "jdbc:postgresql://host:port/database?currentSchema=data-index-service"
 	// +optional

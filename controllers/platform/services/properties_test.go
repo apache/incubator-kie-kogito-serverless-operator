@@ -80,7 +80,8 @@ var _ = Describe("Platform properties", func() {
 			dataIndexProdProperties.Set(constants.DataIndexServiceURLProperty, "http://foo-data-index-service.default/processes")
 		})
 		DescribeTable("Generate Data Index application properties", func(sf *operatorapi.SonataFlow, plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
-			props := GenerateDataIndexApplicationProperties(sf, plfm)
+			props, err := GenerateDataIndexApplicationProperties(sf, plfm)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(props).To(Equal(expectedProperties))
 		},
 			Entry("Data index enabled in production and workflow with production profile", generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setDataIndexEnabledValue(true), setPlatformNamespace("default"), setPlatformName("foo")), func() *properties.Properties {
@@ -108,7 +109,7 @@ var _ = Describe("Platform properties", func() {
 				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default")),
 				func() *properties.Properties {
 					p := properties.NewProperties()
-					p.Set(constants.JobServiceURLProperty, "http://foo-jobs-service.default/v2/jobs/events")
+					p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
 					p.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
 					return p
 				}()),
@@ -116,7 +117,7 @@ var _ = Describe("Platform properties", func() {
 				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
 				func() *properties.Properties {
 					p := properties.NewProperties()
-					p.Set(constants.JobServiceURLProperty, "http://foo-jobs-service.default/v2/jobs/events")
+					p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
 					p.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
 					p.Set(constants.JobServiceDataSourceReactiveURLProperty, "postgresql://postgres:5432/sonataflow?search_path=myschema")
 					return p
@@ -125,7 +126,7 @@ var _ = Describe("Platform properties", func() {
 				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setDataIndexEnabledValue(true)),
 				func() *properties.Properties {
 					p := properties.NewProperties()
-					p.Set(constants.JobServiceURLProperty, "http://foo-jobs-service.default/v2/jobs/events")
+					p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
 					p.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
 					p.Set(constants.JobServiceStatusChangeEventsProperty, "true")
 					p.Set(constants.JobServiceStatusChangeEventsURL, "http://foo-data-index-service.default/jobs")
@@ -135,7 +136,7 @@ var _ = Describe("Platform properties", func() {
 				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexEnabledValue(true)),
 				func() *properties.Properties {
 					p := properties.NewProperties()
-					p.Set(constants.JobServiceURLProperty, "http://foo-jobs-service.default/v2/jobs/events")
+					p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
 					p.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
 					p.Set(constants.JobServiceDataSourceReactiveURLProperty, "postgresql://postgres:5432/sonataflow?search_path=myschema")
 					p.Set(constants.JobServiceStatusChangeEventsProperty, "true")

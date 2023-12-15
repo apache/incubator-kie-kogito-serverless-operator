@@ -141,7 +141,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		// Check with persistence set
 		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistenceOptions{PostgreSql: &v1alpha08.PersistencePostgreSql{
 			SecretRef:  v1alpha08.PostgreSqlSecretOptions{Name: "test"},
-			ServiceRef: v1alpha08.PostgreSqlServiceOptions{Name: "test"},
+			ServiceRef: &v1alpha08.PostgreSqlServiceOptions{Name: "test"},
 		}}
 		// Ensure correct container overriding anything set in PodSpec
 		ksp.Spec.Services.DataIndex.PodTemplate.Container = v1alpha08.ContainerSpec{TerminationMessagePath: "testing"}
@@ -306,7 +306,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		// Check with persistence set
 		ksp.Spec.Services.JobService.Persistence = &v1alpha08.PersistenceOptions{PostgreSql: &v1alpha08.PersistencePostgreSql{
 			SecretRef:  v1alpha08.PostgreSqlSecretOptions{Name: "test"},
-			ServiceRef: v1alpha08.PostgreSqlServiceOptions{Name: "test"},
+			ServiceRef: &v1alpha08.PostgreSqlServiceOptions{Name: "test"},
 		}}
 		// Ensure correct container overriding anything set in PodSpec
 		ksp.Spec.Services.JobService.PodTemplate.Container = v1alpha08.ContainerSpec{TerminationMessagePath: "testing"}

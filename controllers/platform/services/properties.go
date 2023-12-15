@@ -85,43 +85,30 @@ func generateReactiveURL(postgresSpec *operatorapi.PersistencePostgreSql, schema
 
 // GenerateDataIndexApplicationProperties returns the application properties required for the Data Index Service to work when deployed in a production profile
 // and data index' service's spec field `Enabled` set to true
-func GenerateDataIndexApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) *properties.Properties {
+func GenerateDataIndexApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (*properties.Properties, error) {
+	var err error
 	props := properties.NewProperties()
 	if workflow != nil && !profiles.IsDevProfile(workflow) && dataIndexEnabled(platform) {
 		di := NewDataIndexService(platform)
-		props.Set(
-			constants.DataIndexServiceURLProperty,
-			fmt.Sprintf("%s://%s.%s/processes", constants.DataIndexServiceURLProtocol, di.GetServiceName(), platform.Namespace),
-		)
+		props, err = di.GenerateProperties()
+		if err != nil {
+			return nil, err
+		}
+		return props, nil
 	}
-	return props
+	return props, nil
 }
 
 // GenerateJobServiceApplicationProperties returns the application properties required for the Job Service to work in a production profile and job service's
 // service's spec field `Enabled` set to true
 func GenerateJobServiceApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (*properties.Properties, error) {
+	var err error
 	props := properties.NewProperties()
 	if workflow != nil && !profiles.IsDevProfile(workflow) && jobServiceEnabled(platform) {
 		js := JobService{platform: platform}
-		props.Set(
-			constants.JobServiceURLProperty, fmt.Sprintf("%s://%s.%s/v2/jobs/events", constants.JobServiceURLProtocol, js.GetServiceName(), platform.Namespace))
-		// disable Kafka Sink for knative events until supported
-		props.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
-		// add data source reactive URL
-		jspec := platform.Spec.Services.JobService
-		if jspec.Persistence != nil && jspec.Persistence.PostgreSql != nil {
-			dataSourceReactiveURL, err := generateReactiveURL(jspec.Persistence.PostgreSql, js.GetServiceName(), platform.Namespace, constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
-			if err != nil {
-				return nil, err
-			}
-			if len(dataSourceReactiveURL) > 0 {
-				props.Set(constants.JobServiceDataSourceReactiveURLProperty, dataSourceReactiveURL)
-			}
-		}
-		if dataIndexEnabled(platform) {
-			di := NewDataIndexService(platform)
-			props.Set(constants.JobServiceStatusChangeEventsProperty, "true")
-			props.Set(constants.JobServiceStatusChangeEventsURL, fmt.Sprintf("%s://%s.%s/jobs", constants.DataIndexServiceURLProtocol, di.GetServiceName(), platform.Namespace))
+		props, err = js.GenerateProperties()
+		if err != nil {
+			return nil, err
 		}
 	}
 	return props, nil

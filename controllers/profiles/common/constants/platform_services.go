@@ -20,6 +20,8 @@
 package constants
 
 const (
+	QuarkusHTTP = "quarkus-http"
+
 	ConfigMapWorkflowPropsVolumeName = "workflow-properties"
 	PersistenceTypePostgreSQL        = "postgresql"
 	PersistenceTypeEphemeral         = "ephemeral"
@@ -27,16 +29,20 @@ const (
 	DataIndexServiceURLProperty = "mp.messaging.outgoing.kogito-processinstances-events.url"
 	DataIndexServiceURLProtocol = "http"
 
-	JobServiceURLProperty                   = "mp.messaging.outgoing.kogito-job-service-job-request-events.url"
+	JobServiceRequestEventsURL              = "mp.messaging.outgoing.kogito-job-service-job-request-events.url"
+	JobServiceRequestEventsConnector        = "mp.messaging.outgoing.kogito-job-service-job-request-events.connector"
 	JobServiceKafkaSinkInjectionHealthCheck = `quarkus.smallrye-health.check."org.kie.kogito.jobs.service.messaging.http.health.knative.KSinkInjectionHealthCheck".enabled`
 	JobServiceStatusChangeEventsProperty    = "kogito.jobs-service.http.job-status-change-events"
 	JobServiceStatusChangeEventsURL         = "mp.messaging.outgoing.kogito-job-service-job-status-events-http.url"
 	JobServiceURLProtocol                   = "http"
 	JobServiceDataSourceReactiveURLProperty = "quarkus.datasource.reactive.url"
 
-	KogitoServiceUrlProperty    = "kogito.service.url"
-	KogitoServiceUrlProtocol    = "http"
-	KafkaSmallRyeHealthProperty = "quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled"
+	KogitoProcessDefinitionsEnabled = "kogito.events.processdefinitions.enabled"
+	KogitoEventsUserTaskEnabled     = "kogito.events.usertasks.enabled"
+	KogitoEventsVariablesEnabled    = "kogito.events.variables.enabled"
+	KogitoServiceUrlProperty        = "kogito.service.url"
+	KogitoServiceUrlProtocol        = "http"
+	KafkaSmallRyeHealthProperty     = "quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled"
 
 	DataIndexServiceName = "data-index-service"
 	JobServiceName       = "jobs-service"

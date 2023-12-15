@@ -221,7 +221,7 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.Equal(t, "false", generatedProps.GetString("quarkus.devservices.enabled", ""))
 	assert.Equal(t, "false", generatedProps.GetString("quarkus.kogito.devservices.enabled", ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceRequestEventsURL, ""))
 
 	// prod profile enables config of outgoing events url
 	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.ProdProfile)})
@@ -229,9 +229,9 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.NoError(t, err)
 	generatedProps, propsErr = properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 13, len(generatedProps.Keys()))
+	assert.Equal(t, 17, len(generatedProps.Keys()))
 	assert.Equal(t, "http://"+platform.Name+"-"+constants.DataIndexServiceName+"."+platform.Namespace+"/processes", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
-	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceURLProperty, ""))
+	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceRequestEventsURL, ""))
 	assert.Equal(t, "false", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceDataSourceReactiveURLProperty, ""))
 	assert.Equal(t, "true", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
@@ -243,12 +243,25 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.NoError(t, err)
 	generatedProps, propsErr = properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 10, len(generatedProps.Keys()))
+	assert.Equal(t, 14, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
-	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceURLProperty, ""))
+	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceRequestEventsURL, ""))
 	assert.Equal(t, "false", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsURL, ""))
+
+	// check that service app properties are being properly set
+	js := services.NewJobService(platform)
+	p, err := NewServiceAppPropertyHandler(platform, js)
+	assert.NoError(t, err)
+	generatedProps, propsErr = properties.LoadString(p.WithUserProperties(userProperties).Build())
+	assert.NoError(t, propsErr)
+	assert.Equal(t, 15, len(generatedProps.Keys()))
+	assert.Equal(t, "false", generatedProps.GetString(constants.KafkaSmallRyeHealthProperty, ""))
+	assert.Equal(t, "value1", generatedProps.GetString("property1", ""))
+	assert.Equal(t, "value2", generatedProps.GetString("property2", ""))
+	//quarkus.http.port remains with the default value since it's immutable.
+	assert.Equal(t, "8080", generatedProps.GetString("quarkus.http.port", ""))
 
 	// disabling job service bypasses config of outgoing events url
 	platform.Spec.Services.JobService.Enabled = nil
@@ -258,28 +271,18 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 8, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceURLProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceRequestEventsURL, ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceDataSourceReactiveURLProperty, ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsURL, ""))
-
-	// check that service app properties are being properly set
-	generatedProps, propsErr = properties.LoadString(NewServiceAppPropertyHandler(platform).WithUserProperties(userProperties).Build())
-	assert.NoError(t, propsErr)
-	assert.Equal(t, 9, len(generatedProps.Keys()))
-	assert.Equal(t, "false", generatedProps.GetString(constants.KafkaSmallRyeHealthProperty, ""))
-	assert.Equal(t, "value1", generatedProps.GetString("property1", ""))
-	assert.Equal(t, "value2", generatedProps.GetString("property2", ""))
-	//quarkus.http.port remains with the default value since it's immutable.
-	assert.Equal(t, "8080", generatedProps.GetString("quarkus.http.port", ""))
 
 	// check that the reactive URL is generated from the postgreSQL JDBC URL when not provided
 	platform.Spec.Services.JobService = &operatorapi.ServiceSpec{
 		Enabled: &enabled,
 		Persistence: &operatorapi.PersistenceOptions{
 			PostgreSql: &operatorapi.PersistencePostgreSql{
-				ServiceRef: operatorapi.PostgreSqlServiceOptions{
+				ServiceRef: &operatorapi.PostgreSqlServiceOptions{
 					Name: "jobs-service",
 				},
 			},
@@ -289,9 +292,9 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.NoError(t, err)
 	generatedProps, propsErr = properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 11, len(generatedProps.Keys()))
+	assert.Equal(t, 15, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
-	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceURLProperty, ""))
+	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceRequestEventsURL, ""))
 	assert.Equal(t, "false", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
 	assert.Equal(t, "postgresql://jobs-service.default:5432/sonataflow?search_path=sonataflow-platform-jobs-service", generatedProps.GetString(constants.JobServiceDataSourceReactiveURLProperty, ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
@@ -310,9 +313,9 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.NoError(t, err)
 	generatedProps, propsErr = properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 11, len(generatedProps.Keys()))
+	assert.Equal(t, 15, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
-	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceURLProperty, ""))
+	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceRequestEventsURL, ""))
 	assert.Equal(t, "false", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
 	assert.Equal(t, "postgresql://timeouts-showcase-database:5432/postgres?search_path=jobs-service", generatedProps.GetString(constants.JobServiceDataSourceReactiveURLProperty, ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
