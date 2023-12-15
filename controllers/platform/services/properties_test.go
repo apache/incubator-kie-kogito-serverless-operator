@@ -35,14 +35,12 @@ var _ = Describe("Platform properties", func() {
 			res, err := generateReactiveURL(spec, defaultSchema, "default", constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
 			if expectedError {
 				Expect(err).NotTo(BeNil())
-				return
+			} else {
+				Expect(res).To(BeIdenticalTo(expectedReactiveURL))
 			}
-			Expect(res).To(BeIdenticalTo(expectedReactiveURL))
 		},
-			Entry("With an invalid URL",
-				generatePostgreSQLOptions(setJDBC("jdbc:\\postgress://url to fail/fail?here&and&here")), "", true),
-			Entry("Empty JDBC string in spec",
-				generatePostgreSQLOptions(setServiceName("svcName")), "postgresql://svcName.default:5432/sonataflow?search_path=schema", false),
+			Entry("With an invalid URL", generatePostgreSQLOptions(setJDBC("jdbc:\\postgress://url to fail/fail?here&and&here")), "", true),
+			Entry("Empty JDBC string in spec", generatePostgreSQLOptions(setServiceName("svcName")), "postgresql://svcName.default:5432/sonataflow?search_path=schema", false),
 			Entry("JDBC in spec with duplicated jdbc prefix and no currentSchema in URL parameter",
 				generatePostgreSQLOptions(setJDBC("jdbc:jdbc:postgres://host.com:5432/path?k=v#f")), "postgres://host.com:5432/path", false),
 			Entry("JDBC in spec with username and password and no currentSchema in URL parameter",
@@ -109,6 +107,10 @@ var _ = Describe("Platform properties", func() {
 				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default")),
 				func() *properties.Properties {
 					p := properties.NewProperties()
+					p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+					p.Set(constants.KogitoProcessDefinitionsEnabled, "false")
+					p.Set(constants.KogitoEventsUserTaskEnabled, "false")
+					p.Set(constants.KogitoEventsVariablesEnabled, "false")
 					p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
 					p.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
 					return p
@@ -117,6 +119,10 @@ var _ = Describe("Platform properties", func() {
 				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
 				func() *properties.Properties {
 					p := properties.NewProperties()
+					p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+					p.Set(constants.KogitoProcessDefinitionsEnabled, "false")
+					p.Set(constants.KogitoEventsUserTaskEnabled, "false")
+					p.Set(constants.KogitoEventsVariablesEnabled, "false")
 					p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
 					p.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
 					p.Set(constants.JobServiceDataSourceReactiveURLProperty, "postgresql://postgres:5432/sonataflow?search_path=myschema")
@@ -126,6 +132,10 @@ var _ = Describe("Platform properties", func() {
 				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setDataIndexEnabledValue(true)),
 				func() *properties.Properties {
 					p := properties.NewProperties()
+					p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+					p.Set(constants.KogitoProcessDefinitionsEnabled, "false")
+					p.Set(constants.KogitoEventsUserTaskEnabled, "false")
+					p.Set(constants.KogitoEventsVariablesEnabled, "false")
 					p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
 					p.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
 					p.Set(constants.JobServiceStatusChangeEventsProperty, "true")
@@ -136,6 +146,10 @@ var _ = Describe("Platform properties", func() {
 				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexEnabledValue(true)),
 				func() *properties.Properties {
 					p := properties.NewProperties()
+					p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+					p.Set(constants.KogitoProcessDefinitionsEnabled, "false")
+					p.Set(constants.KogitoEventsUserTaskEnabled, "false")
+					p.Set(constants.KogitoEventsVariablesEnabled, "false")
 					p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
 					p.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
 					p.Set(constants.JobServiceDataSourceReactiveURLProperty, "postgresql://postgres:5432/sonataflow?search_path=myschema")
@@ -144,8 +158,7 @@ var _ = Describe("Platform properties", func() {
 					return p
 				}()),
 			Entry("Job service disabled in production and workflow with dev profile defined with postgreSQL persistence and data index enabled for production",
-				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(false), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexEnabledValue(true)),
-				properties.NewProperties()),
+				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(false), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexEnabledValue(true)), emptyProperties),
 		)
 
 	})
@@ -244,30 +257,45 @@ func setJDBC(url string) optionFn {
 
 func setServiceName(svcName string) optionFn {
 	return func(o *operatorapi.PersistencePostgreSql) {
+		if o.ServiceRef == nil {
+			o.ServiceRef = &operatorapi.PostgreSqlServiceOptions{}
+		}
 		o.ServiceRef.Name = svcName
 	}
 }
 
 func setDatabaseSchemaName(dbSchemaName string) optionFn {
 	return func(o *operatorapi.PersistencePostgreSql) {
+		if o.ServiceRef == nil {
+			o.ServiceRef = &operatorapi.PostgreSqlServiceOptions{}
+		}
 		o.ServiceRef.DatabaseSchema = dbSchemaName
 	}
 }
 
 func setDatabaseName(dbName string) optionFn {
 	return func(o *operatorapi.PersistencePostgreSql) {
+		if o.ServiceRef == nil {
+			o.ServiceRef = &operatorapi.PostgreSqlServiceOptions{}
+		}
 		o.ServiceRef.DatabaseName = dbName
 	}
 }
 
 func setServiceNamespace(svcNamespace string) optionFn {
 	return func(o *operatorapi.PersistencePostgreSql) {
+		if o.ServiceRef == nil {
+			o.ServiceRef = &operatorapi.PostgreSqlServiceOptions{}
+		}
 		o.ServiceRef.Namespace = svcNamespace
 	}
 }
 
 func setDBPort(portNumber int) optionFn {
 	return func(o *operatorapi.PersistencePostgreSql) {
+		if o.ServiceRef == nil {
+			o.ServiceRef = &operatorapi.PostgreSqlServiceOptions{}
+		}
 		o.ServiceRef.Port = &portNumber
 	}
 }
