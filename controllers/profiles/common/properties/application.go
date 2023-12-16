@@ -67,7 +67,7 @@ type appPropertyHandler struct {
 	catalog                  discovery.ServiceCatalog
 	ctx                      context.Context
 	userProperties           string
-	defaultMutableProperties string
+	defaultMutableProperties *properties.Properties
 	isService                bool
 }
 
@@ -112,7 +112,7 @@ func (a *appPropertyHandler) Build() string {
 		}
 	}
 
-	defaultMutableProps := properties.MustLoadString(a.defaultMutableProperties)
+	defaultMutableProps := a.defaultMutableProperties
 	for _, k := range defaultMutableProps.Keys() {
 		if _, ok := props.Get(k); ok {
 			defaultMutableProps.Delete(k)
@@ -123,6 +123,7 @@ func (a *appPropertyHandler) Build() string {
 	defaultImmutableProps := properties.MustLoadString(immutableApplicationProperties)
 	// finally overwrite with the defaults immutable properties.
 	props.Merge(defaultImmutableProps)
+	props.Sort()
 	return props.String()
 }
 
@@ -131,11 +132,11 @@ func (a *appPropertyHandler) Build() string {
 func (a *appPropertyHandler) withKogitoServiceUrl() AppPropertyHandler {
 	var kogitoServiceUrl string
 	if len(a.workflow.Namespace) > 0 {
-		kogitoServiceUrl = fmt.Sprintf("%s://%s.%s", constants.KogitoServiceUrlProtocol, a.workflow.Name, a.workflow.Namespace)
+		kogitoServiceUrl = fmt.Sprintf("%s://%s.%s", constants.KogitoServiceURLProtocol, a.workflow.Name, a.workflow.Namespace)
 	} else {
-		kogitoServiceUrl = fmt.Sprintf("%s://%s", constants.KogitoServiceUrlProtocol, a.workflow.Name)
+		kogitoServiceUrl = fmt.Sprintf("%s://%s", constants.KogitoServiceURLProtocol, a.workflow.Name)
 	}
-	return a.addDefaultMutableProperty(constants.KogitoServiceUrlProperty, kogitoServiceUrl)
+	return a.addDefaultMutableProperty(constants.KogitoServiceURLProperty, kogitoServiceUrl)
 }
 
 // withKafkaHealthCheckDisabled adds the property kafkaSmallRyeHealthProperty to the application properties.
@@ -149,7 +150,7 @@ func (a *appPropertyHandler) withKafkaHealthCheckDisabled() AppPropertyHandler {
 }
 
 func (a *appPropertyHandler) addDefaultMutableProperty(name string, value string) AppPropertyHandler {
-	a.defaultMutableProperties = a.defaultMutableProperties + fmt.Sprintf("%s=%s\n", name, value)
+	a.defaultMutableProperties.Set(name, value)
 	return a
 }
 
@@ -161,16 +162,23 @@ func NewAppPropertyHandler(workflow *operatorapi.SonataFlow, platform *operatora
 		workflow: workflow,
 		platform: platform,
 	}
-	props, err := services.GenerateDataIndexApplicationProperties(workflow, platform)
-	if err != nil {
-		return nil, err
+	props := properties.NewProperties()
+	props.Set(constants.KogitoEventsUserTaskEnabled, "false")
+	props.Set(constants.KogitoEventsVariablesEnabled, "false")
+	props.Set(constants.KogitoProcessDefinitionsEnabled, "false")
+	if platform != nil {
+		p, err := services.GenerateDataIndexApplicationProperties(workflow, platform)
+		if err != nil {
+			return nil, err
+		}
+		props.Merge(p)
+		p, err = services.GenerateJobServiceApplicationProperties(workflow, platform)
+		if err != nil {
+			return nil, err
+		}
+		props.Merge(p)
 	}
-	p, err := services.GenerateJobServiceApplicationProperties(workflow, platform)
-	if err != nil {
-		return nil, err
-	}
-	props.Merge(p)
-	handler.defaultMutableProperties = props.String()
+	handler.defaultMutableProperties = props
 	return handler.withKogitoServiceUrl(), nil
 }
 
@@ -182,11 +190,11 @@ func NewServiceAppPropertyHandler(platform *operatorapi.SonataFlowPlatform, ps s
 		platform:  platform,
 		isService: true,
 	}
-	props, err := ps.GenerateProperties()
+	props, err := ps.GenerateWorkflowProperties()
 	if err != nil {
 		return nil, err
 	}
-	handler.defaultMutableProperties = props.String()
+	handler.defaultMutableProperties = props
 	return handler.withKafkaHealthCheckDisabled(), nil
 }
 

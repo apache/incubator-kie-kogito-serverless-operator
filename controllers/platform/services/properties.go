@@ -90,11 +90,11 @@ func GenerateDataIndexApplicationProperties(workflow *operatorapi.SonataFlow, pl
 	props := properties.NewProperties()
 	if workflow != nil && !profiles.IsDevProfile(workflow) && dataIndexEnabled(platform) {
 		di := NewDataIndexService(platform)
-		props, err = di.GenerateProperties()
+		props, err = di.GenerateWorkflowProperties()
 		if err != nil {
 			return nil, err
 		}
-		return props, nil
+		props.Sort()
 	}
 	return props, nil
 }
@@ -102,15 +102,19 @@ func GenerateDataIndexApplicationProperties(workflow *operatorapi.SonataFlow, pl
 // GenerateJobServiceApplicationProperties returns the application properties required for the Job Service to work in a production profile and job service's
 // service's spec field `Enabled` set to true
 func GenerateJobServiceApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (*properties.Properties, error) {
-	var err error
+	js := NewJobService(platform)
 	props := properties.NewProperties()
+	props.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+	props.Set(
+		constants.JobServiceRequestEventsURL, fmt.Sprintf("%s://%s.%s/v2/jobs/events", constants.JobServiceURLProtocol, js.GetServiceName(), platform.Namespace))
 	if workflow != nil && !profiles.IsDevProfile(workflow) && jobServiceEnabled(platform) {
-		js := JobService{platform: platform}
-		props, err = js.GenerateProperties()
+		p, err := js.GenerateWorkflowProperties()
 		if err != nil {
 			return nil, err
 		}
+		props.Merge(p)
 	}
+	props.Sort()
 	return props, nil
 }
 

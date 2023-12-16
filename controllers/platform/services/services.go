@@ -58,8 +58,10 @@ type Platform interface {
 	//MergePodSpec performs a merge with override between the podSpec argument and the expected values based on the service's pod template specification. The returning
 	// object is the result of the merge
 	MergePodSpec(podSpec corev1.PodSpec) (corev1.PodSpec, error)
-	// GenerateProperties returns a property object that contains the application properties required by the service
-	GenerateProperties() (*properties.Properties, error)
+	// GenerateWorkflowProperties returns a property object that contains the service's application properties required by workflows
+	GenerateWorkflowProperties() (*properties.Properties, error)
+	// GenerateServiceProperties returns a property object that contains the application properties required by the service deployment
+	GenerateServiceProperties() (*properties.Properties, error)
 }
 
 type DataIndex struct {
@@ -215,13 +217,17 @@ func (d DataIndex) configurePostgreSqlEnv(postgresql *operatorapi.PersistencePos
 	}
 }
 
-func (d DataIndex) GenerateProperties() (*properties.Properties, error) {
+func (d DataIndex) GenerateWorkflowProperties() (*properties.Properties, error) {
 	props := properties.NewProperties()
 	props.Set(
 		constants.DataIndexServiceURLProperty,
 		fmt.Sprintf("%s://%s.%s/processes", constants.DataIndexServiceURLProtocol, d.GetServiceName(), d.platform.Namespace),
 	)
 	return props, nil
+}
+
+func (d DataIndex) GenerateServiceProperties() (*properties.Properties, error) {
+	return d.GenerateWorkflowProperties()
 }
 
 type JobService struct {
@@ -371,16 +377,8 @@ func (j JobService) configurePostgreSqlEnv(postgresql *operatorapi.PersistencePo
 	}
 }
 
-func (j JobService) GenerateProperties() (*properties.Properties, error) {
+func (j JobService) GenerateServiceProperties() (*properties.Properties, error) {
 	props := properties.NewProperties()
-	props.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
-	props.Set(constants.KogitoProcessDefinitionsEnabled, "false")
-	props.Set(constants.KogitoEventsUserTaskEnabled, "false")
-	props.Set(constants.KogitoEventsVariablesEnabled, "false")
-	props.Set(
-		constants.JobServiceRequestEventsURL, fmt.Sprintf("%s://%s.%s/v2/jobs/events", constants.JobServiceURLProtocol, j.GetServiceName(), j.platform.Namespace))
-	// disable Kafka Sink for knative events until supported
-	props.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
 	// add data source reactive URL
 	jspec := j.platform.Spec.Services.JobService
 	if jspec.Persistence != nil && jspec.Persistence.PostgreSql != nil {
@@ -389,13 +387,39 @@ func (j JobService) GenerateProperties() (*properties.Properties, error) {
 			return nil, err
 		}
 		if len(dataSourceReactiveURL) > 0 {
-			props.Set(constants.JobServiceDataSourceReactiveURLProperty, dataSourceReactiveURL)
+			props.Set(constants.JobServiceDataSourceReactiveURL, dataSourceReactiveURL)
 		}
 	}
 	if dataIndexEnabled(j.platform) {
 		di := NewDataIndexService(j.platform)
-		props.Set(constants.JobServiceStatusChangeEventsProperty, "true")
+		props.Set(constants.JobServiceStatusChangeEvents, "true")
 		props.Set(constants.JobServiceStatusChangeEventsURL, fmt.Sprintf("%s://%s.%s/jobs", constants.DataIndexServiceURLProtocol, di.GetServiceName(), j.platform.Namespace))
 	}
+	props.Sort()
+	return props, nil
+}
+
+func (j JobService) GenerateWorkflowProperties() (*properties.Properties, error) {
+	props := properties.NewProperties()
+	// add data source reactive URL
+	jspec := j.platform.Spec.Services.JobService
+	if jspec.Persistence != nil && jspec.Persistence.PostgreSql != nil {
+		dataSourceReactiveURL, err := generateReactiveURL(jspec.Persistence.PostgreSql, j.GetServiceName(), j.platform.Namespace, constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
+		if err != nil {
+			return nil, err
+		}
+		if len(dataSourceReactiveURL) > 0 {
+			props.Set(constants.JobServiceDataSourceReactiveURL, dataSourceReactiveURL)
+		}
+	}
+	props.Set(constants.KogitoProcessInstancesEnabled, "false")
+	if j.platform.Spec.Services.DataIndex != nil {
+		props.Set(constants.KogitoProcessInstancesEnabled, "true")
+	}
+	if dataIndexEnabled(j.platform) {
+		di := NewDataIndexService(j.platform)
+		props.Set(constants.DataIndexServiceURLProperty, fmt.Sprintf("%s://%s.%s/processes", constants.DataIndexServiceURLProtocol, di.GetServiceName(), j.platform.Namespace))
+	}
+	props.Sort()
 	return props, nil
 }

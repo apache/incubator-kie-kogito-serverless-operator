@@ -28,6 +28,11 @@ const (
 	defaultSchema = "schema"
 )
 
+var (
+	enabled  = true
+	disabled = false
+)
+
 var _ = Describe("Platform properties", func() {
 
 	var _ = Context("PostgreSQL properties", func() {
@@ -70,22 +75,17 @@ var _ = Describe("Platform properties", func() {
 
 	var _ = Context("Platform service properties", func() {
 		var (
-			dataIndexProdProperties *properties.Properties
-			emptyProperties         = properties.NewProperties()
+			emptyProperties = properties.NewProperties()
 		)
-		BeforeEach(func() {
-			dataIndexProdProperties = properties.NewProperties()
-			dataIndexProdProperties.Set(constants.DataIndexServiceURLProperty, "http://foo-data-index-service.default/processes")
-		})
 		DescribeTable("Generate Data Index application properties", func(sf *operatorapi.SonataFlow, plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
 			props, err := GenerateDataIndexApplicationProperties(sf, plfm)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(props).To(Equal(expectedProperties))
 		},
 			Entry("Data index enabled in production and workflow with production profile", generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setDataIndexEnabledValue(true), setPlatformNamespace("default"), setPlatformName("foo")), func() *properties.Properties {
-				dataIndexProdProperties = properties.NewProperties()
-				dataIndexProdProperties.Set(constants.DataIndexServiceURLProperty, "http://foo-data-index-service.default/processes")
-				return dataIndexProdProperties
+				props := properties.NewProperties()
+				props.Set(constants.DataIndexServiceURLProperty, "http://foo-data-index-service.default/processes")
+				return props
 			}()),
 			Entry("Data index enabled in production and workflow with dev profile", generateFlow(setProfileInFlow(metadata.DevProfile)), generatePlatform(setDataIndexEnabledValue(true), setPlatformNamespace("default"), setPlatformName("foo")), emptyProperties),
 			Entry("Data index enabled field undefined and workflow with dev profile", generateFlow(setProfileInFlow(metadata.DevProfile)), generatePlatform(setPlatformNamespace("default"), setPlatformName("foo")), emptyProperties),
@@ -93,74 +93,133 @@ var _ = Describe("Platform properties", func() {
 			Entry("Data index enabled field undefined and workflow with production profile", generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(), emptyProperties),
 		)
 
-		DescribeTable("Generate job service application properties",
-			func(wf *operatorapi.SonataFlow, plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
-				props, err := GenerateJobServiceApplicationProperties(wf, plfm)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(props).To(Equal(expectedProperties))
-			},
-			Entry("Job service disabled in production and workflow with dev profile", generateFlow(setProfileInFlow(metadata.DevProfile)), generatePlatform(setJobServiceEnabledValue(false)), properties.NewProperties()),
-			Entry("Job service enabled field undefined and workflow with dev profile", generateFlow(setProfileInFlow(metadata.DevProfile)), generatePlatform(), properties.NewProperties()),
-			Entry("Job service enabled in production and workflow with dev profile", generateFlow(setProfileInFlow(metadata.DevProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformNamespace("default"), setPlatformName("foo")), emptyProperties),
-			Entry("Job service disabled in production and workflow with production profile", generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(), properties.NewProperties()),
-			Entry("Job service enabled in production and workflow with production profile with ephemeral persistence and data index not enabled for production",
-				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default")),
-				func() *properties.Properties {
-					p := properties.NewProperties()
-					p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
-					p.Set(constants.KogitoProcessDefinitionsEnabled, "false")
-					p.Set(constants.KogitoEventsUserTaskEnabled, "false")
-					p.Set(constants.KogitoEventsVariablesEnabled, "false")
-					p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
-					p.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
-					return p
-				}()),
-			Entry("Job service enabled in production and workflow with production profile with postgreSQL persistence and data index not enabled for production",
-				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
-				func() *properties.Properties {
-					p := properties.NewProperties()
-					p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
-					p.Set(constants.KogitoProcessDefinitionsEnabled, "false")
-					p.Set(constants.KogitoEventsUserTaskEnabled, "false")
-					p.Set(constants.KogitoEventsVariablesEnabled, "false")
-					p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
-					p.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
-					p.Set(constants.JobServiceDataSourceReactiveURLProperty, "postgresql://postgres:5432/sonataflow?search_path=myschema")
-					return p
-				}()),
-			Entry("Job service enabled in production and workflow with production profile with ephemeral persistence and data index enabled for production",
-				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setDataIndexEnabledValue(true)),
-				func() *properties.Properties {
-					p := properties.NewProperties()
-					p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
-					p.Set(constants.KogitoProcessDefinitionsEnabled, "false")
-					p.Set(constants.KogitoEventsUserTaskEnabled, "false")
-					p.Set(constants.KogitoEventsVariablesEnabled, "false")
-					p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
-					p.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
-					p.Set(constants.JobServiceStatusChangeEventsProperty, "true")
-					p.Set(constants.JobServiceStatusChangeEventsURL, "http://foo-data-index-service.default/jobs")
-					return p
-				}()),
-			Entry("Job service enabled in production and workflow with production profile with postgreSQL persistence and data index enabled for production",
-				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexEnabledValue(true)),
-				func() *properties.Properties {
-					p := properties.NewProperties()
-					p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
-					p.Set(constants.KogitoProcessDefinitionsEnabled, "false")
-					p.Set(constants.KogitoEventsUserTaskEnabled, "false")
-					p.Set(constants.KogitoEventsVariablesEnabled, "false")
-					p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
-					p.Set(constants.JobServiceKafkaSinkInjectionHealthCheck, "false")
-					p.Set(constants.JobServiceDataSourceReactiveURLProperty, "postgresql://postgres:5432/sonataflow?search_path=myschema")
-					p.Set(constants.JobServiceStatusChangeEventsProperty, "true")
-					p.Set(constants.JobServiceStatusChangeEventsURL, "http://foo-data-index-service.default/jobs")
-					return p
-				}()),
-			Entry("Job service disabled in production and workflow with dev profile defined with postgreSQL persistence and data index enabled for production",
-				generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(false), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexEnabledValue(true)), emptyProperties),
-		)
+		var _ = Context("Job service application properties", func() {
 
+			DescribeTable("for deployment of the service",
+				func(plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
+					js := NewJobService(plfm)
+					props, err := js.GenerateServiceProperties()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(props).To(Equal(expectedProperties))
+				},
+				Entry("without Data Index and ephemeral persistence", generatePlatform(setJobServiceEnabledValue(&enabled)), emptyProperties),
+				Entry("without Data Index and postgreSQL persistence",
+					generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+					func() *properties.Properties {
+						p := properties.NewProperties()
+						p.Set(constants.JobServiceDataSourceReactiveURL, "postgresql://postgres:5432/sonataflow?search_path=myschema")
+						return p
+					}()),
+				Entry("with Data Index and ephemeral persistence", generatePlatform(setJobServiceEnabledValue(&enabled), setDataIndexEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default")),
+					func() *properties.Properties {
+						p := properties.NewProperties()
+						p.Set(constants.JobServiceStatusChangeEvents, "true")
+						p.Set(constants.JobServiceStatusChangeEventsURL, "http://foo-data-index-service.default/jobs")
+						p.Sort()
+						return p
+					}()),
+				Entry("with Data Index and Data Index and Job Service with PostgreSQL persistence", generatePlatform(setJobServiceEnabledValue(&enabled), setDataIndexEnabledValue(true), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+					func() *properties.Properties {
+						p := properties.NewProperties()
+						p.Set(constants.JobServiceDataSourceReactiveURL, "postgresql://postgres:5432/sonataflow?search_path=myschema")
+						p.Set(constants.JobServiceStatusChangeEvents, "true")
+						p.Set(constants.JobServiceStatusChangeEventsURL, "http://foo-data-index-service.default/jobs")
+						p.Sort()
+						return p
+					}()),
+			)
+
+			DescribeTable("for workflows when",
+				func(wf *operatorapi.SonataFlow, plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
+					props, err := GenerateJobServiceApplicationProperties(wf, plfm)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(props).To(Equal(expectedProperties))
+				},
+				Entry("Job service disabled in production and workflow with dev profile", generateFlow(setProfileInFlow(metadata.DevProfile)), generatePlatform(setJobServiceEnabledValue(&disabled), setPlatformNamespace("default"), setPlatformName("foo")),
+					func() *properties.Properties {
+						p := properties.NewProperties()
+						p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+						p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
+						p.Sort()
+						return p
+					}()),
+				Entry("Job service enabled field undefined and workflow with dev profile", generateFlow(setProfileInFlow(metadata.DevProfile)), generatePlatform(setJobServiceEnabledValue(nil), setPlatformNamespace("default"), setPlatformName("foo")),
+					func() *properties.Properties {
+						p := properties.NewProperties()
+						p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+						p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
+						p.Sort()
+						return p
+					}()),
+				Entry("Job service enabled in production and workflow with dev profile", generateFlow(setProfileInFlow(metadata.DevProfile)), generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformNamespace("default"), setPlatformName("foo")), func() *properties.Properties {
+					p := properties.NewProperties()
+					p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+					p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
+					p.Sort()
+					return p
+				}()),
+				Entry("Job service disabled in production and workflow with production profile", generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(&disabled), setPlatformNamespace("default"), setPlatformName("foo")), func() *properties.Properties {
+					p := properties.NewProperties()
+					p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+					p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
+					p.Sort()
+					return p
+				}()),
+				Entry("Job service enabled in production and workflow with production profile with ephemeral persistence and data index not enabled for production",
+					generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default"), setPlatformNamespace("default"), setPlatformName("foo")),
+					func() *properties.Properties {
+						p := properties.NewProperties()
+						p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+						p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
+						p.Set(constants.KogitoProcessInstancesEnabled, "false")
+						p.Sort()
+						return p
+					}()),
+				Entry("Job service enabled in production and workflow with production profile with postgreSQL persistence and data index not enabled for production",
+					generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+					func() *properties.Properties {
+						p := properties.NewProperties()
+						p.Set(constants.KogitoProcessInstancesEnabled, "false")
+						p.Set(constants.JobServiceDataSourceReactiveURL, "postgresql://postgres:5432/sonataflow?search_path=myschema")
+						p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+						p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
+						p.Sort()
+						return p
+					}()),
+				Entry("Job service enabled in production and workflow with production profile with ephemeral persistence and data index enabled for production",
+					generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default"), setDataIndexEnabledValue(true)),
+					func() *properties.Properties {
+						p := properties.NewProperties()
+						p.Set(constants.KogitoProcessInstancesEnabled, "true")
+						p.Set(constants.DataIndexServiceURLProperty, "http://foo-data-index-service.default/processes")
+						p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+						p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
+						p.Sort()
+						return p
+					}()),
+				Entry("Job service enabled in production and workflow with production profile with postgreSQL persistence and data index enabled for production",
+					generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexEnabledValue(true)),
+					func() *properties.Properties {
+						p := properties.NewProperties()
+						p.Set(constants.JobServiceDataSourceReactiveURL, "postgresql://postgres:5432/sonataflow?search_path=myschema")
+						p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+						p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
+						p.Set(constants.KogitoProcessInstancesEnabled, "true")
+						p.Set(constants.DataIndexServiceURLProperty, "http://foo-data-index-service.default/processes")
+						p.Sort()
+						return p
+					}()),
+				Entry("Job service disabled in production and workflow with dev profile defined with postgreSQL persistence and data index enabled for production",
+					generateFlow(setProfileInFlow(metadata.ProdProfile)), generatePlatform(setJobServiceEnabledValue(&disabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexEnabledValue(true)), func() *properties.Properties {
+						p := properties.NewProperties()
+						p.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
+						p.Set(constants.JobServiceRequestEventsURL, "http://foo-jobs-service.default/v2/jobs/events")
+						p.Sort()
+						return p
+					}()),
+			)
+
+		})
 	})
 
 })
@@ -194,12 +253,12 @@ func generatePlatform(opts ...plfmOptionFn) *operatorapi.SonataFlowPlatform {
 	return plfm
 }
 
-func setJobServiceEnabledValue(v bool) plfmOptionFn {
+func setJobServiceEnabledValue(v *bool) plfmOptionFn {
 	return func(p *operatorapi.SonataFlowPlatform) {
 		if p.Spec.Services.JobService == nil {
 			p.Spec.Services.JobService = &operatorapi.ServiceSpec{}
 		}
-		p.Spec.Services.JobService.Enabled = &v
+		p.Spec.Services.JobService.Enabled = v
 	}
 }
 
@@ -236,6 +295,21 @@ func setJobServiceJDBC(jdbc string) plfmOptionFn {
 			p.Spec.Services.JobService.Persistence.PostgreSql = &operatorapi.PersistencePostgreSql{}
 		}
 		p.Spec.Services.JobService.Persistence.PostgreSql.JdbcUrl = jdbc
+	}
+}
+
+func setDataIndexJDBC(jdbc string) plfmOptionFn {
+	return func(p *operatorapi.SonataFlowPlatform) {
+		if p.Spec.Services.DataIndex == nil {
+			p.Spec.Services.DataIndex = &operatorapi.ServiceSpec{}
+		}
+		if p.Spec.Services.DataIndex.Persistence == nil {
+			p.Spec.Services.DataIndex.Persistence = &operatorapi.PersistenceOptions{}
+		}
+		if p.Spec.Services.DataIndex.Persistence.PostgreSql == nil {
+			p.Spec.Services.DataIndex.Persistence.PostgreSql = &operatorapi.PersistencePostgreSql{}
+		}
+		p.Spec.Services.DataIndex.Persistence.PostgreSql.JdbcUrl = jdbc
 	}
 }
 

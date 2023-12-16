@@ -70,8 +70,408 @@ func Test_appPropertyHandler_WithKogitoServiceUrl(t *testing.T) {
 	workflow := test.GetBaseSonataFlow("default")
 	props, err := ImmutableApplicationProperties(workflow, nil)
 	assert.NoError(t, err)
-	assert.Contains(t, props, constants.KogitoServiceUrlProperty)
+	assert.Contains(t, props, constants.KogitoServiceURLProperty)
 	assert.Contains(t, props, "http://"+workflow.Name+"."+workflow.Namespace)
+}
+
+const (
+	defaultNS = "default"
+)
+
+func Test_appPropertyHandler_WithJobServiceInDevProfile(t *testing.T) {
+	workflow := test.GetBaseSonataFlow(defaultNS)
+	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.DevProfile)})
+	enabled := true
+	platform := test.GetBasePlatform()
+	platform.Namespace = defaultNS
+	platform.Spec = operatorapi.SonataFlowPlatformSpec{
+		Services: operatorapi.ServicesPlatformSpec{
+			JobService: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+			},
+		},
+	}
+	p, err := NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	props, err := properties.LoadString(p.Build())
+	assert.NoError(t, err)
+	expected := properties.NewProperties()
+	expected.Set("kogito.events.processdefinitions.enabled", "false")
+	expected.Set("kogito.events.usertasks.enabled", "false")
+	expected.Set("kogito.events.variables.enabled", "false")
+	expected.Set("kogito.service.url", "http://greeting.default")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.connector", "quarkus-http")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.url", "http://sonataflow-platform-jobs-service.default/v2/jobs/events")
+	expected.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
+	expected.Set("quarkus.devservices.enabled", "false")
+	expected.Set("quarkus.http.host", "0.0.0.0")
+	expected.Set("quarkus.http.port", "8080")
+	expected.Set("quarkus.kogito.devservices.enabled", "false")
+	expected.Sort()
+	assert.Equal(t, expected, props)
+}
+
+func Test_appPropertyHandler_WithJobServiceWithPostgreSQLInDevProfile(t *testing.T) {
+	workflow := test.GetBaseSonataFlow(defaultNS)
+	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.DevProfile)})
+	enabled := true
+	platform := test.GetBasePlatform()
+	platform.Namespace = defaultNS
+	platform.Spec = operatorapi.SonataFlowPlatformSpec{
+		Services: operatorapi.ServicesPlatformSpec{
+			JobService: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+				Persistence: &operatorapi.PersistenceOptions{
+					PostgreSql: &operatorapi.PersistencePostgreSql{
+						ServiceRef: &operatorapi.PostgreSqlServiceOptions{
+							Name:      "foo",
+							Namespace: defaultNS,
+						},
+						JdbcUrl: "jdbc:postgresql://foo.default:5432/postgres?currentSchema=job-service",
+					},
+				},
+			},
+		},
+	}
+	p, err := NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	props, err := properties.LoadString(p.Build())
+	assert.NoError(t, err)
+	expected := properties.NewProperties()
+	expected.Set("kogito.events.processdefinitions.enabled", "false")
+	expected.Set("kogito.events.usertasks.enabled", "false")
+	expected.Set("kogito.events.variables.enabled", "false")
+	expected.Set("kogito.service.url", "http://greeting.default")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.connector", "quarkus-http")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.url", "http://sonataflow-platform-jobs-service.default/v2/jobs/events")
+	expected.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
+	expected.Set("quarkus.devservices.enabled", "false")
+	expected.Set("quarkus.http.host", "0.0.0.0")
+	expected.Set("quarkus.http.port", "8080")
+	expected.Set("quarkus.kogito.devservices.enabled", "false")
+	expected.Sort()
+	assert.Equal(t, expected, props)
+}
+
+func Test_appPropertyHandler_WithJobServiceWithPostgreSQLInProdProfile(t *testing.T) {
+	workflow := test.GetBaseSonataFlow(defaultNS)
+	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.ProdProfile)})
+	enabled := true
+	platform := test.GetBasePlatform()
+	platform.Namespace = defaultNS
+	platform.Spec = operatorapi.SonataFlowPlatformSpec{
+		Services: operatorapi.ServicesPlatformSpec{
+			JobService: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+				Persistence: &operatorapi.PersistenceOptions{
+					PostgreSql: &operatorapi.PersistencePostgreSql{
+						ServiceRef: &operatorapi.PostgreSqlServiceOptions{
+							Name:      "foo",
+							Namespace: defaultNS,
+						},
+						JdbcUrl: "jdbc:postgresql://foo.default:5432/postgres?currentSchema=job-service",
+					},
+				},
+			},
+		},
+	}
+	p, err := NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	props, err := properties.LoadString(p.Build())
+	assert.NoError(t, err)
+	expected := properties.NewProperties()
+	expected.Set("kogito.events.processdefinitions.enabled", "false")
+	expected.Set("kogito.events.usertasks.enabled", "false")
+	expected.Set("kogito.events.variables.enabled", "false")
+	expected.Set("kogito.service.url", "http://greeting.default")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.connector", "quarkus-http")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.url", "http://sonataflow-platform-jobs-service.default/v2/jobs/events")
+	expected.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
+	expected.Set("quarkus.devservices.enabled", "false")
+	expected.Set("quarkus.http.host", "0.0.0.0")
+	expected.Set("quarkus.http.port", "8080")
+	expected.Set("quarkus.kogito.devservices.enabled", "false")
+	expected.Set("kogito.events.processinstances.enabled", "false")
+	expected.Set("quarkus.datasource.reactive.url", "postgresql://foo.default:5432/postgres?search_path=job-service")
+	expected.Sort()
+	assert.Equal(t, expected, props)
+}
+
+func Test_appPropertyHandler_WithJobServiceAndDataIndexEnabledInDevProfile(t *testing.T) {
+	workflow := test.GetBaseSonataFlow(defaultNS)
+	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.DevProfile)})
+	enabled := true
+	platform := test.GetBasePlatform()
+	platform.Namespace = defaultNS
+	platform.Spec = operatorapi.SonataFlowPlatformSpec{
+		Services: operatorapi.ServicesPlatformSpec{
+			JobService: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+			},
+			DataIndex: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+			},
+		},
+	}
+	p, err := NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	props, err := properties.LoadString(p.Build())
+	assert.NoError(t, err)
+	expected := properties.NewProperties()
+	expected.Set("kogito.events.processdefinitions.enabled", "false")
+	expected.Set("kogito.events.usertasks.enabled", "false")
+	expected.Set("kogito.events.variables.enabled", "false")
+	expected.Set("kogito.service.url", "http://greeting.default")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.connector", "quarkus-http")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.url", "http://sonataflow-platform-jobs-service.default/v2/jobs/events")
+	expected.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
+	expected.Set("quarkus.devservices.enabled", "false")
+	expected.Set("quarkus.http.host", "0.0.0.0")
+	expected.Set("quarkus.http.port", "8080")
+	expected.Set("quarkus.kogito.devservices.enabled", "false")
+	expected.Sort()
+	assert.Equal(t, expected, props)
+}
+
+func Test_appPropertyHandler_WithJobServiceAndDataIndexEnabledInProdProfile(t *testing.T) {
+	workflow := test.GetBaseSonataFlow(defaultNS)
+	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.ProdProfile)})
+	enabled := true
+	platform := test.GetBasePlatform()
+	platform.Namespace = defaultNS
+	platform.Spec = operatorapi.SonataFlowPlatformSpec{
+		Services: operatorapi.ServicesPlatformSpec{
+			JobService: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+			},
+			DataIndex: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+			},
+		},
+	}
+	p, err := NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	props, err := properties.LoadString(p.Build())
+	assert.NoError(t, err)
+	expected := properties.NewProperties()
+	expected.Set("kogito.events.processinstances.enabled", "true")
+	expected.Set("kogito.events.processdefinitions.enabled", "false")
+	expected.Set("kogito.events.usertasks.enabled", "false")
+	expected.Set("kogito.events.variables.enabled", "false")
+	expected.Set("kogito.service.url", "http://greeting.default")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.connector", "quarkus-http")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.url", "http://sonataflow-platform-jobs-service.default/v2/jobs/events")
+	expected.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
+	expected.Set("quarkus.devservices.enabled", "false")
+	expected.Set("quarkus.http.host", "0.0.0.0")
+	expected.Set("quarkus.http.port", "8080")
+	expected.Set("quarkus.kogito.devservices.enabled", "false")
+	expected.Set("mp.messaging.outgoing.kogito-processinstances-events.url", "http://sonataflow-platform-data-index-service.default/processes")
+	expected.Sort()
+	assert.Equal(t, expected, props)
+}
+
+func Test_appPropertyHandler_WithJobServiceAndDataIndexWithPostgreSQLDevMode(t *testing.T) {
+	workflow := test.GetBaseSonataFlow(defaultNS)
+	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.DevProfile)})
+	enabled := true
+	platform := test.GetBasePlatform()
+	platform.Namespace = defaultNS
+	platform.Spec = operatorapi.SonataFlowPlatformSpec{
+		Services: operatorapi.ServicesPlatformSpec{
+			JobService: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+			},
+			DataIndex: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+				Persistence: &operatorapi.PersistenceOptions{
+					PostgreSql: &operatorapi.PersistencePostgreSql{
+						ServiceRef: &operatorapi.PostgreSqlServiceOptions{
+							Name:      "foo",
+							Namespace: defaultNS,
+						},
+						JdbcUrl: "jdbc:postgresql://foo.default:5432/postgres?currentSchema=job-service",
+					},
+				},
+			},
+		},
+	}
+	p, err := NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	props, err := properties.LoadString(p.Build())
+	assert.NoError(t, err)
+	expected := properties.NewProperties()
+	expected.Set("kogito.events.processdefinitions.enabled", "false")
+	expected.Set("kogito.events.usertasks.enabled", "false")
+	expected.Set("kogito.events.variables.enabled", "false")
+	expected.Set("kogito.service.url", "http://greeting.default")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.connector", "quarkus-http")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.url", "http://sonataflow-platform-jobs-service.default/v2/jobs/events")
+	expected.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
+	expected.Set("quarkus.devservices.enabled", "false")
+	expected.Set("quarkus.http.host", "0.0.0.0")
+	expected.Set("quarkus.http.port", "8080")
+	expected.Set("quarkus.kogito.devservices.enabled", "false")
+	expected.Sort()
+	assert.Equal(t, expected, props)
+}
+
+func Test_appPropertyHandler_WithJobServiceAndDataIndexWithPostgreSQLProdMode(t *testing.T) {
+	workflow := test.GetBaseSonataFlow(defaultNS)
+	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.ProdProfile)})
+	enabled := true
+	platform := test.GetBasePlatform()
+	platform.Namespace = defaultNS
+	platform.Spec = operatorapi.SonataFlowPlatformSpec{
+		Services: operatorapi.ServicesPlatformSpec{
+			JobService: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+			},
+			DataIndex: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+				Persistence: &operatorapi.PersistenceOptions{
+					PostgreSql: &operatorapi.PersistencePostgreSql{
+						ServiceRef: &operatorapi.PostgreSqlServiceOptions{
+							Name:      "foo",
+							Namespace: defaultNS,
+						},
+						JdbcUrl: "jdbc:postgresql://foo.default:5432/postgres?currentSchema=job-service",
+					},
+				},
+			},
+		},
+	}
+	p, err := NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	props, err := properties.LoadString(p.Build())
+	assert.NoError(t, err)
+	expected := properties.NewProperties()
+	expected.Set("kogito.events.processdefinitions.enabled", "false")
+	expected.Set("kogito.events.usertasks.enabled", "false")
+	expected.Set("kogito.events.variables.enabled", "false")
+	expected.Set("kogito.service.url", "http://greeting.default")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.connector", "quarkus-http")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.url", "http://sonataflow-platform-jobs-service.default/v2/jobs/events")
+	expected.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
+	expected.Set("quarkus.devservices.enabled", "false")
+	expected.Set("quarkus.http.host", "0.0.0.0")
+	expected.Set("quarkus.http.port", "8080")
+	expected.Set("quarkus.kogito.devservices.enabled", "false")
+	expected.Set("kogito.events.processinstances.enabled", "true")
+	expected.Set("mp.messaging.outgoing.kogito-processinstances-events.url", "http://sonataflow-platform-data-index-service.default/processes")
+	expected.Sort()
+	assert.Equal(t, expected, props)
+}
+
+func Test_appPropertyHandler_WithJobServiceWithPostgreSQLDevMode(t *testing.T) {
+	workflow := test.GetBaseSonataFlow(defaultNS)
+	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.DevProfile)})
+	enabled := true
+	platform := test.GetBasePlatform()
+	platform.Namespace = defaultNS
+	platform.Spec = operatorapi.SonataFlowPlatformSpec{
+		Services: operatorapi.ServicesPlatformSpec{
+			JobService: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+				Persistence: &operatorapi.PersistenceOptions{
+					PostgreSql: &operatorapi.PersistencePostgreSql{
+						ServiceRef: &operatorapi.PostgreSqlServiceOptions{
+							Name:      "foo",
+							Namespace: defaultNS,
+						},
+						JdbcUrl: "jdbc:postgresql://foo.default:5432/postgres?currentSchema=job-service",
+					},
+				},
+			},
+			DataIndex: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+				Persistence: &operatorapi.PersistenceOptions{
+					PostgreSql: &operatorapi.PersistencePostgreSql{
+						ServiceRef: &operatorapi.PostgreSqlServiceOptions{
+							Name:      "foo",
+							Namespace: defaultNS,
+						},
+						JdbcUrl: "jdbc:postgresql://foo.default:5432/postgres?currentSchema=job-service",
+					},
+				},
+			},
+		},
+	}
+	p, err := NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	props, err := properties.LoadString(p.Build())
+	assert.NoError(t, err)
+	expected := properties.NewProperties()
+	expected.Set("kogito.events.processdefinitions.enabled", "false")
+	expected.Set("kogito.events.usertasks.enabled", "false")
+	expected.Set("kogito.events.variables.enabled", "false")
+	expected.Set("kogito.service.url", "http://greeting.default")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.connector", "quarkus-http")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.url", "http://sonataflow-platform-jobs-service.default/v2/jobs/events")
+	expected.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
+	expected.Set("quarkus.devservices.enabled", "false")
+	expected.Set("quarkus.http.host", "0.0.0.0")
+	expected.Set("quarkus.http.port", "8080")
+	expected.Set("quarkus.kogito.devservices.enabled", "false")
+	expected.Sort()
+	assert.Equal(t, expected, props)
+}
+
+func Test_appPropertyHandler_WithJobServiceWithPostgreSQLProdMode(t *testing.T) {
+	workflow := test.GetBaseSonataFlow(defaultNS)
+	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.ProdProfile)})
+	enabled := true
+	platform := test.GetBasePlatform()
+	platform.Namespace = defaultNS
+	platform.Spec = operatorapi.SonataFlowPlatformSpec{
+		Services: operatorapi.ServicesPlatformSpec{
+			JobService: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+				Persistence: &operatorapi.PersistenceOptions{
+					PostgreSql: &operatorapi.PersistencePostgreSql{
+						ServiceRef: &operatorapi.PostgreSqlServiceOptions{
+							Name:      "foo",
+							Namespace: defaultNS,
+						},
+						JdbcUrl: "jdbc:postgresql://foo.default:5432/postgres?currentSchema=job-service",
+					},
+				},
+			},
+			DataIndex: &operatorapi.ServiceSpec{
+				Enabled: &enabled,
+				Persistence: &operatorapi.PersistenceOptions{
+					PostgreSql: &operatorapi.PersistencePostgreSql{
+						ServiceRef: &operatorapi.PostgreSqlServiceOptions{
+							Name:      "foo",
+							Namespace: defaultNS,
+						},
+						JdbcUrl: "jdbc:postgresql://foo.default:5432/postgres?currentSchema=job-service",
+					},
+				},
+			},
+		},
+	}
+	p, err := NewAppPropertyHandler(workflow, platform)
+	assert.NoError(t, err)
+	props, err := properties.LoadString(p.Build())
+	assert.NoError(t, err)
+	expected := properties.NewProperties()
+	expected.Set("kogito.events.processdefinitions.enabled", "false")
+	expected.Set("kogito.events.usertasks.enabled", "false")
+	expected.Set("kogito.events.variables.enabled", "false")
+	expected.Set("kogito.service.url", "http://greeting.default")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.connector", "quarkus-http")
+	expected.Set("mp.messaging.outgoing.kogito-job-service-job-request-events.url", "http://sonataflow-platform-jobs-service.default/v2/jobs/events")
+	expected.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
+	expected.Set("quarkus.devservices.enabled", "false")
+	expected.Set("quarkus.http.host", "0.0.0.0")
+	expected.Set("quarkus.http.port", "8080")
+	expected.Set("quarkus.kogito.devservices.enabled", "false")
+	expected.Set("kogito.events.processinstances.enabled", "true")
+	expected.Set("mp.messaging.outgoing.kogito-processinstances-events.url", "http://sonataflow-platform-data-index-service.default/processes")
+	expected.Set("quarkus.datasource.reactive.url", "postgresql://foo.default:5432/postgres?search_path=job-service")
+	expected.Sort()
+	assert.Equal(t, expected, props)
 }
 
 func Test_appPropertyHandler_WithUserPropertiesWithNoUserOverrides(t *testing.T) {
@@ -82,7 +482,7 @@ func Test_appPropertyHandler_WithUserPropertiesWithNoUserOverrides(t *testing.T)
 	assert.NoError(t, err)
 	generatedProps, propsErr := properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 8, len(generatedProps.Keys()))
+	assert.Equal(t, 11, len(generatedProps.Keys()))
 	assert.Equal(t, "value1", generatedProps.GetString("property1", ""))
 	assert.Equal(t, "value2", generatedProps.GetString("property2", ""))
 	assert.Equal(t, "http://greeting.default", generatedProps.GetString("kogito.service.url", ""))
@@ -91,6 +491,9 @@ func Test_appPropertyHandler_WithUserPropertiesWithNoUserOverrides(t *testing.T)
 	assert.Equal(t, "false", generatedProps.GetString("org.kie.kogito.addons.knative.eventing.health-enabled", ""))
 	assert.Equal(t, "false", generatedProps.GetString("quarkus.devservices.enabled", ""))
 	assert.Equal(t, "false", generatedProps.GetString("quarkus.kogito.devservices.enabled", ""))
+	assert.Equal(t, "false", generatedProps.GetString(constants.KogitoProcessDefinitionsEnabled, ""))
+	assert.Equal(t, "false", generatedProps.GetString(constants.KogitoEventsUserTaskEnabled, ""))
+	assert.Equal(t, "false", generatedProps.GetString(constants.KogitoEventsVariablesEnabled, ""))
 }
 
 func Test_appPropertyHandler_WithUserPropertiesWithServiceDiscovery(t *testing.T) {
@@ -109,7 +512,7 @@ func Test_appPropertyHandler_WithUserPropertiesWithServiceDiscovery(t *testing.T
 		Build())
 	generatedProps.DisableExpansion = true
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 12, len(generatedProps.Keys()))
+	assert.Equal(t, 15, len(generatedProps.Keys()))
 	assertHasProperty(t, generatedProps, "property1", "value1")
 	assertHasProperty(t, generatedProps, "property2", "value2")
 
@@ -126,6 +529,9 @@ func Test_appPropertyHandler_WithUserPropertiesWithServiceDiscovery(t *testing.T
 	assertHasProperty(t, generatedProps, "org.kie.kogito.addons.knative.eventing.health-enabled", "false")
 	assertHasProperty(t, generatedProps, "quarkus.devservices.enabled", "false")
 	assertHasProperty(t, generatedProps, "quarkus.kogito.devservices.enabled", "false")
+	assertHasProperty(t, generatedProps, constants.KogitoProcessDefinitionsEnabled, "false")
+	assertHasProperty(t, generatedProps, constants.KogitoEventsUserTaskEnabled, "false")
+	assertHasProperty(t, generatedProps, constants.KogitoEventsVariablesEnabled, "false")
 }
 
 func Test_generateDiscoveryProperties(t *testing.T) {
@@ -203,15 +609,14 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 		},
 	}
 
-	di := services.NewDataIndexService(platform)
-
 	props, err := NewAppPropertyHandler(workflow, platform)
 	assert.NoError(t, err)
 	generatedProps, propsErr := properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 8, len(generatedProps.Keys()))
+	assert.Equal(t, 13, len(generatedProps.Keys()))
 	assert.Equal(t, "value1", generatedProps.GetString("property1", ""))
 	assert.Equal(t, "value2", generatedProps.GetString("property2", ""))
+
 	//kogito.service.url takes the user provided value since it's a default mutable property.
 	assert.Equal(t, "http://myUrl.override.com", generatedProps.GetString("kogito.service.url", ""))
 	//quarkus.http.port remains with the default value since it's immutable.
@@ -221,7 +626,10 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.Equal(t, "false", generatedProps.GetString("quarkus.devservices.enabled", ""))
 	assert.Equal(t, "false", generatedProps.GetString("quarkus.kogito.devservices.enabled", ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceRequestEventsURL, ""))
+	assert.Equal(t, "http://sonataflow-platform-jobs-service.default/v2/jobs/events", generatedProps.GetString(constants.JobServiceRequestEventsURL, ""))
+	assert.Equal(t, "false", generatedProps.GetString(constants.KogitoProcessDefinitionsEnabled, ""))
+	assert.Equal(t, "false", generatedProps.GetString(constants.KogitoEventsUserTaskEnabled, ""))
+	assert.Equal(t, "false", generatedProps.GetString(constants.KogitoEventsVariablesEnabled, ""))
 
 	// prod profile enables config of outgoing events url
 	workflow.SetAnnotations(map[string]string{metadata.Profile: string(metadata.ProdProfile)})
@@ -229,13 +637,12 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.NoError(t, err)
 	generatedProps, propsErr = properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 17, len(generatedProps.Keys()))
+	assert.Equal(t, 15, len(generatedProps.Keys()))
 	assert.Equal(t, "http://"+platform.Name+"-"+constants.DataIndexServiceName+"."+platform.Namespace+"/processes", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
 	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceRequestEventsURL, ""))
-	assert.Equal(t, "false", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
-	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceDataSourceReactiveURLProperty, ""))
-	assert.Equal(t, "true", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
-	assert.Equal(t, generatedProps.GetString(constants.JobServiceStatusChangeEventsURL, ""), fmt.Sprintf("%s://%s.%s/jobs", constants.DataIndexServiceURLProtocol, di.GetServiceName(), platform.Namespace))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceDataSourceReactiveURL, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEvents, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsURL, ""))
 
 	// disabling data index bypasses config of outgoing events url
 	platform.Spec.Services.DataIndex.Enabled = nil
@@ -246,8 +653,7 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.Equal(t, 14, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
 	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceRequestEventsURL, ""))
-	assert.Equal(t, "false", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
-	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEvents, ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsURL, ""))
 
 	// check that service app properties are being properly set
@@ -256,7 +662,7 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.NoError(t, err)
 	generatedProps, propsErr = properties.LoadString(p.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 15, len(generatedProps.Keys()))
+	assert.Equal(t, 10, len(generatedProps.Keys()))
 	assert.Equal(t, "false", generatedProps.GetString(constants.KafkaSmallRyeHealthProperty, ""))
 	assert.Equal(t, "value1", generatedProps.GetString("property1", ""))
 	assert.Equal(t, "value2", generatedProps.GetString("property2", ""))
@@ -269,12 +675,11 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.NoError(t, err)
 	generatedProps, propsErr = properties.LoadString(props.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 8, len(generatedProps.Keys()))
+	assert.Equal(t, 13, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceRequestEventsURL, ""))
-	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
-	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceDataSourceReactiveURLProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
+	assert.Equal(t, "http://sonataflow-platform-jobs-service.default/v2/jobs/events", generatedProps.GetString(constants.JobServiceRequestEventsURL, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceDataSourceReactiveURL, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEvents, ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsURL, ""))
 
 	// check that the reactive URL is generated from the postgreSQL JDBC URL when not provided
@@ -295,9 +700,8 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.Equal(t, 15, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
 	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceRequestEventsURL, ""))
-	assert.Equal(t, "false", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
-	assert.Equal(t, "postgresql://jobs-service.default:5432/sonataflow?search_path=sonataflow-platform-jobs-service", generatedProps.GetString(constants.JobServiceDataSourceReactiveURLProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
+	assert.Equal(t, "postgresql://jobs-service.default:5432/sonataflow?search_path=sonataflow-platform-jobs-service", generatedProps.GetString(constants.JobServiceDataSourceReactiveURL, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEvents, ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsURL, ""))
 
 	// check that the reactive URL is generated from the postgreSQL JDBC URL when provided
@@ -316,9 +720,8 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	assert.Equal(t, 15, len(generatedProps.Keys()))
 	assert.Equal(t, "", generatedProps.GetString(constants.DataIndexServiceURLProperty, ""))
 	assert.Equal(t, "http://"+platform.Name+"-"+constants.JobServiceName+"."+platform.Namespace+"/v2/jobs/events", generatedProps.GetString(constants.JobServiceRequestEventsURL, ""))
-	assert.Equal(t, "false", generatedProps.GetString(constants.JobServiceKafkaSinkInjectionHealthCheck, ""))
-	assert.Equal(t, "postgresql://timeouts-showcase-database:5432/postgres?search_path=jobs-service", generatedProps.GetString(constants.JobServiceDataSourceReactiveURLProperty, ""))
-	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsProperty, ""))
+	assert.Equal(t, "postgresql://timeouts-showcase-database:5432/postgres?search_path=jobs-service", generatedProps.GetString(constants.JobServiceDataSourceReactiveURL, ""))
+	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEvents, ""))
 	assert.Equal(t, "", generatedProps.GetString(constants.JobServiceStatusChangeEventsURL, ""))
 
 }
