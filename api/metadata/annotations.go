@@ -30,6 +30,8 @@ const (
 	Profile                     = Domain + "/profile"
 	SecondaryPlatformAnnotation = Domain + "/secondary.platform"
 	OperatorIDAnnotation        = Domain + "/operator.id"
+	RestartedAt                 = Domain + "/restartedAt"
+	Checksum                    = "checksum/config"
 )
 
 const (

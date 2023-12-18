@@ -104,9 +104,12 @@ func (d *deploymentHandler) getDeploymentMutateVisitors(
 		return []common.MutateVisitor{common.DeploymentMutateVisitor(workflow),
 			mountProdConfigMapsMutateVisitor(configMap),
 			addOpenShiftImageTriggerDeploymentMutateVisitor(workflow, image),
-			common.ImageDeploymentMutateVisitor(workflow, image)}
+			common.ImageDeploymentMutateVisitor(workflow, image),
+			common.RolloutDeploymentIfCMChangedMutateVisitor(configMap),
+		}
 	}
 	return []common.MutateVisitor{common.DeploymentMutateVisitor(workflow),
 		common.ImageDeploymentMutateVisitor(workflow, image),
-		mountProdConfigMapsMutateVisitor(configMap)}
+		mountProdConfigMapsMutateVisitor(configMap),
+		common.RolloutDeploymentIfCMChangedMutateVisitor(configMap)}
 }

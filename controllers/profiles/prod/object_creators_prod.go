@@ -81,6 +81,7 @@ func mountProdConfigMapsMutateVisitor(propsCM *v1.ConfigMap) common.MutateVisito
 			kubeutil.AddOrReplaceVolumeMount(idx, &deployment.Spec.Template.Spec,
 				kubeutil.VolumeMount(common.ConfigMapWorkflowPropsVolumeName, true, quarkusProdConfigMountPath))
 
+			kubeutil.AnnotateDeploymentConfigChecksum(deployment, propsCM)
 			return nil
 		}
 	}
