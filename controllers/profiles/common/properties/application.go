@@ -167,16 +167,17 @@ func NewAppPropertyHandler(workflow *operatorapi.SonataFlow, platform *operatora
 	props.Set(constants.KogitoEventsVariablesEnabled, "false")
 	props.Set(constants.KogitoProcessDefinitionsEnabled, "false")
 	if platform != nil {
-		p, err := services.GenerateDataIndexApplicationProperties(workflow, platform)
+		p, err := services.GenerateDataIndexWorkflowProperties(workflow, platform)
 		if err != nil {
 			return nil, err
 		}
 		props.Merge(p)
-		p, err = services.GenerateJobServiceApplicationProperties(workflow, platform)
+		p, err = services.GenerateJobServiceWorkflowProperties(workflow, platform)
 		if err != nil {
 			return nil, err
 		}
 		props.Merge(p)
+		props.Sort()
 	}
 	handler.defaultMutableProperties = props
 	return handler.withKogitoServiceUrl(), nil
@@ -190,7 +191,7 @@ func NewServiceAppPropertyHandler(platform *operatorapi.SonataFlowPlatform, ps s
 		platform:  platform,
 		isService: true,
 	}
-	props, err := ps.GenerateWorkflowProperties()
+	props, err := ps.GenerateServiceProperties()
 	if err != nil {
 		return nil, err
 	}

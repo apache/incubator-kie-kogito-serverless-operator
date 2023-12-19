@@ -219,15 +219,14 @@ func (d DataIndex) configurePostgreSqlEnv(postgresql *operatorapi.PersistencePos
 
 func (d DataIndex) GenerateWorkflowProperties() (*properties.Properties, error) {
 	props := properties.NewProperties()
-	props.Set(
-		constants.DataIndexServiceURLProperty,
-		fmt.Sprintf("%s://%s.%s/processes", constants.DataIndexServiceURLProtocol, d.GetServiceName(), d.platform.Namespace),
-	)
+	if d.platform.Spec.Services.DataIndex != nil {
+		props.Set(constants.DataIndexServiceURLProperty, fmt.Sprintf("%s://%s.%s/processes", constants.DataIndexServiceURLProtocol, d.GetServiceName(), d.platform.Namespace))
+	}
 	return props, nil
 }
 
 func (d DataIndex) GenerateServiceProperties() (*properties.Properties, error) {
-	return d.GenerateWorkflowProperties()
+	return properties.NewProperties(), nil
 }
 
 type JobService struct {
@@ -381,14 +380,12 @@ func (j JobService) GenerateServiceProperties() (*properties.Properties, error) 
 	props := properties.NewProperties()
 	// add data source reactive URL
 	jspec := j.platform.Spec.Services.JobService
-	if jspec.Persistence != nil && jspec.Persistence.PostgreSql != nil {
+	if jspec != nil && jspec.Persistence != nil && jspec.Persistence.PostgreSql != nil {
 		dataSourceReactiveURL, err := generateReactiveURL(jspec.Persistence.PostgreSql, j.GetServiceName(), j.platform.Namespace, constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
 		if err != nil {
 			return nil, err
 		}
-		if len(dataSourceReactiveURL) > 0 {
-			props.Set(constants.JobServiceDataSourceReactiveURL, dataSourceReactiveURL)
-		}
+		props.Set(constants.JobServiceDataSourceReactiveURL, dataSourceReactiveURL)
 	}
 	if dataIndexEnabled(j.platform) {
 		di := NewDataIndexService(j.platform)
@@ -402,24 +399,11 @@ func (j JobService) GenerateServiceProperties() (*properties.Properties, error) 
 func (j JobService) GenerateWorkflowProperties() (*properties.Properties, error) {
 	props := properties.NewProperties()
 	// add data source reactive URL
-	jspec := j.platform.Spec.Services.JobService
-	if jspec.Persistence != nil && jspec.Persistence.PostgreSql != nil {
-		dataSourceReactiveURL, err := generateReactiveURL(jspec.Persistence.PostgreSql, j.GetServiceName(), j.platform.Namespace, constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
-		if err != nil {
-			return nil, err
-		}
-		if len(dataSourceReactiveURL) > 0 {
-			props.Set(constants.JobServiceDataSourceReactiveURL, dataSourceReactiveURL)
-		}
-	}
-	props.Set(constants.KogitoProcessInstancesEnabled, "false")
-	if j.platform.Spec.Services.DataIndex != nil {
-		props.Set(constants.KogitoProcessInstancesEnabled, "true")
-	}
-	if dataIndexEnabled(j.platform) {
-		di := NewDataIndexService(j.platform)
-		props.Set(constants.DataIndexServiceURLProperty, fmt.Sprintf("%s://%s.%s/processes", constants.DataIndexServiceURLProtocol, di.GetServiceName(), j.platform.Namespace))
-	}
-	props.Sort()
+	props.Set(constants.JobServiceRequestEventsURL, fmt.Sprintf("%s://%s.%s/v2/jobs/events", constants.JobServiceURLProtocol, j.GetServiceName(), j.platform.Namespace))
 	return props, nil
+}
+
+func dataIndexEnabled(platform *operatorapi.SonataFlowPlatform) bool {
+	return platform != nil && platform.Spec.Services.DataIndex != nil &&
+		platform.Spec.Services.DataIndex.Enabled != nil && *platform.Spec.Services.DataIndex.Enabled
 }

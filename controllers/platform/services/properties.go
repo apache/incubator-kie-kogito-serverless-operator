@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 
 	"github.com/magiconair/properties"
@@ -83,31 +82,31 @@ func generateReactiveURL(postgresSpec *operatorapi.PersistencePostgreSql, schema
 	return fmt.Sprintf("%s://%s:%d/%s?search_path=%s", constants.PersistenceTypePostgreSQL, postgresSpec.ServiceRef.Name+"."+databaseNamespace, dataSourcePort, databaseName, databaseSchema), nil
 }
 
-// GenerateDataIndexApplicationProperties returns the application properties required for the Data Index Service to work when deployed in a production profile
-// and data index' service's spec field `Enabled` set to true
-func GenerateDataIndexApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (*properties.Properties, error) {
-	var err error
+// GenerateDataIndexApplicationProperties returns the application properties required for the Data Index deployment.
+func GenerateDataIndexWorkflowProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (*properties.Properties, error) {
 	props := properties.NewProperties()
-	if workflow != nil && !profiles.IsDevProfile(workflow) && dataIndexEnabled(platform) {
+	props.Set(constants.KogitoProcessInstancesEnabled, "false")
+	if platform.Spec.Services.DataIndex != nil {
+		props.Set(constants.KogitoProcessInstancesEnabled, "true")
 		di := NewDataIndexService(platform)
-		props, err = di.GenerateWorkflowProperties()
+		p, err := di.GenerateWorkflowProperties()
 		if err != nil {
 			return nil, err
 		}
-		props.Sort()
+		props.Merge(p)
 	}
+	props.Sort()
 	return props, nil
+
 }
 
-// GenerateJobServiceApplicationProperties returns the application properties required for the Job Service to work in a production profile and job service's
-// service's spec field `Enabled` set to true
-func GenerateJobServiceApplicationProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (*properties.Properties, error) {
-	js := NewJobService(platform)
+// GenerateJobServiceApplicationProperties returns the application properties required for the Job Service to work.
+func GenerateJobServiceWorkflowProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (*properties.Properties, error) {
 	props := properties.NewProperties()
 	props.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
-	props.Set(
-		constants.JobServiceRequestEventsURL, fmt.Sprintf("%s://%s.%s/v2/jobs/events", constants.JobServiceURLProtocol, js.GetServiceName(), platform.Namespace))
-	if workflow != nil && !profiles.IsDevProfile(workflow) && jobServiceEnabled(platform) {
+	props.Set(constants.JobServiceRequestEventsURL, fmt.Sprintf("%s://localhost/v2/jobs/events", constants.JobServiceURLProtocol))
+	if platform.Spec.Services.JobService != nil {
+		js := NewJobService(platform)
 		p, err := js.GenerateWorkflowProperties()
 		if err != nil {
 			return nil, err
@@ -116,13 +115,4 @@ func GenerateJobServiceApplicationProperties(workflow *operatorapi.SonataFlow, p
 	}
 	props.Sort()
 	return props, nil
-}
-
-func dataIndexEnabled(platform *operatorapi.SonataFlowPlatform) bool {
-	return platform != nil && platform.Spec.Services.DataIndex != nil &&
-		platform.Spec.Services.DataIndex.Enabled != nil && *platform.Spec.Services.DataIndex.Enabled
-}
-
-func jobServiceEnabled(platform *operatorapi.SonataFlowPlatform) bool {
-	return platform != nil && platform.Spec.Services.JobService != nil && platform.Spec.Services.JobService.Enabled != nil && *platform.Spec.Services.JobService.Enabled
 }
