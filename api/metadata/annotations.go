@@ -31,7 +31,7 @@ const (
 	SecondaryPlatformAnnotation = Domain + "/secondary.platform"
 	OperatorIDAnnotation        = Domain + "/operator.id"
 	RestartedAt                 = Domain + "/restartedAt"
-	Checksum                    = Domain + "/checksum/config"
+	Checksum                    = Domain + "/checksum-config"
 )
 
 const (
