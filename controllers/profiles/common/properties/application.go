@@ -143,7 +143,7 @@ func (a *appPropertyHandler) withKogitoServiceUrl() AppPropertyHandler {
 // See Service Discovery https://kubernetes.io/docs/concepts/services-networking/service/#dns
 func (a *appPropertyHandler) withKafkaHealthCheckDisabled() AppPropertyHandler {
 	a.addDefaultMutableProperty(
-		constants.KafkaSmallRyeHealthProperty,
+		constants.DataIndexKafkaSmallRyeHealthProperty,
 		"false",
 	)
 	return a
@@ -196,7 +196,7 @@ func NewServiceAppPropertyHandler(platform *operatorapi.SonataFlowPlatform, ps s
 		return nil, err
 	}
 	handler.defaultMutableProperties = props
-	return handler.withKafkaHealthCheckDisabled(), nil
+	return handler, nil
 }
 
 // ImmutableApplicationProperties immutable default application properties that can be used with any workflow based on Quarkus.

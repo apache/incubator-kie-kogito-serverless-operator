@@ -36,13 +36,14 @@ const (
 	JobServiceURLProtocol            = "http"
 	JobServiceDataSourceReactiveURL  = "quarkus.datasource.reactive.url"
 
-	KogitoProcessInstancesEnabled   = "kogito.events.processinstances.enabled"
-	KogitoProcessDefinitionsEnabled = "kogito.events.processdefinitions.enabled"
-	KogitoEventsUserTaskEnabled     = "kogito.events.usertasks.enabled"
-	KogitoEventsVariablesEnabled    = "kogito.events.variables.enabled"
-	KogitoServiceURLProperty        = "kogito.service.url"
-	KogitoServiceURLProtocol        = "http"
-	KafkaSmallRyeHealthProperty     = "quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled"
+	KogitoProcessInstancesEnabled         = "kogito.events.processinstances.enabled"
+	KogitoProcessDefinitionsEnabled       = "kogito.events.processdefinitions.enabled"
+	KogitoEventsUserTaskEnabled           = "kogito.events.usertasks.enabled"
+	KogitoEventsVariablesEnabled          = "kogito.events.variables.enabled"
+	KogitoServiceURLProperty              = "kogito.service.url"
+	KogitoServiceURLProtocol              = "http"
+	DataIndexKafkaSmallRyeHealthProperty  = `quarkus.smallrye-health.check."io.quarkus.kafka.client.health.KafkaHealthCheck".enabled`
+	JobServiceKafkaSmallRyeHealthProperty = `quarkus.smallrye-health.check."org.kie.kogito.jobs.service.messaging.http.health.knative.KSinkInjectionHealthCheck".enabled`
 
 	DataIndexServiceName = "data-index-service"
 	JobServiceName       = "jobs-service"

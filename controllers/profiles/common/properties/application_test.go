@@ -270,7 +270,7 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	generatedProps, propsErr = properties.LoadString(p.WithUserProperties(userProperties).Build())
 	assert.NoError(t, propsErr)
 	assert.Equal(t, 9, len(generatedProps.Keys()))
-	assert.Equal(t, "false", generatedProps.GetString(constants.KafkaSmallRyeHealthProperty, ""))
+	assert.Equal(t, "false", generatedProps.GetString(constants.JobServiceKafkaSmallRyeHealthProperty, ""))
 	assert.Equal(t, "value1", generatedProps.GetString("property1", ""))
 	assert.Equal(t, "value2", generatedProps.GetString("property2", ""))
 	//quarkus.http.port remains with the default value since it's immutable.
@@ -336,6 +336,285 @@ var (
 	disabled = false
 )
 
+var _ = Describe("Platform properties", func() {
+
+	var _ = Context("for service properties", func() {
+
+		var _ = Context("defining the application properties generated for the deployment of the", func() {
+
+			DescribeTable("Job Service",
+				func(plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
+					js := services.NewJobService(plfm)
+					handler, err := NewServiceAppPropertyHandler(plfm, js)
+					Expect(err).NotTo(HaveOccurred())
+					p, err := properties.LoadString(handler.Build())
+					Expect(err).NotTo(HaveOccurred())
+					p.Sort()
+					Expect(p).To(Equal(expectedProperties))
+				},
+				Entry("with an empty spec", generatePlatform(emtpyJobServiceSpec()),
+					generateJobServiceDeploymentDevProperties()),
+				Entry("with enabled field undefined and with ephemeral persistence",
+					generatePlatform(setJobServiceEnabledValue(nil), setPlatformName("foo"), setPlatformNamespace("default")),
+					generateJobServiceDeploymentDevProperties()),
+				Entry("with enabled field undefined and with postgreSQL persistence",
+					generatePlatform(setJobServiceEnabledValue(nil), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+					generateJobServiceDeploymentWithPostgreSQLProperties()),
+				Entry("with enabled field set to false and with ephemeral persistence",
+					generatePlatform(setJobServiceEnabledValue(nil), setPlatformName("foo"), setPlatformNamespace("default")),
+					generateJobServiceDeploymentDevProperties()),
+				Entry("with enabled field set to false and with postgreSQL persistence",
+					generatePlatform(setJobServiceEnabledValue(&disabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+					generateJobServiceDeploymentWithPostgreSQLProperties()),
+				Entry("with enabled field set to true and with ephemeral persistence",
+					generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default")),
+					generateJobServiceDeploymentDevProperties()),
+				Entry("with enabled field set to true and with postgreSQL persistence",
+					generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+					generateJobServiceDeploymentWithPostgreSQLProperties()),
+				Entry("with both services with enabled field set to true and with ephemeral persistence",
+					generatePlatform(setJobServiceEnabledValue(&enabled), setDataIndexEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default")),
+					generateJobServiceDeploymentWithDataIndexAndEphemeralProperties()),
+				Entry("with both services with enabled field set to true and postgreSQL persistence for both",
+					generatePlatform(setJobServiceEnabledValue(&enabled), setDataIndexEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+					generateJobServiceDeploymentWithDataIndexAndPostgreSQLProperties()),
+			)
+
+			DescribeTable("Data Index", func(plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
+				di := services.NewDataIndexService(plfm)
+				handler, err := NewServiceAppPropertyHandler(plfm, di)
+				Expect(err).NotTo(HaveOccurred())
+				p, err := properties.LoadString(handler.Build())
+				Expect(err).NotTo(HaveOccurred())
+				p.Sort()
+				Expect(p).To(Equal(expectedProperties))
+			},
+				Entry("with ephemeral persistence", generatePlatform(emtpyDataIndexServiceSpec()), generateDataIndexDeploymentProperties()),
+				Entry("with postgreSQL persistence", generatePlatform(emtpyDataIndexServiceSpec(), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+					generateDataIndexDeploymentProperties()),
+			)
+		})
+
+		var _ = Context("defining the workflow properties generated from", func() {
+
+			DescribeTable("only job services when the spec",
+				func(wf *operatorapi.SonataFlow, plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
+					handler, err := NewAppPropertyHandler(wf, plfm)
+					Expect(err).NotTo(HaveOccurred())
+					p, err := properties.LoadString(handler.Build())
+					Expect(err).NotTo(HaveOccurred())
+					p.Sort()
+					Expect(p).To(Equal(expectedProperties))
+				},
+				Entry("has enabled field set to false and workflow with dev profile",
+					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(&disabled), setPlatformNamespace("default"), setPlatformName("foo")),
+					generateJobServiceWorkflowDevProperties()),
+				Entry("has enabled field set to false and workflow with production profile",
+					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(&disabled), setPlatformNamespace("default"), setPlatformName("foo")),
+					generateJobServiceWorkflowDevProperties()),
+				Entry("has enabled field undefined and workflow with dev profile",
+					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(nil), setPlatformNamespace("default"), setPlatformName("foo")),
+					generateJobServiceWorkflowDevProperties()),
+				Entry("has enabled field undefined and workflow with production profile",
+					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(nil), setPlatformNamespace("default"), setPlatformName("foo")),
+					generateJobServiceWorkflowDevProperties()),
+				Entry("has enabled field set to true and workflow with dev profile",
+					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default")),
+					generateJobServiceWorkflowDevProperties()),
+				Entry("has enabled field set to true and workflow with production profile",
+					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default")),
+					generateJobServiceWorkflowProductionProperties()),
+				Entry("has enabled field set to true and workflow with no profile",
+					generateFlow(setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default")),
+					generateJobServiceWorkflowProductionProperties()),
+				Entry("has enabled field set to false and workflow with no profile",
+					generateFlow(setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(&disabled), setPlatformName("foo"), setPlatformNamespace("default")),
+					generateJobServiceWorkflowDevProperties()),
+				Entry("has enabled field undefined and workflow with no profile",
+					generateFlow(setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(nil), setPlatformName("foo"), setPlatformNamespace("default")),
+					generateJobServiceWorkflowDevProperties()),
+			)
+
+			DescribeTable("only data index service when the spec",
+				func(wf *operatorapi.SonataFlow, plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
+					handler, err := NewAppPropertyHandler(wf, plfm)
+					Expect(err).NotTo(HaveOccurred())
+					p, err := properties.LoadString(handler.Build())
+					Expect(err).NotTo(HaveOccurred())
+					p.Sort()
+					Expect(p).To(Equal(expectedProperties))
+				},
+				Entry("has enabled field set to false and workflow with dev profile",
+					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setDataIndexEnabledValue(&disabled), setPlatformNamespace("default"), setPlatformName("foo")),
+					generateDataIndexWorkflowDevProperties()),
+				Entry("has enabled field set to false and workflow with production profile",
+					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setDataIndexEnabledValue(&disabled), setPlatformNamespace("default"), setPlatformName("foo")),
+					generateDataIndexWorkflowDevProperties()),
+				Entry("has enabled field undefined and workflow with dev profile",
+					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setDataIndexEnabledValue(nil), setPlatformNamespace("default"), setPlatformName("foo")),
+					generateDataIndexWorkflowDevProperties()),
+				Entry("has enabled field undefined and workflow with production profile",
+					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setDataIndexEnabledValue(nil), setPlatformNamespace("default"), setPlatformName("foo")),
+					generateDataIndexWorkflowDevProperties()),
+				Entry("has enabled field set to true and workflow with dev profile",
+					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setDataIndexEnabledValue(&enabled), setPlatformNamespace("default"), setPlatformName("foo")),
+					generateDataIndexWorkflowDevProperties()),
+				Entry("has enabled field set to true and workflow with production profile",
+					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setDataIndexEnabledValue(&enabled), setPlatformNamespace("default"), setPlatformName("foo")),
+					generateDataIndexWorkflowProductionProperties()),
+				Entry("has enabled field set to false and workflow with no profile",
+					generateFlow(setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setDataIndexEnabledValue(&disabled), setPlatformNamespace("default"), setPlatformName("foo")),
+					generateDataIndexWorkflowDevProperties()),
+				Entry("has enabled field set to true and workflow with no profile",
+					generateFlow(setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setDataIndexEnabledValue(&enabled), setPlatformNamespace("default"), setPlatformName("foo")),
+					generateDataIndexWorkflowProductionProperties()),
+				Entry("has enabled field undefined and workflow with no profile",
+					generateFlow(setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setDataIndexEnabledValue(nil), setPlatformNamespace("default"), setPlatformName("foo")),
+					generateDataIndexWorkflowDevProperties()),
+			)
+
+			DescribeTable("both Data Index and Job Services are available and", func(wf *operatorapi.SonataFlow, plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
+				handler, err := NewAppPropertyHandler(wf, plfm)
+				Expect(err).NotTo(HaveOccurred())
+				p, err := properties.LoadString(handler.Build())
+				Expect(err).NotTo(HaveOccurred())
+				p.Sort()
+				Expect(p).To(Equal(expectedProperties))
+			},
+				Entry("both are undefined and workflow in dev profile",
+					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setPlatformNamespace("default"), setPlatformName("foo")),
+					generateDataIndexAndJobServiceWorkflowDevProperties()),
+				Entry("both are undefined and workflow in prod profile",
+					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setPlatformNamespace("default"), setPlatformName("foo")),
+					generateDataIndexAndJobServiceWorkflowDevProperties()),
+				Entry("both have enabled field set to true and workflow with dev profile",
+					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(&enabled), setDataIndexEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default")),
+					generateDataIndexAndJobServiceWorkflowDevProperties()),
+				Entry("both have enabled field set to true and workflow with production profile",
+					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(&enabled), setDataIndexEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default")),
+					generateDataIndexAndJobServiceWorkflowProductionProperties()),
+				Entry("both have enabled field undefined and workflow with dev profile",
+					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(nil), setDataIndexEnabledValue(nil), setPlatformName("foo"), setPlatformNamespace("default")),
+					generateDataIndexAndJobServiceWorkflowDevProperties()),
+				Entry("both have enabled field undefined and workflow with production profile",
+					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(nil), setDataIndexEnabledValue(nil), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+					generateDataIndexAndJobServiceWorkflowDevProperties()),
+				Entry("both have enabled field set to false and workflow with dev profile",
+					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(&disabled), setDataIndexEnabledValue(&disabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+					generateDataIndexAndJobServiceWorkflowDevProperties()),
+				Entry("both have enabled field set to false and workflow with production profile",
+					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(&disabled), setDataIndexEnabledValue(&disabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+					generateDataIndexAndJobServiceWorkflowDevProperties()),
+				Entry("both have enabled field set to false and workflow with no profile",
+					generateFlow(setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(&disabled), setDataIndexEnabledValue(&disabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+					generateDataIndexAndJobServiceWorkflowDevProperties()),
+				Entry("both have enabled field set to true and workflow with no profile",
+					generateFlow(setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(&enabled), setDataIndexEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+					generateDataIndexAndJobServiceWorkflowProductionProperties()),
+				Entry("both have enabled field undefined and workflow with no profile",
+					generateFlow(setWorkflowName("foo"), setWorkflowNamespace("default")),
+					generatePlatform(setJobServiceEnabledValue(nil), setDataIndexEnabledValue(&disabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
+					generateDataIndexAndJobServiceWorkflowDevProperties()),
+			)
+		})
+	})
+
+})
+
+func generateJobServiceDeploymentDevProperties() *properties.Properties {
+	p := properties.NewProperties()
+	p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
+	p.Set("quarkus.devservices.enabled", "false")
+	p.Set("quarkus.http.host", "0.0.0.0")
+	p.Set("quarkus.http.port", "8080")
+	p.Set("quarkus.kogito.devservices.enabled", "false")
+	p.Set(`quarkus.smallrye-health.check."org.kie.kogito.jobs.service.messaging.http.health.knative.KSinkInjectionHealthCheck".enabled`, "false")
+	p.Sort()
+	return p
+}
+
+func generateDataIndexDeploymentProperties() *properties.Properties {
+	p := properties.NewProperties()
+	p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
+	p.Set("quarkus.devservices.enabled", "false")
+	p.Set("quarkus.http.host", "0.0.0.0")
+	p.Set("quarkus.http.port", "8080")
+	p.Set("quarkus.kogito.devservices.enabled", "false")
+	p.Set("quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled", "false")
+	p.Sort()
+	return p
+}
+
+func generateJobServiceDeploymentWithPostgreSQLProperties() *properties.Properties {
+	p := properties.NewProperties()
+	p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
+	p.Set("quarkus.devservices.enabled", "false")
+	p.Set("quarkus.http.host", "0.0.0.0")
+	p.Set("quarkus.http.port", "8080")
+	p.Set("quarkus.kogito.devservices.enabled", "false")
+	p.Set(`quarkus.smallrye-health.check."org.kie.kogito.jobs.service.messaging.http.health.knative.KSinkInjectionHealthCheck".enabled`, "false")
+	p.Set("quarkus.datasource.reactive.url", "postgresql://postgres:5432/sonataflow?search_path=myschema")
+	p.Sort()
+	return p
+}
+
+func generateJobServiceDeploymentWithDataIndexAndEphemeralProperties() *properties.Properties {
+	p := properties.NewProperties()
+	p.Set("kogito.jobs-service.http.job-status-change-events", "true")
+	p.Set("mp.messaging.outgoing.kogito-job-service-job-status-events-http.url", "http://foo-data-index-service.default/jobs")
+	p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
+	p.Set("quarkus.devservices.enabled", "false")
+	p.Set("quarkus.http.host", "0.0.0.0")
+	p.Set("quarkus.http.port", "8080")
+	p.Set("quarkus.kogito.devservices.enabled", "false")
+	p.Set(`quarkus.smallrye-health.check."org.kie.kogito.jobs.service.messaging.http.health.knative.KSinkInjectionHealthCheck".enabled`, "false")
+	p.Sort()
+	return p
+}
+
+func generateJobServiceDeploymentWithDataIndexAndPostgreSQLProperties() *properties.Properties {
+	p := properties.NewProperties()
+	p.Set("kogito.jobs-service.http.job-status-change-events", "true")
+	p.Set("mp.messaging.outgoing.kogito-job-service-job-status-events-http.url", "http://foo-data-index-service.default/jobs")
+	p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
+	p.Set("quarkus.devservices.enabled", "false")
+	p.Set("quarkus.http.host", "0.0.0.0")
+	p.Set("quarkus.http.port", "8080")
+	p.Set("quarkus.kogito.devservices.enabled", "false")
+	p.Set(`quarkus.smallrye-health.check."org.kie.kogito.jobs.service.messaging.http.health.knative.KSinkInjectionHealthCheck".enabled`, "false")
+	p.Set("quarkus.datasource.reactive.url", "postgresql://postgres:5432/sonataflow?search_path=myschema")
+	p.Sort()
+	return p
+}
+
 var (
 	jobServiceDevProperties           *properties.Properties
 	jobServiceProdProperties          *properties.Properties
@@ -345,7 +624,7 @@ var (
 	dataIndexJobServiceProdProperties *properties.Properties
 )
 
-func generateJobServiceDevProperties() *properties.Properties {
+func generateJobServiceWorkflowDevProperties() *properties.Properties {
 	if jobServiceDevProperties == nil {
 		jobServiceDevProperties = properties.NewProperties()
 		jobServiceDevProperties.Set("kogito.events.processdefinitions.enabled", "false")
@@ -365,7 +644,7 @@ func generateJobServiceDevProperties() *properties.Properties {
 	return jobServiceDevProperties
 }
 
-func generateJobServiceProductionProperties() *properties.Properties {
+func generateJobServiceWorkflowProductionProperties() *properties.Properties {
 	if jobServiceProdProperties == nil {
 		jobServiceProdProperties = properties.NewProperties()
 		jobServiceProdProperties.Set("quarkus.kogito.devservices.enabled", "false")
@@ -384,7 +663,7 @@ func generateJobServiceProductionProperties() *properties.Properties {
 	}
 	return jobServiceProdProperties
 }
-func generateDataIndexDevProperties() *properties.Properties {
+func generateDataIndexWorkflowDevProperties() *properties.Properties {
 	if dataIndexDevProperties == nil {
 		dataIndexDevProperties = properties.NewProperties()
 		dataIndexDevProperties.Set("kogito.events.variables.enabled", "false")
@@ -404,7 +683,7 @@ func generateDataIndexDevProperties() *properties.Properties {
 	return dataIndexDevProperties
 }
 
-func generateDataIndexProductionProperties() *properties.Properties {
+func generateDataIndexWorkflowProductionProperties() *properties.Properties {
 	if dataIndexProdProperties == nil {
 		dataIndexProdProperties = properties.NewProperties()
 		dataIndexProdProperties.Set("kogito.events.variables.enabled", "false")
@@ -425,7 +704,7 @@ func generateDataIndexProductionProperties() *properties.Properties {
 	return dataIndexProdProperties
 }
 
-func generateDataIndexAndJobServiceDevProperties() *properties.Properties {
+func generateDataIndexAndJobServiceWorkflowDevProperties() *properties.Properties {
 	if dataIndexJobServiceDevProperties == nil {
 		dataIndexJobServiceDevProperties = properties.NewProperties()
 		dataIndexJobServiceDevProperties.Set("quarkus.kogito.devservices.enabled", "false")
@@ -445,7 +724,7 @@ func generateDataIndexAndJobServiceDevProperties() *properties.Properties {
 	return dataIndexJobServiceDevProperties
 }
 
-func generateDataIndexAndJobServiceProductionProperties() *properties.Properties {
+func generateDataIndexAndJobServiceWorkflowProductionProperties() *properties.Properties {
 	if dataIndexJobServiceProdProperties == nil {
 		dataIndexJobServiceProdProperties = properties.NewProperties()
 		dataIndexJobServiceProdProperties.Set("quarkus.kogito.devservices.enabled", "false")
@@ -465,341 +744,6 @@ func generateDataIndexAndJobServiceProductionProperties() *properties.Properties
 	}
 	return dataIndexJobServiceProdProperties
 }
-
-var _ = Describe("Platform properties", func() {
-
-	var _ = Context("for service properties", func() {
-
-		var _ = Context("defining the application properties generated for the deployment of the", func() {
-
-			DescribeTable("Job Service",
-				func(plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
-					js := services.NewJobService(plfm)
-					handler, err := NewServiceAppPropertyHandler(plfm, js)
-					Expect(err).NotTo(HaveOccurred())
-					p, err := properties.LoadString(handler.Build())
-					Expect(err).NotTo(HaveOccurred())
-					p.Sort()
-					Expect(p).To(Equal(expectedProperties))
-				},
-				Entry("with an empty spec", generatePlatform(emtpyJobServiceSpec()),
-					func() *properties.Properties {
-						p := properties.NewProperties()
-						p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
-						p.Set("quarkus.devservices.enabled", "false")
-						p.Set("quarkus.http.host", "0.0.0.0")
-						p.Set("quarkus.http.port", "8080")
-						p.Set("quarkus.kogito.devservices.enabled", "false")
-						p.Set("quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled", "false")
-						p.Sort()
-						return p
-					}()),
-				Entry("with enabled field undefined and with ephemeral persistence",
-					generatePlatform(setJobServiceEnabledValue(nil), setPlatformName("foo"), setPlatformNamespace("default")),
-					func() *properties.Properties {
-						p := properties.NewProperties()
-						p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
-						p.Set("quarkus.devservices.enabled", "false")
-						p.Set("quarkus.http.host", "0.0.0.0")
-						p.Set("quarkus.http.port", "8080")
-						p.Set("quarkus.kogito.devservices.enabled", "false")
-						p.Set("quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled", "false")
-						p.Sort()
-						return p
-					}()),
-				Entry("with enabled field undefined and with postgreSQL persistence",
-					generatePlatform(setJobServiceEnabledValue(nil), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
-					func() *properties.Properties {
-						p := properties.NewProperties()
-						p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
-						p.Set("quarkus.devservices.enabled", "false")
-						p.Set("quarkus.http.host", "0.0.0.0")
-						p.Set("quarkus.http.port", "8080")
-						p.Set("quarkus.kogito.devservices.enabled", "false")
-						p.Set("quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled", "false")
-						p.Set("quarkus.datasource.reactive.url", "postgresql://postgres:5432/sonataflow?search_path=myschema")
-						p.Sort()
-						return p
-					}()),
-				Entry("with enabled field set to false and with ephemeral persistence",
-					generatePlatform(setJobServiceEnabledValue(nil), setPlatformName("foo"), setPlatformNamespace("default")),
-					func() *properties.Properties {
-						p := properties.NewProperties()
-						p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
-						p.Set("quarkus.devservices.enabled", "false")
-						p.Set("quarkus.http.host", "0.0.0.0")
-						p.Set("quarkus.http.port", "8080")
-						p.Set("quarkus.kogito.devservices.enabled", "false")
-						p.Set("quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled", "false")
-						p.Sort()
-						return p
-					}()),
-				Entry("with enabled field set to false and with postgreSQL persistence",
-					generatePlatform(setJobServiceEnabledValue(&disabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
-					func() *properties.Properties {
-						p := properties.NewProperties()
-						p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
-						p.Set("quarkus.devservices.enabled", "false")
-						p.Set("quarkus.http.host", "0.0.0.0")
-						p.Set("quarkus.http.port", "8080")
-						p.Set("quarkus.kogito.devservices.enabled", "false")
-						p.Set("quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled", "false")
-						p.Set("quarkus.datasource.reactive.url", "postgresql://postgres:5432/sonataflow?search_path=myschema")
-						p.Sort()
-						return p
-					}()),
-				Entry("with enabled field set to true and with ephemeral persistence",
-					generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default")),
-					func() *properties.Properties {
-						p := properties.NewProperties()
-						p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
-						p.Set("quarkus.devservices.enabled", "false")
-						p.Set("quarkus.http.host", "0.0.0.0")
-						p.Set("quarkus.http.port", "8080")
-						p.Set("quarkus.kogito.devservices.enabled", "false")
-						p.Set("quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled", "false")
-						p.Sort()
-						return p
-					}()),
-				Entry("with enabled field set to true and with postgreSQL persistence",
-					generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
-					func() *properties.Properties {
-						p := properties.NewProperties()
-						p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
-						p.Set("quarkus.devservices.enabled", "false")
-						p.Set("quarkus.http.host", "0.0.0.0")
-						p.Set("quarkus.http.port", "8080")
-						p.Set("quarkus.kogito.devservices.enabled", "false")
-						p.Set("quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled", "false")
-						p.Set("quarkus.datasource.reactive.url", "postgresql://postgres:5432/sonataflow?search_path=myschema")
-						p.Sort()
-						return p
-					}()),
-				Entry("with both services with enabled field set to true and with ephemeral persistence",
-					generatePlatform(setJobServiceEnabledValue(&enabled), setDataIndexEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default")),
-					func() *properties.Properties {
-						p := properties.NewProperties()
-						p.Set("kogito.jobs-service.http.job-status-change-events", "true")
-						p.Set("mp.messaging.outgoing.kogito-job-service-job-status-events-http.url", "http://foo-data-index-service.default/jobs")
-						p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
-						p.Set("quarkus.devservices.enabled", "false")
-						p.Set("quarkus.http.host", "0.0.0.0")
-						p.Set("quarkus.http.port", "8080")
-						p.Set("quarkus.kogito.devservices.enabled", "false")
-						p.Set("quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled", "false")
-						p.Sort()
-						return p
-					}()),
-				Entry("with both services with enabled field set to true and postgreSQL persistence for both",
-					generatePlatform(setJobServiceEnabledValue(&enabled), setDataIndexEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema"), setDataIndexJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
-					func() *properties.Properties {
-						p := properties.NewProperties()
-						p.Set("kogito.jobs-service.http.job-status-change-events", "true")
-						p.Set("mp.messaging.outgoing.kogito-job-service-job-status-events-http.url", "http://foo-data-index-service.default/jobs")
-						p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
-						p.Set("quarkus.devservices.enabled", "false")
-						p.Set("quarkus.http.host", "0.0.0.0")
-						p.Set("quarkus.http.port", "8080")
-						p.Set("quarkus.kogito.devservices.enabled", "false")
-						p.Set("quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled", "false")
-						p.Set("quarkus.datasource.reactive.url", "postgresql://postgres:5432/sonataflow?search_path=myschema")
-						p.Sort()
-						return p
-					}()),
-			)
-
-			DescribeTable("Data Index", func(plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
-				di := services.NewDataIndexService(plfm)
-				handler, err := NewServiceAppPropertyHandler(plfm, di)
-				Expect(err).NotTo(HaveOccurred())
-				p, err := properties.LoadString(handler.Build())
-				Expect(err).NotTo(HaveOccurred())
-				p.Sort()
-				Expect(p).To(Equal(expectedProperties))
-			},
-				Entry("with ephemeral persistence", generatePlatform(emtpyDataIndexServiceSpec()), func() *properties.Properties {
-					p := properties.NewProperties()
-					p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
-					p.Set("quarkus.devservices.enabled", "false")
-					p.Set("quarkus.http.host", "0.0.0.0")
-					p.Set("quarkus.http.port", "8080")
-					p.Set("quarkus.kogito.devservices.enabled", "false")
-					p.Set("quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled", "false")
-					p.Sort()
-					return p
-				}()),
-				Entry("with postgreSQL persistence", generatePlatform(emtpyDataIndexServiceSpec(), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
-					func() *properties.Properties {
-						p := properties.NewProperties()
-						p.Set("org.kie.kogito.addons.knative.eventing.health-enabled", "false")
-						p.Set("quarkus.devservices.enabled", "false")
-						p.Set("quarkus.http.host", "0.0.0.0")
-						p.Set("quarkus.http.port", "8080")
-						p.Set("quarkus.kogito.devservices.enabled", "false")
-						p.Set("quarkus.smallrye-health.check.\"io.quarkus.kafka.client.health.KafkaHealthCheck\".enabled", "false")
-						p.Sort()
-						return p
-					}()),
-			)
-		})
-
-		var _ = Context("defining the workflow properties generated from", func() {
-
-			DescribeTable("only job services when the spec",
-				func(wf *operatorapi.SonataFlow, plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
-					handler, err := NewAppPropertyHandler(wf, plfm)
-					Expect(err).NotTo(HaveOccurred())
-					p, err := properties.LoadString(handler.Build())
-					Expect(err).NotTo(HaveOccurred())
-					p.Sort()
-					Expect(p).To(Equal(expectedProperties))
-				},
-				Entry("has enabled field set to false and workflow with dev profile",
-					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setJobServiceEnabledValue(&disabled), setPlatformNamespace("default"), setPlatformName("foo")),
-					func() *properties.Properties {
-						return generateJobServiceDevProperties()
-					}()),
-				Entry("has enabled field set to false and workflow with production profile",
-					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setJobServiceEnabledValue(&disabled), setPlatformNamespace("default"), setPlatformName("foo")),
-					func() *properties.Properties {
-						return generateJobServiceDevProperties()
-					}()),
-				Entry("has enabled field undefined and workflow with dev profile",
-					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setJobServiceEnabledValue(nil), setPlatformNamespace("default"), setPlatformName("foo")),
-					func() *properties.Properties {
-						return generateJobServiceDevProperties()
-					}()),
-				Entry("has enabled field undefined and workflow with production profile",
-					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setJobServiceEnabledValue(nil), setPlatformNamespace("default"), setPlatformName("foo")),
-					func() *properties.Properties {
-						return generateJobServiceDevProperties()
-					}()),
-				Entry("has enabled field set to true and workflow with dev profile",
-					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default")),
-					func() *properties.Properties {
-						return generateJobServiceDevProperties()
-					}()),
-				Entry("has enabled field set to true and workflow with production profile",
-					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setJobServiceEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default")),
-					func() *properties.Properties {
-						return generateJobServiceProductionProperties()
-					}()),
-			)
-
-			DescribeTable("only data index service when the spec",
-				func(wf *operatorapi.SonataFlow, plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
-					handler, err := NewAppPropertyHandler(wf, plfm)
-					Expect(err).NotTo(HaveOccurred())
-					p, err := properties.LoadString(handler.Build())
-					Expect(err).NotTo(HaveOccurred())
-					p.Sort()
-					Expect(p).To(Equal(expectedProperties))
-				},
-				Entry("has enabled field set to false and workflow with dev profile",
-					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setDataIndexEnabledValue(&disabled), setPlatformNamespace("default"), setPlatformName("foo")),
-					func() *properties.Properties {
-						return generateDataIndexDevProperties()
-					}()),
-				Entry("has enabled field set to false and workflow with production profile",
-					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setDataIndexEnabledValue(&disabled), setPlatformNamespace("default"), setPlatformName("foo")),
-					func() *properties.Properties {
-						return generateDataIndexDevProperties()
-					}()),
-				Entry("has enabled field undefined and workflow with dev profile",
-					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setDataIndexEnabledValue(nil), setPlatformNamespace("default"), setPlatformName("foo")),
-					func() *properties.Properties {
-						return generateDataIndexDevProperties()
-					}()),
-				Entry("has enabled field undefined and workflow with production profile",
-					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setDataIndexEnabledValue(nil), setPlatformNamespace("default"), setPlatformName("foo")),
-					func() *properties.Properties {
-						return generateDataIndexDevProperties()
-					}()),
-				Entry("has enabled field set to true and workflow with dev profile",
-					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setDataIndexEnabledValue(&enabled), setPlatformNamespace("default"), setPlatformName("foo")),
-					func() *properties.Properties {
-						return generateDataIndexDevProperties()
-					}()),
-				Entry("has enabled field set to true and workflow with production profile",
-					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setDataIndexEnabledValue(&enabled), setPlatformNamespace("default"), setPlatformName("foo")),
-					func() *properties.Properties {
-						return generateDataIndexProductionProperties()
-					}()),
-			)
-
-			DescribeTable("both Data Index and Job Services are available and", func(wf *operatorapi.SonataFlow, plfm *operatorapi.SonataFlowPlatform, expectedProperties *properties.Properties) {
-				handler, err := NewAppPropertyHandler(wf, plfm)
-				Expect(err).NotTo(HaveOccurred())
-				p, err := properties.LoadString(handler.Build())
-				Expect(err).NotTo(HaveOccurred())
-				p.Sort()
-				Expect(p).To(Equal(expectedProperties))
-			},
-				Entry("both are undefined and workflow in dev profile",
-					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setPlatformNamespace("default"), setPlatformName("foo")),
-					func() *properties.Properties {
-						return generateDataIndexAndJobServiceDevProperties()
-					}()),
-				Entry("both are undefined and workflow in prod profile",
-					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setPlatformNamespace("default"), setPlatformName("foo")),
-					func() *properties.Properties {
-						return generateDataIndexAndJobServiceDevProperties()
-					}()),
-				Entry("both have enabled field set to true and workflow with dev profile",
-					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setJobServiceEnabledValue(&enabled), setDataIndexEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default")),
-					func() *properties.Properties {
-						return generateDataIndexAndJobServiceDevProperties()
-					}()),
-				Entry("both have enabled field set to true and workflow with production profile",
-					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setJobServiceEnabledValue(&enabled), setDataIndexEnabledValue(&enabled), setPlatformName("foo"), setPlatformNamespace("default")),
-					func() *properties.Properties {
-						return generateDataIndexAndJobServiceProductionProperties()
-					}()),
-				Entry("both have enabled field undefined and workflow with dev profile",
-					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setJobServiceEnabledValue(nil), setDataIndexEnabledValue(nil), setPlatformName("foo"), setPlatformNamespace("default")),
-					func() *properties.Properties {
-						return generateDataIndexAndJobServiceDevProperties()
-					}()),
-				Entry("both have enabled field undefined and workflow with production profile",
-					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setJobServiceEnabledValue(nil), setDataIndexEnabledValue(nil), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
-					func() *properties.Properties {
-						return generateDataIndexAndJobServiceDevProperties()
-					}()),
-				Entry("both have enabled field set to false and workflow with dev profile",
-					generateFlow(setProfileInFlow(metadata.DevProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setJobServiceEnabledValue(&disabled), setDataIndexEnabledValue(&disabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
-					func() *properties.Properties {
-						return generateDataIndexAndJobServiceDevProperties()
-					}()),
-				Entry("both have enabled field set to false and workflow with production profile",
-					generateFlow(setProfileInFlow(metadata.ProdProfile), setWorkflowName("foo"), setWorkflowNamespace("default")),
-					generatePlatform(setJobServiceEnabledValue(&disabled), setDataIndexEnabledValue(&disabled), setPlatformName("foo"), setPlatformNamespace("default"), setJobServiceJDBC("jdbc:postgresql://postgres:5432/sonataflow?currentSchema=myschema")),
-					func() *properties.Properties {
-						return generateDataIndexAndJobServiceDevProperties()
-					}()),
-			)
-		})
-	})
-
-})
 
 type wfOptionFn func(wf *operatorapi.SonataFlow)
 

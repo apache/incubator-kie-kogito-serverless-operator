@@ -226,7 +226,9 @@ func (d DataIndex) GenerateWorkflowProperties() (*properties.Properties, error) 
 }
 
 func (d DataIndex) GenerateServiceProperties() (*properties.Properties, error) {
-	return properties.NewProperties(), nil
+	props := properties.NewProperties()
+	props.Set(constants.DataIndexKafkaSmallRyeHealthProperty, "false")
+	return props, nil
 }
 
 type JobService struct {
@@ -378,6 +380,7 @@ func (j JobService) configurePostgreSqlEnv(postgresql *operatorapi.PersistencePo
 
 func (j JobService) GenerateServiceProperties() (*properties.Properties, error) {
 	props := properties.NewProperties()
+	props.Set(constants.JobServiceKafkaSmallRyeHealthProperty, "false")
 	// add data source reactive URL
 	jspec := j.platform.Spec.Services.JobService
 	if jspec != nil && jspec.Persistence != nil && jspec.Persistence.PostgreSql != nil {
