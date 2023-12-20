@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 
 	"github.com/magiconair/properties"
@@ -86,7 +87,7 @@ func generateReactiveURL(postgresSpec *operatorapi.PersistencePostgreSql, schema
 func GenerateDataIndexWorkflowProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (*properties.Properties, error) {
 	props := properties.NewProperties()
 	props.Set(constants.KogitoProcessInstancesEnabled, "false")
-	if platform.Spec.Services.DataIndex != nil {
+	if workflow != nil && !profiles.IsDevProfile(workflow) && dataIndexEnabled(platform) {
 		props.Set(constants.KogitoProcessInstancesEnabled, "true")
 		di := NewDataIndexService(platform)
 		p, err := di.GenerateWorkflowProperties()
@@ -105,7 +106,7 @@ func GenerateJobServiceWorkflowProperties(workflow *operatorapi.SonataFlow, plat
 	props := properties.NewProperties()
 	props.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
 	props.Set(constants.JobServiceRequestEventsURL, fmt.Sprintf("%s://localhost/v2/jobs/events", constants.JobServiceURLProtocol))
-	if platform.Spec.Services.JobService != nil {
+	if workflow != nil && !profiles.IsDevProfile(workflow) && jobServiceEnabled(platform) {
 		js := NewJobService(platform)
 		p, err := js.GenerateWorkflowProperties()
 		if err != nil {

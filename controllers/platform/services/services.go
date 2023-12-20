@@ -407,3 +407,7 @@ func dataIndexEnabled(platform *operatorapi.SonataFlowPlatform) bool {
 	return platform != nil && platform.Spec.Services.DataIndex != nil &&
 		platform.Spec.Services.DataIndex.Enabled != nil && *platform.Spec.Services.DataIndex.Enabled
 }
+
+func jobServiceEnabled(platform *operatorapi.SonataFlowPlatform) bool {
+	return platform != nil && platform.Spec.Services.JobService != nil && platform.Spec.Services.JobService.Enabled != nil && *platform.Spec.Services.JobService.Enabled
+}
