@@ -1,0 +1,6 @@
+resources:
+- 02-sonataflow_platform.yaml
+
+sortOptions:
+  order: fifo
+
