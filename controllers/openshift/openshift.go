@@ -21,6 +21,7 @@ package openshift
 
 import (
 	appsv1 "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
+	buildv1 "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
 	routev1 "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	"k8s.io/client-go/rest"
 )
@@ -56,4 +57,8 @@ func NewOpenShiftRouteClient(cfg *rest.Config) (*routev1.RouteV1Client, error) {
 
 func NewOpenShiftAppsClientClient(cfg *rest.Config) (*appsv1.AppsV1Client, error) {
 	return appsv1.NewForConfig(cfg)
+}
+
+func NewOpenShiftBuildClient(cfg *rest.Config) (*buildv1.BuildV1Client, error) {
+	return buildv1.NewForConfig(cfg)
 }
