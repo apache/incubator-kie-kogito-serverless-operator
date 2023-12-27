@@ -22,7 +22,6 @@ package e2e
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/url"
@@ -384,7 +383,7 @@ func verifyHealthStatusInPod(name string, namespace string) {
 			Expect(h.Status).To(Equal(upStatus))
 			return
 		}
-		errs = errors.Join(err)
+		errs = fmt.Errorf("%v; %w", err, errs)
 	}
 	Expect(errs).NotTo(HaveOccurred(), fmt.Sprintf("No container was found that could respond to the health endpoint %v", errs))
 
