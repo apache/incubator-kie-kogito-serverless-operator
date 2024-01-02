@@ -100,7 +100,7 @@ void preChecks() {
         ${minikubeContainerEngine} info
 
         if [[ ! \$(command -v minikube) ]]; then
-            ./hack/ci/install-minikube.sh
+            sudo ./hack/ci/install-minikube.sh
         fi
     """
 }
