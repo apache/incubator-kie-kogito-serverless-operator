@@ -70,9 +70,9 @@ func Test_CheckDeploymentRolloutAfterCMChange(t *testing.T) {
 		WithStatusSubresource(workflow).
 		Build()
 	stateSupport := fakeReconcilerSupport(client)
-	handler := newDeploymentHandler(stateSupport, newObjectEnsurers(stateSupport))
+	handler := newDeploymentReconciler(stateSupport, newObjectEnsurers(stateSupport))
 
-	result, objects, err := handler.handle(context.TODO(), workflow)
+	result, objects, err := handler.reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, objects)
 	assert.True(t, result.Requeue)
@@ -99,7 +99,7 @@ func Test_CheckDeploymentRolloutAfterCMChange(t *testing.T) {
 	}
 	assert.NotNil(t, cm)
 	utilruntime.Must(client.Update(context.TODO(), cm))
-	result, objects, err = handler.handle(context.TODO(), workflow)
+	result, objects, err = handler.reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, objects)
 	assert.True(t, result.Requeue)
@@ -124,9 +124,9 @@ func Test_CheckDeploymentUnchangedAfterCMChangeOtherKeys(t *testing.T) {
 		WithStatusSubresource(workflow).
 		Build()
 	stateSupport := fakeReconcilerSupport(client)
-	handler := newDeploymentHandler(stateSupport, newObjectEnsurers(stateSupport))
+	handler := newDeploymentReconciler(stateSupport, newObjectEnsurers(stateSupport))
 
-	result, objects, err := handler.handle(context.TODO(), workflow)
+	result, objects, err := handler.reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, objects)
 	assert.True(t, result.Requeue)
@@ -150,7 +150,7 @@ func Test_CheckDeploymentUnchangedAfterCMChangeOtherKeys(t *testing.T) {
 	}
 	assert.NotNil(t, cm)
 	utilruntime.Must(client.Update(context.TODO(), cm))
-	result, objects, err = handler.handle(context.TODO(), workflow)
+	result, objects, err = handler.reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, objects)
 	assert.True(t, result.Requeue)
