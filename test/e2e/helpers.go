@@ -161,6 +161,30 @@ func verifyWorkflowIsAddressable(workflowName string, targetNamespace string) bo
 	}
 }
 
+func verifyDatabaseConnectionsHealthStatusInPod(name string, namespace string) {
+	// iterate over all containers to find the one that responds to the HTTP health endpoint
+	Expect(name).NotTo(BeEmpty(), "pod name is empty")
+	cmd := exec.Command("kubectl", "get", "pod", name, "-n", namespace, "-o", `jsonpath={.spec.containers[*].name}`)
+	output, err := utils.Run(cmd)
+	Expect(err).NotTo(HaveOccurred())
+	var errs error
+	for _, cname := range strings.Split(string(output), " ") {
+		var h *health
+		h, err = getHealthStatusInContainer(name, cname, namespace)
+		if err == nil {
+			for _, c := range h.Checks {
+				if c.Name == "Database connections health check" {
+					Expect(c.Status).To(Equal(upStatus))
+					return
+				}
+			}
+			errs = fmt.Errorf("no database connection health status found; %w", errs)
+		}
+		errs = fmt.Errorf("%v; %w", err, errs)
+	}
+	Expect(errs).NotTo(HaveOccurred(), fmt.Sprintf("No container was found that could respond to the health endpoint %v", errs))
+}
+
 const (
 	minikubePlatform  = "minikube"
 	openshiftPlatform = "openshift"

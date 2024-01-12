@@ -266,6 +266,14 @@ func GetSonataFlowE2EWorkflowPersistenceSampleDataDirectory(subdir string) strin
 	return filepath.Join(getTestDataDir(), "persistence", "workflow", subdir)
 }
 
+func GetSonataFlowE2EPlatformPersistenceSampleDataDirectory(subdir string) string {
+	return filepath.Join(getTestDataDir(), "platform", "persistence", subdir)
+}
+
+func GetSonataFlowE2EWorkflowPersistenceSampleDataDirectory(subdir string) string {
+	return filepath.Join(getTestDataDir(), "workflow", "persistence", subdir)
+}
+
 // getTestDataDir gets the testdata directory containing every sample out there from test/testdata.
 // It should be used for every testing unit within the module.
 func getTestDataDir() string {
