@@ -47,6 +47,57 @@ type SonataFlowPlatformSpec struct {
 	// +optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Services"
 	Services *ServicesPlatformSpec `json:"services,omitempty"`
+	// Persistence defines the platform persistence configuration. When this field is set,
+	// the configuration is used as the persistence for platform services and sonataflow instances
+	// that don't provide one of their own.
+	// +optional
+	Persistence *PlatformPersistenceSpec `json:"persistence,omitempty"`
+}
+
+// PlatformPersistenceSpec configures the DataBase support for both platform services and workflows. For services, it allows
+// configuring a generic database connectivity if the service does not come with its own configured. In case of the workflow
+// the configuration is defined by the image name of the supported database. When the workflow is configured to require
+// a database backend type supported by the platform (that is, the platform CR contains an image name for that database type)
+// , the workflow pod is configured to contain a sidecar container running the database image defined here, and the workflow
+// JDBC connectivity is setup to point to the DB container.
+// +optional
+type PlatformPersistenceSpec struct {
+	// Connect configured services to a postgresql database.
+	// +optional
+	PostgreSQL *PostgreSQLPlatformSpec `json:"postgresql,omitempty"`
+}
+
+// PostgreSQLPlatformSpec provides the generic configuration details to configure the JDBC URL and establish a connection for each managed services when they don't provide their own configuration.
+type PostgreSQLPlatformSpec struct {
+	// SecretRef contains the database user credentials
+	SecretRef SecretReference `json:"secretRef"`
+	// ServiceRef contains the K8s service name and namespace location of the PostgreSQL service.
+	ServiceRef ServiceReference `json:"serviceRef,omitempty"`
+	// Name of postgresql database to be used. Defaults to "sonataflow"
+	// +kubebuilder:default:=sonataflow
+	DatabaseName string `json:"databaseName,omitempty"`
+}
+
+type ServiceReference struct {
+	// Name contains the name of the service
+	// +required
+	Name string `json:"name"`
+	// Namespace contains the name of the namespace where the service is located.
+	// +required
+	Namespace string `json:"namespace"`
+	// Port contains the port number associated to the service.
+	// +required
+	Port int `json:"port,omitempty"`
+}
+
+// SecretReference use of a secret to store the credentials to authenticate in the JDBC connection.
+type SecretReference struct {
+	// Name of the postgresql credentials secret.
+	Name string `json:"name"`
+	// +optional
+	UserKey string `json:"userKey,omitempty"`
+	// +optional
+	PasswordKey string `json:"passwordKey,omitempty"`
 }
 
 // PlatformCluster is the kind of orchestration cluster the platform is installed into

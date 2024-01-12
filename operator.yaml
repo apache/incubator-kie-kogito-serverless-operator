@@ -899,6 +899,58 @@ spec:
                       of the operator's default.
                     type: string
                 type: object
+              persistence:
+                description: Persistence defines the platform persistence configuration.
+                  When this field is set, the configuration is used as the persistence
+                  for platform services and sonataflow instances that don't provide
+                  one of their own.
+                properties:
+                  postgresql:
+                    description: Connect configured services to a postgresql database.
+                    properties:
+                      databaseName:
+                        default: sonataflow
+                        description: Name of postgresql database to be used. Defaults
+                          to "sonataflow"
+                        type: string
+                      secretRef:
+                        description: SecretRef contains the database user credentials
+                        properties:
+                          name:
+                            description: Name of the postgresql credentials secret.
+                              This field is mandatory.
+                            type: string
+                          passwordKey:
+                            type: string
+                          userKey:
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      serviceRef:
+                        description: ServiceRef contains the K8s service name and
+                          namespace location of the PostgreSQL service.
+                        properties:
+                          name:
+                            description: Name contains the name of the kubernetes
+                              service. This field is mandatory.
+                            type: string
+                          namespace:
+                            description: Namespace contains the name of the namespace
+                              where the kubernetes service resides. This field is
+                              optional.
+                            type: string
+                          port:
+                            description: Port contains the port number associated
+                              to the kubernetes service. This field is mandatory.
+                            type: integer
+                        required:
+                        - name
+                        type: object
+                    required:
+                    - secretRef
+                    type: object
+                type: object
               services:
                 description: 'Services attributes for deploying supporting applications
                   like Data Index & Job Service. Only workflows without the `sonataflow.org/profile:
@@ -18860,8 +18912,8 @@ spec:
                 - states
                 type: object
               persistence:
-                description: Persists service to a datasource of choice. Ephemeral
-                  by default.
+                description: Persistence defines the database persistence configuration
+                  for the workflow
                 maxProperties: 1
                 properties:
                   postgresql:
