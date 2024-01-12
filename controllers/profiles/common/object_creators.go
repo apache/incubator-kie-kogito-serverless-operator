@@ -20,6 +20,8 @@
 package common
 
 import (
+	"fmt"
+
 	"github.com/imdario/mergo"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -161,7 +163,13 @@ func defaultContainer(workflow *operatorapi.SonataFlow) (*corev1.Container, erro
 	if err := mergo.Merge(defaultFlowContainer, workflow.Spec.PodTemplate.Container.ToContainer(), mergo.WithOverride); err != nil {
 		return nil, err
 	}
-	defaultFlowContainer = ConfigurePersistence(defaultFlowContainer, workflow.Spec.Persistence, defaultSchemaName, workflow.Namespace)
+	if workflow.Spec.Persistence != nil {
+		var err error
+		defaultFlowContainer, err = ConfigurePersistence(defaultFlowContainer, workflow.Spec.Persistence, workflow.Name, workflow.Namespace)
+		if err != nil {
+			return nil, err
+		}
+	}
 	// immutable
 	defaultFlowContainer.Name = operatorapi.DefaultContainerName
 	portIdx := -1
@@ -227,10 +235,20 @@ func ManagedPropsConfigMapCreator(workflow *operatorapi.SonataFlow, platform *op
 	return workflowproj.CreateNewManagedPropsConfigMap(workflow, props), nil
 }
 
-func ConfigurePersistence(serviceContainer *corev1.Container, options *operatorapi.PersistenceOptions, defaultSchema, namespace string) *corev1.Container {
-	c := serviceContainer.DeepCopy()
-	if options != nil && options.PostgreSql != nil {
-		c.Env = append(c.Env, persistence.ConfigurePostgreSqlEnv(options.PostgreSql, defaultSchema, namespace)...)
+func ConfigurePersistence(serviceContainer *corev1.Container, config *operatorapi.PersistenceOptions, defaultSchema, namespace string) (*corev1.Container, error) {
+	if config == nil {
+		return serviceContainer, nil
 	}
-	return c
+	c := serviceContainer.DeepCopy()
+
+	if config.PostgreSql != nil {
+		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(config.PostgreSql, defaultSchema, namespace)...)
+		return c, nil
+	}
+	p := persistence.WorkflowConfig.GetPostgreSQLConfiguration()
+	if p == nil {
+		return nil, fmt.Errorf("platform persistence configuration is nil")
+	}
+	c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnvFromPlatformSpec(p, defaultSchema)...)
+	return c, nil
 }

@@ -28,6 +28,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/persistence"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
 	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
 
@@ -256,6 +257,18 @@ func TestMergePodSpec_WithPostgreSQL_and_JDBC_URL_field(t *testing.T) {
 			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
 			Value: "jdbc:postgresql://host:port/database?currentSchema=workflow",
 		},
+		{
+			Name:  "KOGITO_PERSISTENCE_TYPE",
+			Value: "jdbc",
+		},
+		{
+			Name:  "KOGITO_PERSISTENCE_PROTO_MARSHALLER",
+			Value: "false",
+		},
+		{
+			Name:  "KOGITO_PERSISTENCE_QUERY_TIMEOUT_MILLIS",
+			Value: "10000",
+		},
 	}
 	assert.Len(t, deployment.Spec.Template.Spec.Containers, 2)
 	assert.Equal(t, "superuser", deployment.Spec.Template.Spec.ServiceAccountName)
@@ -335,10 +348,103 @@ func TestMergePodSpec_OverrideContainers_WithPostgreSQL_and_ServiceRef(t *testin
 			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
 			Value: "jdbc:postgresql://test.foo:5432/petstore?currentSchema=bar",
 		},
+		{
+			Name:  "KOGITO_PERSISTENCE_TYPE",
+			Value: "jdbc",
+		},
+		{
+			Name:  "KOGITO_PERSISTENCE_PROTO_MARSHALLER",
+			Value: "false",
+		},
+		{
+			Name:  "KOGITO_PERSISTENCE_QUERY_TIMEOUT_MILLIS",
+			Value: "10000",
+		},
 	}
 	assert.Len(t, deployment.Spec.Template.Spec.Containers, 1)
 	flowContainer, _ := kubeutil.GetContainerByName(v1alpha08.DefaultContainerName, &deployment.Spec.Template.Spec)
 	assert.Empty(t, flowContainer.Image)
 	assert.Equal(t, int32(8080), flowContainer.Ports[0].ContainerPort)
 	assert.Equal(t, expectedEnvVars, flowContainer.Env)
+}
+
+func TestMergePodSpec_WithServicedPostgreSQL_From_Platform(t *testing.T) {
+	persistence.WorkflowConfig.SetConfig(
+		&v1alpha08.PlatformPersistenceSpec{
+			PostgreSQL: &v1alpha08.PostgreSQLPlatformSpec{
+				DatabaseName: "foo",
+				SecretRef: v1alpha08.SecretReference{
+					Name:        "foo_secret",
+					UserKey:     "username",
+					PasswordKey: "password",
+				},
+				ServiceRef: v1alpha08.ServiceReference{
+					Name:      "service_name",
+					Namespace: "service_namespace",
+					Port:      5432,
+				},
+			}})
+	workflow := test.GetBaseSonataFlow(t.Name())
+	workflow.Spec = v1alpha08.SonataFlowSpec{
+		Persistence: &v1alpha08.PersistenceOptions{},
+	}
+	object, err := DeploymentCreator(workflow)
+	assert.NoError(t, err)
+
+	deployment := object.(*appsv1.Deployment)
+	expectedEnvVars := []corev1.EnvVar{
+		{
+			Name:  "QUARKUS_DATASOURCE_USERNAME",
+			Value: "",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "foo_secret"}, Key: "username",
+				},
+			},
+		},
+		{
+			Name:  "QUARKUS_DATASOURCE_PASSWORD",
+			Value: "",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "foo_secret"}, Key: "password",
+				},
+			},
+		},
+		{
+			Name:  "QUARKUS_DATASOURCE_DB_KIND",
+			Value: "postgresql",
+		},
+		{
+			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
+			Value: "jdbc:postgresql://service_name.service_namespace:5432/foo?currentSchema=greeting",
+		},
+		{
+			Name:  "KOGITO_PERSISTENCE_TYPE",
+			Value: "jdbc",
+		},
+		{
+			Name:  "KOGITO_PERSISTENCE_PROTO_MARSHALLER",
+			Value: "false",
+		},
+		{
+			Name:  "KOGITO_PERSISTENCE_QUERY_TIMEOUT_MILLIS",
+			Value: "10000",
+		},
+	}
+	assert.Len(t, deployment.Spec.Template.Spec.Containers, 1)
+	flowContainer, _ := kubeutil.GetContainerByName(v1alpha08.DefaultContainerName, &deployment.Spec.Template.Spec)
+	assert.Empty(t, flowContainer.Image)
+	assert.Equal(t, int32(8080), flowContainer.Ports[0].ContainerPort)
+	assert.Equal(t, expectedEnvVars, flowContainer.Env)
+}
+func TestMergePodSpec_WithEphemeralPostgreSQL_And_Nil_PostgreSQL_Image_In_Platform_Spec(t *testing.T) {
+	persistence.WorkflowConfig.SetConfig(nil)
+	workflow := test.GetBaseSonataFlow(t.Name())
+	workflow.Spec = v1alpha08.SonataFlowSpec{
+		Persistence: &v1alpha08.PersistenceOptions{},
+	}
+	_, err := DeploymentCreator(workflow)
+	assert.Error(t, err)
+	assert.Equal(t, "platform persistence configuration is nil", err.Error())
 }
