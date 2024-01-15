@@ -55,7 +55,6 @@ const (
 	sonataFlowPlatformForOpenshift            = "sonataflow.org_v1alpha08_sonataflowplatform_openshift.yaml"
 	sonataFlowBuilderConfig                   = "sonataflow-operator-builder-config_v1_configmap.yaml"
 	sonataFlowBuildSucceed                    = "sonataflow.org_v1alpha08_sonataflowbuild.yaml"
-	sonataFlowDataIndexAndJobServiceFolder    = "data-index_and_job-service"
 
 	e2eSamples    = "test/testdata/"
 	manifestsPath = "bundle/manifests/"
@@ -219,8 +218,8 @@ func GetSonataFlowE2eOrderProcessingFolder() string {
 	return e2eSamples + sonataFlowOrderProcessingFolder
 }
 
-func GetSonataFlowE2EDataIndexAndJobServiceDirectory() string {
-	return e2eSamples + sonataFlowDataIndexAndJobServiceFolder
+func GetSonataFlowE2EPlatformServicesDirectory() string {
+	return filepath.Join(getTestDataDir(), "platform", "services")
 }
 
 // getTestDataDir gets the testdata directory containing every sample out there from test/testdata.
