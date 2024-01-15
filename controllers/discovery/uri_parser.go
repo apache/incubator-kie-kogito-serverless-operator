@@ -29,10 +29,13 @@ import (
 
 const (
 	// valid namespace, name, or label name.
-	dns1123LabelFmt         string = "[a-z0-9]([-a-z0-9]*[a-z0-9])?"
-	namespaceAndNamePattern        = "^/((" + dns1123LabelFmt + ")+)(/(" + dns1123LabelFmt + ")+)?"
-	queryStringPattern             = "^(\\?((" + dns1123LabelFmt + ")+\\=(" + dns1123LabelFmt + ")+)" +
-		"(&(" + dns1123LabelFmt + ")+\\=(" + dns1123LabelFmt + ")+)*)?$"
+	dns1123LabelFmt string = "[a-z0-9]([-a-z0-9]*[a-z0-9])?"
+	queryParamName         = "[a-zA-Z0-9][-a-zAz0-9]*"
+	queryParamValue        = "[/a-zA-Z0-9][/-a-zAz0-9]*"
+
+	namespaceAndNamePattern = "^/((" + dns1123LabelFmt + ")+)(/(" + dns1123LabelFmt + ")+)?"
+	queryStringPattern      = "^(\\?((" + queryParamName + ")+\\=(" + queryParamValue + ")+)" +
+		"(&(" + queryParamName + ")+\\=(" + queryParamValue + ")+)*)?$"
 
 	kubernetesGroupsPattern = "^(" + kubernetesServices +
 		"|" + kubernetesPods +

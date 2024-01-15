@@ -194,6 +194,14 @@ var KnativeServicesTestValues = map[string]*ResourceUri{
 		WithQueryParam("label-a", "value-a").
 		WithQueryParam("label-b", "value-b").
 		WithPort("custom-port-value").Build(),
+
+	"knative:services.v1.serving.knative.dev/my-namespace/my-function?path=/myKnativeFunction": NewResourceUriBuilder(KnativeScheme).
+		Kind("services").
+		Version("v1").
+		Group("serving.knative.dev").
+		Namespace("my-namespace").
+		Name("my-function").
+		WithQueryParam("path", "/myKnativeFunction").Build(),
 }
 
 var KnativeBrokersTestValues = map[string]*ResourceUri{
