@@ -38,7 +38,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("SonataFlow Operator", func() {
+// sonataflow_operator_namespace store the ns where the Operator and Operand will be executed
+const sonataflow_operator_namespace = "sonataflow-operator-system"
+
+var _ = Describe("SonataFlow Operator", Ordered, func() {
 
 	var targetNamespace string
 	BeforeEach(func() {
@@ -63,7 +66,7 @@ var _ = Describe("SonataFlow Operator", func() {
 			By("creating an instance of the SonataFlow Operand(CR)")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
-					"test/testdata/"+test.SonataFlowSimpleOpsYamlCR), "-n", targetNamespace)
+					"test/testdata/"+test.SonataFlowSimpleOpsYamlCR), "-n", sonataflow_operator_namespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, 2*time.Minute, time.Second).Should(Succeed())
@@ -73,7 +76,7 @@ var _ = Describe("SonataFlow Operator", func() {
 
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "delete", "-f", filepath.Join(projectDir,
-					"test/testdata/"+test.SonataFlowSimpleOpsYamlCR), "-n", targetNamespace)
+					"test/testdata/"+test.SonataFlowSimpleOpsYamlCR), "-n", sonataflow_operator_namespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, 2*time.Minute, time.Second).Should(Succeed())
@@ -83,7 +86,7 @@ var _ = Describe("SonataFlow Operator", func() {
 			By("creating external resources DataInputSchema configMap")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
-					"test/testdata/"+test.SonataFlowGreetingsDataInputSchemaConfig), "-n", targetNamespace)
+					"test/testdata/"+test.SonataFlowGreetingsDataInputSchemaConfig), "-n", sonataflow_operator_namespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, 2*time.Minute, time.Second).Should(Succeed())
@@ -91,7 +94,7 @@ var _ = Describe("SonataFlow Operator", func() {
 			By("creating an instance of the SonataFlow Operand(CR)")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
-					"test/testdata/"+test.SonataFlowGreetingsWithDataInputSchemaCR), "-n", targetNamespace)
+					"test/testdata/"+test.SonataFlowGreetingsWithDataInputSchemaCR), "-n", sonataflow_operator_namespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, 2*time.Minute, time.Second).Should(Succeed())
@@ -101,7 +104,7 @@ var _ = Describe("SonataFlow Operator", func() {
 
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "delete", "-f", filepath.Join(projectDir,
-					"test/testdata/"+test.SonataFlowGreetingsWithDataInputSchemaCR), "-n", targetNamespace)
+					"test/testdata/"+test.SonataFlowGreetingsWithDataInputSchemaCR), "-n", sonataflow_operator_namespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, 2*time.Minute, time.Second).Should(Succeed())
@@ -112,7 +115,7 @@ var _ = Describe("SonataFlow Operator", func() {
 			By("creating an instance of the SonataFlow Workflow in DevMode")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
-					test.GetSonataFlowE2eOrderProcessingFolder()), "-n", targetNamespace)
+					test.GetSonataFlowE2eOrderProcessingFolder()), "-n", sonataflow_operator_namespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, 2*time.Minute, time.Second).Should(Succeed())
@@ -120,7 +123,7 @@ var _ = Describe("SonataFlow Operator", func() {
 			By("check the workflow is in running state")
 			EventuallyWithOffset(1, func() bool { return verifyWorkflowIsInRunningState("orderprocessing", targetNamespace) }, 10*time.Minute, 30*time.Second).Should(BeTrue())
 
-			cmdLog := exec.Command("kubectl", "logs", "orderprocessing", "-n", targetNamespace)
+			cmdLog := exec.Command("kubectl", "logs", "orderprocessing", "-n", sonataflow_operator_namespace)
 			if responseLog, errLog := utils.Run(cmdLog); errLog == nil {
 				GinkgoWriter.Println(fmt.Sprintf("devmode podlog %s", responseLog))
 			}
@@ -130,11 +133,12 @@ var _ = Describe("SonataFlow Operator", func() {
 
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "delete", "-f", filepath.Join(projectDir,
-					test.GetSonataFlowE2eOrderProcessingFolder()), "-n", targetNamespace)
+					test.GetSonataFlowE2eOrderProcessingFolder()), "-n", sonataflow_operator_namespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, 2*time.Minute, time.Second).Should(Succeed())
 		})
+
 	})
 
 })
