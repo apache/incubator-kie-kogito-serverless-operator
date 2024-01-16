@@ -55,7 +55,7 @@ jobs:
 
       - name: Set OPERATOR_IMAGE_NAME to point to Kind's local registry
         run: |
-          echo "OPERATOR_IMAGE_NAME=127.0.0.1:5000/kogito-serverless-operator:0.0.1" >> $GITHUB_ENV
+          echo "OPERATOR_IMAGE_NAME=127.0.0.1:5001/kogito-serverless-operator:0.0.1" >> $GITHUB_ENV
 
       - name: Setup Python for cekit
         uses: actions/setup-python@v4
@@ -69,7 +69,7 @@ jobs:
           pip install odcs podman behave lxml krb5
           make container-build BUILDER=podman IMG=${{ env.OPERATOR_IMAGE_NAME }}
 
-      - name: Load image in Minikube
+      - name: Load image in Kind
         run: |
           podman push --tls-verify=false ${{ env.OPERATOR_IMAGE_NAME }}
 
