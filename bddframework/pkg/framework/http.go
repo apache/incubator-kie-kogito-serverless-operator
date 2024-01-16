@@ -25,7 +25,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -95,6 +94,9 @@ func WaitForFailedHTTPRequest(namespace string, requestInfo HTTPRequestInfo, tim
 			return IsHTTPRequestFailed(namespace, requestInfo)
 		})
 }
+
+// TODO: implement a ExecuteHTTPRequest using a curl image, so we can query the services from within the cluster
+// TODO: kubectl run -n $NS -it --rm --image=curlimages/curl curly -- http://10.96.83.64
 
 // ExecuteHTTPRequest executes an HTTP request
 func ExecuteHTTPRequest(namespace string, requestInfo HTTPRequestInfo) (*http.Response, error) {
@@ -217,7 +219,7 @@ func checkHTTPRequestConditionC(client *http.Client, namespace string, requestIn
 	if err != nil {
 		return false, err
 	}
-	if _, err = io.Copy(ioutil.Discard, response.Body); err != nil { // Just read the response to be able to close the connection properly
+	if _, err = io.Copy(io.Discard, response.Body); err != nil { // Just read the response to be able to close the connection properly
 		return false, err
 	}
 	defer response.Body.Close()
@@ -282,7 +284,7 @@ func createDefaultClient() *http.Client {
 	customTransport := defaultTransport.Clone()
 	// Allow executing requests against HTTPS endpoints with insecure certificate
 	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	return &http.Client{Transport: customTransport, Timeout: (time.Duration(10*config.GetLoadFactor()) * time.Second)}
+	return &http.Client{Transport: customTransport, Timeout: time.Duration(10*config.GetLoadFactor()) * time.Second}
 }
 
 func runRequestRoutine(threadID int, waitGroup *sync.WaitGroup, client *http.Client, namespace string, requestPerThread int, requestInfo HTTPRequestInfo, results []HTTPRequestResult) {
@@ -303,7 +305,7 @@ func runRequestRoutine(threadID int, waitGroup *sync.WaitGroup, client *http.Cli
 	results[threadID] = HTTPRequestResultSuccess
 }
 
-// IsHTTPResponseArraySize makes and checks whether an http request returns an array of a specific size
+// IsHTTPResponseArraySize makes and checks whether a http request returns an array of a specific size
 func IsHTTPResponseArraySize(namespace string, requestInfo HTTPRequestInfo, arraySize int) (bool, error) {
 	var httpResponseArray []map[string]interface{}
 	err := ExecuteHTTPRequestWithUnmarshalledResponse(namespace, requestInfo, &httpResponseArray)

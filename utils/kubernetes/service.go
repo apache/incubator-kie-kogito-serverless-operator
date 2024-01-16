@@ -27,7 +27,10 @@ import (
 )
 
 // TODO: retrieve the cluster domain from the /etc/resolve inside the pod or from the Platform CRD - will be addressed by KOGITO-9198
-var defaultClusterDomain = "svc.cluster.local"
+const (
+	defaultClusterDomain = "svc.cluster.local"
+	defaultHttpScheme    = "http"
+)
 
 // retrieveServiceHost function that based on the service name, namespace and eventually the nodeport, will provide the service URI
 func retrieveServiceHost(service *v1.Service) string {
@@ -39,10 +42,10 @@ func retrieveServiceHost(service *v1.Service) string {
 	return service.Name + "." + namespace + "." + defaultClusterDomain
 }
 
-// RetrieveServiceURL function that based on the service name, namespace and eventually the nodeport, will provide the service URI
-func RetrieveServiceURL(service *v1.Service) (*apis.URL, error) {
+// RetrieveWorkflowServiceURL function that based on the service name, namespace and eventually the nodeport, will provide the service URI
+func RetrieveWorkflowServiceURL(service *v1.Service) (*apis.URL, error) {
 	url := url.URL{
-		Scheme: "http",
+		Scheme: defaultHttpScheme,
 		Host:   retrieveServiceHost(service),
 		Path:   service.Name}
 	return apis.ParseURL(url.String())
