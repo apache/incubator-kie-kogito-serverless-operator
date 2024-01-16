@@ -24,7 +24,7 @@ const (
 	ephemeral  = "ephemeral"
 	postgreSQL = "postgreSQL"
 	dev        = "dev"
-	production = "production"
+	production = "prod"
 )
 
 var _ = Describe("Validate the persistence", Ordered, func() {
@@ -34,35 +34,6 @@ var _ = Describe("Validate the persistence", Ordered, func() {
 		targetNamespace string
 	)
 
-	BeforeAll(func() {
-
-		operatorImageName, err := utils.GetOperatorImageName()
-		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-		By("deploying the controller-manager")
-		cmd := exec.Command("make", "deploy", fmt.Sprintf("IMG=%s", operatorImageName))
-
-		outputMake, err := utils.Run(cmd)
-		fmt.Println(string(outputMake))
-		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-		By("validating that the controller-manager pod is running as expected")
-
-		By("Wait for SonatatFlowPlatform CR to complete deployment")
-		// wait for service deployments to be ready
-		EventuallyWithOffset(1, func() error {
-			cmd = exec.Command("kubectl", "wait", "pod", "-n", sonataflowOperatorNamespace, "-l", "control-plane=controller-manager", "--for", "condition=Ready", "--timeout=5s")
-			_, err = utils.Run(cmd)
-			return err
-		}, 10*time.Minute, 5).Should(Succeed())
-	})
-
-	AfterAll(func() {
-		By("removing manager namespace")
-		cmd := exec.Command("make", "undeploy")
-		_, _ = utils.Run(cmd)
-	})
-
 	BeforeEach(func() {
 		targetNamespace = fmt.Sprintf("test-%d", rand.Intn(1024)+1)
 		cmd := exec.Command("kubectl", "create", "namespace", targetNamespace)
@@ -70,13 +41,12 @@ var _ = Describe("Validate the persistence", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		// Remove resources in test namespace
-		if len(targetNamespace) > 0 {
+		// Remove resources in test namespace with no failure
+		if !CurrentSpecReport().Failed() && len(targetNamespace) > 0 {
 			cmd := exec.Command("kubectl", "delete", "namespace", targetNamespace, "--wait")
 			_, err := utils.Run(cmd)
 			Expect(err).NotTo(HaveOccurred())
 		}
-
 	})
 	var _ = Context("with platform services", func() {
 
