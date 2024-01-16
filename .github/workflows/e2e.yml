@@ -95,3 +95,4 @@ jobs:
         with:
           name: kind-logs-${{ env.JOB_NAME }}-${{ github.run_id }}
           path: /tmp/kind/logs
+          retention-days: 1
