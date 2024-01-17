@@ -67,7 +67,7 @@ jobs:
 
       - name: Load image in Kind
         run: |
-          podman push --tls-verify=false ${{ env.OPERATOR_IMAGE_NAME }}
+          kind load docker-image 127.0.0.1:5001/kogito-serverless-operator:0.0.1
 
       - name: Check pods
         run: |
