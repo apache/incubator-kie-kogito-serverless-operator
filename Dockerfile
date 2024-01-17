@@ -16,7 +16,7 @@
 # under the License.
 
 # Build the manager binary
-FROM docker.io/library/golang:1.19.9 as builder
+FROM docker.io/library/golang:1.21.6 as builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -40,9 +40,9 @@ COPY version/ version/
 COPY log/ log/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags=-buildid= -a -o manager main.go
 
-FROM registry.access.redhat.com/ubi8/ubi-micro:latest
+FROM registry.access.redhat.com/ubi9/ubi-micro:9.3-9
 WORKDIR /usr/local/bin
 
 COPY --from=builder /workspace/manager /usr/local/bin/manager
