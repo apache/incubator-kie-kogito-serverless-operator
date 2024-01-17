@@ -13,7 +13,6 @@ on:
 
 env:
   GO_VERSION: 1.19
-  KIND_VERSION: v0.20.0
   DEBUG: true
 
 jobs:
@@ -48,10 +47,7 @@ jobs:
 
       - name: Setup Kind cluster
         run: |
-          # Install kind
-          go install sigs.k8s.io/kind@${{ env.KIND_VERSION }}
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-          ./hack/ci/create-kind-cluster-with-registry.sh
+          make create-cluster
 
       - name: Set OPERATOR_IMAGE_NAME to point to Kind's local registry
         run: |
