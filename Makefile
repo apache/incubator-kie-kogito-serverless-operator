@@ -162,11 +162,11 @@ debug: build-4-debug ## Run a controller from your host from binary
 
 .PHONY: docker-build
 docker-build: generate ## Build docker image with the manager.
-	docker build --build-arg SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) -t ${IMG} .
+	docker build --build-arg SOURCE_DATE_EPOCH="$(shell git log -1 --pretty=%ct)" -t ${IMG} .
 
 .PHONY: podman-build
 podman-build: generate ## Build container image with the manager.
-	podman build --build-arg SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) -t ${IMG} .
+	podman build --build-arg SOURCE_DATE_EPOCH="$(shell git log -1 --pretty=%ct)" -t ${IMG} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
@@ -186,7 +186,7 @@ docker-buildx: generate ## Build and push docker image for the manager for cross
 	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' Dockerfile > Dockerfile.cross
 	- docker buildx create --name project-v3-builder
 	docker buildx use project-v3-builder
-	- docker buildx build --build-arg SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross
+	- docker buildx build --build-arg SOURCE_DATE_EPOCH=$(shell git log -1 --pretty=%ct) --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross
 	- docker buildx rm project-v3-builder
 	rm Dockerfile.cross
 
