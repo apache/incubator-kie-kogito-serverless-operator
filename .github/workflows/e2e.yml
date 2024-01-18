@@ -62,7 +62,7 @@ jobs:
       - name: Build operator image
         run: |
           pip install cekit==4.5.0
-          pip install odcs behave lxml krb5
+          pip install odcs docker python-docker behave lxml krb5
           make container-build BUILDER=docker IMG=${{ env.OPERATOR_IMAGE_NAME }}
 
       - name: Load image in Kind
