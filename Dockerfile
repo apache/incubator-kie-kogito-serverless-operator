@@ -42,15 +42,18 @@ COPY version/ version/
 COPY log/ log/
 
 # Build
-# We force a timestamp to the output to guarantee a reproducible build, once we have BuildKit 0.12, this won't be needed anymore.
-# The workaround to force the date format is because docker cli is expecting an int from this parameter (the timestamp).
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags=-buildid= -a -o manager main.go && \
-    touch -d $(date '+%FT%H:%M:%S' -d @${SOURCE_DATE_EPOCH}) manager
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags=-buildid= -a -o manager main.go
 
 FROM registry.access.redhat.com/ubi9/ubi-micro:9.3-9
+
+ARG SOURCE_DATE_EPOCH
+
 WORKDIR /usr/local/bin
 
 COPY --from=builder /workspace/manager /usr/local/bin/manager
+# We force a timestamp to the output to guarantee a reproducible build, once we have BuildKit 0.12, this won't be needed anymore.
+# The workaround to force the date format is because docker cli is expecting an int from this parameter (the timestamp).
+RUN touch -d $(date '+%FT%H:%M:%S' -d @${SOURCE_DATE_EPOCH}) /usr/local/bin/manager
 
 USER 65532:65532
 
