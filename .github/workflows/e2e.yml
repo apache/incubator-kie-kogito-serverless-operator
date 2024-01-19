@@ -47,7 +47,7 @@ jobs:
 
       - name: Setup Kind cluster
         run: |
-          make KIND_VERSION=${{ env.GO_VERSION }} create-cluster
+          make KIND_VERSION=${{ env.KIND_VERSION }} create-cluster
 
       - name: Set OPERATOR_IMAGE_NAME to point to Kind's local registry
         run: |
