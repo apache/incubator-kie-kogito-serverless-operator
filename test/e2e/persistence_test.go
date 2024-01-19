@@ -112,8 +112,9 @@ var _ = Describe("Validate the persistence ", Ordered, func() {
 		output, err := utils.Run(cmd)
 		Expect(err).NotTo(HaveOccurred())
 		for _, pn := range strings.Split(string(output), " ") {
-			verifyHealthStatusInPod(pn, ns)
-			verifyDatabaseConnectionsHealthStatusInPod(pn, ns)
+			EventuallyWithOffset(1, func() bool { return verifyWorkflowIsInRunningStateInNamespace("callbackstatetimeouts", ns) }, 10*time.Minute, 30*time.Second).Should(BeTrue())
+			EventuallyWithOffset(1, func() error { return verifyHealthStatusInPod(pn, ns) }, 5*time.Minute, 5).Should(Succeed())
+			EventuallyWithOffset(1, func() error { return verifyDatabaseConnectionsHealthStatusInPod(pn, ns) }, 5*time.Minute, 5).Should(Succeed())
 		}
 	},
 		Entry("defined in the workflow from an existing kubernetes service as a reference", test.GetSonataFlowE2EWorkflowPersistenceSampleDataDirectory("by_service")),
@@ -121,7 +122,7 @@ var _ = Describe("Validate the persistence ", Ordered, func() {
 
 })
 
-func verifyDatabaseConnectionsHealthStatusInPod(name string, namespace string) {
+func verifyDatabaseConnectionsHealthStatusInPod(name string, namespace string) error {
 	// iterate over all containers to find the one that responds to the HTTP health endpoint
 	Expect(name).NotTo(BeEmpty(), "pod name is empty")
 	cmd := exec.Command("kubectl", "get", "pod", name, "-n", namespace, "-o", `jsonpath={.spec.containers[*].name}`)
@@ -135,12 +136,12 @@ func verifyDatabaseConnectionsHealthStatusInPod(name string, namespace string) {
 			for _, c := range h.Checks {
 				if c.Name == "Database connections health check" {
 					Expect(c.Status).To(Equal(upStatus))
-					return
+					return nil
 				}
 			}
 			errs = fmt.Errorf("no database connection health status found; %w", errs)
 		}
 		errs = fmt.Errorf("%v; %w", err, errs)
 	}
-	Expect(errs).NotTo(HaveOccurred(), fmt.Sprintf("No container was found that could respond to the health endpoint %v", errs))
+	return errs
 }
