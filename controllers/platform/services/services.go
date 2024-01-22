@@ -34,6 +34,11 @@ import (
 	"github.com/imdario/mergo"
 )
 
+const (
+	quarkusHibernateORMDatabaseGeneration string = "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION"
+	quarkusFlywayMigrateAtStart           string = "QUARKUS_FLYWAY_MIGRATE_AT_START"
+)
+
 type PlatformServiceHandler interface {
 	// GetContainerName returns the name of the service's container in the deployment.
 	GetContainerName() string
@@ -139,7 +144,7 @@ func (d DataIndexHandler) ConfigurePersistence(containerSpec *corev1.Container) 
 		c.Image = d.GetServiceImageName(constants.PersistenceTypePostgreSQL)
 		c.Env = append(c.Env, persistence.ConfigurePostgreSqlEnv(d.platform.Spec.Services.DataIndex.Persistence.PostgreSql, d.GetServiceName(), d.platform.Namespace)...)
 		// specific to DataIndex
-		c.Env = append(c.Env, corev1.EnvVar{Name: "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION", Value: "update"}, corev1.EnvVar{Name: "QUARKUS_FLYWAY_MIGRATE_AT_START", Value: "true"})
+		c.Env = append(c.Env, corev1.EnvVar{Name: quarkusHibernateORMDatabaseGeneration, Value: "update"}, corev1.EnvVar{Name: quarkusFlywayMigrateAtStart, Value: "true"})
 		return c
 	}
 	return containerSpec
@@ -254,7 +259,7 @@ func (j JobServiceHandler) ConfigurePersistence(containerSpec *corev1.Container)
 		c.Image = j.GetServiceImageName(constants.PersistenceTypePostgreSQL)
 		c.Env = append(c.Env, persistence.ConfigurePostgreSqlEnv(j.platform.Spec.Services.JobService.Persistence.PostgreSql, j.GetServiceName(), j.platform.Namespace)...)
 		// Specific to Job Service
-		c.Env = append(c.Env, corev1.EnvVar{Name: "QUARKUS_FLYWAY_MIGRATE_AT_START", Value: "true"})
+		c.Env = append(c.Env, corev1.EnvVar{Name: quarkusFlywayMigrateAtStart, Value: "true"})
 		return c
 	}
 	return containerSpec

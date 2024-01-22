@@ -26,6 +26,11 @@ import (
 const (
 	defaultSchemaName   = "default"
 	defaultDatabaseName = "sonataflow"
+
+	quarkusDatasourceJDBCURL  string = "QUARKUS_DATASOURCE_JDBC_URL"
+	quarkusDatasourceDBKind   string = "QUARKUS_DATASOURCE_DB_KIND"
+	quarkusDatasourceUsername string = "QUARKUS_DATASOURCE_USERNAME"
+	quarkusDatasourcePassword string = "QUARKUS_DATASOURCE_PASSWORD"
 )
 
 func ConfigurePostgreSqlEnv(postgresql *operatorapi.PersistencePostgreSql, databaseSchema, databaseNamespace string) []corev1.EnvVar {
@@ -50,39 +55,39 @@ func ConfigurePostgreSqlEnv(postgresql *operatorapi.PersistencePostgreSql, datab
 	secretRef := corev1.LocalObjectReference{
 		Name: postgresql.SecretRef.Name,
 	}
-	quarkusDatasourceUsername := "POSTGRESQL_USER"
+	postgresUsername := "POSTGRESQL_USER"
 	if len(postgresql.SecretRef.UserKey) > 0 {
-		quarkusDatasourceUsername = postgresql.SecretRef.UserKey
+		postgresUsername = postgresql.SecretRef.UserKey
 	}
-	quarkusDatasourcePassword := "POSTGRESQL_PASSWORD"
+	postgresPassword := "POSTGRESQL_PASSWORD"
 	if len(postgresql.SecretRef.PasswordKey) > 0 {
-		quarkusDatasourcePassword = postgresql.SecretRef.PasswordKey
+		postgresPassword = postgresql.SecretRef.PasswordKey
 	}
 	return []corev1.EnvVar{
 		{
-			Name: "QUARKUS_DATASOURCE_USERNAME",
+			Name: quarkusDatasourceUsername,
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
-					Key:                  quarkusDatasourceUsername,
+					Key:                  postgresUsername,
 					LocalObjectReference: secretRef,
 				},
 			},
 		},
 		{
-			Name: "QUARKUS_DATASOURCE_PASSWORD",
+			Name: quarkusDatasourcePassword,
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
-					Key:                  quarkusDatasourcePassword,
+					Key:                  postgresPassword,
 					LocalObjectReference: secretRef,
 				},
 			},
 		},
 		{
-			Name:  "QUARKUS_DATASOURCE_DB_KIND",
+			Name:  quarkusDatasourceDBKind,
 			Value: constants.PersistenceTypePostgreSQL,
 		},
 		{
-			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
+			Name:  quarkusDatasourceJDBCURL,
 			Value: dataSourceURL,
 		},
 	}
