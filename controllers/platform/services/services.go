@@ -151,7 +151,7 @@ func (d DataIndexHandler) IsServiceEnabled() bool {
 }
 
 func (d DataIndexHandler) GetServiceUrl() string {
-	return d.GetServiceBaseUrl() + constants.DataIndexServiceURLPath
+	return d.GetServiceBaseUrl() + constants.KogitoProcessInstancesEventsPath
 }
 
 func (d DataIndexHandler) GetServiceBaseUrl() string {
@@ -236,7 +236,7 @@ func (d DataIndexHandler) GetServiceCmName() string {
 func (d DataIndexHandler) GenerateWorkflowProperties() (*properties.Properties, error) {
 	props := properties.NewProperties()
 	if d.IsServiceEnabled() {
-		props.Set(constants.KogitoProcessDefinitionsEventsURL, d.GetServiceBaseUrl()+"/definitions")
+		props.Set(constants.KogitoProcessDefinitionsEventsURL, d.GetServiceBaseUrl()+constants.KogitoProcessDefinitionsEventsPath)
 		props.Set(constants.KogitoProcessInstancesEventsURL, d.GetServiceUrl())
 	}
 	return props, nil

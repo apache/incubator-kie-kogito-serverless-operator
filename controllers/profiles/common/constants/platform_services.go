@@ -37,8 +37,10 @@ const (
 	KogitoProcessEventsProtocol           = "http"
 	KogitoProcessInstancesEventsURL       = "mp.messaging.outgoing.kogito-processinstances-events.url"
 	KogitoProcessInstancesEventsEnabled   = "kogito.events.processinstances.enabled"
+	KogitoProcessInstancesEventsPath      = "/processes"
 	KogitoProcessDefinitionsEventsURL     = "mp.messaging.outgoing.kogito-processdefinitions-events.url"
 	KogitoProcessDefinitionsEventsEnabled = "kogito.events.processdefinitions.enabled"
+	KogitoProcessDefinitionsEventsPath    = "/definitions"
 	KogitoUserTasksEventsEnabled          = "kogito.events.usertasks.enabled"
 	KogitoEventsVariablesEnabled          = "kogito.events.variables.enabled"
 	KogitoServiceURLProperty              = "kogito.service.url"
@@ -46,10 +48,9 @@ const (
 	DataIndexKafkaSmallRyeHealthProperty  = `quarkus.smallrye-health.check."io.quarkus.kafka.client.health.KafkaHealthCheck".enabled`
 	JobServiceKafkaSmallRyeHealthProperty = `quarkus.smallrye-health.check."org.kie.kogito.jobs.service.messaging.http.health.knative.KSinkInjectionHealthCheck".enabled`
 
-	DataIndexServiceName    = "data-index-service"
-	DataIndexServiceURLPath = "/processes"
-	JobServiceName          = "jobs-service"
-	ImageNamePrefix         = "quay.io/kiegroup/kogito"
+	DataIndexServiceName = "data-index-service"
+	JobServiceName       = "jobs-service"
+	ImageNamePrefix      = "quay.io/kiegroup/kogito"
 	//TODO, the usage of this constant was temporary introduced since only the nightly images are being updated for the
 	//data-index and jobs-service. And this is causing issues at the time of using the workflows integrated with these, etc.
 	//This will be removed when the CI is fixed.
