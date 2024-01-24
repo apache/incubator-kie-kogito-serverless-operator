@@ -50,6 +50,7 @@ func (suite *DockerTestSuite) TestImagesOperationsOnDockerRegistryForTest() {
 	repos, err := registryContainer.GetRepositories()
 	initialSize := len(repos)
 	assert.Nil(suite.T(), err)
+
 	pullErr := suite.Docker.PullImage(testImg + ":" + latestTag)
 	if pullErr != nil {
 		klog.V(log.E).ErrorS(pullErr, "Pull Error")
