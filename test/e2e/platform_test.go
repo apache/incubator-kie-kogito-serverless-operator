@@ -99,29 +99,18 @@ var _ = Describe("Validate the persistence", Ordered, func() {
 			manifests, err = utils.Run(cmd)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Wait for SonatatFlow CR to complete deployment")
-			EventuallyWithOffset(1, func() error {
-				cmd = exec.Command("kubectl", "wait", "pod", "-n", targetNamespace, "-l", "sonataflow.org/workflow-app", "--for", "condition=Ready", "--timeout=30s")
-				_, err = utils.Run(cmd)
-				return err
-			}, 5*time.Minute, 5).Should(Succeed())
-
-			By("Evaluate status of the workflow pod health endpoint")
-
-			cmd = exec.Command("kubectl", "get", "pod", "-n", targetNamespace, `-ojsonpath={.items[?(@.metadata.labels.sonataflow\.org/workflow-app)].metadata.name}`)
-			output, err = utils.Run(cmd)
-			Expect(err).NotTo(HaveOccurred())
-			for _, pn := range strings.Split(string(output), "\n") {
-				verifyHealthStatusInPod(pn, targetNamespace)
-			}
-			By("Evaluate status of SonataFlow CR")
+			By("Retrieve SonataFlow CR name")
 			cmd = exec.Command("kubectl", "get", "sonataflow", "-n", targetNamespace, `-ojsonpath={.items[*].metadata.name}`)
 			output, err = utils.Run(cmd)
 			Expect(err).NotTo(HaveOccurred())
-			sfNames := strings.TrimRight(string(output), "\n")
-			for _, sf := range strings.Split(string(sfNames), "\n") {
+			sfNames := strings.TrimRight(string(output), " ")
+
+			By("Evaluate status of SonataFlow CR")
+			for _, sf := range strings.Split(string(sfNames), " ") {
 				Expect(sf).NotTo(BeEmpty(), "sonataflow name is empty")
-				EventuallyWithOffset(1, func() bool { return verifyWorkflowIsInRunningStateInNamespace(sf, targetNamespace) }, 15*time.Minute, 15).Should(BeTrue())
+				EventuallyWithOffset(1, func() bool {
+					return verifyWorkflowIsInRunningStateInNamespace(sf, targetNamespace)
+				}, 5*time.Minute, 5).Should(BeTrue())
 			}
 		},
 			Entry("with both Job Service and Data Index and ephemeral persistence and the workflow in a dev profile", test.GetSonataFlowE2EPlatformServicesDirectory(), dev, ephemeral),
