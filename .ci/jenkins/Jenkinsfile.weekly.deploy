@@ -141,30 +141,15 @@ pipeline {
             }
         }
 
-        stage('Run e2e tests') {
+        stage('Run e2e tests on Minikube') {
             when {
                 expression {
                     return helper.shouldLaunchTests()
                 }
             }
-            stage('Run tests on Minikube') {
-                steps {
-                    script {
-                        launchE2ETestsJob('minikube')
-                    }
-                }
-            }
-        }
-
-        stage('Create and push a new tag') {
             steps {
                 script {
-                    projectVersion = getProjectVersion(false)
-                    dir(getRepoName()) {
-                        githubscm.setUserConfigFromCreds(util.getGitAuthorPushCredsId())
-                        githubscm.tagRepository(projectVersion)
-                        githubscm.pushRemoteTag('origin', projectVersion, util.getGitAuthorPushCredsId())
-                    }
+                    launchE2ETestsJob('minikube')
                 }
             }
         }
