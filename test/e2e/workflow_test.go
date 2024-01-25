@@ -21,14 +21,10 @@ package e2e
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"math/rand"
-	"net/url"
-	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -43,9 +39,6 @@ import (
 	//nolint:revive
 	. "github.com/onsi/gomega"
 )
-
-// sonataflow_operator_namespace store the ns where the Operator and Operand will be executed
-const sonataflow_operator_namespace = "sonataflow-operator-system"
 
 var _ = Describe("SonataFlow Operator", Ordered, func() {
 
@@ -72,7 +65,7 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 			By("creating an instance of the SonataFlow Operand(CR)")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
-					"test/testdata/"+test.SonataFlowSimpleOpsYamlCR), "-n", sonataflow_operator_namespace)
+					"test/testdata/"+test.SonataFlowSimpleOpsYamlCR), "-n", targetNamespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, 2*time.Minute, time.Second).Should(Succeed())
@@ -82,7 +75,7 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "delete", "-f", filepath.Join(projectDir,
-					"test/testdata/"+test.SonataFlowSimpleOpsYamlCR), "-n", sonataflow_operator_namespace)
+					"test/testdata/"+test.SonataFlowSimpleOpsYamlCR), "-n", targetNamespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, 2*time.Minute, time.Second).Should(Succeed())
@@ -92,7 +85,7 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 			By("creating external resources DataInputSchema configMap")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
-					"test/testdata/"+test.SonataFlowGreetingsDataInputSchemaConfig), "-n", sonataflow_operator_namespace)
+					"test/testdata/"+test.SonataFlowGreetingsDataInputSchemaConfig), "-n", targetNamespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, 2*time.Minute, time.Second).Should(Succeed())
@@ -100,7 +93,7 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 			By("creating an instance of the SonataFlow Operand(CR)")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
-					"test/testdata/"+test.SonataFlowGreetingsWithDataInputSchemaCR), "-n", sonataflow_operator_namespace)
+					"test/testdata/"+test.SonataFlowGreetingsWithDataInputSchemaCR), "-n", targetNamespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, 2*time.Minute, time.Second).Should(Succeed())
@@ -110,7 +103,7 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "delete", "-f", filepath.Join(projectDir,
-					"test/testdata/"+test.SonataFlowGreetingsWithDataInputSchemaCR), "-n", sonataflow_operator_namespace)
+					"test/testdata/"+test.SonataFlowGreetingsWithDataInputSchemaCR), "-n", targetNamespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, 2*time.Minute, time.Second).Should(Succeed())
@@ -121,7 +114,7 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 			By("creating an instance of the SonataFlow Workflow in DevMode")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
-					test.GetSonataFlowE2eOrderProcessingFolder()), "-n", sonataflow_operator_namespace)
+					test.GetSonataFlowE2eOrderProcessingFolder()), "-n", targetNamespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, 2*time.Minute, time.Second).Should(Succeed())
@@ -129,7 +122,7 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 			By("check the workflow is in running state")
 			EventuallyWithOffset(1, func() bool { return verifyWorkflowIsInRunningState("orderprocessing", targetNamespace) }, 10*time.Minute, 30*time.Second).Should(BeTrue())
 
-			cmdLog := exec.Command("kubectl", "logs", "orderprocessing", "-n", sonataflow_operator_namespace)
+			cmdLog := exec.Command("kubectl", "logs", "orderprocessing", "-n", targetNamespace)
 			if responseLog, errLog := utils.Run(cmdLog); errLog == nil {
 				GinkgoWriter.Println(fmt.Sprintf("devmode podlog %s", responseLog))
 			}
@@ -139,7 +132,7 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "delete", "-f", filepath.Join(projectDir,
-					test.GetSonataFlowE2eOrderProcessingFolder()), "-n", sonataflow_operator_namespace)
+					test.GetSonataFlowE2eOrderProcessingFolder()), "-n", targetNamespace)
 				_, err := utils.Run(cmd)
 				return err
 			}, 2*time.Minute, time.Second).Should(Succeed())
@@ -150,35 +143,6 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 })
 
 var _ = Describe("Validate the persistence ", Ordered, func() {
-
-	BeforeAll(func() {
-
-		operatorImageName, err := utils.GetOperatorImageName()
-		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-		By("deploying the controller-manager")
-		cmd := exec.Command("make", "deploy", fmt.Sprintf("IMG=%s", operatorImageName))
-
-		outputMake, err := utils.Run(cmd)
-		fmt.Println(string(outputMake))
-		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-		By("validating that the controller-manager pod is running as expected")
-
-		By("Wait for SonatatFlowPlatform CR to complete deployment")
-		// wait for service deployments to be ready
-		EventuallyWithOffset(1, func() error {
-			cmd = exec.Command("kubectl", "wait", "pod", "-n", sonataflow_operator_namespace, "-l", "control-plane=controller-manager", "--for", "condition=Ready", "--timeout=5s")
-			_, err = utils.Run(cmd)
-			return err
-		}, 10*time.Minute, 5).Should(Succeed())
-	})
-
-	AfterAll(func() {
-		By("removing manager namespace")
-		cmd := exec.Command("make", "undeploy")
-		_, _ = utils.Run(cmd)
-	})
 
 	var (
 		ns string
@@ -247,106 +211,3 @@ var _ = Describe("Validate the persistence ", Ordered, func() {
 	)
 
 })
-
-type health struct {
-	Status string  `json:"status"`
-	Checks []check `json:"checks"`
-}
-
-type check struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
-}
-
-var (
-	upStatus string = "UP"
-)
-
-func getHealthFromPod(name, namespace string) (*health, error) {
-	// iterate over all containers to find the one that responds to the HTTP health endpoint
-	Expect(name).NotTo(BeEmpty(), "pod name is empty")
-	cmd := exec.Command("kubectl", "get", "pod", name, "-n", namespace, "-o", `jsonpath={.spec.containers[*].name}`)
-	output, err := utils.Run(cmd)
-	Expect(err).NotTo(HaveOccurred())
-	var errs error
-	for _, cname := range strings.Split(string(output), " ") {
-		var h *health
-		h, err = getHealthStatusInContainer(name, cname, namespace)
-		if err == nil {
-			return h, nil
-		}
-		errs = fmt.Errorf("%v; %w", err, errs)
-	}
-	return nil, errs
-}
-
-func getHealthStatusInContainer(podName string, containerName string, namespace string) (*health, error) {
-	h := health{}
-	cmd := exec.Command("kubectl", "exec", "-t", podName, "-n", namespace, "-c", containerName, "--", "curl", "-s", "localhost:8080/q/health")
-	output, err := utils.Run(cmd)
-	GinkgoWriter.Printf("%s\n", string(output))
-	Expect(err).NotTo(HaveOccurred())
-	err = json.Unmarshal(output, &h)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute curl command against health endpoint in container %s:%v", containerName, err)
-	}
-	return &h, nil
-}
-func verifyWorkflowIsInRunningStateInNamespace(workflowName string, namespace string) bool {
-	cmd := exec.Command("kubectl", "get", "workflow", workflowName, "-n", namespace, "-o", "jsonpath={.status.conditions[?(@.type=='Running')].status}")
-	response, err := utils.Run(cmd)
-	if err != nil {
-		GinkgoWriter.Println(fmt.Errorf("failed to check if greeting workflow is running: %v", err))
-		return false
-	}
-	GinkgoWriter.Println(fmt.Sprintf("Got response %s", response))
-
-	if len(strings.TrimSpace(string(response))) == 0 {
-		GinkgoWriter.Println(fmt.Errorf("empty response %v", err))
-		return false
-	}
-	status, err := strconv.ParseBool(string(response))
-	if err != nil {
-		GinkgoWriter.Println(fmt.Errorf("failed to parse result %v", err))
-		return false
-	}
-	return status
-}
-
-func verifyWorkflowIsInRunningState(workflowName string) bool {
-	return verifyWorkflowIsInRunningStateInNamespace(workflowName, sonataflow_operator_namespace)
-}
-
-func verifyWorkflowIsAddressable(workflowName string) bool {
-	cmd := exec.Command("kubectl", "get", "workflow", workflowName, "-n", sonataflow_operator_namespace, "-o", "jsonpath={.status.address.url}")
-	if response, err := utils.Run(cmd); err != nil {
-		GinkgoWriter.Println(fmt.Errorf("failed to check if greeting workflow is running: %v", err))
-		return false
-	} else {
-		GinkgoWriter.Println(fmt.Sprintf("Got response %s", response))
-		if len(strings.TrimSpace(string(response))) > 0 {
-			_, err := url.ParseRequestURI(string(response))
-			if err != nil {
-				GinkgoWriter.Println(fmt.Errorf("failed to parse result %v", err))
-				return false
-			}
-			// The response is a valid URL so the test is passed
-			return true
-		}
-		return false
-	}
-}
-
-func getSonataFlowPlatformFilename() string {
-	if getClusterPlatform() == openshiftPlatform {
-		return test.GetPlatformOpenshiftE2eTest()
-	}
-	return test.GetPlatformMinikubeE2eTest()
-}
-
-func getClusterPlatform() string {
-	if v, ok := os.LookupEnv("CLUSTER_PLATFORM"); ok {
-		return v
-	}
-	return minikubePlatform
-}
