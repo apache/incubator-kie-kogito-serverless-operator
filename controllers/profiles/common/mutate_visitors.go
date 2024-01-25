@@ -56,13 +56,13 @@ func ImageDeploymentMutateVisitor(workflow *operatorapi.SonataFlow, image string
 }
 
 // DeploymentMutateVisitor guarantees the state of the default Deployment object
-func DeploymentMutateVisitor(workflow *operatorapi.SonataFlow) MutateVisitor {
+func DeploymentMutateVisitor(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			if kubeutil.IsObjectNew(object) {
 				return nil
 			}
-			original, err := DeploymentCreator(workflow)
+			original, err := DeploymentCreator(workflow, platform)
 			if err != nil {
 				return err
 			}
@@ -87,13 +87,13 @@ func EnsureDeployment(original *appsv1.Deployment, object *appsv1.Deployment) er
 	return mergo.Merge(&object.Spec.Template.Spec, original.Spec.Template.Spec, mergo.WithOverride)
 }
 
-func ServiceMutateVisitor(workflow *operatorapi.SonataFlow) MutateVisitor {
+func ServiceMutateVisitor(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			if kubeutil.IsObjectNew(object) {
 				return nil
 			}
-			original, err := ServiceCreator(workflow)
+			original, err := ServiceCreator(workflow, platform)
 			if err != nil {
 				return err
 			}
@@ -104,32 +104,31 @@ func ServiceMutateVisitor(workflow *operatorapi.SonataFlow) MutateVisitor {
 	}
 }
 
-func WorkflowPropertiesMutateVisitor(ctx context.Context, catalog discovery.ServiceCatalog,
-	workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) MutateVisitor {
+func UserPropertiesMutateVisitor(ctx context.Context, catalog discovery.ServiceCatalog,
+	workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform, userProps *corev1.ConfigMap) MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			if kubeutil.IsObjectNew(object) {
 				return nil
 			}
-			cm := object.(*corev1.ConfigMap)
-			cm.Labels = workflow.GetLabels()
-			_, hasKey := cm.Data[workflowproj.ApplicationPropertiesFileName]
+			managedProps := object.(*corev1.ConfigMap)
+			managedProps.Labels = workflow.GetLabels()
+			_, hasKey := managedProps.Data[workflowproj.GetManagedPropertiesFileName(workflow)]
 			if !hasKey {
-				cm.Data = make(map[string]string, 1)
-				props, err := properties.ImmutableApplicationProperties(workflow, platform)
-				if err != nil {
-					return err
-				}
-				cm.Data[workflowproj.ApplicationPropertiesFileName] = props
-				return nil
+				managedProps.Data = make(map[string]string, 1)
+				managedProps.Data[workflowproj.GetManagedPropertiesFileName(workflow)] = ""
 			}
 
+			userProperties, hasKey := userProps.Data[workflowproj.ApplicationPropertiesFileName]
+			if !hasKey {
+				userProperties = ""
+			}
 			// In the future, if this needs change, instead we can receive an AppPropertyHandler in this mutator
 			props, err := properties.NewAppPropertyHandler(workflow, platform)
 			if err != nil {
 				return err
 			}
-			cm.Data[workflowproj.ApplicationPropertiesFileName] = props.WithUserProperties(cm.Data[workflowproj.ApplicationPropertiesFileName]).
+			managedProps.Data[workflowproj.GetManagedPropertiesFileName(workflow)] = props.WithUserProperties(userProperties).
 				WithServiceDiscovery(ctx, catalog).
 				Build()
 			return nil
@@ -141,11 +140,11 @@ func WorkflowPropertiesMutateVisitor(ctx context.Context, catalog discovery.Serv
 // This method can be used as an alternative to the Kubernetes ConfigMap refresher.
 //
 // See: https://kubernetes.io/docs/concepts/configuration/configmap/#mounted-configmaps-are-updated-automatically
-func RolloutDeploymentIfCMChangedMutateVisitor(cm *v1.ConfigMap) MutateVisitor {
+func RolloutDeploymentIfCMChangedMutateVisitor(workflow *operatorapi.SonataFlow, userPropsCM *v1.ConfigMap, managedPropsCM *v1.ConfigMap) MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			deployment := object.(*appsv1.Deployment)
-			err := kubeutil.AnnotateDeploymentConfigChecksum(deployment, cm)
+			err := kubeutil.AnnotateDeploymentConfigChecksum(workflow, deployment, userPropsCM, managedPropsCM)
 			return err
 		}
 	}

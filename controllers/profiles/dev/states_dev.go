@@ -62,23 +62,26 @@ func (e *ensureRunningWorkflowState) CanReconcile(workflow *operatorapi.SonataFl
 func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
 	var objs []client.Object
 
-	flowDefCM, _, err := e.ensurers.definitionConfigMap.Ensure(ctx, workflow, ensureWorkflowDefConfigMapMutator(workflow))
-	if err != nil {
-		return ctrl.Result{Requeue: false}, objs, err
-	}
-	objs = append(objs, flowDefCM)
-
 	devBaseContainerImage := workflowdef.GetDefaultWorkflowDevModeImageTag()
 	// check if the Platform available
 	pl, err := platform.GetActivePlatform(ctx, e.C, workflow.Namespace)
 	if err == nil && len(pl.Spec.DevMode.BaseImage) > 0 {
 		devBaseContainerImage = pl.Spec.DevMode.BaseImage
 	}
-	propsCM, _, err := e.ensurers.propertiesConfigMap.Ensure(ctx, workflow, common.WorkflowPropertiesMutateVisitor(ctx, e.StateSupport.Catalog, workflow, pl))
+	flowDefCM, _, err := e.ensurers.definitionConfigMap.Ensure(ctx, workflow, pl, ensureWorkflowDefConfigMapMutator(workflow, pl))
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
 	}
-	objs = append(objs, propsCM)
+	objs = append(objs, flowDefCM)
+	userPropsCM, _, err := e.ensurers.userPropsConfigMap.Ensure(ctx, workflow, pl)
+	if err != nil {
+		return ctrl.Result{Requeue: false}, objs, err
+	}
+	managedPropsCM, _, err := e.ensurers.managedPropsConfigMap.Ensure(ctx, workflow, pl, common.UserPropertiesMutateVisitor(ctx, e.StateSupport.Catalog, workflow, pl, userPropsCM.(*corev1.ConfigMap)))
+	if err != nil {
+		return ctrl.Result{Requeue: false}, objs, err
+	}
+	objs = append(objs, managedPropsCM)
 
 	externalCM, err := workflowdef.FetchExternalResourcesConfigMapsRef(e.C, workflow)
 	if err != nil {
@@ -89,22 +92,22 @@ func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatora
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, objs, nil
 	}
 
-	deployment, _, err := e.ensurers.deployment.Ensure(ctx, workflow,
-		deploymentMutateVisitor(workflow),
+	deployment, _, err := e.ensurers.deployment.Ensure(ctx, workflow, pl,
+		deploymentMutateVisitor(workflow, pl),
 		common.ImageDeploymentMutateVisitor(workflow, devBaseContainerImage),
-		mountDevConfigMapsMutateVisitor(flowDefCM.(*corev1.ConfigMap), propsCM.(*corev1.ConfigMap), externalCM))
+		mountDevConfigMapsMutateVisitor(workflow, flowDefCM.(*corev1.ConfigMap), userPropsCM.(*corev1.ConfigMap), managedPropsCM.(*corev1.ConfigMap), externalCM))
 	if err != nil {
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, objs, err
 	}
 	objs = append(objs, deployment)
 
-	service, _, err := e.ensurers.service.Ensure(ctx, workflow, common.ServiceMutateVisitor(workflow))
+	service, _, err := e.ensurers.service.Ensure(ctx, workflow, pl, common.ServiceMutateVisitor(workflow, pl))
 	if err != nil {
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, objs, err
 	}
 	objs = append(objs, service)
 
-	route, _, err := e.ensurers.network.Ensure(ctx, workflow)
+	route, _, err := e.ensurers.network.Ensure(ctx, workflow, pl)
 	if err != nil {
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, objs, err
 	}

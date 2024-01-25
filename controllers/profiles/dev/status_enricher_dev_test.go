@@ -38,8 +38,9 @@ func Test_enrichmentStatusOnK8s(t *testing.T) {
 	t.Run("verify that the service URL is returned with the default cluster name on default namespace", func(t *testing.T) {
 
 		workflow := test.GetBaseSonataFlowWithDevProfile(t.Name())
+		platform := test.GetBasePlatform()
 		workflow.Namespace = toK8SNamespace(t.Name())
-		service, _ := common.ServiceCreator(workflow)
+		service, _ := common.ServiceCreator(workflow, platform)
 		client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow, service).Build()
 		obj, err := statusEnricher(context.TODO(), client, workflow)
 
@@ -54,8 +55,9 @@ func Test_enrichmentStatusOnK8s(t *testing.T) {
 	t.Run("verify that the service URL won't be generated if an invalid namespace is used", func(t *testing.T) {
 
 		workflow := test.GetBaseSonataFlowWithDevProfile(t.Name())
+		platform := test.GetBasePlatform()
 		workflow.Namespace = t.Name()
-		service, _ := serviceCreator(workflow)
+		service, _ := serviceCreator(workflow, platform)
 		client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow, service).Build()
 		_, err := statusEnricher(context.TODO(), client, workflow)
 		assert.Error(t, err)
@@ -66,8 +68,9 @@ func Test_enrichmentStatusOnK8s(t *testing.T) {
 func Test_enrichmentStatusOnOCP(t *testing.T) {
 	t.Run("verify that the service URL is returned with the default cluster name on default namespace", func(t *testing.T) {
 		workflow := test.GetBaseSonataFlowWithDevProfile(t.Name())
+		platform := test.GetBasePlatform()
 		workflow.Namespace = toK8SNamespace(t.Name())
-		service, _ := serviceCreator(workflow)
+		service, _ := serviceCreator(workflow, platform)
 		route := &openshiftv1.Route{}
 		route.Name = workflow.Name
 		route.Namespace = workflow.Namespace

@@ -38,7 +38,7 @@ import (
 
 // ObjectCreator is the func that creates the initial reference object, if the object doesn't exist in the cluster, this one is created.
 // Can be used as a reference to keep the object immutable
-type ObjectCreator func(workflow *operatorapi.SonataFlow) (client.Object, error)
+type ObjectCreator func(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (client.Object, error)
 
 const (
 	defaultHTTPServicePort = 80
@@ -63,7 +63,7 @@ var DefaultHTTPWorkflowPortIntStr = intstr.FromInt(constants.DefaultHTTPWorkflow
 
 // DeploymentCreator is an objectCreator for a base Kubernetes Deployments for profiles that need to deploy the workflow on a vanilla deployment.
 // It serves as a basis for a basic Quarkus Java application, expected to listen on http 8080.
-func DeploymentCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
+func DeploymentCreator(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (client.Object, error) {
 	lbl := workflowproj.GetDefaultLabels(workflow)
 
 	deployment := &appsv1.Deployment{
@@ -175,7 +175,7 @@ func defaultContainer(workflow *operatorapi.SonataFlow) (*corev1.Container, erro
 
 // ServiceCreator is an objectCreator for a basic Service aiming a vanilla Kubernetes Deployment.
 // It maps the default HTTP port (80) to the target Java application webserver on port 8080.
-func ServiceCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
+func ServiceCreator(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (client.Object, error) {
 	lbl := workflowproj.GetDefaultLabels(workflow)
 
 	service := &corev1.Service{
@@ -200,16 +200,21 @@ func ServiceCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
 // OpenShiftRouteCreator is an ObjectCreator for a basic Route for a workflow running on OpenShift.
 // It enables the exposition of the service using an OpenShift Route.
 // See: https://github.com/openshift/api/blob/d170fcdc0fa638b664e4f35f2daf753cb4afe36b/route/v1/route.crd.yaml
-func OpenShiftRouteCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
+func OpenShiftRouteCreator(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (client.Object, error) {
 	route, err := openshift.RouteForWorkflow(workflow)
 	return route, err
 }
 
-// WorkflowPropsConfigMapCreator creates a ConfigMap to hold the external application properties
-func WorkflowPropsConfigMapCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
-	props, err := properties.ImmutableApplicationProperties(workflow, nil)
+// UserPropsConfigMapCreator creates an empty ConfigMap to hold the user application properties
+func UserPropsConfigMapCreator(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (client.Object, error) {
+	return workflowproj.CreateNewUserPropsConfigMap(workflow), nil
+}
+
+// ManagedPropsConfigMapCreator creates an empty ConfigMap to hold the external application properties
+func ManagedPropsConfigMapCreator(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (client.Object, error) {
+	props, err := properties.ImmutableApplicationProperties(workflow, platform)
 	if err != nil {
 		return nil, err
 	}
-	return workflowproj.CreateNewAppPropsConfigMap(workflow, props), nil
+	return workflowproj.CreateNewManagedPropsConfigMap(workflow, props), nil
 }

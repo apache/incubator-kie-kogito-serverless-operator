@@ -38,6 +38,8 @@ import (
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 )
 
+// TODO: should we delete this whole file? seems used only the the associated test functions
+
 var _ WorkflowProjectHandler = &workflowProjectHandler{}
 
 // defaultResourcePath is the default resource path to add to the generated ConfigMaps
@@ -247,7 +249,7 @@ func (w *workflowProjectHandler) parseRawAppProperties() error {
 	if err != nil {
 		return err
 	}
-	w.project.Properties = CreateNewAppPropsConfigMap(w.project.Workflow, string(appPropsContent))
+	w.project.Properties = CreateNewManagedPropsConfigMap(w.project.Workflow, string(appPropsContent))
 	if err = SetTypeToObject(w.project.Properties, w.scheme); err != nil {
 		return err
 	}
