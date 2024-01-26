@@ -184,12 +184,12 @@ void sendNotification() {
 
 void checkoutRepo() {
     deleteDir()
-    checkout(githubscm.resolveRepository(util.getRepoName(), util.getGitAuthor(), util.getBuildBranch(), false, util.getGitAuthorCredsId()))
+    checkout(githubscm.resolveRepository(helper.getRepoName(), helper.getGitAuthor(), helper.getBuildBranch(), false, helper.getGitAuthorCredsId()))
     // need to manually checkout branch since on a detached branch after checkout command
-    sh "git checkout ${getBuildBranch()}"
+    sh "git checkout ${helper.getBuildBranch()}"
     checkoutDatetime = getCheckoutDatetime()
     if (checkoutDatetime) {
-        sh "git checkout `git rev-list -n 1 --before=\"${checkoutDatetime}\" ${getBuildBranch()}`"
+        sh "git checkout `git rev-list -n 1 --before=\"${checkoutDatetime}\" ${helper.getBuildBranch()}`"
     }
 }
 
