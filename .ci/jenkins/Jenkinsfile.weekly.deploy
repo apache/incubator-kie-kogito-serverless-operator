@@ -183,7 +183,6 @@ void sendNotification() {
 }
 
 void checkoutRepo() {
-    deleteDir()
     checkout(githubscm.resolveRepository(helper.getRepoName(), helper.getGitAuthor(), helper.getBuildBranch(), false, helper.getGitAuthorCredsId()))
     // need to manually checkout branch since on a detached branch after checkout command
     sh "git checkout ${helper.getBuildBranch()}"
