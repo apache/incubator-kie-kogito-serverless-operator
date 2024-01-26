@@ -262,9 +262,6 @@ func GetSonataFlowE2eOrderProcessingFolder() string {
 func GetSonataFlowE2EPlatformServicesDirectory() string {
 	return filepath.Join(getTestDataDir(), "platform", "services")
 }
-func GetSonataFlowE2EWorkflowPersistenceSampleDataDirectory(subdir string) string {
-	return filepath.Join(getTestDataDir(), "persistence", "workflow", subdir)
-}
 
 func GetSonataFlowE2EPlatformPersistenceSampleDataDirectory(subdir string) string {
 	return filepath.Join(getTestDataDir(), "platform", "persistence", subdir)

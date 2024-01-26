@@ -114,6 +114,7 @@ func getHealthStatusInContainer(podName string, containerName string, ns string)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute curl command against health endpoint in container %s:%v with output %s", containerName, err, output)
 	}
+	GinkgoWriter.Println(fmt.Sprintf("Health status:\n%s", string(output)))
 	return &h, nil
 }
 func verifyWorkflowIsInRunningStateInNamespace(workflowName string, ns string) bool {

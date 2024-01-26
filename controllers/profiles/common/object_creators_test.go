@@ -284,7 +284,7 @@ var (
 	postgreSQLPort = 5432
 )
 
-func TestMergePodSpec_OverrideContainers_WithPostgreSQL_and_ServiceRef(t *testing.T) {
+func TestMergePodSpec_OverrideContainers_WithPostgreSQL_In_Workflow_CR(t *testing.T) {
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflow.Spec = v1alpha08.SonataFlowSpec{
 		PodTemplate: v1alpha08.PodTemplateSpec{
@@ -368,7 +368,7 @@ func TestMergePodSpec_OverrideContainers_WithPostgreSQL_and_ServiceRef(t *testin
 	assert.Equal(t, expectedEnvVars, flowContainer.Env)
 }
 
-func TestMergePodSpec_WithServicedPostgreSQL_From_Platform(t *testing.T) {
+func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_CR_And_Worflow_Requesting_It(t *testing.T) {
 	persistence.WorkflowConfig.SetConfig(
 		&v1alpha08.PlatformPersistenceSpec{
 			PostgreSQL: &v1alpha08.PostgreSQLPlatformSpec{
@@ -438,6 +438,136 @@ func TestMergePodSpec_WithServicedPostgreSQL_From_Platform(t *testing.T) {
 	assert.Equal(t, int32(8080), flowContainer.Ports[0].ContainerPort)
 	assert.Equal(t, expectedEnvVars, flowContainer.Env)
 }
+
+func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_And_In_Workflow_CR(t *testing.T) {
+	persistence.WorkflowConfig.SetConfig(
+		&v1alpha08.PlatformPersistenceSpec{
+			PostgreSQL: &v1alpha08.PostgreSQLPlatformSpec{
+				DatabaseName: "foo",
+				SecretRef: v1alpha08.SecretReference{
+					Name:        "foo_secret",
+					UserKey:     "username",
+					PasswordKey: "password",
+				},
+				ServiceRef: v1alpha08.ServiceReference{
+					Name:      "service_name",
+					Namespace: "service_namespace",
+					Port:      5432,
+				},
+			}})
+	workflow := test.GetBaseSonataFlow(t.Name())
+	workflow.Spec = v1alpha08.SonataFlowSpec{
+		PodTemplate: v1alpha08.PodTemplateSpec{
+			PodSpec: v1alpha08.PodSpec{
+				// Try to override the workflow container via the podspec
+				Containers: []corev1.Container{
+					{
+						Name:  v1alpha08.DefaultContainerName,
+						Image: "quay.io/example/my-workflow:1.0.0",
+						Ports: []corev1.ContainerPort{
+							{Name: utils.HttpScheme, ContainerPort: 9090},
+						},
+						Env: []corev1.EnvVar{
+							{Name: "ENV1", Value: "VALUE_CUSTOM"},
+						},
+					},
+				},
+			},
+		},
+		Persistence: &v1alpha08.PersistenceOptions{
+			PostgreSql: &v1alpha08.PersistencePostgreSql{
+				SecretRef: v1alpha08.PostgreSqlSecretOptions{Name: "test"},
+				ServiceRef: &v1alpha08.PostgreSqlServiceOptions{
+					Name:           "test",
+					Namespace:      "default",
+					Port:           &postgreSQLPort,
+					DatabaseName:   "my_database",
+					DatabaseSchema: "bar"},
+			},
+		},
+	}
+	object, err := DeploymentCreator(workflow)
+	assert.NoError(t, err)
+
+	deployment := object.(*appsv1.Deployment)
+	expectedEnvVars := []corev1.EnvVar{
+		{
+			Name:  "QUARKUS_DATASOURCE_USERNAME",
+			Value: "",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "test"}, Key: "POSTGRESQL_USER",
+				},
+			},
+		},
+		{
+			Name:  "QUARKUS_DATASOURCE_PASSWORD",
+			Value: "",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "test"}, Key: "POSTGRESQL_PASSWORD",
+				},
+			},
+		},
+		{
+			Name:  "QUARKUS_DATASOURCE_DB_KIND",
+			Value: "postgresql",
+		},
+		{
+			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
+			Value: "jdbc:postgresql://test.default:5432/my_database?currentSchema=bar",
+		},
+		{
+			Name:  "KOGITO_PERSISTENCE_TYPE",
+			Value: "jdbc",
+		},
+		{
+			Name:  "KOGITO_PERSISTENCE_PROTO_MARSHALLER",
+			Value: "false",
+		},
+		{
+			Name:  "KOGITO_PERSISTENCE_QUERY_TIMEOUT_MILLIS",
+			Value: "10000",
+		},
+	}
+	assert.Len(t, deployment.Spec.Template.Spec.Containers, 1)
+	flowContainer, _ := kubeutil.GetContainerByName(v1alpha08.DefaultContainerName, &deployment.Spec.Template.Spec)
+	assert.Empty(t, flowContainer.Image)
+	assert.Equal(t, int32(8080), flowContainer.Ports[0].ContainerPort)
+	assert.Equal(t, expectedEnvVars, flowContainer.Env)
+}
+
+func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_But_Workflow_CR_Not_Requesting_it(t *testing.T) {
+	persistence.WorkflowConfig.SetConfig(
+		&v1alpha08.PlatformPersistenceSpec{
+			PostgreSQL: &v1alpha08.PostgreSQLPlatformSpec{
+				DatabaseName: "foo",
+				SecretRef: v1alpha08.SecretReference{
+					Name:        "foo_secret",
+					UserKey:     "username",
+					PasswordKey: "password",
+				},
+				ServiceRef: v1alpha08.ServiceReference{
+					Name:      "service_name",
+					Namespace: "service_namespace",
+					Port:      5432,
+				},
+			}})
+	workflow := test.GetBaseSonataFlow(t.Name())
+	workflow.Spec = v1alpha08.SonataFlowSpec{
+		Persistence: nil,
+	}
+	object, err := DeploymentCreator(workflow)
+	assert.NoError(t, err)
+
+	deployment := object.(*appsv1.Deployment)
+	assert.Len(t, deployment.Spec.Template.Spec.Containers, 1)
+	flowContainer, _ := kubeutil.GetContainerByName(v1alpha08.DefaultContainerName, &deployment.Spec.Template.Spec)
+	assert.Empty(t, flowContainer.Image)
+	assert.Equal(t, int32(8080), flowContainer.Ports[0].ContainerPort)
+	assert.Nil(t, flowContainer.Env)
+}
+
 func TestMergePodSpec_WithEphemeralPostgreSQL_And_Undefined_PostgreSQL_Image_In_Platform_Spec(t *testing.T) {
 	persistence.WorkflowConfig.SetConfig(nil)
 	workflow := test.GetBaseSonataFlow(t.Name())

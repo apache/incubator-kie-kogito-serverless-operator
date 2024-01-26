@@ -29,12 +29,12 @@ spec:
     postgresql:
       secretRef:
         name: postgres-secrets
-        userKey: POSTGRES_USER
-        passwordKey: POSTGRES_PASSWORD
+        userKey: USER
+        passwordKey: PASSWORD
       serviceRef:
-        name: postgres
+        name: no-db-exists
         port: 5432
-      databaseName: sonataflow        
+      databaseName: find-me        
   services:
     dataIndex:
       enabled: false

@@ -20,13 +20,13 @@ spec:
   persistence:
     postgresql:
       secretRef:
-        name: postgres-secrets
-        userKey: POSTGRES_USER
-        passwordKey: POSTGRES_PASSWORD
+        name: my-secret
+        userKey: MY_USER
+        passwordKey: MY_PASSWORD
       serviceRef:
-        name: postgres
-        port: 5432
-      databaseName: sonataflow
+        name: db_not_defined
+        port: 3456
+      databaseName: db_name
   build:
     template:
       buildArgs:
