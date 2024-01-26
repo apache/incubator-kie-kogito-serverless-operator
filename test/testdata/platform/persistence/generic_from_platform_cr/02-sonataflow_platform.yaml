@@ -30,7 +30,6 @@ spec:
         passwordKey: POSTGRES_PASSWORD
       serviceRef:
         name: postgres
-        namespace: default
         port: 5432
       databaseName: sonataflow
   services:

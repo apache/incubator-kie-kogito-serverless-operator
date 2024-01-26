@@ -438,7 +438,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_From_Platform(t *testing.T) {
 	assert.Equal(t, int32(8080), flowContainer.Ports[0].ContainerPort)
 	assert.Equal(t, expectedEnvVars, flowContainer.Env)
 }
-func TestMergePodSpec_WithEphemeralPostgreSQL_And_Nil_PostgreSQL_Image_In_Platform_Spec(t *testing.T) {
+func TestMergePodSpec_WithEphemeralPostgreSQL_And_Undefined_PostgreSQL_Image_In_Platform_Spec(t *testing.T) {
 	persistence.WorkflowConfig.SetConfig(nil)
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflow.Spec = v1alpha08.SonataFlowSpec{
@@ -446,5 +446,5 @@ func TestMergePodSpec_WithEphemeralPostgreSQL_And_Nil_PostgreSQL_Image_In_Platfo
 	}
 	_, err := DeploymentCreator(workflow)
 	assert.Error(t, err)
-	assert.Equal(t, "platform persistence configuration is nil", err.Error())
+	assert.Equal(t, "platform persistence configuration is undefined", err.Error())
 }

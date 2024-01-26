@@ -79,20 +79,20 @@ type PostgreSQLPlatformSpec struct {
 }
 
 type ServiceReference struct {
-	// Name contains the name of the service
+	// Name contains the name of the kubernetes service. This field is mandatory.
 	// +required
 	Name string `json:"name"`
-	// Namespace contains the name of the namespace where the service is located.
-	// +required
+	// Namespace contains the name of the namespace where the kubernetes service resides. This field is optional.
+	// +optional
 	Namespace string `json:"namespace"`
-	// Port contains the port number associated to the service.
+	// Port contains the port number associated to the kubernetes service. This field is mandatory.
 	// +required
 	Port int `json:"port,omitempty"`
 }
 
 // SecretReference use of a secret to store the credentials to authenticate in the JDBC connection.
 type SecretReference struct {
-	// Name of the postgresql credentials secret.
+	// Name of the postgresql credentials secret. This field is mandatory.
 	Name string `json:"name"`
 	// +optional
 	UserKey string `json:"userKey,omitempty"`

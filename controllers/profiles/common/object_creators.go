@@ -247,7 +247,7 @@ func ConfigurePersistence(serviceContainer *corev1.Container, config *operatorap
 	}
 	p := persistence.WorkflowConfig.GetPostgreSQLConfiguration()
 	if p == nil {
-		return nil, fmt.Errorf("platform persistence configuration is nil")
+		return nil, fmt.Errorf("platform persistence configuration is undefined")
 	}
 	c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnvFromPlatformSpec(p, defaultSchema)...)
 	return c, nil

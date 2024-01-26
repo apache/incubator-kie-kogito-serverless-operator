@@ -26,17 +26,15 @@ spec:
       strategyOptions:
         KanikoBuildCacheEnabled: "true"
   persistence:
-    services:
-      postgresql:
-        secretRef:
-          name: postgres-secrets
-          userKey: POSTGRES_USER
-          passwordKey: POSTGRES_PASSWORD
-        serviceRef:
-          name: postgres
-          namespace: default
-          port: 5432
-        databaseName: sonataflow        
+    postgresql:
+      secretRef:
+        name: postgres-secrets
+        userKey: POSTGRES_USER
+        passwordKey: POSTGRES_PASSWORD
+      serviceRef:
+        name: postgres
+        port: 5432
+      databaseName: sonataflow        
   services:
     dataIndex:
       enabled: false
