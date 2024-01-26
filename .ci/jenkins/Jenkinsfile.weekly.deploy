@@ -125,7 +125,7 @@ pipeline {
                     // Store image deployment information
                     properties.add(helper.getImageRegistryProperty(), helper.getImageRegistry())
                     properties.add(helper.getImageNamespaceProperty(), helper.getImageNamespace())
-                    properties.add(helper.getImageTagProperty(), helper.getTempBuiltImageTag())
+                    properties.add(helper.getImageTagProperty(), getTempBuiltImageTag())
                 }
             }
         }
