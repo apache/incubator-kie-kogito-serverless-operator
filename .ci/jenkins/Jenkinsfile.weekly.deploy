@@ -208,6 +208,10 @@ String getTempBuiltImageTag() {
     return "${env.localRegistryUrl}/kogito-serverless-operator:${getProjectVersion(false)}"
 }
 
+void pushFinalImage(String oldImageName, String newImageName) {
+    cloud.skopeoCopyRegistryImages(oldImageName, newImageName, Integer.parseInt(env.MAX_REGISTRY_RETRIES))
+}
+
 void runPythonCommand(String cmd, boolean stdout = false) {
     return sh(returnStdout: stdout, script: cmd)
 }
