@@ -134,9 +134,9 @@ pipeline {
             steps {
                 script {
                     projectVersion = getProjectVersion(false)
-                    githubscm.setUserConfigFromCreds(util.getGitAuthorPushCredsId())
+                    githubscm.setUserConfigFromCreds(helper.getGitAuthorPushCredsId())
                     githubscm.tagRepository(projectVersion)
-                    githubscm.pushRemoteTag('origin', projectVersion, util.getGitAuthorPushCredsId())
+                    githubscm.pushRemoteTag('origin', projectVersion, helper.getGitAuthorPushCredsId())
                 }
             }
         }
