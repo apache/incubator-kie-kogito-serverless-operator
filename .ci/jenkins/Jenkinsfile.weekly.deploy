@@ -242,7 +242,7 @@ String getProjectVersionDate() {
 String getProjectVersion(boolean keepSnapshotSuffix = true) {
     def projectVersion = env.PROJECT_VERSION
     if (keepSnapshotSuffix) {
-        return projectVersion.replace("-SNAPSHOT", "-${getProjectVersionDate()}-SNAPSHOT")
+        return projectVersion.replace("-snapshot", "-${getProjectVersionDate()}-snapshot")
     }
-    return projectVersion.replace("-SNAPSHOT", "-${getProjectVersionDate()}")
+    return projectVersion.replace("-snapshot", "-${getProjectVersionDate()}")
 }
