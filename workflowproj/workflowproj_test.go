@@ -115,10 +115,8 @@ func Test_Handler_WorkflowMinimalAndPropsAndSpecAndGeneric(t *testing.T) {
 	assert.Equal(t, "02-hello-resources", proj.Resources[1].Name)
 	assert.Equal(t, proj.Workflow.Spec.Resources.ConfigMaps[0].ConfigMap.Name, proj.Resources[0].Name)
 	assert.Equal(t, proj.Workflow.Spec.Resources.ConfigMaps[1].ConfigMap.Name, proj.Resources[1].Name)
-	assert.NotEmpty(t, proj.Resources[0].Data, fmt.Sprintf("Data in proj.Resources[0] is empty %+v", proj.Resources[0]))
-	assert.NotEmpty(t, proj.Resources[1].Data, fmt.Sprintf("Data in proj.Resources[1] is empty %+v", proj.Resources[1]))
-	assert.NotEmpty(t, proj.Resources[0].Data["myopenapi.json"])
-	assert.NotEmpty(t, proj.Resources[1].Data["input.json"])
+	assert.NotEmpty(t, proj.Resources[0].Data["myopenapi.json"], fmt.Sprintf("Data in proj.Resources[0] is empty %+v", proj.Resources[0]))
+	assert.NotEmpty(t, proj.Resources[1].Data["input.json"], fmt.Sprintf("Data in proj.Resources[1] is empty %+v", proj.Resources[1]))
 }
 
 func Test_Handler_WorklflowServiceAndPropsAndSpec_SaveAs(t *testing.T) {
