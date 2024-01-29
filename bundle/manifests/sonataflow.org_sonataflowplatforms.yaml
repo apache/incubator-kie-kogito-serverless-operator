@@ -439,11 +439,12 @@ spec:
                         properties:
                           name:
                             description: Name of the postgresql credentials secret.
-                              This field is mandatory.
                             type: string
                           passwordKey:
+                            description: Defaults to POSTGRESQL_PASSWORD
                             type: string
                           userKey:
+                            description: Defaults to POSTGRESQL_USER
                             type: string
                         required:
                         - name

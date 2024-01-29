@@ -373,7 +373,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_CR_And_Worflow_Requesti
 		&v1alpha08.PlatformPersistenceSpec{
 			PostgreSQL: &v1alpha08.PostgreSQLPlatformSpec{
 				DatabaseName: "foo",
-				SecretRef: v1alpha08.SecretReference{
+				SecretRef: v1alpha08.PostgreSqlSecretOptions{
 					Name:        "foo_secret",
 					UserKey:     "username",
 					PasswordKey: "password",
@@ -444,7 +444,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_And_In_Workflow_CR(t *t
 		&v1alpha08.PlatformPersistenceSpec{
 			PostgreSQL: &v1alpha08.PostgreSQLPlatformSpec{
 				DatabaseName: "foo",
-				SecretRef: v1alpha08.SecretReference{
+				SecretRef: v1alpha08.PostgreSqlSecretOptions{
 					Name:        "foo_secret",
 					UserKey:     "username",
 					PasswordKey: "password",
@@ -542,7 +542,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_But_Workflow_CR_Not_Req
 		&v1alpha08.PlatformPersistenceSpec{
 			PostgreSQL: &v1alpha08.PostgreSQLPlatformSpec{
 				DatabaseName: "foo",
-				SecretRef: v1alpha08.SecretReference{
+				SecretRef: v1alpha08.PostgreSqlSecretOptions{
 					Name:        "foo_secret",
 					UserKey:     "username",
 					PasswordKey: "password",

@@ -55,11 +55,9 @@ type SonataFlowPlatformSpec struct {
 }
 
 // PlatformPersistenceSpec configures the DataBase support for both platform services and workflows. For services, it allows
-// configuring a generic database connectivity if the service does not come with its own configured. In case of the workflow
-// the configuration is defined by the image name of the supported database. When the workflow is configured to require
-// a database backend type supported by the platform (that is, the platform CR contains an image name for that database type)
-// , the workflow pod is configured to contain a sidecar container running the database image defined here, and the workflow
-// JDBC connectivity is setup to point to the DB container.
+// configuring a generic database connectivity if the service does not come with its own configured. In case of workflows,
+// the operator will add the necessary JDBC properties to in the workflow's application.properties so that it can communicate
+// with the persistence service based on the spec provided here.
 // +optional
 type PlatformPersistenceSpec struct {
 	// Connect configured services to a postgresql database.
@@ -70,7 +68,7 @@ type PlatformPersistenceSpec struct {
 // PostgreSQLPlatformSpec provides the generic configuration details to configure the JDBC URL and establish a connection for each managed services when they don't provide their own configuration.
 type PostgreSQLPlatformSpec struct {
 	// SecretRef contains the database user credentials
-	SecretRef SecretReference `json:"secretRef"`
+	SecretRef PostgreSqlSecretOptions `json:"secretRef"`
 	// ServiceRef contains the K8s service name and namespace location of the PostgreSQL service.
 	ServiceRef ServiceReference `json:"serviceRef,omitempty"`
 	// Name of postgresql database to be used. Defaults to "sonataflow"
@@ -88,16 +86,6 @@ type ServiceReference struct {
 	// Port contains the port number associated to the kubernetes service. This field is mandatory.
 	// +required
 	Port int `json:"port,omitempty"`
-}
-
-// SecretReference use of a secret to store the credentials to authenticate in the JDBC connection.
-type SecretReference struct {
-	// Name of the postgresql credentials secret. This field is mandatory.
-	Name string `json:"name"`
-	// +optional
-	UserKey string `json:"userKey,omitempty"`
-	// +optional
-	PasswordKey string `json:"passwordKey,omitempty"`
 }
 
 // PlatformCluster is the kind of orchestration cluster the platform is installed into

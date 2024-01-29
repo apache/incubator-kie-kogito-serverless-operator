@@ -216,7 +216,7 @@ func (d DataIndexHandler) ConfigurePersistence(containerSpec *corev1.Container) 
 			c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnvFromPlatformSpec(d.platform.Spec.Persistence.PostgreSQL, d.GetServiceName())...)
 		}
 		// specific to DataIndex
-		c.Env = append(c.Env, corev1.EnvVar{Name: "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION", Value: "update"}, corev1.EnvVar{Name: "QUARKUS_FLYWAY_MIGRATE_AT_START", Value: "true"})
+		c.Env = append(c.Env, corev1.EnvVar{Name: quarkusHibernateORMDatabaseGeneration, Value: "update"}, corev1.EnvVar{Name: quarkusFlywayMigrateAtStart, Value: "true"})
 		return c
 	}
 	return containerSpec

@@ -262,7 +262,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			},
 			Persistence: &v1alpha08.PlatformPersistenceSpec{
 				PostgreSQL: &v1alpha08.PostgreSQLPlatformSpec{
-					SecretRef:    v1alpha08.SecretReference{Name: "generic", UserKey: "POSTGRESQL_USER", PasswordKey: "POSTGRESQL_PASSWORD"},
+					SecretRef:    v1alpha08.PostgreSqlSecretOptions{Name: "generic", UserKey: "POSTGRESQL_USER", PasswordKey: "POSTGRESQL_PASSWORD"},
 					ServiceRef:   v1alpha08.ServiceReference{Name: "postgresql", Namespace: "default", Port: 5432},
 					DatabaseName: "sonataflow",
 				},
@@ -367,7 +367,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			},
 			Persistence: &v1alpha08.PlatformPersistenceSpec{
 				PostgreSQL: &v1alpha08.PostgreSQLPlatformSpec{
-					SecretRef:    v1alpha08.SecretReference{Name: "generic", UserKey: "POSTGRESQL_USER", PasswordKey: "POSTGRESQL_PASSWORD"},
+					SecretRef:    v1alpha08.PostgreSqlSecretOptions{Name: "generic", UserKey: "POSTGRESQL_USER", PasswordKey: "POSTGRESQL_PASSWORD"},
 					ServiceRef:   v1alpha08.ServiceReference{Name: "postgresql", Namespace: "default", Port: 5432},
 					DatabaseName: "sonataflow",
 				},
