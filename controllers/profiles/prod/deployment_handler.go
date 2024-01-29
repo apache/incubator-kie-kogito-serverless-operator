@@ -67,7 +67,7 @@ func (d *deploymentReconciler) reconcileWithBuiltImage(ctx context.Context, work
 		d.ensurers.deployment.Ensure(
 			ctx,
 			workflow,
-			d.getDeploymentMutateVisitors(workflow, pl, image, userPropsCM.(*v1.ConfigMap), managedPropsCM.(*v1.ConfigMap))...,
+			d.getDeploymentMutateVisitors(workflow, image, userPropsCM.(*v1.ConfigMap), managedPropsCM.(*v1.ConfigMap))...,
 		)
 	if err != nil {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, "Unable to perform the deploy due to ", err)
@@ -75,7 +75,7 @@ func (d *deploymentReconciler) reconcileWithBuiltImage(ctx context.Context, work
 		return reconcile.Result{}, nil, err
 	}
 
-	service, _, err := d.ensurers.service.Ensure(ctx, workflow, common.ServiceMutateVisitor(workflow, pl))
+	service, _, err := d.ensurers.service.Ensure(ctx, workflow, common.ServiceMutateVisitor(workflow))
 	if err != nil {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, "Unable to make the service available due to ", err)
 		_, err = d.PerformStatusUpdate(ctx, workflow)
@@ -106,19 +106,18 @@ func (d *deploymentReconciler) reconcileWithBuiltImage(ctx context.Context, work
 
 func (d *deploymentReconciler) getDeploymentMutateVisitors(
 	workflow *operatorapi.SonataFlow,
-	platform *operatorapi.SonataFlowPlatform,
 	image string,
 	userPropsCM *v1.ConfigMap,
 	managedPropsCM *v1.ConfigMap) []common.MutateVisitor {
 	if utils.IsOpenShift() {
-		return []common.MutateVisitor{common.DeploymentMutateVisitor(workflow, platform),
+		return []common.MutateVisitor{common.DeploymentMutateVisitor(workflow),
 			mountProdConfigMapsMutateVisitor(workflow, userPropsCM, managedPropsCM),
 			addOpenShiftImageTriggerDeploymentMutateVisitor(workflow, image),
 			common.ImageDeploymentMutateVisitor(workflow, image),
 			common.RolloutDeploymentIfCMChangedMutateVisitor(workflow, userPropsCM, managedPropsCM),
 		}
 	}
-	return []common.MutateVisitor{common.DeploymentMutateVisitor(workflow, platform),
+	return []common.MutateVisitor{common.DeploymentMutateVisitor(workflow),
 		common.ImageDeploymentMutateVisitor(workflow, image),
 		mountProdConfigMapsMutateVisitor(workflow, userPropsCM, managedPropsCM),
 		common.RolloutDeploymentIfCMChangedMutateVisitor(workflow, userPropsCM, managedPropsCM)}

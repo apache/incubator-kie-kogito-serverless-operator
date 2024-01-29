@@ -57,7 +57,7 @@ func ImageDeploymentMutateVisitor(workflow *operatorapi.SonataFlow, image string
 }
 
 // DeploymentMutateVisitor guarantees the state of the default Deployment object
-func DeploymentMutateVisitor(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) MutateVisitor {
+func DeploymentMutateVisitor(workflow *operatorapi.SonataFlow) MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			if kubeutil.IsObjectNew(object) {
@@ -88,7 +88,7 @@ func EnsureDeployment(original *appsv1.Deployment, object *appsv1.Deployment) er
 	return mergo.Merge(&object.Spec.Template.Spec, original.Spec.Template.Spec, mergo.WithOverride)
 }
 
-func ServiceMutateVisitor(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) MutateVisitor {
+func ServiceMutateVisitor(workflow *operatorapi.SonataFlow) MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			if kubeutil.IsObjectNew(object) {
