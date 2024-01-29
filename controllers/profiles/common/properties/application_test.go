@@ -157,16 +157,17 @@ func Test_appPropertyHandler_WithUserPropertiesWithServiceDiscovery(t *testing.T
 		Build())
 	generatedProps.DisableExpansion = true
 	assert.NoError(t, propsErr)
-	assert.Equal(t, 14, len(generatedProps.Keys()))
+	assert.Equal(t, 21, len(generatedProps.Keys()))
 	assert.NotContains(t, "property1", generatedProps.Keys())
 	assert.NotContains(t, "property2", generatedProps.Keys())
-	assert.NotContains(t, "service1", generatedProps.Keys())
-	assert.NotContains(t, "service2", generatedProps.Keys())
-	assert.NotContains(t, "service3", generatedProps.Keys())
-	assert.NotContains(t, "service4", generatedProps.Keys())
-	assert.NotContains(t, "service5", generatedProps.Keys())
-	assert.NotContains(t, "broker1", generatedProps.Keys())
-	assert.NotContains(t, "broker2", generatedProps.Keys())
+	defaultService := "http://localhost:8080"
+	assertHasProperty(t, generatedProps, "service1", defaultService)
+	assertHasProperty(t, generatedProps, "service2", defaultService)
+	assertHasProperty(t, generatedProps, "service3", defaultService)
+	assertHasProperty(t, generatedProps, "service4", defaultService)
+	assertHasProperty(t, generatedProps, "service5", defaultService)
+	assertHasProperty(t, generatedProps, "broker1", defaultService)
+	assertHasProperty(t, generatedProps, "broker2", defaultService)
 
 	//org.kie.kogito.addons.discovery.kubernetes\:services.v1\/usecase1º/my-service1 below we use the unescaped vale because the properties.LoadString removes them.
 	assertHasProperty(t, generatedProps, "org.kie.kogito.addons.discovery.kubernetes:services.v1/namespace1/my-service1", myService1Address)

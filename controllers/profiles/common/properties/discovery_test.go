@@ -62,7 +62,13 @@ func Test_generateDiscoveryProperties(t *testing.T) {
 		Spec:       v1alpha08.SonataFlowSpec{Flow: workflow},
 	})
 
-	assert.Equal(t, result.Len(), 5)
+	assert.Equal(t, 8, result.Len())
+	defaultService := "http://localhost:8080"
+	assertHasProperty(t, result, "service1", defaultService)
+	assertHasProperty(t, result, "service2", defaultService)
+	assertHasProperty(t, result, "service3", defaultService)
+	assertHasProperty(t, result, "org.kie.kogito.addons.discovery.kubernetes\\:services.v1\\/namespace1\\/my-service1", myService1Address)
+	assertHasProperty(t, result, "org.kie.kogito.addons.discovery.kubernetes\\:services.v1\\/namespace1\\/my-service1", myService1Address)
 	assertHasProperty(t, result, "org.kie.kogito.addons.discovery.kubernetes\\:services.v1\\/namespace1\\/my-service1", myService1Address)
 	assertHasProperty(t, result, "org.kie.kogito.addons.discovery.kubernetes\\:services.v1\\/my-service2", myService2Address)
 	assertHasProperty(t, result, "org.kie.kogito.addons.discovery.kubernetes\\:services.v1\\/my-service3?port\\=http-port", myService3Address)
