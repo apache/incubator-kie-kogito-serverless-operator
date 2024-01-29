@@ -99,6 +99,7 @@ func generateDiscoveryProperties(ctx context.Context, catalog discovery.ServiceC
 					mpProperty := generateMicroprofileServiceCatalogProperty(plainUri)
 					klog.V(log.I).Infof("Generating microprofile service catalog property %s=%s.", mpProperty, address)
 					result.MustSet(mpProperty, address)
+					result.MustSet(k, "http://localhost:8080")
 				}
 			}
 		}
