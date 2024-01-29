@@ -63,7 +63,7 @@ func DeploymentMutateVisitor(workflow *operatorapi.SonataFlow, platform *operato
 			if kubeutil.IsObjectNew(object) {
 				return nil
 			}
-			original, err := DeploymentCreator(workflow, platform)
+			original, err := DeploymentCreator(workflow)
 			if err != nil {
 				return err
 			}
@@ -94,7 +94,7 @@ func ServiceMutateVisitor(workflow *operatorapi.SonataFlow, platform *operatorap
 			if kubeutil.IsObjectNew(object) {
 				return nil
 			}
-			original, err := ServiceCreator(workflow, platform)
+			original, err := ServiceCreator(workflow)
 			if err != nil {
 				return err
 			}

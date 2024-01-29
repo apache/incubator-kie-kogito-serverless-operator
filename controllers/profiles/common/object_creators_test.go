@@ -45,7 +45,7 @@ func Test_ensureWorkflowPropertiesConfigMapMutator(t *testing.T) {
 	managedProps.SetResourceVersion("1")
 	managedPropsCM := managedProps.(*corev1.ConfigMap)
 
-	userProps, _ := UserPropsConfigMapCreator(workflow, platform)
+	userProps, _ := UserPropsConfigMapCreator(workflow)
 	userPropsCM := userProps.(*corev1.ConfigMap)
 	visitor := UserPropertiesMutateVisitor(context.TODO(), nil, workflow, nil, userPropsCM)
 	mutateFn := visitor(managedProps)
@@ -78,7 +78,7 @@ func Test_ensureWorkflowPropertiesConfigMapMutator_DollarReplacement(t *testing.
 	managedProps.SetUID("0000-0001-0002-0003")
 	managedPropsCM := managedProps.(*corev1.ConfigMap)
 
-	userProps, _ := UserPropsConfigMapCreator(workflow, platform)
+	userProps, _ := UserPropsConfigMapCreator(workflow)
 	userPropsCM := userProps.(*corev1.ConfigMap)
 	userPropsCM.Data[workflowproj.ApplicationPropertiesFileName] = "mp.messaging.outgoing.kogito_outgoing_stream.url=${kubernetes:services.v1/event-listener}"
 
@@ -91,7 +91,6 @@ func Test_ensureWorkflowPropertiesConfigMapMutator_DollarReplacement(t *testing.
 
 func TestMergePodSpec(t *testing.T) {
 	workflow := test.GetBaseSonataFlow(t.Name())
-	platform := test.GetBasePlatform()
 	workflow.Spec.PodTemplate = v1alpha08.PodTemplateSpec{
 		Container: v1alpha08.ContainerSpec{
 			// this one we can override
@@ -128,7 +127,7 @@ func TestMergePodSpec(t *testing.T) {
 		},
 	}
 
-	object, err := DeploymentCreator(workflow, platform)
+	object, err := DeploymentCreator(workflow)
 	assert.NoError(t, err)
 
 	deployment := object.(*appsv1.Deployment)
@@ -145,7 +144,6 @@ func TestMergePodSpec(t *testing.T) {
 
 func TestMergePodSpec_OverrideContainers(t *testing.T) {
 	workflow := test.GetBaseSonataFlow(t.Name())
-	platform := test.GetBasePlatform()
 	workflow.Spec.PodTemplate = v1alpha08.PodTemplateSpec{
 		PodSpec: v1alpha08.PodSpec{
 			// Try to override the workflow container via the podspec
@@ -164,7 +162,7 @@ func TestMergePodSpec_OverrideContainers(t *testing.T) {
 		},
 	}
 
-	object, err := DeploymentCreator(workflow, platform)
+	object, err := DeploymentCreator(workflow)
 	assert.NoError(t, err)
 
 	deployment := object.(*appsv1.Deployment)

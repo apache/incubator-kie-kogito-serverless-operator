@@ -49,7 +49,7 @@ func (d *deploymentReconciler) reconcile(ctx context.Context, workflow *operator
 
 func (d *deploymentReconciler) reconcileWithBuiltImage(ctx context.Context, workflow *operatorapi.SonataFlow, image string) (reconcile.Result, []client.Object, error) {
 	pl, _ := platform.GetActivePlatform(ctx, d.C, workflow.Namespace)
-	userPropsCM, _, err := d.ensurers.userPropsConfigMap.Ensure(ctx, workflow, pl)
+	userPropsCM, _, err := d.ensurers.userPropsConfigMap.Ensure(ctx, workflow)
 	if err != nil {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.ExternalResourcesNotFoundReason, "Unable to retrieve the user properties config map")
 		_, err = d.PerformStatusUpdate(ctx, workflow)
@@ -66,7 +66,7 @@ func (d *deploymentReconciler) reconcileWithBuiltImage(ctx context.Context, work
 	deployment, deploymentOp, err :=
 		d.ensurers.deployment.Ensure(
 			ctx,
-			workflow, pl,
+			workflow,
 			d.getDeploymentMutateVisitors(workflow, pl, image, userPropsCM.(*v1.ConfigMap), managedPropsCM.(*v1.ConfigMap))...,
 		)
 	if err != nil {
@@ -75,7 +75,7 @@ func (d *deploymentReconciler) reconcileWithBuiltImage(ctx context.Context, work
 		return reconcile.Result{}, nil, err
 	}
 
-	service, _, err := d.ensurers.service.Ensure(ctx, workflow, pl, common.ServiceMutateVisitor(workflow, pl))
+	service, _, err := d.ensurers.service.Ensure(ctx, workflow, common.ServiceMutateVisitor(workflow, pl))
 	if err != nil {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, "Unable to make the service available due to ", err)
 		_, err = d.PerformStatusUpdate(ctx, workflow)

@@ -80,7 +80,7 @@ func newObjectEnsurers(support *common.StateSupport) *objectEnsurers {
 		network:               common.NewNoopObjectEnsurer(),
 		definitionConfigMap:   common.NewObjectEnsurer(support.C, workflowDefConfigMapCreator),
 		userPropsConfigMap:    common.NewObjectEnsurer(support.C, common.UserPropsConfigMapCreator),
-		managedPropsConfigMap: common.NewObjectEnsurer(support.C, common.ManagedPropsConfigMapCreator),
+		managedPropsConfigMap: common.NewObjectEnsurerWithPlatform(support.C, common.ManagedPropsConfigMapCreator),
 	}
 }
 
@@ -91,7 +91,7 @@ func newObjectEnsurersOpenShift(support *common.StateSupport) *objectEnsurers {
 		network:               common.NewObjectEnsurer(support.C, common.OpenShiftRouteCreator),
 		definitionConfigMap:   common.NewObjectEnsurer(support.C, workflowDefConfigMapCreator),
 		userPropsConfigMap:    common.NewObjectEnsurer(support.C, common.UserPropsConfigMapCreator),
-		managedPropsConfigMap: common.NewObjectEnsurer(support.C, common.ManagedPropsConfigMapCreator),
+		managedPropsConfigMap: common.NewObjectEnsurerWithPlatform(support.C, common.ManagedPropsConfigMapCreator),
 	}
 }
 
@@ -113,7 +113,7 @@ type objectEnsurers struct {
 	network               common.ObjectEnsurer
 	definitionConfigMap   common.ObjectEnsurer
 	userPropsConfigMap    common.ObjectEnsurer
-	managedPropsConfigMap common.ObjectEnsurer
+	managedPropsConfigMap common.ObjectEnsurerWithPlatform
 }
 
 type statusEnrichers struct {

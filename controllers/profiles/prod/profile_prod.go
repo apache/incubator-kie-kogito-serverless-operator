@@ -55,7 +55,7 @@ type objectEnsurers struct {
 	deployment            common.ObjectEnsurer
 	service               common.ObjectEnsurer
 	userPropsConfigMap    common.ObjectEnsurer
-	managedPropsConfigMap common.ObjectEnsurer
+	managedPropsConfigMap common.ObjectEnsurerWithPlatform
 }
 
 func newObjectEnsurers(support *common.StateSupport) *objectEnsurers {
@@ -63,7 +63,7 @@ func newObjectEnsurers(support *common.StateSupport) *objectEnsurers {
 		deployment:            common.NewObjectEnsurer(support.C, common.DeploymentCreator),
 		service:               common.NewObjectEnsurer(support.C, common.ServiceCreator),
 		userPropsConfigMap:    common.NewObjectEnsurer(support.C, common.UserPropsConfigMapCreator),
-		managedPropsConfigMap: common.NewObjectEnsurer(support.C, common.ManagedPropsConfigMapCreator),
+		managedPropsConfigMap: common.NewObjectEnsurerWithPlatform(support.C, common.ManagedPropsConfigMapCreator),
 	}
 }
 

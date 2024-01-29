@@ -30,9 +30,8 @@ import (
 
 func Test_ensureWorkflowDevServiceIsExposed(t *testing.T) {
 	workflow := test.GetBaseSonataFlowWithDevProfile(t.Name())
-	platform := test.GetBasePlatform()
 	//On Kubernetes we want the service exposed in Dev with NodePort
-	service, _ := serviceCreator(workflow, platform)
+	service, _ := serviceCreator(workflow)
 	service.SetUID("1")
 	service.SetResourceVersion("1")
 

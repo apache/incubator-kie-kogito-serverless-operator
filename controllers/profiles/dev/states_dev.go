@@ -68,12 +68,12 @@ func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatora
 	if err == nil && len(pl.Spec.DevMode.BaseImage) > 0 {
 		devBaseContainerImage = pl.Spec.DevMode.BaseImage
 	}
-	flowDefCM, _, err := e.ensurers.definitionConfigMap.Ensure(ctx, workflow, pl, ensureWorkflowDefConfigMapMutator(workflow, pl))
+	flowDefCM, _, err := e.ensurers.definitionConfigMap.Ensure(ctx, workflow, ensureWorkflowDefConfigMapMutator(workflow))
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
 	}
 	objs = append(objs, flowDefCM)
-	userPropsCM, _, err := e.ensurers.userPropsConfigMap.Ensure(ctx, workflow, pl)
+	userPropsCM, _, err := e.ensurers.userPropsConfigMap.Ensure(ctx, workflow)
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
 	}
@@ -92,8 +92,8 @@ func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatora
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, objs, nil
 	}
 
-	deployment, _, err := e.ensurers.deployment.Ensure(ctx, workflow, pl,
-		deploymentMutateVisitor(workflow, pl),
+	deployment, _, err := e.ensurers.deployment.Ensure(ctx, workflow,
+		deploymentMutateVisitor(workflow),
 		common.ImageDeploymentMutateVisitor(workflow, devBaseContainerImage),
 		mountDevConfigMapsMutateVisitor(workflow, flowDefCM.(*corev1.ConfigMap), userPropsCM.(*corev1.ConfigMap), managedPropsCM.(*corev1.ConfigMap), externalCM))
 	if err != nil {
@@ -101,13 +101,13 @@ func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatora
 	}
 	objs = append(objs, deployment)
 
-	service, _, err := e.ensurers.service.Ensure(ctx, workflow, pl, common.ServiceMutateVisitor(workflow, pl))
+	service, _, err := e.ensurers.service.Ensure(ctx, workflow, common.ServiceMutateVisitor(workflow, pl))
 	if err != nil {
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, objs, err
 	}
 	objs = append(objs, service)
 
-	route, _, err := e.ensurers.network.Ensure(ctx, workflow, pl)
+	route, _, err := e.ensurers.network.Ensure(ctx, workflow)
 	if err != nil {
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, objs, err
 	}
