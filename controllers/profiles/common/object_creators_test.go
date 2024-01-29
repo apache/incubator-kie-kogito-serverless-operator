@@ -66,7 +66,7 @@ func Test_ensureWorkflowPropertiesConfigMapMutator(t *testing.T) {
 	props = properties.MustLoadString(managedPropsCM.Data[workflowproj.GetManagedPropertiesFileName(workflow)])
 	assert.Equal(t, "8080", props.GetString("quarkus.http.port", ""))
 	assert.Equal(t, "0.0.0.0", props.GetString("quarkus.http.host", ""))
-	assert.Equal(t, "1", props.GetString("my.new.prop", ""))
+	assert.NotContains(t, "my.new.prop", props.Keys())
 }
 
 func Test_ensureWorkflowPropertiesConfigMapMutator_DollarReplacement(t *testing.T) {
@@ -86,7 +86,8 @@ func Test_ensureWorkflowPropertiesConfigMapMutator_DollarReplacement(t *testing.
 
 	err := mutateVisitorFn(managedPropsCM)()
 	assert.NoError(t, err)
-	assert.Contains(t, managedPropsCM.Data[workflowproj.GetManagedPropertiesFileName(workflow)], "${kubernetes:services.v1/event-listener}")
+	assert.NotContains(t, managedPropsCM.Data[workflowproj.GetManagedPropertiesFileName(workflow)], "mp.messaging.outgoing.kogito_outgoing_stream.url")
+	// assert.Contains(t, managedPropsCM.Data[workflowproj.GetManagedPropertiesFileName(workflow)], "${kubernetes:services.v1/event-listener}")
 }
 
 func TestMergePodSpec(t *testing.T) {

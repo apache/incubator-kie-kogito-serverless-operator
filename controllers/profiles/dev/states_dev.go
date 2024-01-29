@@ -62,17 +62,18 @@ func (e *ensureRunningWorkflowState) CanReconcile(workflow *operatorapi.SonataFl
 func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
 	var objs []client.Object
 
+	flowDefCM, _, err := e.ensurers.definitionConfigMap.Ensure(ctx, workflow, ensureWorkflowDefConfigMapMutator(workflow))
+	if err != nil {
+		return ctrl.Result{Requeue: false}, objs, err
+	}
+	objs = append(objs, flowDefCM)
+
 	devBaseContainerImage := workflowdef.GetDefaultWorkflowDevModeImageTag()
 	// check if the Platform available
 	pl, err := platform.GetActivePlatform(ctx, e.C, workflow.Namespace)
 	if err == nil && len(pl.Spec.DevMode.BaseImage) > 0 {
 		devBaseContainerImage = pl.Spec.DevMode.BaseImage
 	}
-	flowDefCM, _, err := e.ensurers.definitionConfigMap.Ensure(ctx, workflow, ensureWorkflowDefConfigMapMutator(workflow))
-	if err != nil {
-		return ctrl.Result{Requeue: false}, objs, err
-	}
-	objs = append(objs, flowDefCM)
 	userPropsCM, _, err := e.ensurers.userPropsConfigMap.Ensure(ctx, workflow)
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
