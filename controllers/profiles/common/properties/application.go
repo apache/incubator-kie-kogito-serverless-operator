@@ -75,36 +75,34 @@ func (a *appPropertyHandler) WithServiceDiscovery(ctx context.Context, catalog d
 }
 
 func (a *appPropertyHandler) Build() string {
-	var props *properties.Properties
+	var userProps *properties.Properties
 	var propErr error = nil
 	if len(a.userProperties) == 0 {
-		props = properties.NewProperties()
+		userProps = properties.NewProperties()
 	} else {
-		props, propErr = properties.LoadString(a.userProperties)
+		userProps, propErr = properties.LoadString(a.userProperties)
 	}
 	if propErr != nil {
 		klog.V(log.D).InfoS("Can't load user's property", "workflow", a.workflow.Name, "namespace", a.workflow.Namespace, "properties", a.userProperties)
-		props = properties.NewProperties()
+		userProps = properties.NewProperties()
 	}
 	// Disable expansions since it's not our responsibility
 	// Property expansion means resolving ${} within the properties and environment context. Quarkus will do that in runtime.
-	props.DisableExpansion = true
+	userProps.DisableExpansion = true
 
-	removeDiscoveryProperties(props)
+	removeDiscoveryProperties(userProps)
+	discoveryProps := properties.NewProperties()
 	if a.requireServiceDiscovery() {
 		// produce the MicroProfileConfigServiceCatalog properties for the service discovery property values if any.
-		discoveryProperties := generateDiscoveryProperties(a.ctx, a.catalog, props, a.workflow)
-		if discoveryProperties.Len() > 0 {
-			props.Merge(discoveryProperties)
-		}
+		discoveryProps.Merge(generateDiscoveryProperties(a.ctx, a.catalog, userProps, a.workflow))
 	}
-	props = utils.NewApplicationPropertiesBuilder().
-		WithInitialProperties(props).
+	userProps = utils.NewApplicationPropertiesBuilder().
+		WithInitialProperties(discoveryProps).
 		WithImmutableProperties(properties.MustLoadString(immutableApplicationProperties)).
 		WithDefaultMutableProperties(a.defaultMutableProperties).
 		Build()
 
-	return props.String()
+	return userProps.String()
 }
 
 // withKogitoServiceUrl adds the property kogitoServiceUrlProperty to the application properties.

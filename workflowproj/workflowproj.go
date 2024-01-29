@@ -249,7 +249,8 @@ func (w *workflowProjectHandler) parseRawAppProperties() error {
 	if err != nil {
 		return err
 	}
-	w.project.Properties = CreateNewManagedPropsConfigMap(w.project.Workflow, string(appPropsContent))
+	w.project.Properties = CreateNewUserPropsConfigMap(w.project.Workflow)
+	w.project.Properties.Data[ApplicationPropertiesFileName] = string(appPropsContent)
 	if err = SetTypeToObject(w.project.Properties, w.scheme); err != nil {
 		return err
 	}
