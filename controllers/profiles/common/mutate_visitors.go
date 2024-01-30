@@ -109,9 +109,6 @@ func UserPropertiesMutateVisitor(ctx context.Context, catalog discovery.ServiceC
 	workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform, userProps *corev1.ConfigMap) MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
-			if kubeutil.IsObjectNew(object) {
-				return nil
-			}
 			managedProps := object.(*corev1.ConfigMap)
 			managedProps.Labels = workflow.GetLabels()
 			_, hasKey := managedProps.Data[workflowproj.GetManagedPropertiesFileName(workflow)]
