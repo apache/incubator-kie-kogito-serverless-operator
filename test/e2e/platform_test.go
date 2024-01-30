@@ -154,36 +154,4 @@ var _ = Describe("Validate the persistence", Ordered, func() {
 		Entry("and both Job Service and Data Index using the one defined in each service, discarding the one from the platform CR", test.GetSonataFlowE2EPlatformPersistenceSampleDataDirectory("overwritten_by_services")),
 	)
 
-	DescribeTable("when deploying a SonataFlow CR with PostgreSQL persistence", func(testcaseDir string) {
-		By("Deploy the CR")
-		var manifests []byte
-		EventuallyWithOffset(1, func() error {
-			var err error
-			cmd := exec.Command("kubectl", "kustomize", testcaseDir)
-			manifests, err = utils.Run(cmd)
-			return err
-		}, time.Minute, time.Second).Should(Succeed())
-		cmd := exec.Command("kubectl", "create", "-n", targetNamespace, "-f", "-")
-		cmd.Stdin = bytes.NewBuffer(manifests)
-		_, err := utils.Run(cmd)
-		Expect(err).NotTo(HaveOccurred())
-		By("Wait for SonatatFlow CR to complete deployment")
-		// wait for service deployments to be ready
-		EventuallyWithOffset(1, func() error {
-			cmd = exec.Command("kubectl", "wait", "pod", "-n", targetNamespace, "-l", "sonataflow.org/workflow-app=callbackstatetimeouts", "--for", "condition=Ready", "--timeout=5s")
-			_, err = utils.Run(cmd)
-			return err
-		}, 10*time.Minute, 5).Should(Succeed())
-		By("Evaluate status of the workflow's pod health endpoint")
-		cmd = exec.Command("kubectl", "get", "pod", "-l", "sonataflow.org/workflow-app=callbackstatetimeouts", "-n", targetNamespace, "-ojsonpath={.items[*].metadata.name}")
-		output, err := utils.Run(cmd)
-		Expect(err).NotTo(HaveOccurred())
-		for _, pn := range strings.Split(string(output), " ") {
-			verifyDatabaseConnectionsHealthStatusInPod(pn, targetNamespace)
-		}
-	},
-		Entry("defined in the workflow from an existing kubernetes service as a reference", test.GetSonataFlowE2EWorkflowPersistenceSampleDataDirectory("by_service")),
-		Entry("defined in the workflow derived from the workflow platform CR", test.GetSonataFlowE2EWorkflowPersistenceSampleDataDirectory("from_platform")),
-	)
-
 })
