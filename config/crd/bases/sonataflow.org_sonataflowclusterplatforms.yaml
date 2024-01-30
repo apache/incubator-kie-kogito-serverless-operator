@@ -51,8 +51,8 @@ spec:
               SonataFlowClusterPlatform
             properties:
               platformRef:
-                description: PlatformRef defines which existing SonataFlowPlatform's
-                  services should be used cluster-wide.
+                description: SonataFlowPlatformRef defines which existing SonataFlowPlatform's
+                  supporting services should be used cluster-wide.
                 properties:
                   name:
                     description: Name of the SonataFlowPlatform

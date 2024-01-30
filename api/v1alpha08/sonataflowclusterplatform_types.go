@@ -28,11 +28,10 @@ const (
 
 // SonataFlowClusterPlatformSpec defines the desired state of SonataFlowClusterPlatform
 type SonataFlowClusterPlatformSpec struct {
-	// PlatformRef defines which existing SonataFlowPlatform's services should be used cluster-wide.
 	PlatformRef SonataFlowPlatformRef `json:"platformRef"`
 }
 
-// SonataFlowPlatformRef defines which existing SonataFlowPlatform should be used cluster-wide
+// SonataFlowPlatformRef defines which existing SonataFlowPlatform's supporting services should be used cluster-wide.
 type SonataFlowPlatformRef struct {
 	// Name of the SonataFlowPlatform
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Platform_Name"
