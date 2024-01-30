@@ -124,7 +124,7 @@ pipeline {
 
                     // Tag with `latest` tag if asked for as parameter
                     if (helper.isDeployLatestTag()) {
-                        pushFinalImage(getTempBuiltImageTag(), helper.getImageFullTag(env.OPERATOR_IMAGE_NAME, defaultImageParamsPrefix, 'weekly-latest'))
+                        pushFinalImage(getTempBuiltImageTag(), "${getOperatorImageName()}:weekly-latest"))
                     }
 
                     // Store image deployment information
