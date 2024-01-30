@@ -122,6 +122,11 @@ pipeline {
                     // Push the snapshot image to registry
                     pushFinalImage(getTempBuiltImageTag(), getBuiltImage())
 
+                    // Tag with `latest` tag if asked for as parameter
+                    if (helper.isDeployLatestTag()) {
+                        pushFinalImage(getTempBuiltImageTag(), helper.getImageFullTag(env.OPERATOR_IMAGE_NAME, defaultImageParamsPrefix, 'weekly-latest'))
+                    }
+
                     // Store image deployment information
                     properties.add(helper.getImageRegistryProperty(), helper.getImageRegistry())
                     properties.add(helper.getImageNamespaceProperty(), helper.getImageNamespace())
