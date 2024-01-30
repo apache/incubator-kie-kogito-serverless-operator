@@ -24,7 +24,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/metadata"
@@ -126,9 +125,7 @@ func AnnotateDeploymentConfigChecksum(workflow *operatorapi.SonataFlow, deployme
 	if !ok {
 		currentChecksum = ""
 	}
-	newChecksum, err := configMapChecksum(
-		dataFromCM(userPropsCM, workflowproj.ApplicationPropertiesFileName),
-		dataFromCM(managedPropsCM, workflowproj.GetManagedPropertiesFileName(workflow)))
+	newChecksum, err := calculateHash(userPropsCM, managedPropsCM, workflow)
 	if err != nil {
 		return err
 	}
@@ -153,8 +150,9 @@ func dataFromCM(cm *v1.ConfigMap, key string) string {
 	return data
 }
 
-func configMapChecksum(props ...string) (string, error) {
-	aggregatedProps := strings.Join(props, ",")
+func calculateHash(userPropsCM, managedPropsCM *v1.ConfigMap, workflow *operatorapi.SonataFlow) (string, error) {
+	aggregatedProps := fmt.Sprintf("%s,%s", dataFromCM(userPropsCM, workflowproj.ApplicationPropertiesFileName),
+		dataFromCM(managedPropsCM, workflowproj.GetManagedPropertiesFileName(workflow)))
 	hash := sha256.New()
 	_, err := hash.Write([]byte(aggregatedProps))
 	if err != nil {
