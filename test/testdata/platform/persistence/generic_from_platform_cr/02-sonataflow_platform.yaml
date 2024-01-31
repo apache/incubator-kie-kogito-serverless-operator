@@ -31,7 +31,7 @@ spec:
       serviceRef:
         name: postgres
         port: 5432
-      databaseName: sonataflow
+        databaseName: sonataflow
   services:
     dataIndex:
       enabled: false

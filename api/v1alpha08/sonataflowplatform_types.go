@@ -62,30 +62,7 @@ type SonataFlowPlatformSpec struct {
 type PlatformPersistenceSpec struct {
 	// Connect configured services to a postgresql database.
 	// +optional
-	PostgreSQL *PostgreSQLPlatformSpec `json:"postgresql,omitempty"`
-}
-
-// PostgreSQLPlatformSpec provides the generic configuration details to configure the JDBC URL and establish a connection for each managed services when they don't provide their own configuration.
-type PostgreSQLPlatformSpec struct {
-	// SecretRef contains the database user credentials
-	SecretRef PostgreSqlSecretOptions `json:"secretRef"`
-	// ServiceRef contains the K8s service name and namespace location of the PostgreSQL service.
-	ServiceRef ServiceReference `json:"serviceRef,omitempty"`
-	// Name of postgresql database to be used. Defaults to "sonataflow"
-	// +kubebuilder:default:=sonataflow
-	DatabaseName string `json:"databaseName,omitempty"`
-}
-
-type ServiceReference struct {
-	// Name contains the name of the kubernetes service. This field is mandatory.
-	// +required
-	Name string `json:"name"`
-	// Namespace contains the name of the namespace where the kubernetes service resides. This field is optional.
-	// +optional
-	Namespace string `json:"namespace"`
-	// Port contains the port number associated to the kubernetes service. This field is mandatory.
-	// +required
-	Port int `json:"port,omitempty"`
+	PostgreSQL *PersistencePostgreSQL `json:"postgresql,omitempty"`
 }
 
 // PlatformCluster is the kind of orchestration cluster the platform is installed into

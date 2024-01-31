@@ -137,9 +137,9 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
 
 		// Check with persistence set
-		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistenceOptions{PostgreSql: &v1alpha08.PersistencePostgreSql{
-			SecretRef:  v1alpha08.PostgreSqlSecretOptions{Name: "test"},
-			ServiceRef: &v1alpha08.PostgreSqlServiceOptions{Name: "test"},
+		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistenceOptions{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+			SecretRef:  v1alpha08.PostgreSQLSecretOptions{Name: "test"},
+			ServiceRef: &v1alpha08.PostgreSQLServiceOptions{Name: "test"},
 		}}
 		// Ensure correct container overriding anything set in PodSpec
 		ksp.Spec.Services.DataIndex.PodTemplate.Container = v1alpha08.ContainerSpec{TerminationMessagePath: "testing"}
@@ -224,8 +224,8 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check with persistence set
 		url := "jdbc:postgresql://host:1234/database?currentSchema=data-index-service"
-		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistenceOptions{PostgreSql: &v1alpha08.PersistencePostgreSql{
-			SecretRef: v1alpha08.PostgreSqlSecretOptions{Name: "test"},
+		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistenceOptions{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+			SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 			JdbcUrl:   url,
 		}}
 		// Ensure correct container overriding anything set in PodSpec
@@ -250,6 +250,9 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.Contains(t, dep.Spec.Template.Spec.Containers[0].Env, env2)
 	})
 
+	var (
+		postgreSQLPort int = 5432
+	)
 	t.Run("verify that persistence options are correctly reconciled when defined in the platform", func(t *testing.T) {
 		namespace := t.Name()
 		// Create a SonataFlowPlatform object with metadata and spec.
@@ -261,10 +264,9 @@ func TestSonataFlowPlatformController(t *testing.T) {
 				JobService: &v1alpha08.ServiceSpec{},
 			},
 			Persistence: &v1alpha08.PlatformPersistenceSpec{
-				PostgreSQL: &v1alpha08.PostgreSQLPlatformSpec{
-					SecretRef:    v1alpha08.PostgreSqlSecretOptions{Name: "generic", UserKey: "POSTGRESQL_USER", PasswordKey: "POSTGRESQL_PASSWORD"},
-					ServiceRef:   v1alpha08.ServiceReference{Name: "postgresql", Namespace: "default", Port: 5432},
-					DatabaseName: "sonataflow",
+				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+					SecretRef:  v1alpha08.PostgreSQLSecretOptions{Name: "generic", UserKey: "POSTGRESQL_USER", PasswordKey: "POSTGRESQL_PASSWORD"},
+					ServiceRef: &v1alpha08.PostgreSQLServiceOptions{Name: "postgresql", Namespace: "default", Port: &postgreSQLPort, DatabaseName: "sonataflow"},
 				},
 			},
 		}
@@ -350,26 +352,25 @@ func TestSonataFlowPlatformController(t *testing.T) {
 			Services: v1alpha08.ServicesPlatformSpec{
 				DataIndex: &v1alpha08.ServiceSpec{
 					Persistence: &v1alpha08.PersistenceOptions{
-						PostgreSql: &v1alpha08.PersistencePostgreSql{
-							SecretRef: v1alpha08.PostgreSqlSecretOptions{Name: "dataIndex"},
+						PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+							SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "dataIndex"},
 							JdbcUrl:   urlDI,
 						},
 					},
 				},
 				JobService: &v1alpha08.ServiceSpec{
 					Persistence: &v1alpha08.PersistenceOptions{
-						PostgreSql: &v1alpha08.PersistencePostgreSql{
-							SecretRef: v1alpha08.PostgreSqlSecretOptions{Name: "job"},
+						PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+							SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "job"},
 							JdbcUrl:   urlJS,
 						},
 					},
 				},
 			},
 			Persistence: &v1alpha08.PlatformPersistenceSpec{
-				PostgreSQL: &v1alpha08.PostgreSQLPlatformSpec{
-					SecretRef:    v1alpha08.PostgreSqlSecretOptions{Name: "generic", UserKey: "POSTGRESQL_USER", PasswordKey: "POSTGRESQL_PASSWORD"},
-					ServiceRef:   v1alpha08.ServiceReference{Name: "postgresql", Namespace: "default", Port: 5432},
-					DatabaseName: "sonataflow",
+				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+					SecretRef:  v1alpha08.PostgreSQLSecretOptions{Name: "generic", UserKey: "POSTGRESQL_USER", PasswordKey: "POSTGRESQL_PASSWORD"},
+					ServiceRef: &v1alpha08.PostgreSQLServiceOptions{Name: "postgresql", Namespace: "default", Port: &postgreSQLPort, DatabaseName: "sonataflow"},
 				},
 			},
 		}
@@ -508,9 +509,9 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDataIndex)
 
 		// Check with persistence set
-		ksp.Spec.Services.JobService.Persistence = &v1alpha08.PersistenceOptions{PostgreSql: &v1alpha08.PersistencePostgreSql{
-			SecretRef:  v1alpha08.PostgreSqlSecretOptions{Name: "test"},
-			ServiceRef: &v1alpha08.PostgreSqlServiceOptions{Name: "test"},
+		ksp.Spec.Services.JobService.Persistence = &v1alpha08.PersistenceOptions{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+			SecretRef:  v1alpha08.PostgreSQLSecretOptions{Name: "test"},
+			ServiceRef: &v1alpha08.PostgreSQLServiceOptions{Name: "test"},
 		}}
 		// Ensure correct container overriding anything set in PodSpec
 		ksp.Spec.Services.JobService.PodTemplate.Container = v1alpha08.ContainerSpec{TerminationMessagePath: "testing"}
@@ -593,8 +594,8 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check with persistence set
 		url := "jdbc:postgresql://host:1234/database?currentSchema=data-index-service"
-		ksp.Spec.Services.JobService.Persistence = &v1alpha08.PersistenceOptions{PostgreSql: &v1alpha08.PersistencePostgreSql{
-			SecretRef: v1alpha08.PostgreSqlSecretOptions{Name: "test"},
+		ksp.Spec.Services.JobService.Persistence = &v1alpha08.PersistenceOptions{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+			SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 			JdbcUrl:   url,
 		}}
 		// Ensure correct container overriding anything set in PodSpec

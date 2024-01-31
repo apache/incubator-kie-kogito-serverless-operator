@@ -241,14 +241,15 @@ func ConfigurePersistence(serviceContainer *corev1.Container, config *operatorap
 	}
 	c := serviceContainer.DeepCopy()
 
-	if config.PostgreSql != nil {
-		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(config.PostgreSql, defaultSchema, namespace)...)
-		return c, nil
+	var p *operatorapi.PersistencePostgreSQL
+	if config.PostgreSQL == nil && persistence.WorkflowConfig.GetPostgreSQLConfiguration() == nil {
+		return nil, fmt.Errorf("no persistence specification available in the workflow or in the platform")
 	}
-	p := persistence.WorkflowConfig.GetPostgreSQLConfiguration()
-	if p == nil {
-		return nil, fmt.Errorf("platform persistence configuration is undefined")
+	if config.PostgreSQL != nil {
+		p = config.PostgreSQL
+	} else if persistence.WorkflowConfig.GetPostgreSQLConfiguration() != nil {
+		p = persistence.WorkflowConfig.GetPostgreSQLConfiguration()
 	}
-	c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnvFromPlatformSpec(p, defaultSchema)...)
+	c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p, defaultSchema, namespace)...)
 	return c, nil
 }

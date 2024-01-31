@@ -43,26 +43,26 @@ type ServiceSpec struct {
 type PersistenceOptions struct {
 	// Connect configured services to a postgresql database.
 	// +optional
-	PostgreSql *PersistencePostgreSql `json:"postgresql,omitempty"`
+	PostgreSQL *PersistencePostgreSQL `json:"postgresql,omitempty"`
 }
 
-// PersistencePostgreSql configure postgresql connection for service(s).
+// PersistencePostgreSQL configure postgresql connection for service(s).
 // +kubebuilder:validation:MinProperties=2
 // +kubebuilder:validation:MaxProperties=2
-type PersistencePostgreSql struct {
+type PersistencePostgreSQL struct {
 	// Secret reference to the database user credentials
-	SecretRef PostgreSqlSecretOptions `json:"secretRef"`
+	SecretRef PostgreSQLSecretOptions `json:"secretRef"`
 	// Service reference to postgresql datasource. Mutually exclusive to jdbcUrl.
 	// +optional
-	ServiceRef *PostgreSqlServiceOptions `json:"serviceRef,omitempty"`
+	ServiceRef *PostgreSQLServiceOptions `json:"serviceRef,omitempty"`
 	// PostgreSql JDBC URL. Mutually exclusive to serviceRef.
 	// e.g. "jdbc:postgresql://host:port/database?currentSchema=data-index-service"
 	// +optional
 	JdbcUrl string `json:"jdbcUrl,omitempty"`
 }
 
-// PostgreSqlSecretOptions use credential secret for postgresql connection.
-type PostgreSqlSecretOptions struct {
+// PostgreSQLSecretOptions use credential secret for postgresql connection.
+type PostgreSQLSecretOptions struct {
 	// Name of the postgresql credentials secret.
 	Name string `json:"name"`
 	// Defaults to POSTGRESQL_USER
@@ -73,8 +73,8 @@ type PostgreSqlSecretOptions struct {
 	PasswordKey string `json:"passwordKey,omitempty"`
 }
 
-// PostgreSqlServiceOptions use k8s service to configure postgresql jdbc url.
-type PostgreSqlServiceOptions struct {
+// PostgreSQLServiceOptions use k8s service to configure postgresql jdbc url.
+type PostgreSQLServiceOptions struct {
 	// Name of the postgresql k8s service.
 	Name string `json:"name"`
 	// Namespace of the postgresql k8s service. Defaults to the SonataFlowPlatform's local namespace.

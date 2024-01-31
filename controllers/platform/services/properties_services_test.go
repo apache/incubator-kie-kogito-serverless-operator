@@ -225,10 +225,10 @@ func setJobServiceJDBC(jdbc string) plfmOptionFn {
 		if p.Spec.Services.JobService.Persistence == nil {
 			p.Spec.Services.JobService.Persistence = &operatorapi.PersistenceOptions{}
 		}
-		if p.Spec.Services.JobService.Persistence.PostgreSql == nil {
-			p.Spec.Services.JobService.Persistence.PostgreSql = &operatorapi.PersistencePostgreSql{}
+		if p.Spec.Services.JobService.Persistence.PostgreSQL == nil {
+			p.Spec.Services.JobService.Persistence.PostgreSQL = &operatorapi.PersistencePostgreSQL{}
 		}
-		p.Spec.Services.JobService.Persistence.PostgreSql.JdbcUrl = jdbc
+		p.Spec.Services.JobService.Persistence.PostgreSQL.JdbcUrl = jdbc
 	}
 }
 
@@ -240,9 +240,9 @@ func setDataIndexJDBC(jdbc string) plfmOptionFn {
 		if p.Spec.Services.DataIndex.Persistence == nil {
 			p.Spec.Services.DataIndex.Persistence = &operatorapi.PersistenceOptions{}
 		}
-		if p.Spec.Services.DataIndex.Persistence.PostgreSql == nil {
-			p.Spec.Services.DataIndex.Persistence.PostgreSql = &operatorapi.PersistencePostgreSql{}
+		if p.Spec.Services.DataIndex.Persistence.PostgreSQL == nil {
+			p.Spec.Services.DataIndex.Persistence.PostgreSQL = &operatorapi.PersistencePostgreSQL{}
 		}
-		p.Spec.Services.DataIndex.Persistence.PostgreSql.JdbcUrl = jdbc
+		p.Spec.Services.DataIndex.Persistence.PostgreSQL.JdbcUrl = jdbc
 	}
 }

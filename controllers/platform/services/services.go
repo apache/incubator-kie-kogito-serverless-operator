@@ -200,21 +200,22 @@ func (d DataIndexHandler) MergePodSpec(podSpec corev1.PodSpec) (corev1.PodSpec, 
 
 // hasPostgreSQLConfigured returns true when either the SonataFlow Platform PostgreSQL CR's structure or the one in the Data Index service specification is not nil
 func (d DataIndexHandler) hasPostgreSQLConfigured() bool {
-	return (d.platform.Spec.Services.DataIndex.Persistence != nil && d.platform.Spec.Services.DataIndex.Persistence.PostgreSql != nil) ||
+	return (d.platform.Spec.Services.DataIndex.Persistence != nil && d.platform.Spec.Services.DataIndex.Persistence.PostgreSQL != nil) ||
 		(d.platform.Spec.Persistence != nil && d.platform.Spec.Persistence.PostgreSQL != nil)
 }
 
 func (d DataIndexHandler) ConfigurePersistence(containerSpec *corev1.Container) *corev1.Container {
 
 	if d.hasPostgreSQLConfigured() {
-		p := d.platform.Spec.Services.DataIndex.Persistence
+		var p *operatorapi.PersistencePostgreSQL
 		c := containerSpec.DeepCopy()
 		c.Image = d.GetServiceImageName(constants.PersistenceTypePostgreSQL)
-		if d.platform.Spec.Services.DataIndex.Persistence != nil && d.platform.Spec.Services.DataIndex.Persistence.PostgreSql != nil {
-			c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p.PostgreSql, d.GetServiceName(), d.platform.Namespace)...)
+		if d.platform.Spec.Services.DataIndex.Persistence != nil && d.platform.Spec.Services.DataIndex.Persistence.PostgreSQL != nil {
+			p = d.platform.Spec.Services.DataIndex.Persistence.PostgreSQL
 		} else {
-			c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnvFromPlatformSpec(d.platform.Spec.Persistence.PostgreSQL, d.GetServiceName())...)
+			p = d.platform.Spec.Persistence.PostgreSQL
 		}
+		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p, d.GetServiceName(), d.platform.Namespace)...)
 		// specific to DataIndex
 		c.Env = append(c.Env, corev1.EnvVar{Name: quarkusHibernateORMDatabaseGeneration, Value: "update"}, corev1.EnvVar{Name: quarkusFlywayMigrateAtStart, Value: "true"})
 		return c
@@ -372,20 +373,22 @@ func (j JobServiceHandler) MergeContainerSpec(containerSpec *corev1.Container) (
 
 // hasPostgreSQLConfigured returns true when either the SonataFlow Platform PostgreSQL CR's structure or the one in the Job service specification is not nil
 func (j JobServiceHandler) hasPostgreSQLConfigured() bool {
-	return (j.platform.Spec.Services.JobService.Persistence != nil && j.platform.Spec.Services.JobService.Persistence.PostgreSql != nil) ||
+	return (j.platform.Spec.Services.JobService.Persistence != nil && j.platform.Spec.Services.JobService.Persistence.PostgreSQL != nil) ||
 		(j.platform.Spec.Persistence != nil && j.platform.Spec.Persistence.PostgreSQL != nil)
 }
 
 func (j JobServiceHandler) ConfigurePersistence(containerSpec *corev1.Container) *corev1.Container {
 
 	if j.hasPostgreSQLConfigured() {
+		var p *operatorapi.PersistencePostgreSQL
 		c := containerSpec.DeepCopy()
 		c.Image = j.GetServiceImageName(constants.PersistenceTypePostgreSQL)
-		if j.platform.Spec.Services.JobService.Persistence != nil && j.platform.Spec.Services.JobService.Persistence.PostgreSql != nil {
-			c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(j.platform.Spec.Services.JobService.Persistence.PostgreSql, j.GetServiceName(), j.platform.Namespace)...)
+		if j.platform.Spec.Services.JobService.Persistence != nil && j.platform.Spec.Services.JobService.Persistence.PostgreSQL != nil {
+			p = j.platform.Spec.Services.JobService.Persistence.PostgreSQL
 		} else {
-			c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnvFromPlatformSpec(j.platform.Spec.Persistence.PostgreSQL, j.GetServiceName())...)
+			p = j.platform.Spec.Persistence.PostgreSQL
 		}
+		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p, j.GetServiceName(), j.platform.Namespace)...)
 		// Specific to Job Service
 		c.Env = append(c.Env, corev1.EnvVar{Name: "QUARKUS_FLYWAY_MIGRATE_AT_START", Value: "true"})
 		return c
@@ -408,8 +411,8 @@ func (j JobServiceHandler) GenerateServiceProperties() (*properties.Properties, 
 		var dataSourceReactiveURL string
 		var err error
 		jspec := j.platform.Spec.Services.JobService
-		if j.IsServiceSetInSpec() && jspec.Persistence != nil && jspec.Persistence.PostgreSql != nil {
-			dataSourceReactiveURL, err = generateReactiveURL(j.platform.Spec.Services.JobService.Persistence.PostgreSql, j.GetServiceName(), j.platform.Namespace, constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
+		if j.IsServiceSetInSpec() && jspec.Persistence != nil && jspec.Persistence.PostgreSQL != nil {
+			dataSourceReactiveURL, err = generateReactiveURL(j.platform.Spec.Services.JobService.Persistence.PostgreSQL, j.GetServiceName(), j.platform.Namespace, constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
 			if err != nil {
 				return nil, err
 			}
@@ -419,7 +422,7 @@ func (j JobServiceHandler) GenerateServiceProperties() (*properties.Properties, 
 			if len(p.ServiceRef.Namespace) > 0 {
 				namespace = fmt.Sprintf(".%s", p.ServiceRef.Namespace)
 			}
-			dataSourceReactiveURL = fmt.Sprintf("%s://%s%s:%d/%s?search_path=%s", constants.PersistenceTypePostgreSQL, p.ServiceRef.Name, namespace, p.ServiceRef.Port, p.DatabaseName, j.GetServiceName())
+			dataSourceReactiveURL = fmt.Sprintf("%s://%s%s:%d/%s?search_path=%s", constants.PersistenceTypePostgreSQL, p.ServiceRef.Name, namespace, *p.ServiceRef.Port, p.ServiceRef.DatabaseName, j.GetServiceName())
 		}
 		props.Set(constants.JobServiceDataSourceReactiveURL, dataSourceReactiveURL)
 	}
@@ -461,7 +464,7 @@ func isJobServiceSet(platform *operatorapi.SonataFlowPlatform) bool {
 }
 
 func isServicesSet(platform *operatorapi.SonataFlowPlatform) bool {
-	return platform != nil && platform.Spec.Services != nil
+	return platform != nil && (platform.Spec.Services.JobService != nil || platform.Spec.Services.DataIndex != nil)
 }
 
 func generateServiceURL(protocol string, namespace string, name string) string {

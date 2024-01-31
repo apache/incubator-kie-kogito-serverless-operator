@@ -26,7 +26,8 @@ spec:
       serviceRef:
         name: postgres
         port: 5432
-      databaseName: sonataflow
+        databaseName: sonataflow
+        databaseSchema: myschema
   build:
     template:
       buildArgs:

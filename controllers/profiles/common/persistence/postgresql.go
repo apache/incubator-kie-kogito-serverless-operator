@@ -66,7 +66,7 @@ func (s *syncConfig) SetConfig(config *operatorapi.PlatformPersistenceSpec) {
 	s.config = config
 }
 
-func (s *syncConfig) GetPostgreSQLConfiguration() *operatorapi.PostgreSQLPlatformSpec {
+func (s *syncConfig) GetPostgreSQLConfiguration() *operatorapi.PersistencePostgreSQL {
 	s.m.Lock()
 	defer s.m.Unlock()
 	if s.config != nil && s.config.PostgreSQL != nil {
@@ -75,62 +75,7 @@ func (s *syncConfig) GetPostgreSQLConfiguration() *operatorapi.PostgreSQLPlatfor
 	return nil
 }
 
-func ConfigurePostgreSQLEnvFromPlatformSpec(spec *operatorapi.PostgreSQLPlatformSpec, schema string) []corev1.EnvVar {
-
-	var namespace string
-	if len(spec.ServiceRef.Namespace) > 0 {
-		namespace = fmt.Sprintf(".%s", spec.ServiceRef.Namespace)
-	}
-	dataSourceURL := fmt.Sprintf("jdbc:postgresql://%s%s:%d/%s?currentSchema=%s", spec.ServiceRef.Name, namespace, spec.ServiceRef.Port, spec.DatabaseName, schema)
-
-	secretRef := corev1.LocalObjectReference{
-		Name: spec.SecretRef.Name,
-	}
-	quarkusDatasourceUsername := spec.SecretRef.UserKey
-	quarkusDatasourcePassword := spec.SecretRef.PasswordKey
-	return []corev1.EnvVar{
-		{
-			Name: "QUARKUS_DATASOURCE_USERNAME",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					Key:                  quarkusDatasourceUsername,
-					LocalObjectReference: secretRef,
-				},
-			},
-		},
-		{
-			Name: "QUARKUS_DATASOURCE_PASSWORD",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					Key:                  quarkusDatasourcePassword,
-					LocalObjectReference: secretRef,
-				},
-			},
-		},
-		{
-			Name:  "QUARKUS_DATASOURCE_DB_KIND",
-			Value: constants.PersistenceTypePostgreSQL,
-		},
-		{
-			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
-			Value: dataSourceURL,
-		},
-		{
-			Name:  "KOGITO_PERSISTENCE_TYPE",
-			Value: "jdbc",
-		},
-		{
-			Name:  "KOGITO_PERSISTENCE_PROTO_MARSHALLER",
-			Value: "false",
-		},
-		{
-			Name:  "KOGITO_PERSISTENCE_QUERY_TIMEOUT_MILLIS",
-			Value: "10000",
-		},
-	}
-}
-
-func ConfigurePostgreSQLEnv(postgresql *operatorapi.PersistencePostgreSql, databaseSchema, databaseNamespace string) []corev1.EnvVar {
+func ConfigurePostgreSQLEnv(postgresql *operatorapi.PersistencePostgreSQL, databaseSchema, databaseNamespace string) []corev1.EnvVar {
 	dataSourcePort := constants.DefaultPostgreSQLPort
 	databaseName := defaultDatabaseName
 	dataSourceURL := postgresql.JdbcUrl

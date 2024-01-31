@@ -34,7 +34,7 @@ spec:
       serviceRef:
         name: no-db-exists
         port: 5432
-      databaseName: find-me        
+        databaseName: find-me        
   services:
     dataIndex:
       enabled: false
