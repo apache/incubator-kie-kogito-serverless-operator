@@ -38,8 +38,6 @@ import (
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 )
 
-// TODO: should we delete this whole file? seems used only the the associated test functions
-
 var _ WorkflowProjectHandler = &workflowProjectHandler{}
 
 // defaultResourcePath is the default resource path to add to the generated ConfigMaps
