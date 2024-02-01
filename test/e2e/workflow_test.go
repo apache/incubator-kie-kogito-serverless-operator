@@ -180,14 +180,14 @@ var _ = Describe("Validate the persistence ", Ordered, func() {
 		By("Wait for SonatatFlow CR to complete deployment")
 		// wait for service deployments to be ready
 		EventuallyWithOffset(1, func() error {
-			cmd = exec.Command("kubectl", "wait", "pod", "-n", ns, "-l", "sonataflow.org/workflow-app=callbackstatetimeouts", "--for", "condition=Ready", "--timeout=5s")
+			cmd = exec.Command("kubectl", "wait", "pod", "-n", ns, "-l", "sonataflow.org/workflow-app=callbackstatetimeouts-persistence", "--for", "condition=Ready", "--timeout=5s")
 			out, err := utils.Run(cmd)
 			GinkgoWriter.Printf("%s\n", string(out))
 			return err
 		}, 10*time.Minute, 5).Should(Succeed())
 
 		By("Evaluate status of the workflow's pod database connection health endpoint")
-		cmd = exec.Command("kubectl", "get", "pod", "-l", "sonataflow.org/workflow-app=callbackstatetimeouts", "-n", ns, "-ojsonpath={.items[*].metadata.name}")
+		cmd = exec.Command("kubectl", "get", "pod", "-l", "sonataflow.org/workflow-app=callbackstatetimeouts-persistence", "-n", ns, "-ojsonpath={.items[*].metadata.name}")
 		output, err := utils.Run(cmd)
 		Expect(err).NotTo(HaveOccurred())
 		EventuallyWithOffset(1, func() bool {

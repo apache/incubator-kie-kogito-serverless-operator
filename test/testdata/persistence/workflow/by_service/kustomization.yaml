@@ -15,7 +15,7 @@
 resources:
 - 01-postgres.yaml
 - 02-sonataflow_platform.yaml
-- 03-sonataflow_callbackstatetimeouts.sw.yaml
+- 03-sonataflow_callbackstatetimeouts_persistence.sw.yaml
 
 generatorOptions:
   disableNameSuffixHash: true

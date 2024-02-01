@@ -15,7 +15,7 @@
 apiVersion: sonataflow.org/v1alpha08
 kind: SonataFlow
 metadata:
-  name: callbackstatetimeouts
+  name: callbackstatetimeouts-persistence
   annotations:
     sonataflow.org/description: Callback State Timeouts Example k8s
     sonataflow.org/version: 0.0.1
@@ -30,7 +30,7 @@ spec:
         name: postgres
         port: 5432
         databaseName: sonataflow
-        databaseSchema: callbackstatetimeouts
+        databaseSchema: callbackstatetimeouts-persistence
   podTemplate:
     container:
       env:
