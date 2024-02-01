@@ -181,9 +181,9 @@ func TestMergePodSpec_OverrideContainers(t *testing.T) {
 
 func Test_ensureWorkflowSinkBindingIsCreated(t *testing.T) {
 	workflow := test.GetVetEventSonataFlow(t.Name())
-
+	plf := test.GetBasePlatform()
 	//On Kubernetes we want the service exposed in Dev with NodePort
-	sinkBinding, _ := SinkBindingCreator(workflow)
+	sinkBinding, _ := SinkBindingCreator(workflow, plf)
 	sinkBinding.SetUID("1")
 	sinkBinding.SetResourceVersion("1")
 
@@ -204,9 +204,9 @@ func Test_ensureWorkflowSinkBindingIsCreated(t *testing.T) {
 
 func Test_ensureWorkflowTriggersAreCreated(t *testing.T) {
 	workflow := test.GetVetEventSonataFlow(t.Name())
-
+	plf := test.GetBasePlatform()
 	//On Kubernetes we want the service exposed in Dev with NodePort
-	triggers, _ := TriggersCreator(workflow)
+	triggers, _ := TriggersCreator(workflow, plf)
 
 	assert.NotEmpty(t, triggers)
 	assert.Len(t, triggers, 2)

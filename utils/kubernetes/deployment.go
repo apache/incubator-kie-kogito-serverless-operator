@@ -151,8 +151,13 @@ func dataFromCM(cm *v1.ConfigMap, key string) string {
 }
 
 func calculateHash(userPropsCM, managedPropsCM *v1.ConfigMap, workflow *operatorapi.SonataFlow) (string, error) {
-	aggregatedProps := fmt.Sprintf("%s,%s", dataFromCM(userPropsCM, workflowproj.ApplicationPropertiesFileName),
-		dataFromCM(managedPropsCM, workflowproj.GetManagedPropertiesFileName(workflow)))
+	aggregatedProps := ""
+	if workflow == nil {
+		aggregatedProps = dataFromCM(userPropsCM, workflowproj.ApplicationPropertiesFileName)
+	} else {
+		aggregatedProps = fmt.Sprintf("%s,%s", dataFromCM(userPropsCM, workflowproj.ApplicationPropertiesFileName),
+			dataFromCM(managedPropsCM, workflowproj.GetManagedPropertiesFileName(workflow)))
+	}
 	hash := sha256.New()
 	_, err := hash.Write([]byte(aggregatedProps))
 	if err != nil {

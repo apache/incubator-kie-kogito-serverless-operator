@@ -172,7 +172,7 @@ func NewManagedPropertyHandler(workflow *operatorapi.SonataFlow, platform *opera
 		props.Merge(p)
 	}
 
-	p, err := generateKnativeEventingWorkflowProperties(workflow)
+	p, err := generateKnativeEventingWorkflowProperties(workflow, platform)
 	if err != nil {
 		return nil, err
 	}

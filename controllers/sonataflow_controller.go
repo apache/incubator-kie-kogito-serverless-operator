@@ -26,26 +26,31 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/metadata"
 	"k8s.io/klog/v2"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 	profiles "github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/factory"
-
+	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api"
-
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/knative"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/platform"
 )
 
@@ -91,6 +96,15 @@ func (r *SonataFlowReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	r.setDefaults(workflow)
+	// If the workflow is being deleted, clean up the triggers on a different namespace
+	if workflow.DeletionTimestamp != nil && controllerutil.ContainsFinalizer(workflow, constants.WorkflowTriggerFinalizer) {
+		err := r.cleanupTriggers(ctx, workflow)
+		if err != nil {
+			klog.V(log.E).ErrorS(err, "Failed to clean up triggers")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
 
 	// Only process resources assigned to the operator
 	if !platform.IsOperatorHandlerConsideringLock(ctx, r.Client, req.Namespace, workflow) {
@@ -110,6 +124,43 @@ func (r *SonataFlowReconciler) setDefaults(workflow *operatorapi.SonataFlow) {
 	if profile == metadata.DevProfile {
 		workflow.Spec.PodTemplate.DeploymentModel = operatorapi.KubernetesDeploymentModel
 	}
+}
+
+func (r *SonataFlowReconciler) cleanupTriggers(ctx context.Context, workflow *operatorapi.SonataFlow) error {
+	plf, _ := platform.GetActivePlatform(ctx, r.Client, workflow.Namespace)
+	if plf.Status.ClusterPlatformRef == nil {
+		return nil
+	}
+	avail, err := knative.GetKnativeAvailability(r.Config)
+	if err != nil {
+		return err
+	}
+	if avail.Eventing {
+		triggers := &eventingv1.TriggerList{}
+		opts := &client.ListOptions{
+			LabelSelector: labels.SelectorFromSet(labels.Set{
+				workflowproj.LabelWorkflow:          workflow.Name,
+				workflowproj.LabelWorkflowNamespace: workflow.Namespace,
+			},
+			),
+			Namespace: plf.Status.ClusterPlatformRef.PlatformRef.Namespace,
+		}
+		if err := r.Client.List(ctx, triggers, opts); err != nil {
+			return err
+		}
+		for _, trigger := range triggers.Items {
+			if err := r.Client.Delete(ctx, &trigger); err != nil {
+				return err
+			}
+		}
+	}
+	controllerutil.RemoveFinalizer(workflow, constants.WorkflowTriggerFinalizer)
+	return r.Client.Update(ctx, workflow)
+}
+
+// Delete implements a handler for the Delete event.
+func (r *SonataFlowReconciler) Delete(e event.DeleteEvent) error {
+	return nil
 }
 
 func platformEnqueueRequestsFromMapFunc(c client.Client, p *operatorapi.SonataFlowPlatform) []reconcile.Request {

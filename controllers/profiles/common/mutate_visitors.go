@@ -122,15 +122,13 @@ func EnsureDeployment(original *appsv1.Deployment, object *appsv1.Deployment) er
 	object.Spec.Replicas = original.Spec.Replicas
 	object.Spec.Selector = original.Spec.Selector
 	object.Labels = original.GetLabels()
+	object.Finalizers = original.Finalizers
 
 	// Clean up the volumes, they are inherited from original, additional are added by other visitors
-	object.Spec.Template.Spec.Volumes = nil
-	for i := range object.Spec.Template.Spec.Containers {
-		object.Spec.Template.Spec.Containers[i].VolumeMounts = nil
-	}
-
+	// However, the knative mount path must be preserved
+	preserveKnativeVolumeMount(object)
 	// we do a merge to not keep changing the spec since k8s will set default values to the podSpec
-	return mergo.Merge(&object.Spec.Template.Spec, original.Spec.Template.Spec, mergo.WithOverride)
+	return mergo.Merge(&object.Spec, original.Spec)
 }
 
 // KServiceMutateVisitor guarantees the state of the default Knative Service object
@@ -216,6 +214,7 @@ func RolloutDeploymentIfCMChangedMutateVisitor(workflow *operatorapi.SonataFlow,
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			deployment := object.(*appsv1.Deployment)
+			restoreKnativeVolumeAndVolumeMount(deployment)
 			err := kubeutil.AnnotateDeploymentConfigChecksum(workflow, deployment, userPropsCM, managedPropsCM)
 			return err
 		}

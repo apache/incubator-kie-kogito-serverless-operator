@@ -161,6 +161,18 @@ type SonataFlowSpec struct {
 	// Sink describes the sinkBinding details of this SonataFlow instance.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="sink"
 	Sink *duckv1.Destination `json:"sink,omitempty"`
+	// Sources describes the list of sources used to create triggers for events consumed by this SonataFlow instance.
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="sources"
+	Sources []SonataFlowSourceSpec `json:"sources,omitempty"`
+}
+
+// SonataFlowSourceSpec defines the desired state of a source used for trigger creation
+// +k8s:openapi-gen=true
+type SonataFlowSourceSpec struct {
+	// Defines the eventType to filter the events
+	EventType string `json:"eventType"`
+	// Defines the broker used
+	duckv1.Destination `json:",inline"`
 }
 
 // SonataFlowStatus defines the observed state of SonataFlow

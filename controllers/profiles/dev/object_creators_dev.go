@@ -51,6 +51,7 @@ func serviceCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
 }
 
 func deploymentCreator(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (client.Object, error) {
+
 	obj, err := common.DeploymentCreator(workflow, plf)
 	if err != nil {
 		return nil, err
@@ -95,7 +96,7 @@ func deploymentMutateVisitor(workflow *operatorapi.SonataFlow, plf *operatorapi.
 	}
 }
 
-func ensureWorkflowDefConfigMapMutator(workflow *operatorapi.SonataFlow) common.MutateVisitor {
+func ensureWorkflowDefConfigMapMutator(workflow *operatorapi.SonataFlow, support *common.StateSupport) common.MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			if kubeutil.IsObjectNew(object) {
