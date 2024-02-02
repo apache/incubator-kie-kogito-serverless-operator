@@ -160,14 +160,13 @@ func Test_appPropertyHandler_WithUserPropertiesWithServiceDiscovery(t *testing.T
 	assert.Equal(t, 21, len(generatedProps.Keys()))
 	assert.NotContains(t, "property1", generatedProps.Keys())
 	assert.NotContains(t, "property2", generatedProps.Keys())
-	defaultService := "http://localhost:8080"
-	assertHasProperty(t, generatedProps, "service1", defaultService)
-	assertHasProperty(t, generatedProps, "service2", defaultService)
-	assertHasProperty(t, generatedProps, "service3", defaultService)
-	assertHasProperty(t, generatedProps, "service4", defaultService)
-	assertHasProperty(t, generatedProps, "service5", defaultService)
-	assertHasProperty(t, generatedProps, "broker1", defaultService)
-	assertHasProperty(t, generatedProps, "broker2", defaultService)
+	assertHasProperty(t, generatedProps, "service1", myService1Address)
+	assertHasProperty(t, generatedProps, "service2", myService2Address)
+	assertHasProperty(t, generatedProps, "service3", myKnService1Address)
+	assertHasProperty(t, generatedProps, "service4", myKnService2Address)
+	assertHasProperty(t, generatedProps, "service5", myKnService3Address)
+	assertHasProperty(t, generatedProps, "broker1", myKnBroker1Address)
+	assertHasProperty(t, generatedProps, "broker2", myKnBroker2Address)
 
 	//org.kie.kogito.addons.discovery.kubernetes\:services.v1\/usecase1º/my-service1 below we use the unescaped vale because the properties.LoadString removes them.
 	assertHasProperty(t, generatedProps, "org.kie.kogito.addons.discovery.kubernetes:services.v1/namespace1/my-service1", myService1Address)

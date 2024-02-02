@@ -63,10 +63,9 @@ func Test_generateDiscoveryProperties(t *testing.T) {
 	})
 
 	assert.Equal(t, 8, result.Len())
-	defaultService := "http://localhost:8080"
-	assertHasProperty(t, result, "service1", defaultService)
-	assertHasProperty(t, result, "service2", defaultService)
-	assertHasProperty(t, result, "service3", defaultService)
+	assertHasProperty(t, result, "service1", myService1Address)
+	assertHasProperty(t, result, "service2", myService2Address)
+	assertHasProperty(t, result, "service3", myService3Address)
 	assertHasProperty(t, result, "org.kie.kogito.addons.discovery.kubernetes\\:services.v1\\/namespace1\\/my-service1", myService1Address)
 	assertHasProperty(t, result, "org.kie.kogito.addons.discovery.kubernetes\\:services.v1\\/namespace1\\/my-service1", myService1Address)
 	assertHasProperty(t, result, "org.kie.kogito.addons.discovery.kubernetes\\:services.v1\\/namespace1\\/my-service1", myService1Address)
