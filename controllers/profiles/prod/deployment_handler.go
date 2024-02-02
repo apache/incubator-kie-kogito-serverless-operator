@@ -43,8 +43,8 @@ func newDeploymentReconciler(stateSupport *common.StateSupport, ensurer *objectE
 	}
 }
 
-func (d *deploymentReconciler) reconcile(ctx context.Context, workflow *operatorapi.SonataFlow) (reconcile.Result, []client.Object, error) {
-	return d.reconcileWithBuiltImage(ctx, workflow, "")
+func (d *deploymentReconciler) reconcile(ctx context.Context, workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (reconcile.Result, []client.Object, error) {
+	return d.reconcileWithBuiltImage(ctx, workflow, plf, "")
 }
 
 func (d *deploymentReconciler) reconcileWithBuiltImage(ctx context.Context, workflow *operatorapi.SonataFlow, image string) (reconcile.Result, []client.Object, error) {
@@ -75,7 +75,7 @@ func (d *deploymentReconciler) reconcileWithBuiltImage(ctx context.Context, work
 		return reconcile.Result{}, nil, err
 	}
 
-	service, _, err := d.ensurers.service.Ensure(ctx, workflow, common.ServiceMutateVisitor(workflow))
+	service, _, err := d.ensurers.service.Ensure(ctx, workflow, plf, common.ServiceMutateVisitor(workflow))
 	if err != nil {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, "Unable to make the service available due to ", err)
 		_, err = d.PerformStatusUpdate(ctx, workflow)
@@ -106,6 +106,7 @@ func (d *deploymentReconciler) reconcileWithBuiltImage(ctx context.Context, work
 
 func (d *deploymentReconciler) getDeploymentMutateVisitors(
 	workflow *operatorapi.SonataFlow,
+	plf *operatorapi.SonataFlowPlatform,
 	image string,
 	userPropsCM *v1.ConfigMap,
 	managedPropsCM *v1.ConfigMap) []common.MutateVisitor {
@@ -117,7 +118,7 @@ func (d *deploymentReconciler) getDeploymentMutateVisitors(
 			common.RolloutDeploymentIfCMChangedMutateVisitor(workflow, userPropsCM, managedPropsCM),
 		}
 	}
-	return []common.MutateVisitor{common.DeploymentMutateVisitor(workflow),
+	return []common.MutateVisitor{common.DeploymentMutateVisitor(workflow, plf),
 		common.ImageDeploymentMutateVisitor(workflow, image),
 		mountProdConfigMapsMutateVisitor(workflow, userPropsCM, managedPropsCM),
 		common.RolloutDeploymentIfCMChangedMutateVisitor(workflow, userPropsCM, managedPropsCM)}

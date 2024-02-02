@@ -28,7 +28,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/persistence"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
 	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
 
@@ -129,7 +128,7 @@ func TestMergePodSpec(t *testing.T) {
 		},
 	}
 
-	object, err := DeploymentCreator(workflow)
+	object, err := DeploymentCreator(workflow, nil)
 	assert.NoError(t, err)
 
 	deployment := object.(*appsv1.Deployment)
@@ -164,7 +163,7 @@ func TestMergePodSpec_OverrideContainers(t *testing.T) {
 		},
 	}
 
-	object, err := DeploymentCreator(workflow)
+	object, err := DeploymentCreator(workflow, nil)
 	assert.NoError(t, err)
 
 	deployment := object.(*appsv1.Deployment)
@@ -214,7 +213,7 @@ func TestMergePodSpec_WithPostgreSQL_and_JDBC_URL_field(t *testing.T) {
 				},
 			},
 		},
-		Persistence: &v1alpha08.PersistenceOptions{
+		Persistence: &v1alpha08.PersistenceSpec{
 			PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 				SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 				JdbcUrl:   "jdbc:postgresql://host:port/database?currentSchema=workflow",
@@ -222,7 +221,7 @@ func TestMergePodSpec_WithPostgreSQL_and_JDBC_URL_field(t *testing.T) {
 		},
 	}
 
-	object, err := DeploymentCreator(workflow)
+	object, err := DeploymentCreator(workflow, nil)
 	assert.NoError(t, err)
 
 	deployment := object.(*appsv1.Deployment)
@@ -304,7 +303,7 @@ func TestMergePodSpec_OverrideContainers_WithPostgreSQL_In_Workflow_CR(t *testin
 				},
 			},
 		},
-		Persistence: &v1alpha08.PersistenceOptions{
+		Persistence: &v1alpha08.PersistenceSpec{
 			PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 				SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 				ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
@@ -317,7 +316,7 @@ func TestMergePodSpec_OverrideContainers_WithPostgreSQL_In_Workflow_CR(t *testin
 		},
 	}
 
-	object, err := DeploymentCreator(workflow)
+	object, err := DeploymentCreator(workflow, nil)
 	assert.NoError(t, err)
 
 	deployment := object.(*appsv1.Deployment)
@@ -369,27 +368,36 @@ func TestMergePodSpec_OverrideContainers_WithPostgreSQL_In_Workflow_CR(t *testin
 }
 
 func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_CR_And_Worflow_Requesting_It(t *testing.T) {
-	persistence.WorkflowConfig.SetConfig(
-		&v1alpha08.PlatformPersistenceSpec{
-			PostgreSQL: &v1alpha08.PersistencePostgreSQL{
-				SecretRef: v1alpha08.PostgreSQLSecretOptions{
-					Name:        "foo_secret",
-					UserKey:     "username",
-					PasswordKey: "password",
+	p := &v1alpha08.SonataFlowPlatform{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: "default",
+		},
+		Spec: v1alpha08.SonataFlowPlatformSpec{
+			Persistence: &v1alpha08.PersistenceSpec{
+				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+					SecretRef: v1alpha08.PostgreSQLSecretOptions{
+						Name:        "foo_secret",
+						UserKey:     "username",
+						PasswordKey: "password",
+					},
+					ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
+						Name:           "service_name",
+						Namespace:      "service_namespace",
+						Port:           &postgreSQLPort,
+						DatabaseName:   "foo",
+						DatabaseSchema: "bar",
+					},
 				},
-				ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
-					Name:           "service_name",
-					Namespace:      "service_namespace",
-					Port:           &postgreSQLPort,
-					DatabaseName:   "foo",
-					DatabaseSchema: "bar",
-				},
-			}})
+			},
+		},
+	}
+
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflow.Spec = v1alpha08.SonataFlowSpec{
-		Persistence: &v1alpha08.PersistenceOptions{},
+		Persistence: &v1alpha08.PersistenceSpec{},
 	}
-	object, err := DeploymentCreator(workflow)
+	object, err := DeploymentCreator(workflow, p)
 	assert.NoError(t, err)
 
 	deployment := object.(*appsv1.Deployment)
@@ -441,22 +449,30 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_CR_And_Worflow_Requesti
 }
 
 func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_And_In_Workflow_CR(t *testing.T) {
-	persistence.WorkflowConfig.SetConfig(
-		&v1alpha08.PlatformPersistenceSpec{
-			PostgreSQL: &v1alpha08.PersistencePostgreSQL{
-				SecretRef: v1alpha08.PostgreSQLSecretOptions{
-					Name:        "foo_secret",
-					UserKey:     "username",
-					PasswordKey: "password",
+	p := &v1alpha08.SonataFlowPlatform{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: "default",
+		},
+		Spec: v1alpha08.SonataFlowPlatformSpec{
+			Persistence: &v1alpha08.PersistenceSpec{
+				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+					SecretRef: v1alpha08.PostgreSQLSecretOptions{
+						Name:        "foo_secret",
+						UserKey:     "username",
+						PasswordKey: "password",
+					},
+					ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
+						Name:           "service_name",
+						Namespace:      "service_namespace",
+						Port:           &postgreSQLPort,
+						DatabaseName:   "foo",
+						DatabaseSchema: "bar",
+					},
 				},
-				ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
-					Name:           "service_name",
-					Namespace:      "service_namespace",
-					Port:           &postgreSQLPort,
-					DatabaseName:   "foo",
-					DatabaseSchema: "bar",
-				},
-			}})
+			},
+		},
+	}
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflow.Spec = v1alpha08.SonataFlowSpec{
 		PodTemplate: v1alpha08.PodTemplateSpec{
@@ -476,7 +492,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_And_In_Workflow_CR(t *t
 				},
 			},
 		},
-		Persistence: &v1alpha08.PersistenceOptions{
+		Persistence: &v1alpha08.PersistenceSpec{
 			PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 				SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 				ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
@@ -488,7 +504,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_And_In_Workflow_CR(t *t
 			},
 		},
 	}
-	object, err := DeploymentCreator(workflow)
+	object, err := DeploymentCreator(workflow, p)
 	assert.NoError(t, err)
 
 	deployment := object.(*appsv1.Deployment)
@@ -540,26 +556,34 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_And_In_Workflow_CR(t *t
 }
 
 func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_But_Workflow_CR_Not_Requesting_it(t *testing.T) {
-	persistence.WorkflowConfig.SetConfig(
-		&v1alpha08.PlatformPersistenceSpec{
-			PostgreSQL: &v1alpha08.PersistencePostgreSQL{
-				SecretRef: v1alpha08.PostgreSQLSecretOptions{
-					Name:        "foo_secret",
-					UserKey:     "username",
-					PasswordKey: "password",
+	p := &v1alpha08.SonataFlowPlatform{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: "default",
+		},
+		Spec: v1alpha08.SonataFlowPlatformSpec{
+			Persistence: &v1alpha08.PersistenceSpec{
+				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+					SecretRef: v1alpha08.PostgreSQLSecretOptions{
+						Name:        "foo_secret",
+						UserKey:     "username",
+						PasswordKey: "password",
+					},
+					ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
+						Name:         "service_name",
+						Namespace:    "service_namespace",
+						Port:         &postgreSQLPort,
+						DatabaseName: "foo",
+					},
 				},
-				ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
-					Name:         "service_name",
-					Namespace:    "service_namespace",
-					Port:         &postgreSQLPort,
-					DatabaseName: "foo",
-				},
-			}})
+			},
+		},
+	}
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflow.Spec = v1alpha08.SonataFlowSpec{
 		Persistence: nil,
 	}
-	object, err := DeploymentCreator(workflow)
+	object, err := DeploymentCreator(workflow, p)
 	assert.NoError(t, err)
 
 	deployment := object.(*appsv1.Deployment)
@@ -571,12 +595,18 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_But_Workflow_CR_Not_Req
 }
 
 func TestMergePodSpec_WithEphemeralPostgreSQL_And_Undefined_PostgreSQL_Image_In_Platform_Spec(t *testing.T) {
-	persistence.WorkflowConfig.SetConfig(nil)
+	p := &v1alpha08.SonataFlowPlatform{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: "default",
+		},
+		Spec: v1alpha08.SonataFlowPlatformSpec{},
+	}
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflow.Spec = v1alpha08.SonataFlowSpec{
-		Persistence: &v1alpha08.PersistenceOptions{},
+		Persistence: &v1alpha08.PersistenceSpec{},
 	}
-	_, err := DeploymentCreator(workflow)
+	_, err := DeploymentCreator(workflow, p)
 	assert.Error(t, err)
-	assert.Equal(t, "no persistence specification available in the workflow or in the platform", err.Error())
+	assert.Equal(t, "no persistence specification found", err.Error())
 }

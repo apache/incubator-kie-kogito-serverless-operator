@@ -34,7 +34,7 @@ var _ ObjectEnsurer = &defaultObjectEnsurer{}
 var _ ObjectEnsurer = &noopObjectEnsurer{}
 
 type ObjectEnsurer interface {
-	Ensure(ctx context.Context, workflow *operatorapi.SonataFlow, visitors ...MutateVisitor) (client.Object, controllerutil.OperationResult, error)
+	Ensure(ctx context.Context, workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform, visitors ...MutateVisitor) (client.Object, controllerutil.OperationResult, error)
 }
 type ObjectEnsurerWithPlatform interface {
 	Ensure(ctx context.Context, workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform, visitors ...MutateVisitor) (client.Object, controllerutil.OperationResult, error)
@@ -73,10 +73,10 @@ type defaultObjectEnsurer struct {
 	creator ObjectCreator
 }
 
-func (d *defaultObjectEnsurer) Ensure(ctx context.Context, workflow *operatorapi.SonataFlow, visitors ...MutateVisitor) (client.Object, controllerutil.OperationResult, error) {
+func (d *defaultObjectEnsurer) Ensure(ctx context.Context, workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform, visitors ...MutateVisitor) (client.Object, controllerutil.OperationResult, error) {
 	result := controllerutil.OperationResultNone
 
-	object, err := d.creator(workflow)
+	object, err := d.creator(workflow, plf)
 	if err != nil {
 		return nil, result, err
 	}
@@ -132,7 +132,7 @@ func NewNoopObjectEnsurer() ObjectEnsurer {
 type noopObjectEnsurer struct {
 }
 
-func (d *noopObjectEnsurer) Ensure(ctx context.Context, workflow *operatorapi.SonataFlow, visitors ...MutateVisitor) (client.Object, controllerutil.OperationResult, error) {
+func (d *noopObjectEnsurer) Ensure(ctx context.Context, workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform, visitors ...MutateVisitor) (client.Object, controllerutil.OperationResult, error) {
 	result := controllerutil.OperationResultNone
 	return nil, result, nil
 }

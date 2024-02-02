@@ -57,13 +57,13 @@ func ImageDeploymentMutateVisitor(workflow *operatorapi.SonataFlow, image string
 }
 
 // DeploymentMutateVisitor guarantees the state of the default Deployment object
-func DeploymentMutateVisitor(workflow *operatorapi.SonataFlow) MutateVisitor {
+func DeploymentMutateVisitor(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			if kubeutil.IsObjectNew(object) {
 				return nil
 			}
-			original, err := DeploymentCreator(workflow)
+			original, err := DeploymentCreator(workflow, plf)
 			if err != nil {
 				return err
 			}
@@ -94,7 +94,7 @@ func ServiceMutateVisitor(workflow *operatorapi.SonataFlow) MutateVisitor {
 			if kubeutil.IsObjectNew(object) {
 				return nil
 			}
-			original, err := ServiceCreator(workflow)
+			original, err := ServiceCreator(workflow, nil)
 			if err != nil {
 				return err
 			}
@@ -122,7 +122,7 @@ func ManagedPropertiesMutateVisitor(ctx context.Context, catalog discovery.Servi
 				userProperties = ""
 			}
 			// In the future, if this needs change, instead we can receive an AppPropertyHandler in this mutator
-			props, err := properties.NewAppPropertyHandler(workflow, platform)
+			props, err := properties.NewAppPropertyHandler(workflow, plf)
 			if err != nil {
 				return err
 			}

@@ -16,7 +16,6 @@ package persistence
 
 import (
 	"fmt"
-	"sync"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -42,38 +41,6 @@ const (
 	defaultPostgreSQLUsername  = "sonataflow"
 	defaultPostgresSQLPassword = "sonataflow"
 )
-
-var (
-	WorkflowConfig *syncConfig
-)
-
-func init() {
-	WorkflowConfig = newSyncConfig()
-}
-
-type syncConfig struct {
-	m      sync.Mutex
-	config *operatorapi.PlatformPersistenceSpec
-}
-
-func newSyncConfig() *syncConfig {
-	return &syncConfig{m: sync.Mutex{}}
-}
-
-func (s *syncConfig) SetConfig(config *operatorapi.PlatformPersistenceSpec) {
-	s.m.Lock()
-	defer s.m.Unlock()
-	s.config = config
-}
-
-func (s *syncConfig) GetPostgreSQLConfiguration() *operatorapi.PersistencePostgreSQL {
-	s.m.Lock()
-	defer s.m.Unlock()
-	if s.config != nil && s.config.PostgreSQL != nil {
-		return s.config.PostgreSQL
-	}
-	return nil
-}
 
 func ConfigurePostgreSQLEnv(postgresql *operatorapi.PersistencePostgreSQL, databaseSchema, databaseNamespace string) []corev1.EnvVar {
 	dataSourcePort := constants.DefaultPostgreSQLPort
@@ -145,4 +112,16 @@ func ConfigurePostgreSQLEnv(postgresql *operatorapi.PersistencePostgreSQL, datab
 			Value: "10000",
 		},
 	}
+}
+
+func ConfigurePersistence(serviceContainer *corev1.Container, config *operatorapi.PersistenceSpec, defaultSchema, namespace string) (*corev1.Container, error) {
+	if config == nil {
+		return nil, fmt.Errorf("no persistence specification found")
+	}
+	if config.PostgreSQL == nil {
+		return nil, fmt.Errorf("no postgreSQL configuration found")
+	}
+	c := serviceContainer.DeepCopy()
+	c.Env = append(c.Env, ConfigurePostgreSQLEnv(config.PostgreSQL, defaultSchema, namespace)...)
+	return c, nil
 }

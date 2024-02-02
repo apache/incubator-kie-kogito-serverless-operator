@@ -137,7 +137,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
 
 		// Check with persistence set
-		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistenceOptions{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistenceSpec{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 			SecretRef:  v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 			ServiceRef: &v1alpha08.PostgreSQLServiceOptions{Name: "test"},
 		}}
@@ -224,7 +224,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check with persistence set
 		url := "jdbc:postgresql://host:1234/database?currentSchema=data-index-service"
-		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistenceOptions{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistenceSpec{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 			SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 			JdbcUrl:   url,
 		}}
@@ -263,7 +263,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 				DataIndex:  &v1alpha08.ServiceSpec{},
 				JobService: &v1alpha08.ServiceSpec{},
 			},
-			Persistence: &v1alpha08.PlatformPersistenceSpec{
+			Persistence: &v1alpha08.PersistenceSpec{
 				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 					SecretRef:  v1alpha08.PostgreSQLSecretOptions{Name: "generic", UserKey: "POSTGRESQL_USER", PasswordKey: "POSTGRESQL_PASSWORD"},
 					ServiceRef: &v1alpha08.PostgreSQLServiceOptions{Name: "postgresql", Namespace: "default", Port: &postgreSQLPort, DatabaseName: "sonataflow"},
@@ -351,7 +351,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		ksp.Spec = v1alpha08.SonataFlowPlatformSpec{
 			Services: v1alpha08.ServicesPlatformSpec{
 				DataIndex: &v1alpha08.ServiceSpec{
-					Persistence: &v1alpha08.PersistenceOptions{
+					Persistence: &v1alpha08.PersistenceSpec{
 						PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 							SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "dataIndex"},
 							JdbcUrl:   urlDI,
@@ -359,7 +359,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 					},
 				},
 				JobService: &v1alpha08.ServiceSpec{
-					Persistence: &v1alpha08.PersistenceOptions{
+					Persistence: &v1alpha08.PersistenceSpec{
 						PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 							SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "job"},
 							JdbcUrl:   urlJS,
@@ -367,7 +367,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 					},
 				},
 			},
-			Persistence: &v1alpha08.PlatformPersistenceSpec{
+			Persistence: &v1alpha08.PersistenceSpec{
 				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 					SecretRef:  v1alpha08.PostgreSQLSecretOptions{Name: "generic", UserKey: "POSTGRESQL_USER", PasswordKey: "POSTGRESQL_PASSWORD"},
 					ServiceRef: &v1alpha08.PostgreSQLServiceOptions{Name: "postgresql", Namespace: "default", Port: &postgreSQLPort, DatabaseName: "sonataflow"},
@@ -509,7 +509,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDataIndex)
 
 		// Check with persistence set
-		ksp.Spec.Services.JobService.Persistence = &v1alpha08.PersistenceOptions{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+		ksp.Spec.Services.JobService.Persistence = &v1alpha08.PersistenceSpec{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 			SecretRef:  v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 			ServiceRef: &v1alpha08.PostgreSQLServiceOptions{Name: "test"},
 		}}
@@ -594,7 +594,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check with persistence set
 		url := "jdbc:postgresql://host:1234/database?currentSchema=data-index-service"
-		ksp.Spec.Services.JobService.Persistence = &v1alpha08.PersistenceOptions{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+		ksp.Spec.Services.JobService.Persistence = &v1alpha08.PersistenceSpec{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 			SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 			JdbcUrl:   url,
 		}}

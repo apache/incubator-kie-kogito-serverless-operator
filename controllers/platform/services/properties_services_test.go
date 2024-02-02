@@ -223,7 +223,7 @@ func setJobServiceJDBC(jdbc string) plfmOptionFn {
 			p.Spec.Services.JobService = &operatorapi.ServiceSpec{}
 		}
 		if p.Spec.Services.JobService.Persistence == nil {
-			p.Spec.Services.JobService.Persistence = &operatorapi.PersistenceOptions{}
+			p.Spec.Services.JobService.Persistence = &operatorapi.PersistenceSpec{}
 		}
 		if p.Spec.Services.JobService.Persistence.PostgreSQL == nil {
 			p.Spec.Services.JobService.Persistence.PostgreSQL = &operatorapi.PersistencePostgreSQL{}
@@ -238,7 +238,7 @@ func setDataIndexJDBC(jdbc string) plfmOptionFn {
 			p.Spec.Services.DataIndex = &operatorapi.ServiceSpec{}
 		}
 		if p.Spec.Services.DataIndex.Persistence == nil {
-			p.Spec.Services.DataIndex.Persistence = &operatorapi.PersistenceOptions{}
+			p.Spec.Services.DataIndex.Persistence = &operatorapi.PersistenceSpec{}
 		}
 		if p.Spec.Services.DataIndex.Persistence.PostgreSQL == nil {
 			p.Spec.Services.DataIndex.Persistence.PostgreSQL = &operatorapi.PersistencePostgreSQL{}

@@ -30,7 +30,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/persistence"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/metadata"
 
@@ -106,13 +105,6 @@ func (action *initializeAction) Handle(ctx context.Context, platform *operatorap
 		platform.Status.Manager().MarkFalse(api.SucceedConditionType, operatorapi.PlatformCreatingReason, "")
 	}
 	platform.Status.Version = metadata.SpecVersion
-
-	// store workflow persistence configuration
-	if platform.Spec.Persistence != nil {
-		persistence.WorkflowConfig.SetConfig(platform.Spec.Persistence)
-	} else {
-		persistence.WorkflowConfig.SetConfig(nil)
-	}
 
 	return platform, nil
 }

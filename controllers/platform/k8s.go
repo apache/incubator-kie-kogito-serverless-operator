@@ -25,8 +25,8 @@ import (
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/container-builder/client"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/platform/services"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/variables"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
 	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
@@ -94,8 +94,8 @@ func createOrUpdateDeployment(ctx context.Context, client client.Client, platfor
 	readyProbe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
-				Path:   common.QuarkusHealthPathReady,
-				Port:   common.DefaultHTTPWorkflowPortIntStr,
+				Path:   constants.QuarkusHealthPathReady,
+				Port:   variables.DefaultHTTPWorkflowPortIntStr,
 				Scheme: corev1.URISchemeHTTP,
 			},
 		},
@@ -106,7 +106,7 @@ func createOrUpdateDeployment(ctx context.Context, client client.Client, platfor
 		FailureThreshold:    int32(4),
 	}
 	liveProbe := readyProbe.DeepCopy()
-	liveProbe.ProbeHandler.HTTPGet.Path = common.QuarkusHealthPathLive
+	liveProbe.ProbeHandler.HTTPGet.Path = constants.QuarkusHealthPathLive
 	imageTag := psh.GetServiceImageName(constants.PersistenceTypeEphemeral)
 	dataDeployContainer := &corev1.Container{
 		Image:           imageTag,
@@ -204,7 +204,7 @@ func createOrUpdateService(ctx context.Context, client client.Client, platform *
 				Name:       utils.HttpScheme,
 				Protocol:   corev1.ProtocolTCP,
 				Port:       80,
-				TargetPort: common.DefaultHTTPWorkflowPortIntStr,
+				TargetPort: variables.DefaultHTTPWorkflowPortIntStr,
 			},
 		},
 		Selector: selectorLbl,

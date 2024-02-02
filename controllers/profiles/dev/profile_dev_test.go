@@ -60,7 +60,7 @@ func Test_OverrideStartupProbe(t *testing.T) {
 
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
-	result, err := devReconciler.Reconcile(context.TODO(), workflow)
+	result, err := devReconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -71,7 +71,7 @@ func Test_OverrideStartupProbe(t *testing.T) {
 	deployment.Spec.Template.Spec.Containers[0].StartupProbe.FailureThreshold = newThreshold
 	assert.NoError(t, client.Update(context.TODO(), deployment))
 	// reconcile and fetch from the cluster
-	result, err = devReconciler.Reconcile(context.TODO(), workflow)
+	result, err = devReconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	deployment = test.MustGetDeployment(t, client, workflow)
@@ -88,14 +88,14 @@ func Test_recoverFromFailureNoDeployment(t *testing.T) {
 	reconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
 	// we are in failed state and have no objects
-	result, err := reconciler.Reconcile(context.TODO(), workflow)
+	result, err := reconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
 	// the recover state tried to clear the conditions of our workflow, so we can try reconciling it again
 	workflow = test.MustGetWorkflow(t, client, workflowID)
 	assert.True(t, workflow.Status.GetTopLevelCondition().IsUnknown())
-	result, err = reconciler.Reconcile(context.TODO(), workflow)
+	result, err = reconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -109,7 +109,7 @@ func Test_recoverFromFailureNoDeployment(t *testing.T) {
 	assert.NoError(t, err)
 	// the fake client won't update the deployment status condition since we don't have a deployment controller
 	// our state will think that we don't have a deployment available yet, so it will try to reset the pods
-	result, err = reconciler.Reconcile(context.TODO(), workflow)
+	result, err = reconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -128,7 +128,7 @@ func Test_newDevProfile(t *testing.T) {
 
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
-	result, err := devReconciler.Reconcile(context.TODO(), workflow)
+	result, err := devReconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -169,7 +169,7 @@ func Test_newDevProfile(t *testing.T) {
 	assert.NoError(t, err)
 
 	// reconcile again
-	result, err = devReconciler.Reconcile(context.TODO(), workflow)
+	result, err = devReconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -196,7 +196,7 @@ func Test_newDevProfile(t *testing.T) {
 	workflow.Status.Manager().MarkTrue(api.RunningConditionType)
 	err = client.Status().Update(context.TODO(), workflow)
 	assert.NoError(t, err)
-	result, err = devReconciler.Reconcile(context.TODO(), workflow)
+	result, err = devReconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -209,7 +209,7 @@ func Test_devProfileImageDefaultsNoPlatform(t *testing.T) {
 	client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
-	result, err := devReconciler.Reconcile(context.TODO(), workflow)
+	result, err := devReconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -226,7 +226,7 @@ func Test_devProfileWithImageSnapshotOverrideWithPlatform(t *testing.T) {
 	client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow, platform).WithStatusSubresource(workflow, platform).Build()
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
-	result, err := devReconciler.Reconcile(context.TODO(), workflow)
+	result, err := devReconciler.Reconcile(context.TODO(), workflow, platform)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -243,7 +243,7 @@ func Test_devProfileWithWPlatformWithoutDevBaseImageAndWithBaseImage(t *testing.
 	client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow, platform).WithStatusSubresource(workflow, platform).Build()
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
-	result, err := devReconciler.Reconcile(context.TODO(), workflow)
+	result, err := devReconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -260,7 +260,7 @@ func Test_devProfileWithPlatformWithoutDevBaseImageAndWithoutBaseImage(t *testin
 	client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow, platform).WithStatusSubresource(workflow, platform).Build()
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
-	result, err := devReconciler.Reconcile(context.TODO(), workflow)
+	result, err := devReconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -305,7 +305,7 @@ func Test_newDevProfileWithExternalConfigMaps(t *testing.T) {
 	errCreate := client.Create(context.Background(), cmUser)
 	assert.Nil(t, errCreate)
 
-	result, err := devReconciler.Reconcile(context.TODO(), workflow)
+	result, err := devReconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -330,7 +330,7 @@ func Test_newDevProfileWithExternalConfigMaps(t *testing.T) {
 	workflow.Status.Manager().MarkTrue(api.RunningConditionType)
 	err = client.Update(context.TODO(), workflow)
 	assert.NoError(t, err)
-	result, err = devReconciler.Reconcile(context.TODO(), workflow)
+	result, err = devReconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -346,7 +346,7 @@ func Test_newDevProfileWithExternalConfigMaps(t *testing.T) {
 	workflow.Status.Manager().MarkTrue(api.RunningConditionType)
 	err = client.Update(context.TODO(), workflow)
 	assert.NoError(t, err)
-	result, err = devReconciler.Reconcile(context.TODO(), workflow)
+	result, err = devReconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -362,7 +362,7 @@ func Test_newDevProfileWithExternalConfigMaps(t *testing.T) {
 	workflow.Status.Manager().MarkTrue(api.RunningConditionType)
 	err = client.Status().Update(context.TODO(), workflow)
 	assert.NoError(t, err)
-	result, err = devReconciler.Reconcile(context.TODO(), workflow)
+	result, err = devReconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, api.ExternalResourcesNotFoundReason, workflow.Status.GetTopLevelCondition().Reason)
@@ -370,7 +370,7 @@ func Test_newDevProfileWithExternalConfigMaps(t *testing.T) {
 	// delete the link
 	workflow.Spec.Resources.ConfigMaps = nil
 	assert.NoError(t, client.Update(context.TODO(), workflow))
-	result, err = devReconciler.Reconcile(context.TODO(), workflow)
+	result, err = devReconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 
@@ -393,7 +393,7 @@ func Test_VolumeWithCapitalizedPaths(t *testing.T) {
 
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
-	result, err := devReconciler.Reconcile(context.TODO(), workflow)
+	result, err := devReconciler.Reconcile(context.TODO(), workflow, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 

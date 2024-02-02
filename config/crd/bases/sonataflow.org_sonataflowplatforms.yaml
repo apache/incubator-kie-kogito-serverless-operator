@@ -499,7 +499,6 @@ spec:
                       persistence:
                         description: Persists service to a datasource of choice. Ephemeral
                           by default.
-                        maxProperties: 1
                         properties:
                           postgresql:
                             description: Connect configured services to a postgresql
@@ -8371,7 +8370,6 @@ spec:
                       persistence:
                         description: Persists service to a datasource of choice. Ephemeral
                           by default.
-                        maxProperties: 1
                         properties:
                           postgresql:
                             description: Connect configured services to a postgresql

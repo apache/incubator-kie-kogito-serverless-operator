@@ -94,8 +94,11 @@ func (r *SonataFlowReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		klog.V(log.I).InfoS("Ignoring request because resource is not assigned to current operator")
 		return reconcile.Result{}, nil
 	}
-
-	return profiles.NewReconciler(r.Client, r.Config, r.Recorder, workflow).Reconcile(ctx, workflow)
+	plf, err := platform.GetActivePlatform(context.TODO(), r.Client, workflow.Namespace)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	return profiles.NewReconciler(r.Client, r.Config, r.Recorder, workflow).Reconcile(ctx, workflow, plf)
 }
 
 func platformEnqueueRequestsFromMapFunc(c client.Client, p *operatorapi.SonataFlowPlatform) []reconcile.Request {

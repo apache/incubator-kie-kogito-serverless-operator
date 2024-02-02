@@ -32,18 +32,10 @@ type ServiceSpec struct {
 	Enabled *bool `json:"enabled,omitempty"`
 	// Persists service to a datasource of choice. Ephemeral by default.
 	// +optional
-	Persistence *PersistenceOptions `json:"persistence,omitempty"`
+	Persistence *PersistenceSpec `json:"persistence,omitempty"`
 	// PodTemplate describes the deployment details of this platform service instance.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="podTemplate"
 	PodTemplate PodTemplateSpec `json:"podTemplate,omitempty"`
-}
-
-// PersistenceOptions configure the services to persist to a datasource of choice
-// +kubebuilder:validation:MaxProperties=1
-type PersistenceOptions struct {
-	// Connect configured services to a postgresql database.
-	// +optional
-	PostgreSQL *PersistencePostgreSQL `json:"postgresql,omitempty"`
 }
 
 // PersistencePostgreSQL configure postgresql connection for service(s).

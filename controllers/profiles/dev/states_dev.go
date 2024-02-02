@@ -34,7 +34,6 @@ import (
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api"
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/platform"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/workflowdef"
@@ -59,10 +58,10 @@ func (e *ensureRunningWorkflowState) CanReconcile(workflow *operatorapi.SonataFl
 	return workflow.Status.IsReady() || workflow.Status.GetTopLevelCondition().IsUnknown() || workflow.Status.IsChildObjectsProblem()
 }
 
-func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
+func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (ctrl.Result, []client.Object, error) {
 	var objs []client.Object
 
-	flowDefCM, _, err := e.ensurers.definitionConfigMap.Ensure(ctx, workflow, ensureWorkflowDefConfigMapMutator(workflow))
+	flowDefCM, _, err := e.ensurers.definitionConfigMap.Ensure(ctx, workflow, plf, ensureWorkflowDefConfigMapMutator(workflow, plf))
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
 	}
@@ -70,9 +69,8 @@ func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatora
 
 	devBaseContainerImage := workflowdef.GetDefaultWorkflowDevModeImageTag()
 	// check if the Platform available
-	pl, err := platform.GetActivePlatform(ctx, e.C, workflow.Namespace)
-	if err == nil && len(pl.Spec.DevMode.BaseImage) > 0 {
-		devBaseContainerImage = pl.Spec.DevMode.BaseImage
+	if plf != nil && len(plf.Spec.DevMode.BaseImage) > 0 {
+		devBaseContainerImage = plf.Spec.DevMode.BaseImage
 	}
 	userPropsCM, _, err := e.ensurers.userPropsConfigMap.Ensure(ctx, workflow)
 	if err != nil {
@@ -93,8 +91,8 @@ func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatora
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, objs, nil
 	}
 
-	deployment, _, err := e.ensurers.deployment.Ensure(ctx, workflow,
-		deploymentMutateVisitor(workflow),
+	deployment, _, err := e.ensurers.deployment.Ensure(ctx, workflow, plf,
+		deploymentMutateVisitor(workflow, plf),
 		common.ImageDeploymentMutateVisitor(workflow, devBaseContainerImage),
 		mountDevConfigMapsMutateVisitor(workflow, flowDefCM.(*corev1.ConfigMap), userPropsCM.(*corev1.ConfigMap), managedPropsCM.(*corev1.ConfigMap), externalCM))
 	if err != nil {
@@ -102,13 +100,13 @@ func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatora
 	}
 	objs = append(objs, deployment)
 
-	service, _, err := e.ensurers.service.Ensure(ctx, workflow, common.ServiceMutateVisitor(workflow))
+	service, _, err := e.ensurers.service.Ensure(ctx, workflow, plf, common.ServiceMutateVisitor(workflow))
 	if err != nil {
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, objs, err
 	}
 	objs = append(objs, service)
 
-	route, _, err := e.ensurers.network.Ensure(ctx, workflow)
+	route, _, err := e.ensurers.network.Ensure(ctx, workflow, plf)
 	if err != nil {
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, objs, err
 	}
@@ -153,7 +151,7 @@ func (f *followWorkflowDeploymentState) CanReconcile(workflow *operatorapi.Sonat
 	return workflow.Status.IsWaitingForDeployment()
 }
 
-func (f *followWorkflowDeploymentState) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
+func (f *followWorkflowDeploymentState) Do(ctx context.Context, workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (ctrl.Result, []client.Object, error) {
 	result, err := common.DeploymentManager(f.C).SyncDeploymentStatus(ctx, workflow)
 	if err != nil {
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, nil, err
@@ -191,7 +189,7 @@ func (r *recoverFromFailureState) CanReconcile(workflow *operatorapi.SonataFlow)
 	return workflow.Status.GetCondition(api.RunningConditionType).IsFalse()
 }
 
-func (r *recoverFromFailureState) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
+func (r *recoverFromFailureState) Do(ctx context.Context, workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (ctrl.Result, []client.Object, error) {
 	// for now, a very basic attempt to recover by rolling out the deployment
 	deployment := &appsv1.Deployment{}
 	if err := r.C.Get(ctx, client.ObjectKeyFromObject(workflow), deployment); err != nil {

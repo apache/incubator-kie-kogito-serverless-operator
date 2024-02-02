@@ -35,6 +35,10 @@ import (
 	clientruntime "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var (
+	emptyPlatform = &operatorapi.SonataFlowPlatform{}
+)
+
 func Test_Reconciler_ProdOps(t *testing.T) {
 	workflow := test.GetBaseSonataFlowWithProdOpsProfile(t.Name())
 	workflow.Spec.PodTemplate.PodSpec.InitContainers = append(workflow.Spec.PodTemplate.PodSpec.InitContainers, corev1.Container{
@@ -45,7 +49,7 @@ func Test_Reconciler_ProdOps(t *testing.T) {
 	client := test.NewSonataFlowClientBuilder().
 		WithRuntimeObjects(workflow).
 		WithStatusSubresource(workflow, &operatorapi.SonataFlowBuild{}).Build()
-	result, err := NewProfileForOpsReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow)
+	result, err := NewProfileForOpsReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow, emptyPlatform)
 	assert.NoError(t, err)
 
 	assert.NotNil(t, result.RequeueAfter)
@@ -56,7 +60,7 @@ func Test_Reconciler_ProdOps(t *testing.T) {
 	assert.False(t, workflow.Status.IsReady())
 
 	// Reconcile again to run the deployment handler
-	result, err = NewProfileForOpsReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow)
+	result, err = NewProfileForOpsReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow, emptyPlatform)
 	assert.NoError(t, err)
 
 	// Let's check for the right creation of the workflow (one CM volume, one container with a custom image)
@@ -84,7 +88,7 @@ func Test_Reconciler_ProdCustomPod(t *testing.T) {
 	client := test.NewSonataFlowClientBuilder().
 		WithRuntimeObjects(workflow, build, platform).
 		WithStatusSubresource(workflow, build, platform).Build()
-	_, err := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow)
+	_, err := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow, emptyPlatform)
 	assert.NoError(t, err)
 
 	// Let's check for the right creation of the workflow (one CM volume, one container with a custom image)
@@ -105,7 +109,7 @@ func Test_reconcilerProdBuildConditions(t *testing.T) {
 		WithRuntimeObjects(workflow, platform).
 		WithStatusSubresource(workflow, platform, &operatorapi.SonataFlowBuild{}).Build()
 
-	result, err := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow)
+	result, err := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow, emptyPlatform)
 	assert.NoError(t, err)
 
 	assert.NotNil(t, result.RequeueAfter)
@@ -113,7 +117,7 @@ func Test_reconcilerProdBuildConditions(t *testing.T) {
 	assert.False(t, workflow.Status.IsReady())
 
 	// still building
-	result, err = NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow)
+	result, err = NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow, emptyPlatform)
 	assert.NoError(t, err)
 	assert.Equal(t, requeueWhileWaitForBuild, result.RequeueAfter)
 	assert.True(t, workflow.Status.IsBuildRunningOrUnknown())
@@ -126,7 +130,7 @@ func Test_reconcilerProdBuildConditions(t *testing.T) {
 	assert.NoError(t, client.Status().Update(context.TODO(), build))
 
 	// last reconciliation cycle waiting for build
-	result, err = NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow)
+	result, err = NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow, emptyPlatform)
 	assert.NoError(t, err)
 	assert.Equal(t, requeueWhileWaitForBuild, result.RequeueAfter)
 	assert.False(t, workflow.Status.IsBuildRunningOrUnknown())
@@ -134,7 +138,7 @@ func Test_reconcilerProdBuildConditions(t *testing.T) {
 	assert.Equal(t, api.WaitingForDeploymentReason, workflow.Status.GetTopLevelCondition().Reason)
 
 	// now we create the objects
-	result, err = NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow)
+	result, err = NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow, emptyPlatform)
 	assert.NoError(t, err)
 	assert.False(t, workflow.Status.IsBuildRunningOrUnknown())
 	assert.False(t, workflow.Status.IsReady())
@@ -152,7 +156,7 @@ func Test_reconcilerProdBuildConditions(t *testing.T) {
 	err = client.Status().Update(context.TODO(), deployment)
 	assert.NoError(t, err)
 
-	result, err = NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow)
+	result, err = NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow, emptyPlatform)
 	assert.NoError(t, err)
 	assert.False(t, workflow.Status.IsBuildRunningOrUnknown())
 	assert.True(t, workflow.Status.IsReady())
@@ -170,7 +174,7 @@ func Test_deployWorkflowReconciliationHandler_handleObjects(t *testing.T) {
 		StateSupport: fakeReconcilerSupport(client),
 		ensurers:     newObjectEnsurers(&common.StateSupport{C: client}),
 	}
-	result, objects, err := handler.Do(context.TODO(), workflow)
+	result, objects, err := handler.Do(context.TODO(), workflow, emptyPlatform)
 	assert.Greater(t, result.RequeueAfter, int64(0))
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
@@ -199,7 +203,7 @@ func Test_GenerationAnnotationCheck(t *testing.T) {
 		StateSupport: fakeReconcilerSupport(client),
 		ensurers:     newObjectEnsurers(&common.StateSupport{C: client}),
 	}
-	result, objects, err := handler.Do(context.TODO(), workflow)
+	result, objects, err := handler.Do(context.TODO(), workflow, emptyPlatform)
 	assert.Greater(t, result.RequeueAfter, int64(time.Second))
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
@@ -218,7 +222,7 @@ func Test_GenerationAnnotationCheck(t *testing.T) {
 		StateSupport: fakeReconcilerSupport(client),
 		ensurers:     newObjectEnsurers(&common.StateSupport{C: client}),
 	}
-	result, objects, err = handler.Do(context.TODO(), workflowChanged)
+	result, objects, err = handler.Do(context.TODO(), workflowChanged, emptyPlatform)
 	assert.NoError(t, err)
 	// no requeue, no objects since the workflow has changed
 	assert.Equal(t, time.Duration(0), result.RequeueAfter)
