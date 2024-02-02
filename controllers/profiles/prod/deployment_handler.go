@@ -56,7 +56,7 @@ func (d *deploymentReconciler) reconcileWithBuiltImage(ctx context.Context, work
 		return ctrl.Result{}, nil, err
 	}
 	managedPropsCM, _, err := d.ensurers.managedPropsConfigMap.Ensure(ctx, workflow, pl,
-		common.UserPropertiesMutateVisitor(ctx, d.StateSupport.Catalog, workflow, pl, userPropsCM.(*v1.ConfigMap)))
+		common.ManagedPropertiesMutateVisitor(ctx, d.StateSupport.Catalog, workflow, pl, userPropsCM.(*v1.ConfigMap)))
 	if err != nil {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.ExternalResourcesNotFoundReason, "Unable to retrieve the managed properties config map")
 		_, err = d.PerformStatusUpdate(ctx, workflow)

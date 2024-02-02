@@ -105,7 +105,7 @@ func ServiceMutateVisitor(workflow *operatorapi.SonataFlow) MutateVisitor {
 	}
 }
 
-func UserPropertiesMutateVisitor(ctx context.Context, catalog discovery.ServiceCatalog,
+func ManagedPropertiesMutateVisitor(ctx context.Context, catalog discovery.ServiceCatalog,
 	workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform, userProps *corev1.ConfigMap) MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {

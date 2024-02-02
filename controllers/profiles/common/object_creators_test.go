@@ -47,7 +47,7 @@ func Test_ensureWorkflowPropertiesConfigMapMutator(t *testing.T) {
 
 	userProps, _ := UserPropsConfigMapCreator(workflow)
 	userPropsCM := userProps.(*corev1.ConfigMap)
-	visitor := UserPropertiesMutateVisitor(context.TODO(), nil, workflow, nil, userPropsCM)
+	visitor := ManagedPropertiesMutateVisitor(context.TODO(), nil, workflow, nil, userPropsCM)
 	mutateFn := visitor(managedProps)
 
 	assert.NoError(t, mutateFn())
@@ -82,7 +82,7 @@ func Test_ensureWorkflowPropertiesConfigMapMutator_DollarReplacement(t *testing.
 	userPropsCM := userProps.(*corev1.ConfigMap)
 	userPropsCM.Data[workflowproj.ApplicationPropertiesFileName] = "mp.messaging.outgoing.kogito_outgoing_stream.url=${kubernetes:services.v1/event-listener}"
 
-	mutateVisitorFn := UserPropertiesMutateVisitor(context.TODO(), nil, workflow, nil, userPropsCM)
+	mutateVisitorFn := ManagedPropertiesMutateVisitor(context.TODO(), nil, workflow, nil, userPropsCM)
 
 	err := mutateVisitorFn(managedPropsCM)()
 	assert.NoError(t, err)

@@ -78,7 +78,7 @@ func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatora
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
 	}
-	managedPropsCM, _, err := e.ensurers.managedPropsConfigMap.Ensure(ctx, workflow, pl, common.UserPropertiesMutateVisitor(ctx, e.StateSupport.Catalog, workflow, pl, userPropsCM.(*corev1.ConfigMap)))
+	managedPropsCM, _, err := e.ensurers.managedPropsConfigMap.Ensure(ctx, workflow, pl, common.ManagedPropertiesMutateVisitor(ctx, e.StateSupport.Catalog, workflow, pl, userPropsCM.(*corev1.ConfigMap)))
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
 	}
