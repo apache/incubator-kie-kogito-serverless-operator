@@ -208,7 +208,7 @@ var _ = Describe("Validate the persistence ", Ordered, func() {
 		}, 12*time.Minute).Should(BeTrue())
 	},
 		Entry("defined in the workflow from an existing kubernetes service as a reference", test.GetSonataFlowE2EWorkflowPersistenceSampleDataDirectory("by_service")),
-		FEntry("defined from the sonataflow platform as reference", test.GetSonataFlowE2EWorkflowPersistenceSampleDataDirectory("from_platform")),
+		Entry("defined from the sonataflow platform as reference", test.GetSonataFlowE2EWorkflowPersistenceSampleDataDirectory("from_platform")),
 		Entry("defined in the workflow and from the sonataflow platform", test.GetSonataFlowE2EWorkflowPersistenceSampleDataDirectory("from_platform_overwritten_by_service")),
 	)
 
