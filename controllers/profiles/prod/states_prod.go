@@ -48,7 +48,7 @@ func (h *newBuilderState) CanReconcile(workflow *operatorapi.SonataFlow) bool {
 		workflow.Status.IsBuildFailed()
 }
 
-func (h *newBuilderState) Do(ctx context.Context, workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (ctrl.Result, []client.Object, error) {
+func (h *newBuilderState) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
 	_, err := platform.GetActivePlatform(ctx, h.C, workflow.Namespace)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -100,7 +100,7 @@ func (h *followBuildStatusState) CanReconcile(workflow *operatorapi.SonataFlow) 
 	return workflow.Status.IsBuildRunningOrUnknown() || workflow.Status.IsWaitingForBuild()
 }
 
-func (h *followBuildStatusState) Do(ctx context.Context, workflow *operatorapi.SonataFlow, _ *operatorapi.SonataFlowPlatform) (ctrl.Result, []client.Object, error) {
+func (h *followBuildStatusState) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
 	// Let's retrieve the build to check the status
 	build, err := builder.NewSonataFlowBuildManager(ctx, h.C).GetOrCreateBuild(workflow)
 	if err != nil {
@@ -160,7 +160,7 @@ func (h *deployWithBuildWorkflowState) CanReconcile(workflow *operatorapi.Sonata
 	return workflow.Status.GetCondition(api.BuiltConditionType).IsTrue()
 }
 
-func (h *deployWithBuildWorkflowState) Do(ctx context.Context, workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (ctrl.Result, []client.Object, error) {
+func (h *deployWithBuildWorkflowState) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
 	// Guard to avoid errors while getting a new builder manager.
 	// Maybe we can do typed errors in the buildManager and
 	// have something like sonataerr.IsPlatformNotFound(err) instead.
@@ -189,7 +189,7 @@ func (h *deployWithBuildWorkflowState) Do(ctx context.Context, workflow *operato
 	}
 
 	// didn't change, business as usual
-	return newDeploymentReconciler(h.StateSupport, h.ensurers).reconcileWithBuiltImage(ctx, workflow, plf, build.Status.ImageTag)
+	return newDeploymentReconciler(h.StateSupport, h.ensurers).reconcileWithBuiltImage(ctx, workflow, build.Status.ImageTag)
 }
 
 func (h *deployWithBuildWorkflowState) PostReconcile(ctx context.Context, workflow *operatorapi.SonataFlow) error {

@@ -70,9 +70,9 @@ func NewReconciler(support *StateSupport, stateMachine *ReconciliationStateMachi
 }
 
 // Reconcile does the actual reconciliation algorithm based on a set of ReconciliationState
-func (b *Reconciler) Reconcile(ctx context.Context, workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (ctrl.Result, error) {
+func (b *Reconciler) Reconcile(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, error) {
 	workflow.Status.Manager().InitializeConditions()
-	result, objects, err := b.reconciliationStateMachine.do(ctx, workflow, plf)
+	result, objects, err := b.reconciliationStateMachine.do(ctx, workflow)
 	if err != nil {
 		return result, err
 	}
@@ -97,11 +97,11 @@ type ReconciliationStateMachine struct {
 	states []profiles.ReconciliationState
 }
 
-func (r *ReconciliationStateMachine) do(ctx context.Context, workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (ctrl.Result, []client.Object, error) {
+func (r *ReconciliationStateMachine) do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
 	for _, h := range r.states {
 		if h.CanReconcile(workflow) {
 			klog.V(log.I).InfoS("Found a condition to reconcile.", "Conditions", workflow.Status.Conditions)
-			result, objs, err := h.Do(ctx, workflow, plf)
+			result, objs, err := h.Do(ctx, workflow)
 			if err != nil {
 				return result, objs, err
 			}

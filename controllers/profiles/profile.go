@@ -59,7 +59,7 @@ import (
 //
 // While debugging, focus on the ReconciliationState(s), not in the profile implementation since the base algorithm is the same for every profile.
 type ProfileReconciler interface {
-	Reconcile(ctx context.Context, workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (ctrl.Result, error)
+	Reconcile(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, error)
 	GetProfile() metadata.ProfileType
 }
 
@@ -69,7 +69,7 @@ type ReconciliationState interface {
 	CanReconcile(workflow *operatorapi.SonataFlow) bool
 	// Do perform the reconciliation task. It returns the controller result, the objects updated, and an error if any.
 	// Objects can be nil if the reconciliation state doesn't perform any updates in any Kubernetes object.
-	Do(ctx context.Context, workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (ctrl.Result, []client.Object, error)
+	Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error)
 	// PostReconcile performs the actions to perform after the reconciliation that are not mandatory
 	PostReconcile(ctx context.Context, workflow *operatorapi.SonataFlow) error
 }

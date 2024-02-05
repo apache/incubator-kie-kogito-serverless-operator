@@ -408,21 +408,16 @@ func (j JobServiceHandler) GenerateServiceProperties() (*properties.Properties, 
 	props.Set(constants.JobServiceKafkaSmallRyeHealthProperty, "false")
 	// add data source reactive URL
 	if j.hasPostgreSQLConfigured() {
-		var dataSourceReactiveURL string
-		var err error
 		jspec := j.platform.Spec.Services.JobService
+		var pspec *operatorapi.PersistencePostgreSQL
 		if j.IsServiceSetInSpec() && jspec.Persistence != nil && jspec.Persistence.PostgreSQL != nil {
-			dataSourceReactiveURL, err = generateReactiveURL(j.platform.Spec.Services.JobService.Persistence.PostgreSQL, j.GetServiceName(), j.platform.Namespace, constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
-			if err != nil {
-				return nil, err
-			}
+			pspec = j.platform.Spec.Services.JobService.Persistence.PostgreSQL
 		} else {
-			p := j.platform.Spec.Persistence.PostgreSQL
-			var namespace string
-			if len(p.ServiceRef.Namespace) > 0 {
-				namespace = fmt.Sprintf(".%s", p.ServiceRef.Namespace)
-			}
-			dataSourceReactiveURL = fmt.Sprintf("%s://%s%s:%d/%s?search_path=%s", constants.PersistenceTypePostgreSQL, p.ServiceRef.Name, namespace, *p.ServiceRef.Port, p.ServiceRef.DatabaseName, j.GetServiceName())
+			pspec = j.platform.Spec.Persistence.PostgreSQL
+		}
+		dataSourceReactiveURL, err := generateReactiveURL(pspec, j.GetServiceName(), j.platform.Namespace, constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
+		if err != nil {
+			return nil, err
 		}
 		props.Set(constants.JobServiceDataSourceReactiveURL, dataSourceReactiveURL)
 	}

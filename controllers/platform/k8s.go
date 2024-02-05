@@ -61,19 +61,17 @@ func (action *serviceAction) Handle(ctx context.Context, platform *operatorapi.S
 		return nil, err
 	}
 
-	if platform.Spec.Services != nil {
-		psDI := services.NewDataIndexHandler(platform)
-		if psDI.IsServiceSetInSpec() {
-			if err := createOrUpdateServiceComponents(ctx, action.client, platform, psDI); err != nil {
-				return nil, err
-			}
+	psDI := services.NewDataIndexHandler(platform)
+	if psDI.IsServiceSetInSpec() {
+		if err := createOrUpdateServiceComponents(ctx, action.client, platform, psDI); err != nil {
+			return nil, err
 		}
+	}
 
-		psJS := services.NewJobServiceHandler(platform)
-		if psJS.IsServiceSetInSpec() {
-			if err := createOrUpdateServiceComponents(ctx, action.client, platform, psJS); err != nil {
-				return nil, err
-			}
+	psJS := services.NewJobServiceHandler(platform)
+	if psJS.IsServiceSetInSpec() {
+		if err := createOrUpdateServiceComponents(ctx, action.client, platform, psJS); err != nil {
+			return nil, err
 		}
 	}
 

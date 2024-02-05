@@ -39,7 +39,7 @@ import (
 
 // ObjectCreator is the func that creates the initial reference object, if the object doesn't exist in the cluster, this one is created.
 // Can be used as a reference to keep the object immutable
-type ObjectCreator func(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (client.Object, error)
+type ObjectCreator func(workflow *operatorapi.SonataFlow) (client.Object, error)
 
 // ObjectCreatorWithPlatform is the func equivalent to ObjectCreator to use when the resource being created needs a reference to the
 // SonataFlowPlatform
@@ -60,7 +60,7 @@ const (
 
 // DeploymentCreator is an objectCreator for a base Kubernetes Deployments for profiles that need to deploy the workflow on a vanilla deployment.
 // It serves as a basis for a basic Quarkus Java application, expected to listen on http 8080.
-func DeploymentCreator(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (client.Object, error) {
+func DeploymentCreator(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (client.Object, error) {
 	lbl := workflowproj.GetDefaultLabels(workflow)
 
 	deployment := &appsv1.Deployment{
@@ -86,7 +86,7 @@ func DeploymentCreator(workflow *operatorapi.SonataFlow, platform *operatorapi.S
 	if err := mergo.Merge(&deployment.Spec.Template.Spec, workflow.Spec.PodTemplate.PodSpec.ToPodSpec(), mergo.WithOverride); err != nil {
 		return nil, err
 	}
-	flowContainer, err := defaultContainer(workflow, platform)
+	flowContainer, err := defaultContainer(workflow, plf)
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func defaultContainer(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataF
 
 // ServiceCreator is an objectCreator for a basic Service aiming a vanilla Kubernetes Deployment.
 // It maps the default HTTP port (80) to the target Java application webserver on port 8080.
-func ServiceCreator(workflow *operatorapi.SonataFlow, _ *operatorapi.SonataFlowPlatform) (client.Object, error) {
+func ServiceCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
 	lbl := workflowproj.GetDefaultLabels(workflow)
 
 	service := &corev1.Service{
@@ -206,7 +206,7 @@ func ServiceCreator(workflow *operatorapi.SonataFlow, _ *operatorapi.SonataFlowP
 // OpenShiftRouteCreator is an ObjectCreator for a basic Route for a workflow running on OpenShift.
 // It enables the exposition of the service using an OpenShift Route.
 // See: https://github.com/openshift/api/blob/d170fcdc0fa638b664e4f35f2daf753cb4afe36b/route/v1/route.crd.yaml
-func OpenShiftRouteCreator(workflow *operatorapi.SonataFlow, _ *operatorapi.SonataFlowPlatform) (client.Object, error) {
+func OpenShiftRouteCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
 	route, err := openshift.RouteForWorkflow(workflow)
 	return route, err
 }

@@ -27,7 +27,6 @@ import (
 	"github.com/imdario/mergo"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -94,7 +93,7 @@ func ServiceMutateVisitor(workflow *operatorapi.SonataFlow) MutateVisitor {
 			if kubeutil.IsObjectNew(object) {
 				return nil
 			}
-			original, err := ServiceCreator(workflow, nil)
+			original, err := ServiceCreator(workflow)
 			if err != nil {
 				return err
 			}
@@ -106,7 +105,7 @@ func ServiceMutateVisitor(workflow *operatorapi.SonataFlow) MutateVisitor {
 }
 
 func ManagedPropertiesMutateVisitor(ctx context.Context, catalog discovery.ServiceCatalog,
-	workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform, userProps *corev1.ConfigMap) MutateVisitor {
+	workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform, userProps *corev1.ConfigMap) MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			managedProps := object.(*corev1.ConfigMap)
@@ -138,7 +137,7 @@ func ManagedPropertiesMutateVisitor(ctx context.Context, catalog discovery.Servi
 // This method can be used as an alternative to the Kubernetes ConfigMap refresher.
 //
 // See: https://kubernetes.io/docs/concepts/configuration/configmap/#mounted-configmaps-are-updated-automatically
-func RolloutDeploymentIfCMChangedMutateVisitor(workflow *operatorapi.SonataFlow, userPropsCM *v1.ConfigMap, managedPropsCM *v1.ConfigMap) MutateVisitor {
+func RolloutDeploymentIfCMChangedMutateVisitor(workflow *operatorapi.SonataFlow, userPropsCM *corev1.ConfigMap, managedPropsCM *corev1.ConfigMap) MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			deployment := object.(*appsv1.Deployment)

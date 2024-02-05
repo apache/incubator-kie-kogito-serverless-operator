@@ -658,7 +658,7 @@ type SonataFlowSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="podTemplate"
 	PodTemplate PodTemplateSpec `json:"podTemplate,omitempty"`
 	// Persistence defines the database persistence configuration for the workflow
-	Persistence *PersistenceSpec `json:"persistence,omitempty"`
+	Persistence *PersistencePlatformSpec `json:"persistence,omitempty"`
 }
 
 // SonataFlowStatus defines the observed state of SonataFlow

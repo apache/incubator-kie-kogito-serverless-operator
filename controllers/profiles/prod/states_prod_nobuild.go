@@ -36,7 +36,7 @@ func (f *ensureBuildSkipped) CanReconcile(workflow *operatorapi.SonataFlow) bool
 		workflow.Status.GetCondition(api.BuiltConditionType).Reason != api.BuildSkippedReason
 }
 
-func (f *ensureBuildSkipped) Do(ctx context.Context, workflow *operatorapi.SonataFlow, _ *operatorapi.SonataFlowPlatform) (ctrl.Result, []client.Object, error) {
+func (f *ensureBuildSkipped) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
 	// We skip the build, so let's ensure the status reflect that
 	workflow.Status.Manager().MarkFalse(api.BuiltConditionType, api.BuildSkippedReason, "")
 	if _, err := f.PerformStatusUpdate(ctx, workflow); err != nil {
@@ -61,8 +61,8 @@ func (f *followDeployWorkflowState) CanReconcile(workflow *operatorapi.SonataFlo
 	return workflow.Status.GetCondition(api.BuiltConditionType).Reason == api.BuildSkippedReason
 }
 
-func (f *followDeployWorkflowState) Do(ctx context.Context, workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (ctrl.Result, []client.Object, error) {
-	return newDeploymentReconciler(f.StateSupport, f.ensurers).reconcile(ctx, workflow, plf)
+func (f *followDeployWorkflowState) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
+	return newDeploymentReconciler(f.StateSupport, f.ensurers).reconcile(ctx, workflow)
 }
 
 func (f *followDeployWorkflowState) PostReconcile(ctx context.Context, workflow *operatorapi.SonataFlow) error {

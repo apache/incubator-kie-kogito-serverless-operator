@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
 	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
@@ -213,7 +214,7 @@ func TestMergePodSpec_WithPostgreSQL_and_JDBC_URL_field(t *testing.T) {
 				},
 			},
 		},
-		Persistence: &v1alpha08.PersistenceSpec{
+		Persistence: &v1alpha08.PersistencePlatformSpec{
 			PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 				SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 				JdbcUrl:   "jdbc:postgresql://host:port/database?currentSchema=workflow",
@@ -303,7 +304,7 @@ func TestMergePodSpec_OverrideContainers_WithPostgreSQL_In_Workflow_CR(t *testin
 				},
 			},
 		},
-		Persistence: &v1alpha08.PersistenceSpec{
+		Persistence: &v1alpha08.PersistencePlatformSpec{
 			PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 				SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 				ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
@@ -374,7 +375,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_CR_And_Worflow_Requesti
 			Namespace: "default",
 		},
 		Spec: v1alpha08.SonataFlowPlatformSpec{
-			Persistence: &v1alpha08.PersistenceSpec{
+			Persistence: &v1alpha08.PersistencePlatformSpec{
 				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 					SecretRef: v1alpha08.PostgreSQLSecretOptions{
 						Name:        "foo_secret",
@@ -395,7 +396,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_CR_And_Worflow_Requesti
 
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflow.Spec = v1alpha08.SonataFlowSpec{
-		Persistence: &v1alpha08.PersistenceSpec{},
+		Persistence: &v1alpha08.PersistencePlatformSpec{},
 	}
 	object, err := DeploymentCreator(workflow, p)
 	assert.NoError(t, err)
@@ -455,7 +456,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_And_In_Workflow_CR(t *t
 			Namespace: "default",
 		},
 		Spec: v1alpha08.SonataFlowPlatformSpec{
-			Persistence: &v1alpha08.PersistenceSpec{
+			Persistence: &v1alpha08.PersistencePlatformSpec{
 				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 					SecretRef: v1alpha08.PostgreSQLSecretOptions{
 						Name:        "foo_secret",
@@ -492,7 +493,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_And_In_Workflow_CR(t *t
 				},
 			},
 		},
-		Persistence: &v1alpha08.PersistenceSpec{
+		Persistence: &v1alpha08.PersistencePlatformSpec{
 			PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 				SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 				ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
@@ -562,7 +563,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_But_Workflow_CR_Not_Req
 			Namespace: "default",
 		},
 		Spec: v1alpha08.SonataFlowPlatformSpec{
-			Persistence: &v1alpha08.PersistenceSpec{
+			Persistence: &v1alpha08.PersistencePlatformSpec{
 				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 					SecretRef: v1alpha08.PostgreSQLSecretOptions{
 						Name:        "foo_secret",
@@ -604,7 +605,7 @@ func TestMergePodSpec_WithEphemeralPostgreSQL_And_Undefined_PostgreSQL_Image_In_
 	}
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflow.Spec = v1alpha08.SonataFlowSpec{
-		Persistence: &v1alpha08.PersistenceSpec{},
+		Persistence: &v1alpha08.PersistencePlatformSpec{},
 	}
 	_, err := DeploymentCreator(workflow, p)
 	assert.Error(t, err)
