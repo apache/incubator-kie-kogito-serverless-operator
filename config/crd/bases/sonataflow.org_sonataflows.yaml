@@ -2106,6 +2106,7 @@ spec:
               persistence:
                 description: Persistence defines the database persistence configuration
                   for the workflow
+                maxProperties: 1
                 properties:
                   postgresql:
                     description: Connect configured services to a postgresql database.

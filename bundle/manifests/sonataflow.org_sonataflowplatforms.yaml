@@ -425,6 +425,7 @@ spec:
                   When this field is set, the configuration is used as the persistence
                   for platform services and sonataflow instances that don't provide
                   one of their own.
+                maxProperties: 1
                 properties:
                   postgresql:
                     description: Connect configured services to a postgresql database.
@@ -498,6 +499,7 @@ spec:
                       persistence:
                         description: Persists service to a datasource of choice. Ephemeral
                           by default.
+                        maxProperties: 1
                         properties:
                           postgresql:
                             description: Connect configured services to a postgresql
@@ -8369,6 +8371,7 @@ spec:
                       persistence:
                         description: Persists service to a datasource of choice. Ephemeral
                           by default.
+                        maxProperties: 1
                         properties:
                           postgresql:
                             description: Connect configured services to a postgresql

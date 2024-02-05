@@ -18,10 +18,6 @@ metadata:
   name: sonataflow-platform
 spec:
   build:
-    template:
-      buildArgs:
-      - name: QUARKUS_EXTENSION
-        value: org.kie.kogito:kogito-addons-quarkus-jobs-knative-eventing:2.0.0-SNAPSHOT
     config:
       strategyOptions:
         KanikoBuildCacheEnabled: "true"

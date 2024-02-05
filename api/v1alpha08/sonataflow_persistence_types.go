@@ -14,6 +14,18 @@
 
 package v1alpha08
 
+// PersistenceOptionsSpec configures the DataBase support for both platform services and workflows. For services, it allows
+// configuring a generic database connectivity if the service does not come with its own configured. In case of workflows,
+// the operator will add the necessary JDBC properties to in the workflow's application.properties so that it can communicate
+// with the persistence service based on the spec provided here.
+// +optional
+// +kubebuilder:validation:MaxProperties=1
+type PersistenceOptionsSpec struct {
+	// Connect configured services to a postgresql database.
+	// +optional
+	PostgreSQL *PersistencePostgreSQL `json:"postgresql,omitempty"`
+}
+
 // PersistencePostgreSQL configure postgresql connection for service(s).
 // +kubebuilder:validation:MinProperties=2
 // +kubebuilder:validation:MaxProperties=2

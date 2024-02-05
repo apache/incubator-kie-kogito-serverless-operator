@@ -32,7 +32,7 @@ type ServiceSpec struct {
 	Enabled *bool `json:"enabled,omitempty"`
 	// Persists service to a datasource of choice. Ephemeral by default.
 	// +optional
-	Persistence *PersistencePlatformSpec `json:"persistence,omitempty"`
+	Persistence *PersistenceOptionsSpec `json:"persistence,omitempty"`
 	// PodTemplate describes the deployment details of this platform service instance.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="podTemplate"
 	PodTemplate PodTemplateSpec `json:"podTemplate,omitempty"`

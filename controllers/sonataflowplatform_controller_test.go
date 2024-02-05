@@ -86,7 +86,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		namespace := t.Name()
 		// Create a SonataFlowPlatform object with metadata and spec.
 		ksp := test.GetBasePlatformInReadyPhase(namespace)
-		ksp.Spec.Services = v1alpha08.ServicesPlatformSpec{
+		ksp.Spec.Services = &v1alpha08.ServicesPlatformSpec{
 			DataIndex: &v1alpha08.ServiceSpec{},
 		}
 
@@ -136,7 +136,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, env)
 
 		// Check with persistence set
-		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistencePlatformSpec{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistenceOptionsSpec{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 			SecretRef:  v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 			ServiceRef: &v1alpha08.PostgreSQLServiceOptions{Name: "test"},
 		}}
@@ -165,7 +165,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		// Create a SonataFlowPlatform object with metadata and spec.
 		ksp := test.GetBasePlatformInReadyPhase(namespace)
 		var replicas int32 = 2
-		ksp.Spec.Services = v1alpha08.ServicesPlatformSpec{
+		ksp.Spec.Services = &v1alpha08.ServicesPlatformSpec{
 			DataIndex: &v1alpha08.ServiceSpec{
 				PodTemplate: v1alpha08.PodTemplateSpec{
 					Replicas: &replicas,
@@ -223,7 +223,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check with persistence set
 		url := "jdbc:postgresql://host:1234/database?currentSchema=data-index-service"
-		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistencePlatformSpec{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+		ksp.Spec.Services.DataIndex.Persistence = &v1alpha08.PersistenceOptionsSpec{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 			SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 			JdbcUrl:   url,
 		}}
@@ -258,11 +258,11 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		ksp := test.GetBasePlatformInReadyPhase(namespace)
 		// Check with persistence set
 		ksp.Spec = v1alpha08.SonataFlowPlatformSpec{
-			Services: v1alpha08.ServicesPlatformSpec{
+			Services: &v1alpha08.ServicesPlatformSpec{
 				DataIndex:  &v1alpha08.ServiceSpec{},
 				JobService: &v1alpha08.ServiceSpec{},
 			},
-			Persistence: &v1alpha08.PersistencePlatformSpec{
+			Persistence: &v1alpha08.PersistenceOptionsSpec{
 				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 					SecretRef:  v1alpha08.PostgreSQLSecretOptions{Name: "generic", UserKey: "POSTGRESQL_USER", PasswordKey: "POSTGRESQL_PASSWORD"},
 					ServiceRef: &v1alpha08.PostgreSQLServiceOptions{Name: "postgresql", Namespace: "default", Port: &postgreSQLPort, DatabaseName: "sonataflow"},
@@ -348,9 +348,9 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		urlDI := "jdbc:postgresql://localhost:5432/database?currentSchema=data-index-service"
 		urlJS := "jdbc:postgresql://localhost:5432/database?currentSchema=job-service"
 		ksp.Spec = v1alpha08.SonataFlowPlatformSpec{
-			Services: v1alpha08.ServicesPlatformSpec{
+			Services: &v1alpha08.ServicesPlatformSpec{
 				DataIndex: &v1alpha08.ServiceSpec{
-					Persistence: &v1alpha08.PersistencePlatformSpec{
+					Persistence: &v1alpha08.PersistenceOptionsSpec{
 						PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 							SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "dataIndex"},
 							JdbcUrl:   urlDI,
@@ -358,7 +358,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 					},
 				},
 				JobService: &v1alpha08.ServiceSpec{
-					Persistence: &v1alpha08.PersistencePlatformSpec{
+					Persistence: &v1alpha08.PersistenceOptionsSpec{
 						PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 							SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "job"},
 							JdbcUrl:   urlJS,
@@ -366,7 +366,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 					},
 				},
 			},
-			Persistence: &v1alpha08.PersistencePlatformSpec{
+			Persistence: &v1alpha08.PersistenceOptionsSpec{
 				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 					SecretRef:  v1alpha08.PostgreSQLSecretOptions{Name: "generic", UserKey: "POSTGRESQL_USER", PasswordKey: "POSTGRESQL_PASSWORD"},
 					ServiceRef: &v1alpha08.PostgreSQLServiceOptions{Name: "postgresql", Namespace: "default", Port: &postgreSQLPort, DatabaseName: "sonataflow"},
@@ -461,7 +461,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		namespace := t.Name()
 		// Create a SonataFlowPlatform object with metadata and spec.
 		ksp := test.GetBasePlatformInReadyPhase(namespace)
-		ksp.Spec.Services = v1alpha08.ServicesPlatformSpec{
+		ksp.Spec.Services = &v1alpha08.ServicesPlatformSpec{
 			JobService: &v1alpha08.ServiceSpec{},
 		}
 
@@ -508,7 +508,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.NotContains(t, dep.Spec.Template.Spec.Containers[0].Env, envDataIndex)
 
 		// Check with persistence set
-		ksp.Spec.Services.JobService.Persistence = &v1alpha08.PersistencePlatformSpec{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+		ksp.Spec.Services.JobService.Persistence = &v1alpha08.PersistenceOptionsSpec{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 			SecretRef:  v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 			ServiceRef: &v1alpha08.PostgreSQLServiceOptions{Name: "test"},
 		}}
@@ -538,7 +538,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		// Create a SonataFlowPlatform object with metadata and spec.
 		ksp := test.GetBasePlatformInReadyPhase(namespace)
 		var replicas int32 = 2
-		ksp.Spec.Services = v1alpha08.ServicesPlatformSpec{
+		ksp.Spec.Services = &v1alpha08.ServicesPlatformSpec{
 			JobService: &v1alpha08.ServiceSpec{
 				PodTemplate: v1alpha08.PodTemplateSpec{
 					Replicas: &replicas,
@@ -593,7 +593,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check with persistence set
 		url := "jdbc:postgresql://host:1234/database?currentSchema=data-index-service"
-		ksp.Spec.Services.JobService.Persistence = &v1alpha08.PersistencePlatformSpec{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+		ksp.Spec.Services.JobService.Persistence = &v1alpha08.PersistenceOptionsSpec{PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 			SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 			JdbcUrl:   url,
 		}}
@@ -619,7 +619,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		namespace := t.Name()
 		// Create a SonataFlowPlatform object with metadata and spec.
 		ksp := test.GetBasePlatformInReadyPhase(namespace)
-		ksp.Spec.Services = v1alpha08.ServicesPlatformSpec{
+		ksp.Spec.Services = &v1alpha08.ServicesPlatformSpec{
 			DataIndex:  &v1alpha08.ServiceSpec{},
 			JobService: &v1alpha08.ServiceSpec{},
 		}
@@ -687,7 +687,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Create a SonataFlowPlatform object with metadata and spec.
 		ksp := test.GetBasePlatformInReadyPhase(namespace)
-		ksp.Spec.Services = v1alpha08.ServicesPlatformSpec{
+		ksp.Spec.Services = &v1alpha08.ServicesPlatformSpec{
 			DataIndex:  &v1alpha08.ServiceSpec{},
 			JobService: &v1alpha08.ServiceSpec{},
 		}
@@ -785,7 +785,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.Equal(t, ksp2.Status.ClusterPlatformRef.Services.JobServiceRef.Url, psJs.GetLocalServiceBaseUrl())
 		assert.Equal(t, psJs.GetLocalServiceBaseUrl()+constants.JobServiceJobEventsPath, psJs2.GetServiceBaseUrl()+constants.JobServiceJobEventsPath)
 
-		ksp2.Spec.Services = v1alpha08.ServicesPlatformSpec{}
+		ksp2.Spec.Services = &v1alpha08.ServicesPlatformSpec{}
 
 		assert.NoError(t, cl.Update(context.TODO(), ksp2))
 		_, err = r.Reconcile(context.TODO(), req2)

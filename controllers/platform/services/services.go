@@ -459,7 +459,7 @@ func isJobServiceSet(platform *operatorapi.SonataFlowPlatform) bool {
 }
 
 func isServicesSet(platform *operatorapi.SonataFlowPlatform) bool {
-	return platform != nil && (platform.Spec.Services.JobService != nil || platform.Spec.Services.DataIndex != nil)
+	return platform != nil && platform.Spec.Services != nil
 }
 
 func generateServiceURL(protocol string, namespace string, name string) string {

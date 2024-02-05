@@ -24,9 +24,7 @@ import (
 )
 
 const (
-	defaultSchemaName   = "default"
-	defaultDatabaseName = "sonataflow"
-
+	defaultDatabaseName  = "sonataflow"
 	timeoutSeconds       = 3
 	failureThreshold     = 5
 	initialPeriodSeconds = 15
@@ -114,7 +112,7 @@ func ConfigurePostgreSQLEnv(postgresql *operatorapi.PersistencePostgreSQL, datab
 	}
 }
 
-func ConfigurePersistence(serviceContainer *corev1.Container, config *operatorapi.PersistencePlatformSpec, defaultSchema, namespace string) (*corev1.Container, error) {
+func ConfigurePersistence(serviceContainer *corev1.Container, config *operatorapi.PersistenceOptionsSpec, defaultSchema, namespace string) (*corev1.Container, error) {
 	if config == nil {
 		return nil, fmt.Errorf("no persistence specification found")
 	}

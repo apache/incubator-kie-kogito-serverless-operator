@@ -203,7 +203,7 @@ func Test_appPropertyHandler_WithServicesWithUserOverrides(t *testing.T) {
 	platform := test.GetBasePlatform()
 	platform.Namespace = ns
 	platform.Spec = operatorapi.SonataFlowPlatformSpec{
-		Services: operatorapi.ServicesPlatformSpec{
+		Services: &operatorapi.ServicesPlatformSpec{
 			DataIndex: &operatorapi.ServiceSpec{
 				Enabled: &enabled,
 			},
@@ -625,6 +625,9 @@ func generatePlatform(opts ...plfmOptionFn) *operatorapi.SonataFlowPlatform {
 
 func setJobServiceEnabledValue(v *bool) plfmOptionFn {
 	return func(p *operatorapi.SonataFlowPlatform) {
+		if p.Spec.Services == nil {
+			p.Spec.Services = &operatorapi.ServicesPlatformSpec{}
+		}
 		if p.Spec.Services.JobService == nil {
 			p.Spec.Services.JobService = &operatorapi.ServiceSpec{}
 		}
@@ -634,6 +637,9 @@ func setJobServiceEnabledValue(v *bool) plfmOptionFn {
 
 func setDataIndexEnabledValue(v *bool) plfmOptionFn {
 	return func(p *operatorapi.SonataFlowPlatform) {
+		if p.Spec.Services == nil {
+			p.Spec.Services = &operatorapi.ServicesPlatformSpec{}
+		}
 		if p.Spec.Services.DataIndex == nil {
 			p.Spec.Services.DataIndex = &operatorapi.ServiceSpec{}
 		}
@@ -655,11 +661,14 @@ func setPlatformName(name string) plfmOptionFn {
 
 func setJobServiceJDBC(jdbc string) plfmOptionFn {
 	return func(p *operatorapi.SonataFlowPlatform) {
+		if p.Spec.Services == nil {
+			p.Spec.Services = &operatorapi.ServicesPlatformSpec{}
+		}
 		if p.Spec.Services.JobService == nil {
 			p.Spec.Services.JobService = &operatorapi.ServiceSpec{}
 		}
 		if p.Spec.Services.JobService.Persistence == nil {
-			p.Spec.Services.JobService.Persistence = &operatorapi.PersistencePlatformSpec{}
+			p.Spec.Services.JobService.Persistence = &operatorapi.PersistenceOptionsSpec{}
 		}
 		if p.Spec.Services.JobService.Persistence.PostgreSQL == nil {
 			p.Spec.Services.JobService.Persistence.PostgreSQL = &operatorapi.PersistencePostgreSQL{}

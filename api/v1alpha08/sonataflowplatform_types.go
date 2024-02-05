@@ -51,18 +51,7 @@ type SonataFlowPlatformSpec struct {
 	// the configuration is used as the persistence for platform services and sonataflow instances
 	// that don't provide one of their own.
 	// +optional
-	Persistence *PersistencePlatformSpec `json:"persistence,omitempty"`
-}
-
-// PersistencePlatformSpec configures the DataBase support for both platform services and workflows. For services, it allows
-// configuring a generic database connectivity if the service does not come with its own configured. In case of workflows,
-// the operator will add the necessary JDBC properties to in the workflow's application.properties so that it can communicate
-// with the persistence service based on the spec provided here.
-// +optional
-type PersistencePlatformSpec struct {
-	// Connect configured services to a postgresql database.
-	// +optional
-	PostgreSQL *PersistencePostgreSQL `json:"postgresql,omitempty"`
+	Persistence *PersistenceOptionsSpec `json:"persistence,omitempty"`
 }
 
 // PlatformCluster is the kind of orchestration cluster the platform is installed into
