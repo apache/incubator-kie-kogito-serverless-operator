@@ -200,8 +200,9 @@ func (d DataIndexHandler) MergePodSpec(podSpec corev1.PodSpec) (corev1.PodSpec, 
 
 // hasPostgreSQLConfigured returns true when either the SonataFlow Platform PostgreSQL CR's structure or the one in the Data Index service specification is not nil
 func (d DataIndexHandler) hasPostgreSQLConfigured() bool {
-	return (d.platform.Spec.Services.DataIndex.Persistence != nil && d.platform.Spec.Services.DataIndex.Persistence.PostgreSQL != nil) ||
-		(d.platform.Spec.Persistence != nil && d.platform.Spec.Persistence.PostgreSQL != nil)
+	return d.IsServiceSetInSpec() &&
+		((d.platform.Spec.Services.DataIndex.Persistence != nil && d.platform.Spec.Services.DataIndex.Persistence.PostgreSQL != nil) ||
+			(d.platform.Spec.Persistence != nil && d.platform.Spec.Persistence.PostgreSQL != nil))
 }
 
 func (d DataIndexHandler) ConfigurePersistence(containerSpec *corev1.Container) *corev1.Container {
@@ -373,8 +374,9 @@ func (j JobServiceHandler) MergeContainerSpec(containerSpec *corev1.Container) (
 
 // hasPostgreSQLConfigured returns true when either the SonataFlow Platform PostgreSQL CR's structure or the one in the Job service specification is not nil
 func (j JobServiceHandler) hasPostgreSQLConfigured() bool {
-	return (j.platform.Spec.Services.JobService.Persistence != nil && j.platform.Spec.Services.JobService.Persistence.PostgreSQL != nil) ||
-		(j.platform.Spec.Persistence != nil && j.platform.Spec.Persistence.PostgreSQL != nil)
+	return j.IsServiceSetInSpec() &&
+		((j.platform.Spec.Services.JobService.Persistence != nil && j.platform.Spec.Services.JobService.Persistence.PostgreSQL != nil) ||
+			(j.platform.Spec.Persistence != nil && j.platform.Spec.Persistence.PostgreSQL != nil))
 }
 
 func (j JobServiceHandler) ConfigurePersistence(containerSpec *corev1.Container) *corev1.Container {
