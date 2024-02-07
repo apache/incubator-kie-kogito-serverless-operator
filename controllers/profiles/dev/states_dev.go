@@ -61,10 +61,7 @@ func (e *ensureRunningWorkflowState) CanReconcile(workflow *operatorapi.SonataFl
 
 func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error) {
 	var objs []client.Object
-	plf, err := platform.GetActivePlatform(context.TODO(), e.C, workflow.Namespace)
-	if err != nil {
-		return ctrl.Result{Requeue: false}, objs, err
-	}
+
 	flowDefCM, _, err := e.ensurers.definitionConfigMap.Ensure(ctx, workflow, ensureWorkflowDefConfigMapMutator(workflow))
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
@@ -73,14 +70,18 @@ func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatora
 
 	devBaseContainerImage := workflowdef.GetDefaultWorkflowDevModeImageTag()
 	// check if the Platform available
-	if plf != nil && len(plf.Spec.DevMode.BaseImage) > 0 {
-		devBaseContainerImage = plf.Spec.DevMode.BaseImage
+	pl, err := platform.GetActivePlatform(context.TODO(), e.C, workflow.Namespace)
+	if err != nil {
+		return ctrl.Result{Requeue: false}, objs, err
+	}
+	if pl != nil && len(pl.Spec.DevMode.BaseImage) > 0 {
+		devBaseContainerImage = pl.Spec.DevMode.BaseImage
 	}
 	userPropsCM, _, err := e.ensurers.userPropsConfigMap.Ensure(ctx, workflow)
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
 	}
-	managedPropsCM, _, err := e.ensurers.managedPropsConfigMap.Ensure(ctx, workflow, plf, common.ManagedPropertiesMutateVisitor(ctx, e.StateSupport.Catalog, workflow, plf, userPropsCM.(*corev1.ConfigMap)))
+	managedPropsCM, _, err := e.ensurers.managedPropsConfigMap.Ensure(ctx, workflow, pl, common.ManagedPropertiesMutateVisitor(ctx, e.StateSupport.Catalog, workflow, pl, userPropsCM.(*corev1.ConfigMap)))
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
 	}
@@ -95,8 +96,8 @@ func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatora
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, objs, nil
 	}
 
-	deployment, _, err := e.ensurers.deployment.Ensure(ctx, workflow, plf,
-		deploymentMutateVisitor(workflow, plf),
+	deployment, _, err := e.ensurers.deployment.Ensure(ctx, workflow, pl,
+		deploymentMutateVisitor(workflow, pl),
 		common.ImageDeploymentMutateVisitor(workflow, devBaseContainerImage),
 		mountDevConfigMapsMutateVisitor(workflow, flowDefCM.(*corev1.ConfigMap), userPropsCM.(*corev1.ConfigMap), managedPropsCM.(*corev1.ConfigMap), externalCM))
 	if err != nil {
