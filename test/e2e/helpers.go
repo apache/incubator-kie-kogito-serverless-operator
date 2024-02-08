@@ -100,10 +100,15 @@ func getHealthStatusInContainer(podName string, containerName string, ns string)
 	cmd := exec.Command("kubectl", "exec", "-t", podName, "-n", ns, "-c", containerName, "--", "curl", "-s", "localhost:8080/q/health")
 	output, err := utils.Run(cmd)
 	Expect(err).NotTo(HaveOccurred())
+	// On Apache CI Nodes, does not return valid JSON, hence we match first and last brackets by index and extract it
 	stringOutput := string(output)
 	startIndex := strings.Index(stringOutput, "{")
 	endIndex := strings.LastIndex(stringOutput, "}")
-	stringOutput = stringOutput[startIndex-1:endIndex+1]
+	if (startIndex == 0) {
+		stringOutput = stringOutput[startIndex:endIndex+1]		
+	} else {
+		stringOutput = stringOutput[startIndex-1:endIndex+1]
+	}
 	fmt.Printf("Parsed following JSON object from health Endpoint response: %v\n", stringOutput)
 	err = json.Unmarshal([]byte(stringOutput), &h)
 	if err != nil {
