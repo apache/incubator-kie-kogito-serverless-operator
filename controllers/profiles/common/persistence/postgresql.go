@@ -113,9 +113,6 @@ func ConfigurePostgreSQLEnv(postgresql *operatorapi.PersistencePostgreSQL, datab
 }
 
 func ConfigurePersistence(serviceContainer *corev1.Container, config *operatorapi.PersistenceOptionsSpec, defaultSchema, namespace string) (*corev1.Container, error) {
-	if config == nil {
-		return nil, fmt.Errorf("no persistence specification found")
-	}
 	if config.PostgreSQL == nil {
 		return nil, fmt.Errorf("no postgreSQL configuration found")
 	}

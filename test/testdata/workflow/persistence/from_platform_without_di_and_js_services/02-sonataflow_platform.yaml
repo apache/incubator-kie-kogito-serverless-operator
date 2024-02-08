@@ -17,12 +17,17 @@ kind: SonataFlowPlatform
 metadata:
   name: sonataflow-platform
 spec:
+  persistence:
+    postgresql:
+      secretRef:
+        name: postgres-secrets
+        userKey: POSTGRES_USER
+        passwordKey: POSTGRES_PASSWORD
+      serviceRef:
+        name: postgres
+        port: 5432
+        databaseName: sonataflow
   build:
     config:
       strategyOptions:
-        KanikoBuildCacheEnabled: "true"
-  services:
-    dataIndex:
-      enabled: true
-    jobService:
-      enabled: true
+        KanikoBuildCacheEnabled: "true"  

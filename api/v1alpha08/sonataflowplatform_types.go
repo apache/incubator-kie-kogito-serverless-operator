@@ -51,7 +51,7 @@ type SonataFlowPlatformSpec struct {
 	// the configuration is used as the persistence for platform services and sonataflow instances
 	// that don't provide one of their own.
 	// +optional
-	Persistence *PersistenceOptionsSpec `json:"persistence,omitempty"`
+	Persistence *PlatformPersistenceOptionsSpec `json:"persistence,omitempty"`
 }
 
 // PlatformCluster is the kind of orchestration cluster the platform is installed into

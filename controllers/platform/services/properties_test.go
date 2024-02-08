@@ -93,6 +93,9 @@ func setServiceName(svcName string) optionFn {
 		if o.ServiceRef == nil {
 			o.ServiceRef = &operatorapi.PostgreSQLServiceOptions{}
 		}
+		if o.ServiceRef.SQLServiceOptions == nil {
+			o.ServiceRef.SQLServiceOptions = &operatorapi.SQLServiceOptions{}
+		}
 		o.ServiceRef.Name = svcName
 	}
 }
@@ -111,6 +114,9 @@ func setDatabaseName(dbName string) optionFn {
 		if o.ServiceRef == nil {
 			o.ServiceRef = &operatorapi.PostgreSQLServiceOptions{}
 		}
+		if o.ServiceRef.SQLServiceOptions == nil {
+			o.ServiceRef.SQLServiceOptions = &operatorapi.SQLServiceOptions{}
+		}
 		o.ServiceRef.DatabaseName = dbName
 	}
 }
@@ -120,6 +126,9 @@ func setServiceNamespace(svcNamespace string) optionFn {
 		if o.ServiceRef == nil {
 			o.ServiceRef = &operatorapi.PostgreSQLServiceOptions{}
 		}
+		if o.ServiceRef.SQLServiceOptions == nil {
+			o.ServiceRef.SQLServiceOptions = &operatorapi.SQLServiceOptions{}
+		}
 		o.ServiceRef.Namespace = svcNamespace
 	}
 }
@@ -128,6 +137,9 @@ func setDBPort(portNumber int) optionFn {
 	return func(o *operatorapi.PersistencePostgreSQL) {
 		if o.ServiceRef == nil {
 			o.ServiceRef = &operatorapi.PostgreSQLServiceOptions{}
+		}
+		if o.ServiceRef.SQLServiceOptions == nil {
+			o.ServiceRef.SQLServiceOptions = &operatorapi.SQLServiceOptions{}
 		}
 		o.ServiceRef.Port = &portNumber
 	}

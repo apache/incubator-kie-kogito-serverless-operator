@@ -151,8 +151,19 @@ func defaultContainer(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataF
 	}
 	if workflow.Spec.Persistence != nil {
 		c := workflow.Spec.Persistence
-		if c.PostgreSQL == nil {
-			c = plf.Spec.Persistence
+		if c.PostgreSQL == nil && plf.Spec.Persistence != nil {
+			c = &operatorapi.PersistenceOptionsSpec{}
+			if plf.Spec.Persistence.PostgreSQL != nil {
+				c.PostgreSQL = &operatorapi.PersistencePostgreSQL{
+					SecretRef: plf.Spec.Persistence.PostgreSQL.SecretRef,
+					JdbcUrl:   plf.Spec.Persistence.PostgreSQL.JdbcUrl,
+				}
+				if plf.Spec.Persistence.PostgreSQL.ServiceRef != nil {
+					c.PostgreSQL.ServiceRef = &operatorapi.PostgreSQLServiceOptions{
+						SQLServiceOptions: plf.Spec.Persistence.PostgreSQL.ServiceRef,
+						DatabaseSchema:    workflow.Name}
+				}
+			}
 		}
 		var err error
 		defaultFlowContainer, err = persistence.ConfigurePersistence(defaultFlowContainer, c, workflow.Name, workflow.Namespace)

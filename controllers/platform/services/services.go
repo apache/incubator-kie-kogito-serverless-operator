@@ -214,7 +214,15 @@ func (d DataIndexHandler) ConfigurePersistence(containerSpec *corev1.Container) 
 		if d.platform.Spec.Services.DataIndex.Persistence != nil && d.platform.Spec.Services.DataIndex.Persistence.PostgreSQL != nil {
 			p = d.platform.Spec.Services.DataIndex.Persistence.PostgreSQL
 		} else {
-			p = d.platform.Spec.Persistence.PostgreSQL
+			p = &operatorapi.PersistencePostgreSQL{
+				SecretRef: d.platform.Spec.Persistence.PostgreSQL.SecretRef,
+				JdbcUrl:   d.platform.Spec.Persistence.PostgreSQL.JdbcUrl,
+			}
+			if d.platform.Spec.Persistence.PostgreSQL.ServiceRef != nil {
+				p.ServiceRef = &operatorapi.PostgreSQLServiceOptions{
+					SQLServiceOptions: d.platform.Spec.Persistence.PostgreSQL.ServiceRef,
+					DatabaseSchema:    d.GetServiceName()}
+			}
 		}
 		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p, d.GetServiceName(), d.platform.Namespace)...)
 		// specific to DataIndex
@@ -388,7 +396,15 @@ func (j JobServiceHandler) ConfigurePersistence(containerSpec *corev1.Container)
 		if j.platform.Spec.Services.JobService.Persistence != nil && j.platform.Spec.Services.JobService.Persistence.PostgreSQL != nil {
 			p = j.platform.Spec.Services.JobService.Persistence.PostgreSQL
 		} else {
-			p = j.platform.Spec.Persistence.PostgreSQL
+			p = &operatorapi.PersistencePostgreSQL{
+				SecretRef: j.platform.Spec.Persistence.PostgreSQL.SecretRef,
+				JdbcUrl:   j.platform.Spec.Persistence.PostgreSQL.JdbcUrl,
+			}
+			if j.platform.Spec.Persistence.PostgreSQL.ServiceRef != nil {
+				p.ServiceRef = &operatorapi.PostgreSQLServiceOptions{
+					SQLServiceOptions: j.platform.Spec.Persistence.PostgreSQL.ServiceRef,
+					DatabaseSchema:    j.GetServiceName()}
+			}
 		}
 		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p, j.GetServiceName(), j.platform.Namespace)...)
 		// Specific to Job Service
@@ -415,7 +431,15 @@ func (j JobServiceHandler) GenerateServiceProperties() (*properties.Properties, 
 		if j.IsServiceSetInSpec() && jspec.Persistence != nil && jspec.Persistence.PostgreSQL != nil {
 			pspec = j.platform.Spec.Services.JobService.Persistence.PostgreSQL
 		} else {
-			pspec = j.platform.Spec.Persistence.PostgreSQL
+			pspec = &operatorapi.PersistencePostgreSQL{
+				SecretRef: j.platform.Spec.Persistence.PostgreSQL.SecretRef,
+				JdbcUrl:   j.platform.Spec.Persistence.PostgreSQL.JdbcUrl,
+			}
+			if j.platform.Spec.Persistence.PostgreSQL.ServiceRef != nil {
+				pspec.ServiceRef = &operatorapi.PostgreSQLServiceOptions{
+					SQLServiceOptions: j.platform.Spec.Persistence.PostgreSQL.ServiceRef,
+					DatabaseSchema:    j.GetServiceName()}
+			}
 		}
 		dataSourceReactiveURL, err := generateReactiveURL(pspec, j.GetServiceName(), j.platform.Namespace, constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
 		if err != nil {

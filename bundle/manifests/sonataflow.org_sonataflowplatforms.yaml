@@ -459,10 +459,6 @@ spec:
                             description: Name of postgresql database to be used. Defaults
                               to "sonataflow"
                             type: string
-                          databaseSchema:
-                            description: Schema of postgresql database to be used.
-                              Defaults to "data-index-service"
-                            type: string
                           name:
                             description: Name of the postgresql k8s service.
                             type: string

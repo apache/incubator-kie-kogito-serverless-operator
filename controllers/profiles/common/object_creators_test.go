@@ -308,10 +308,11 @@ func TestMergePodSpec_OverrideContainers_WithPostgreSQL_In_Workflow_CR(t *testin
 			PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 				SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 				ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
-					Name:           "test",
-					Namespace:      "foo",
-					Port:           &postgreSQLPort,
-					DatabaseName:   "petstore",
+					SQLServiceOptions: &v1alpha08.SQLServiceOptions{
+						Name:         "test",
+						Namespace:    "foo",
+						Port:         &postgreSQLPort,
+						DatabaseName: "petstore"},
 					DatabaseSchema: "bar"},
 			},
 		},
@@ -375,19 +376,18 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_CR_And_Worflow_Requesti
 			Namespace: "default",
 		},
 		Spec: v1alpha08.SonataFlowPlatformSpec{
-			Persistence: &v1alpha08.PersistenceOptionsSpec{
-				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+			Persistence: &v1alpha08.PlatformPersistenceOptionsSpec{
+				PostgreSQL: &v1alpha08.PlatformPersistencePostgreSQL{
 					SecretRef: v1alpha08.PostgreSQLSecretOptions{
 						Name:        "foo_secret",
 						UserKey:     "username",
 						PasswordKey: "password",
 					},
-					ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
-						Name:           "service_name",
-						Namespace:      "service_namespace",
-						Port:           &postgreSQLPort,
-						DatabaseName:   "foo",
-						DatabaseSchema: "bar",
+					ServiceRef: &v1alpha08.SQLServiceOptions{
+						Name:         "service_name",
+						Namespace:    "service_namespace",
+						Port:         &postgreSQLPort,
+						DatabaseName: "foo",
 					},
 				},
 			},
@@ -427,7 +427,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_CR_And_Worflow_Requesti
 		},
 		{
 			Name:  "QUARKUS_DATASOURCE_JDBC_URL",
-			Value: "jdbc:postgresql://service_name.service_namespace:5432/foo?currentSchema=bar",
+			Value: "jdbc:postgresql://service_name.service_namespace:5432/foo?currentSchema=greeting",
 		},
 		{
 			Name:  "KOGITO_PERSISTENCE_TYPE",
@@ -450,25 +450,25 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_CR_And_Worflow_Requesti
 }
 
 func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_And_In_Workflow_CR(t *testing.T) {
+
 	p := &v1alpha08.SonataFlowPlatform{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo",
 			Namespace: "default",
 		},
 		Spec: v1alpha08.SonataFlowPlatformSpec{
-			Persistence: &v1alpha08.PersistenceOptionsSpec{
-				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+			Persistence: &v1alpha08.PlatformPersistenceOptionsSpec{
+				PostgreSQL: &v1alpha08.PlatformPersistencePostgreSQL{
 					SecretRef: v1alpha08.PostgreSQLSecretOptions{
 						Name:        "foo_secret",
 						UserKey:     "username",
 						PasswordKey: "password",
 					},
-					ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
-						Name:           "service_name",
-						Namespace:      "service_namespace",
-						Port:           &postgreSQLPort,
-						DatabaseName:   "foo",
-						DatabaseSchema: "bar",
+					ServiceRef: &v1alpha08.SQLServiceOptions{
+						Name:         "service_name",
+						Namespace:    "service_namespace",
+						Port:         &postgreSQLPort,
+						DatabaseName: "foo",
 					},
 				},
 			},
@@ -497,10 +497,11 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_And_In_Workflow_CR(t *t
 			PostgreSQL: &v1alpha08.PersistencePostgreSQL{
 				SecretRef: v1alpha08.PostgreSQLSecretOptions{Name: "test"},
 				ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
-					Name:           "test",
-					Namespace:      "default",
-					Port:           &postgreSQLPort,
-					DatabaseName:   "my_database",
+					SQLServiceOptions: &v1alpha08.SQLServiceOptions{
+						Name:         "test",
+						Namespace:    "default",
+						Port:         &postgreSQLPort,
+						DatabaseName: "my_database"},
 					DatabaseSchema: "bar"},
 			},
 		},
@@ -563,14 +564,14 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_But_Workflow_CR_Not_Req
 			Namespace: "default",
 		},
 		Spec: v1alpha08.SonataFlowPlatformSpec{
-			Persistence: &v1alpha08.PersistenceOptionsSpec{
-				PostgreSQL: &v1alpha08.PersistencePostgreSQL{
+			Persistence: &v1alpha08.PlatformPersistenceOptionsSpec{
+				PostgreSQL: &v1alpha08.PlatformPersistencePostgreSQL{
 					SecretRef: v1alpha08.PostgreSQLSecretOptions{
 						Name:        "foo_secret",
 						UserKey:     "username",
 						PasswordKey: "password",
 					},
-					ServiceRef: &v1alpha08.PostgreSQLServiceOptions{
+					ServiceRef: &v1alpha08.SQLServiceOptions{
 						Name:         "service_name",
 						Namespace:    "service_namespace",
 						Port:         &postgreSQLPort,
@@ -609,5 +610,5 @@ func TestMergePodSpec_WithEphemeralPostgreSQL_And_Undefined_PostgreSQL_Image_In_
 	}
 	_, err := DeploymentCreator(workflow, p)
 	assert.Error(t, err)
-	assert.Equal(t, "no persistence specification found", err.Error())
+	assert.Equal(t, "no postgreSQL configuration found", err.Error())
 }

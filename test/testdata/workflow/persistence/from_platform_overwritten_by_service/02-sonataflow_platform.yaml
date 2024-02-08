@@ -27,7 +27,6 @@ spec:
         name: db_not_defined
         port: 3456
         databaseName: db_name
-        databaseSchema: myschema
   build:
     config:
       strategyOptions:

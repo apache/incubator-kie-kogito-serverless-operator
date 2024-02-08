@@ -12,17 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: sonataflow.org/v1alpha08
-kind: SonataFlowPlatform
-metadata:
-  name: sonataflow-platform
-spec:
-  build:
-    config:
-      strategyOptions:
-        KanikoBuildCacheEnabled: "true"
-  services:
-    dataIndex:
-      enabled: true
-    jobService:
-      enabled: true
+resources:
+- 01-postgres.yaml
+- 02-sonataflow_platform.yaml
+- 03-sonataflow_callbackstatetimeouts.sw.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+secretGenerator:
+  - name: postgres-secrets
+    literals:
+      - POSTGRES_USER=sonataflow
+      - POSTGRES_PASSWORD=sonataflow
+      - POSTGRES_DATABASE=sonataflow
+      - PGDATA=/var/lib/pgsql/data/userdata
+
+sortOptions:
+  order: fifo
+

@@ -14,6 +14,32 @@
 
 package v1alpha08
 
+// PlatformPersistenceOptionsSpec configures the DataBase in the platform spec. This specification can
+// be used by workflows and platform services when they don't provide one of their own.
+// +optional
+// +kubebuilder:validation:MaxProperties=1
+type PlatformPersistenceOptionsSpec struct {
+	// Connect configured services to a postgresql database.
+	// +optional
+	PostgreSQL *PlatformPersistencePostgreSQL `json:"postgresql,omitempty"`
+}
+
+// PlatformPersistencePostgreSQL configure postgresql connection in a platform to be shared
+// by platform services and workflows when required.
+// +kubebuilder:validation:MinProperties=2
+// +kubebuilder:validation:MaxProperties=2
+type PlatformPersistencePostgreSQL struct {
+	// Secret reference to the database user credentials
+	SecretRef PostgreSQLSecretOptions `json:"secretRef"`
+	// Service reference to postgresql datasource. Mutually exclusive to jdbcUrl.
+	// +optional
+	ServiceRef *SQLServiceOptions `json:"serviceRef,omitempty"`
+	// PostgreSql JDBC URL. Mutually exclusive to serviceRef.
+	// e.g. "jdbc:postgresql://host:port/database?currentSchema=data-index-service"
+	// +optional
+	JdbcUrl string `json:"jdbcUrl,omitempty"`
+}
+
 // PersistenceOptionsSpec configures the DataBase support for both platform services and workflows. For services, it allows
 // configuring a generic database connectivity if the service does not come with its own configured. In case of workflows,
 // the operator will add the necessary JDBC properties to in the workflow's application.properties so that it can communicate
@@ -53,8 +79,7 @@ type PostgreSQLSecretOptions struct {
 	PasswordKey string `json:"passwordKey,omitempty"`
 }
 
-// PostgreSQLServiceOptions use k8s service to configure postgresql jdbc url.
-type PostgreSQLServiceOptions struct {
+type SQLServiceOptions struct {
 	// Name of the postgresql k8s service.
 	Name string `json:"name"`
 	// Namespace of the postgresql k8s service. Defaults to the SonataFlowPlatform's local namespace.
@@ -66,6 +91,11 @@ type PostgreSQLServiceOptions struct {
 	// Name of postgresql database to be used. Defaults to "sonataflow"
 	// +optional
 	DatabaseName string `json:"databaseName,omitempty"`
+}
+
+// PostgreSQLServiceOptions use k8s service to configure postgresql jdbc url.
+type PostgreSQLServiceOptions struct {
+	*SQLServiceOptions `json:",inline"`
 	// Schema of postgresql database to be used. Defaults to "data-index-service"
 	// +optional
 	DatabaseSchema string `json:"databaseSchema,omitempty"`
