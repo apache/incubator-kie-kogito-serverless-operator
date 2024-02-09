@@ -104,10 +104,10 @@ func getHealthStatusInContainer(podName string, containerName string, ns string)
 	stringOutput := string(output)
 	startIndex := strings.Index(stringOutput, "{")
 	endIndex := strings.LastIndex(stringOutput, "}")
-	if (startIndex == 0) {
-		stringOutput = stringOutput[startIndex:endIndex+1]		
+	if startIndex == 0 {
+		stringOutput = stringOutput[startIndex : endIndex+1]
 	} else {
-		stringOutput = stringOutput[startIndex-1:endIndex+1]
+		stringOutput = stringOutput[startIndex-1 : endIndex+1]
 	}
 	fmt.Printf("Parsed following JSON object from health Endpoint response: %v\n", stringOutput)
 	err = json.Unmarshal([]byte(stringOutput), &h)

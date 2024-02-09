@@ -113,7 +113,7 @@ var _ = Describe("Validate the persistence", Ordered, func() {
 				Expect(sf).NotTo(BeEmpty(), "sonataflow name is empty")
 				EventuallyWithOffset(1, func() bool {
 					return verifyWorkflowIsInRunningStateInNamespace(sf, targetNamespace)
-				},10*time.Minute, 5).Should(BeTrue())
+				}, 10*time.Minute, 5).Should(BeTrue())
 			}
 		},
 			Entry("with both Job Service and Data Index and ephemeral persistence and the workflow in a dev profile", test.GetSonataFlowE2EPlatformServicesDirectory(), dev, ephemeral),
