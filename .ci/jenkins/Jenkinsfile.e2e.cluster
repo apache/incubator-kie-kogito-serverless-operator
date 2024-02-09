@@ -126,7 +126,8 @@ pipeline {
     post {
         always {
             script {
-                archiveArtifacts(artifacts: "**${kindLogsFolder}/**/*.*,**/e2e-test-report.json")
+                archiveArtifacts(artifacts: "**${kindLogsFolder}/**/*.*,**/e2e-test-report.xml")
+                junit '**/e2e-test-report.xml'
             }
         }
         cleanup {
