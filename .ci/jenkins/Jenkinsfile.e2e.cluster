@@ -71,7 +71,7 @@ pipeline {
             steps {
                 script {
                     sh "make deploy IMG=${getTestImage()}"
-                    sh "kubectl wait pod -A -l control-plane=sonataflow-operator --for condition=Ready"
+                    sh "kubectl wait pod -A -l control-plane=sonataflow-operator --for condition=Ready --timeout=120s"
                 }
             }
         }
