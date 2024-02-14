@@ -206,25 +206,11 @@ func (d DataIndexHandler) hasPostgreSQLConfigured() bool {
 }
 
 func (d DataIndexHandler) ConfigurePersistence(containerSpec *corev1.Container) *corev1.Container {
-
 	if d.hasPostgreSQLConfigured() {
-		var p *operatorapi.PersistencePostgreSQL
+		p := persistence.RetrieveConfiguration(d.platform.Spec.Services.DataIndex.Persistence, d.platform.Spec.Persistence, d.GetServiceName())
 		c := containerSpec.DeepCopy()
 		c.Image = d.GetServiceImageName(constants.PersistenceTypePostgreSQL)
-		if d.platform.Spec.Services.DataIndex.Persistence != nil && d.platform.Spec.Services.DataIndex.Persistence.PostgreSQL != nil {
-			p = d.platform.Spec.Services.DataIndex.Persistence.PostgreSQL
-		} else {
-			p = &operatorapi.PersistencePostgreSQL{
-				SecretRef: d.platform.Spec.Persistence.PostgreSQL.SecretRef,
-				JdbcUrl:   d.platform.Spec.Persistence.PostgreSQL.JdbcUrl,
-			}
-			if d.platform.Spec.Persistence.PostgreSQL.ServiceRef != nil {
-				p.ServiceRef = &operatorapi.PostgreSQLServiceOptions{
-					SQLServiceOptions: d.platform.Spec.Persistence.PostgreSQL.ServiceRef,
-					DatabaseSchema:    d.GetServiceName()}
-			}
-		}
-		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p, d.GetServiceName(), d.platform.Namespace)...)
+		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p.PostgreSQL, d.GetServiceName(), d.platform.Namespace)...)
 		// specific to DataIndex
 		c.Env = append(c.Env, corev1.EnvVar{Name: quarkusHibernateORMDatabaseGeneration, Value: "update"}, corev1.EnvVar{Name: quarkusFlywayMigrateAtStart, Value: "true"})
 		return c
@@ -426,22 +412,8 @@ func (j JobServiceHandler) GenerateServiceProperties() (*properties.Properties, 
 	props.Set(constants.JobServiceKafkaSmallRyeHealthProperty, "false")
 	// add data source reactive URL
 	if j.hasPostgreSQLConfigured() {
-		jspec := j.platform.Spec.Services.JobService
-		var pspec *operatorapi.PersistencePostgreSQL
-		if j.IsServiceSetInSpec() && jspec.Persistence != nil && jspec.Persistence.PostgreSQL != nil {
-			pspec = j.platform.Spec.Services.JobService.Persistence.PostgreSQL
-		} else {
-			pspec = &operatorapi.PersistencePostgreSQL{
-				SecretRef: j.platform.Spec.Persistence.PostgreSQL.SecretRef,
-				JdbcUrl:   j.platform.Spec.Persistence.PostgreSQL.JdbcUrl,
-			}
-			if j.platform.Spec.Persistence.PostgreSQL.ServiceRef != nil {
-				pspec.ServiceRef = &operatorapi.PostgreSQLServiceOptions{
-					SQLServiceOptions: j.platform.Spec.Persistence.PostgreSQL.ServiceRef,
-					DatabaseSchema:    j.GetServiceName()}
-			}
-		}
-		dataSourceReactiveURL, err := generateReactiveURL(pspec, j.GetServiceName(), j.platform.Namespace, constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
+		p := persistence.RetrieveConfiguration(j.platform.Spec.Services.JobService.Persistence, j.platform.Spec.Persistence, j.GetServiceName())
+		dataSourceReactiveURL, err := generateReactiveURL(p.PostgreSQL, j.GetServiceName(), j.platform.Namespace, constants.DefaultDatabaseName, constants.DefaultPostgreSQLPort)
 		if err != nil {
 			return nil, err
 		}

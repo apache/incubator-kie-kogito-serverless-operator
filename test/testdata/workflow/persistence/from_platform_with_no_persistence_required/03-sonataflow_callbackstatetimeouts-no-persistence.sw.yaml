@@ -15,11 +15,12 @@
 apiVersion: sonataflow.org/v1alpha08
 kind: SonataFlow
 metadata:
-  name: callbackstatetimeouts
+  name: callbackstatetimeouts-no-persistence
   annotations:
     sonataflow.org/description: Callback State Timeouts Example k8s
     sonataflow.org/version: 0.0.1
 spec:
+  persistence: {}
   podTemplate:
     container:
       env:

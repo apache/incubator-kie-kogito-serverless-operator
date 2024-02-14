@@ -149,27 +149,12 @@ func defaultContainer(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataF
 	if err := mergo.Merge(defaultFlowContainer, workflow.Spec.PodTemplate.Container.ToContainer(), mergo.WithOverride); err != nil {
 		return nil, err
 	}
-	if workflow.Spec.Persistence != nil {
-		c := workflow.Spec.Persistence
-		if c.PostgreSQL == nil && plf.Spec.Persistence != nil {
-			c = &operatorapi.PersistenceOptionsSpec{}
-			if plf.Spec.Persistence.PostgreSQL != nil {
-				c.PostgreSQL = &operatorapi.PersistencePostgreSQL{
-					SecretRef: plf.Spec.Persistence.PostgreSQL.SecretRef,
-					JdbcUrl:   plf.Spec.Persistence.PostgreSQL.JdbcUrl,
-				}
-				if plf.Spec.Persistence.PostgreSQL.ServiceRef != nil {
-					c.PostgreSQL.ServiceRef = &operatorapi.PostgreSQLServiceOptions{
-						SQLServiceOptions: plf.Spec.Persistence.PostgreSQL.ServiceRef,
-						DatabaseSchema:    workflow.Name}
-				}
-			}
-		}
-		var err error
-		defaultFlowContainer, err = persistence.ConfigurePersistence(defaultFlowContainer, c, workflow.Name, workflow.Namespace)
-		if err != nil {
-			return nil, err
-		}
+	var pper *operatorapi.PlatformPersistenceOptionsSpec
+	if plf != nil && plf.Spec.Persistence != nil {
+		pper = plf.Spec.Persistence
+	}
+	if p := persistence.RetrieveConfiguration(workflow.Spec.Persistence, pper, workflow.Name); p != nil {
+		defaultFlowContainer = persistence.ConfigurePersistence(defaultFlowContainer, p, workflow.Name, workflow.Namespace)
 	}
 	// immutable
 	defaultFlowContainer.Name = operatorapi.DefaultContainerName

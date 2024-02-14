@@ -396,7 +396,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_CR_And_Worflow_Requesti
 
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflow.Spec = v1alpha08.SonataFlowSpec{
-		Persistence: &v1alpha08.PersistenceOptionsSpec{},
+		Persistence: nil,
 	}
 	object, err := DeploymentCreator(workflow, p)
 	assert.NoError(t, err)
@@ -583,7 +583,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_But_Workflow_CR_Not_Req
 	}
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflow.Spec = v1alpha08.SonataFlowSpec{
-		Persistence: nil,
+		Persistence: &v1alpha08.PersistenceOptionsSpec{},
 	}
 	object, err := DeploymentCreator(workflow, p)
 	assert.NoError(t, err)
@@ -594,21 +594,4 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_But_Workflow_CR_Not_Req
 	assert.Empty(t, flowContainer.Image)
 	assert.Equal(t, int32(8080), flowContainer.Ports[0].ContainerPort)
 	assert.Nil(t, flowContainer.Env)
-}
-
-func TestMergePodSpec_WithEphemeralPostgreSQL_And_Undefined_PostgreSQL_Image_In_Platform_Spec(t *testing.T) {
-	p := &v1alpha08.SonataFlowPlatform{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "foo",
-			Namespace: "default",
-		},
-		Spec: v1alpha08.SonataFlowPlatformSpec{},
-	}
-	workflow := test.GetBaseSonataFlow(t.Name())
-	workflow.Spec = v1alpha08.SonataFlowSpec{
-		Persistence: &v1alpha08.PersistenceOptionsSpec{},
-	}
-	_, err := DeploymentCreator(workflow, p)
-	assert.Error(t, err)
-	assert.Equal(t, "no postgreSQL configuration found", err.Error())
 }

@@ -19,6 +19,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 )
@@ -112,11 +113,35 @@ func ConfigurePostgreSQLEnv(postgresql *operatorapi.PersistencePostgreSQL, datab
 	}
 }
 
-func ConfigurePersistence(serviceContainer *corev1.Container, config *operatorapi.PersistenceOptionsSpec, defaultSchema, namespace string) (*corev1.Container, error) {
+func ConfigurePersistence(serviceContainer *corev1.Container, config *operatorapi.PersistenceOptionsSpec, defaultSchema, namespace string) *corev1.Container {
 	if config.PostgreSQL == nil {
-		return nil, fmt.Errorf("no postgreSQL configuration found")
+		return serviceContainer
 	}
 	c := serviceContainer.DeepCopy()
 	c.Env = append(c.Env, ConfigurePostgreSQLEnv(config.PostgreSQL, defaultSchema, namespace)...)
-	return c, nil
+	return c
+}
+
+func RetrieveConfiguration(primary *v1alpha08.PersistenceOptionsSpec, platformPersistence *v1alpha08.PlatformPersistenceOptionsSpec, schema string) *v1alpha08.PersistenceOptionsSpec {
+	if primary != nil {
+		return primary
+	}
+	if platformPersistence == nil {
+		return nil
+	}
+	c := &v1alpha08.PersistenceOptionsSpec{}
+	if platformPersistence.PostgreSQL != nil {
+		c.PostgreSQL = &v1alpha08.PersistencePostgreSQL{
+			SecretRef: platformPersistence.PostgreSQL.SecretRef,
+		}
+		if platformPersistence.PostgreSQL.ServiceRef != nil {
+			c.PostgreSQL.ServiceRef = &v1alpha08.PostgreSQLServiceOptions{
+				SQLServiceOptions: platformPersistence.PostgreSQL.ServiceRef,
+				DatabaseSchema:    schema,
+			}
+		} else {
+			c.PostgreSQL.JdbcUrl = platformPersistence.PostgreSQL.JdbcUrl
+		}
+	}
+	return c
 }
