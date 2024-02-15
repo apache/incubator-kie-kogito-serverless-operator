@@ -376,23 +376,10 @@ func (j JobServiceHandler) hasPostgreSQLConfigured() bool {
 func (j JobServiceHandler) ConfigurePersistence(containerSpec *corev1.Container) *corev1.Container {
 
 	if j.hasPostgreSQLConfigured() {
-		var p *operatorapi.PersistencePostgreSQL
 		c := containerSpec.DeepCopy()
 		c.Image = j.GetServiceImageName(constants.PersistenceTypePostgreSQL)
-		if j.platform.Spec.Services.JobService.Persistence != nil && j.platform.Spec.Services.JobService.Persistence.PostgreSQL != nil {
-			p = j.platform.Spec.Services.JobService.Persistence.PostgreSQL
-		} else {
-			p = &operatorapi.PersistencePostgreSQL{
-				SecretRef: j.platform.Spec.Persistence.PostgreSQL.SecretRef,
-				JdbcUrl:   j.platform.Spec.Persistence.PostgreSQL.JdbcUrl,
-			}
-			if j.platform.Spec.Persistence.PostgreSQL.ServiceRef != nil {
-				p.ServiceRef = &operatorapi.PostgreSQLServiceOptions{
-					SQLServiceOptions: j.platform.Spec.Persistence.PostgreSQL.ServiceRef,
-					DatabaseSchema:    j.GetServiceName()}
-			}
-		}
-		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p, j.GetServiceName(), j.platform.Namespace)...)
+		p := persistence.RetrieveConfiguration(j.platform.Spec.Services.JobService.Persistence, j.platform.Spec.Persistence, j.GetServiceName())
+		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p.PostgreSQL, j.GetServiceName(), j.platform.Namespace)...)
 		// Specific to Job Service
 		c.Env = append(c.Env, corev1.EnvVar{Name: "QUARKUS_FLYWAY_MIGRATE_AT_START", Value: "true"})
 		return c
