@@ -140,8 +140,14 @@ func Test_Handler_WorklflowServiceAndPropsAndSpec_SaveAs(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, files, 4)
 
-	for _, f := range files {
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].Name() < files[j].Name()
+	})
+
+	for fileCount, f := range files {
 		if strings.HasSuffix(f.Name(), yamlFileExt) {
+			prefix := fmt.Sprintf("%02d-", fileCount+1)
+			assert.True(t, strings.HasPrefix(f.Name(), prefix))
 			contents, err := os.ReadFile(path.Join(tmpPath, f.Name()))
 			assert.NoError(t, err)
 			decode := scheme.Codecs.UniversalDeserializer().Decode
@@ -170,6 +176,9 @@ func Test_Handler_WorkflowService_SaveAs(t *testing.T) {
 
 		for _, f := range files {
 			if strings.HasSuffix(f.Name(), yamlFileExt) {
+				// we have only one file produced in these test cases
+				prefix := fmt.Sprintf("%02d-", 1)
+				assert.True(t, strings.HasPrefix(f.Name(), prefix))
 				contents, err := os.ReadFile(path.Join(tmpPath, f.Name()))
 				assert.NoError(t, err)
 				decode := scheme.Codecs.UniversalDeserializer().Decode
