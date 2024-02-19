@@ -23,6 +23,7 @@ import (
 	"context"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/metadata"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -72,3 +73,6 @@ type ReconciliationState interface {
 	// PostReconcile performs the actions to perform after the reconciliation that are not mandatory
 	PostReconcile(ctx context.Context, workflow *operatorapi.SonataFlow) error
 }
+
+// IsDevProfile is an alias for workflowproj.IsDevProfile
+var IsDevProfile = workflowproj.IsDevProfile

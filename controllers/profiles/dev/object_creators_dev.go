@@ -22,6 +22,7 @@ package dev
 import (
 	"path"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,7 +48,7 @@ func serviceCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
 	object, _ := common.ServiceCreator(workflow)
 	service := object.(*corev1.Service)
 	// Let's double-check that the workflow is using the Dev Profile we would like to expose it via NodePort
-	if workflowproj.IsDevProfile(workflow) {
+	if profiles.IsDevProfile(workflow) {
 		service.Spec.Type = corev1.ServiceTypeNodePort
 	}
 	return service, nil
