@@ -22,10 +22,10 @@ package profiles
 import (
 	"context"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/api/metadata"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/apache/incubator-kie-kogito-serverless-operator/api/metadata"
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 )
 
@@ -71,22 +71,4 @@ type ReconciliationState interface {
 	Do(ctx context.Context, workflow *operatorapi.SonataFlow) (ctrl.Result, []client.Object, error)
 	// PostReconcile performs the actions to perform after the reconciliation that are not mandatory
 	PostReconcile(ctx context.Context, workflow *operatorapi.SonataFlow) error
-}
-
-// IsDevProfile detects if the workflow is using the Dev profile or not
-func IsDevProfile(workflow *operatorapi.SonataFlow) bool {
-	profile := workflow.Annotations[metadata.Profile]
-	if len(profile) == 0 {
-		return false
-	}
-	return metadata.ProfileType(profile) == metadata.DevProfile
-}
-
-// IsProdProfile detects if the workflow is using the Prod profile or not
-func IsProdProfile(workflow *operatorapi.SonataFlow) bool {
-	profile := workflow.Annotations[metadata.Profile]
-	if len(profile) == 0 {
-		return false
-	}
-	return metadata.ProfileType(profile) == metadata.ProdProfile
 }

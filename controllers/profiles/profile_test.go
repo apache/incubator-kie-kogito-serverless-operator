@@ -22,6 +22,7 @@ package profiles
 import (
 	"testing"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/test"
@@ -29,11 +30,11 @@ import (
 
 func Test_workflowIsDevProfile(t *testing.T) {
 	workflowWithDevProfile := test.GetBaseSonataFlowWithDevProfile(t.Name())
-	assert.True(t, IsDevProfile(workflowWithDevProfile))
+	assert.True(t, workflowproj.IsDevProfile(workflowWithDevProfile))
 
 	workflowWithNoProfile := test.GetBaseSonataFlow(t.Name())
-	assert.False(t, IsDevProfile(workflowWithNoProfile))
+	assert.False(t, workflowproj.IsDevProfile(workflowWithNoProfile))
 
 	workflowWithProdProfile := test.GetBaseSonataFlowWithProdProfile(t.Name())
-	assert.False(t, IsDevProfile(workflowWithProdProfile))
+	assert.False(t, workflowproj.IsDevProfile(workflowWithProdProfile))
 }

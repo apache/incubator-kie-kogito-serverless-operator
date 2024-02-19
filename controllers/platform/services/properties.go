@@ -25,13 +25,13 @@ import (
 	"strings"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/workflowdef"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
 	"k8s.io/klog/v2"
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 
 	"github.com/magiconair/properties"
@@ -163,7 +163,7 @@ func GenerateDataIndexWorkflowProperties(workflow *operatorapi.SonataFlow, platf
 	props.Set(constants.KogitoProcessDefinitionsEventsEnabled, "false")
 	props.Set(constants.KogitoProcessInstancesEventsEnabled, "false")
 	di := NewDataIndexHandler(platform)
-	if workflow != nil && !profiles.IsDevProfile(workflow) && di.IsServiceEnabled() {
+	if workflow != nil && !workflowproj.IsDevProfile(workflow) && di.IsServiceEnabled() {
 		props.Set(constants.KogitoProcessDefinitionsEventsEnabled, "true")
 		props.Set(constants.KogitoProcessDefinitionsEventsErrorsEnabled, "true")
 		props.Set(constants.KogitoProcessInstancesEventsEnabled, "true")
@@ -189,7 +189,7 @@ func GenerateJobServiceWorkflowProperties(workflow *operatorapi.SonataFlow, plat
 	props.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
 	props.Set(constants.JobServiceRequestEventsURL, fmt.Sprintf("%s://localhost/v2/jobs/events", constants.JobServiceURLProtocol))
 	js := NewJobServiceHandler(platform)
-	if workflow != nil && !profiles.IsDevProfile(workflow) && js.IsServiceEnabled() {
+	if workflow != nil && !workflowproj.IsDevProfile(workflow) && js.IsServiceEnabled() {
 		if workflowdef.HasTimeouts(workflow) {
 			props.Set(constants.KogitoJobServiceHealthCheckEnabled, "true")
 		}
