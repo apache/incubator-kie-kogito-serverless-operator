@@ -44,8 +44,9 @@ type health struct {
 }
 
 type check struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
+	Name   string            `json:"name"`
+	Status string            `json:"status"`
+	Data   map[string]string `json:"data"`
 }
 
 var (

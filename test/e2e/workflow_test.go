@@ -144,6 +144,10 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 
 var _ = Describe("Validate the persistence ", Ordered, func() {
 
+	const (
+		dbConnectionName = "Database connections health check"
+		defaultDataCheck = "<default>"
+	)
 	var (
 		ns string
 	)
@@ -198,21 +202,20 @@ var _ = Describe("Validate the persistence ", Ordered, func() {
 				}
 				Expect(h.Status).To(Equal(upStatus), "Pod health is not UP")
 				for _, c := range h.Checks {
-					if withPersistence {
-						if c.Name == "Database connections health check" {
-							Expect(c.Status).To(Equal(upStatus), "Pod's database connection is not UP")
+					if c.Name == dbConnectionName {
+						Expect(c.Status).To(Equal(upStatus), "Pod's database connection is not UP")
+						if withPersistence {
+							Expect(c.Data[defaultDataCheck]).To(Equal(upStatus), "Pod's 'default' database data is not UP")
+							return true
+						} else {
+							Expect(defaultDataCheck).NotTo(BeElementOf(c.Data), "Pod's 'default' database data check exists in health manifest")
 							return true
 						}
-					} else {
-						Expect(c.Name).NotTo(Equal("Database connections health check"), "persistence configuration found in workflow")
 					}
-				}
-				if !withPersistence {
-					return true
 				}
 			}
 			return false
-		}, 1).Should(BeTrue())
+		}, 1*time.Minute).Should(BeTrue())
 	},
 		Entry("defined in the workflow from an existing kubernetes service as a reference", test.GetSonataFlowE2EWorkflowPersistenceSampleDataDirectory("by_service"), true),
 		Entry("defined in the workflow and from the sonataflow platform", test.GetSonataFlowE2EWorkflowPersistenceSampleDataDirectory("from_platform_overwritten_by_service"), true),
