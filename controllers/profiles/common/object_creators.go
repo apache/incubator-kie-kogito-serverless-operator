@@ -216,7 +216,7 @@ func ServiceCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
 // SinkBindingCreator is an ObjectsCreator for SinkBinding.
 // It will create v1.SinkBinding based on events defined in workflow.
 func SinkBindingCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
-	lbl := workflowproj.GetDefaultLabels(workflow)
+	lbl := workflowproj.GetMergedLabels(workflow)
 
 	// skip if no produced event is found
 	if workflow.Spec.Sink == nil || !workflowdef.ContainsEventKind(workflow, cncfmodel.EventKindProduced) {
@@ -253,7 +253,7 @@ func SinkBindingCreator(workflow *operatorapi.SonataFlow) (client.Object, error)
 // It will create a list of eventingv1.Trigger based on events defined in workflow.
 func TriggersCreator(workflow *operatorapi.SonataFlow) ([]client.Object, error) {
 	var resultObjects []client.Object
-	lbl := workflowproj.GetDefaultLabels(workflow)
+	lbl := workflowproj.GetMergedLabels(workflow)
 
 	//consumed
 	events := workflow.Spec.Flow.Events
