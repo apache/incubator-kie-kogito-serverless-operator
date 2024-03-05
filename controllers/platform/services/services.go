@@ -22,6 +22,7 @@ package services
 import (
 	"fmt"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/cfg"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -102,6 +103,9 @@ func (d DataIndexHandler) GetContainerName() string {
 }
 
 func (d DataIndexHandler) GetServiceImageName(persistenceName string) string {
+	if len(cfg.GetCfg().DataIndexImageTag) > 0 {
+		return cfg.GetCfg().DataIndexImageTag
+	}
 	var tag = version.GetMajorMinor()
 	var suffix = ""
 	if version.IsSnapshot() {
@@ -267,6 +271,9 @@ func (j JobServiceHandler) GetContainerName() string {
 }
 
 func (j JobServiceHandler) GetServiceImageName(persistenceName string) string {
+	if len(cfg.GetCfg().JobsServiceImageTag) > 0 {
+		return cfg.GetCfg().JobsServiceImageTag
+	}
 	var tag = version.GetMajorMinor()
 	var suffix = ""
 	if version.IsSnapshot() {

@@ -37,13 +37,13 @@ import (
 const (
 	envVarPodNamespaceName = "POD_NAMESPACE"
 	// ConfigMapName is the default name for the Builder ConfigMap name
-	ConfigMapName                       = "sonataflow-operator-builder-config"
-	configKeyDefaultExtension           = "DEFAULT_WORKFLOW_EXTENSION"
-	configKeyDefaultBuilderResourceName = "DEFAULT_BUILDER_RESOURCE_NAME"
+	ConfigMapName              = "sonataflow-operator-builder-config"
+	configKeyDefaultExtension  = "DEFAULT_WORKFLOW_EXTENSION"
+	defaultBuilderResourceName = "Dockerfile"
 )
 
-// GetCommonConfigMap retrieves the config map with the builder common configuration information
-func GetCommonConfigMap(client client.Client, fallbackNS string) (*corev1.ConfigMap, error) {
+// GetBuilderConfigMap retrieves the config map with the builder common configuration information
+func GetBuilderConfigMap(client client.Client, fallbackNS string) (*corev1.ConfigMap, error) {
 	namespace, found := os.LookupEnv(envVarPodNamespaceName)
 	if !found {
 		namespace = fallbackNS
@@ -71,7 +71,7 @@ func GetCommonConfigMap(client client.Client, fallbackNS string) (*corev1.Config
 		return nil, err
 	}
 
-	err = isValidBuilderCommonConfigMap(existingConfigMap)
+	err = isValidBuilderConfigMap(existingConfigMap)
 	if err != nil {
 		klog.V(log.E).ErrorS(err, "configmap is not valid", "name", ConfigMapName)
 		return existingConfigMap, err
@@ -80,22 +80,16 @@ func GetCommonConfigMap(client client.Client, fallbackNS string) (*corev1.Config
 	return existingConfigMap, nil
 }
 
-// isValidBuilderCommonConfigMap  function that will verify that in the builder config maps there are the required keys, and they aren't empty
-func isValidBuilderCommonConfigMap(configMap *corev1.ConfigMap) error {
-
+// isValidBuilderConfigMap  function that will verify that in the builder config maps there are the required keys, and they aren't empty
+func isValidBuilderConfigMap(configMap *corev1.ConfigMap) error {
 	// Verifying that the key to hold the extension for the workflow is there and not empty
 	if len(configMap.Data[configKeyDefaultExtension]) == 0 {
 		return fmt.Errorf("unable to find %s key into builder config map", configMap.Data[configKeyDefaultExtension])
 	}
 
-	// Verifying that the key to hold the name of the Dockerfile for building the workflow is there and not empty
-	if len(configMap.Data[configKeyDefaultBuilderResourceName]) == 0 {
-		return fmt.Errorf("unable to find %s key into builder config map", configMap.Data[configKeyDefaultBuilderResourceName])
-	}
-
 	// Verifying that the key to hold the content of the Dockerfile for building the workflow is there and not empty
-	if len(configMap.Data[configMap.Data[configKeyDefaultBuilderResourceName]]) == 0 {
-		return fmt.Errorf("unable to find %s key into builder config map", configMap.Data[configKeyDefaultBuilderResourceName])
+	if len(configMap.Data[defaultBuilderResourceName]) == 0 {
+		return fmt.Errorf("unable to find %s key into builder config map", configMap.Data[defaultBuilderResourceName])
 	}
 	return nil
 }

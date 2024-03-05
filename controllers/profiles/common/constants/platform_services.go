@@ -34,7 +34,6 @@ const (
 	JobServiceDataSourceReactiveURL  = "quarkus.datasource.reactive.url"
 	JobServiceJobEventsPath          = "/v2/jobs/events"
 
-	KogitoProcessEventsProtocol                 = "http"
 	KogitoProcessInstancesEventsURL             = "mp.messaging.outgoing.kogito-processinstances-events.url"
 	KogitoProcessInstancesEventsEnabled         = "kogito.events.processinstances.enabled"
 	KogitoProcessInstancesEventsPath            = "/processes"
