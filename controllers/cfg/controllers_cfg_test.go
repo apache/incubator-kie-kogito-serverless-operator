@@ -13,3 +13,40 @@
 // limitations under the License.
 
 package cfg
+
+import (
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestInitializeControllersCfgAt_ValidFile(t *testing.T) {
+	cfg, err := InitializeControllersCfgAt("./testdata/controllers-cfg-test.yaml")
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+
+	assert.Equal(t, int32(555), cfg.HealthFailureThresholdDevMode)
+	assert.Equal(t, "2Gi", cfg.DefaultPvcKanikoSize)
+	assert.Equal(t, "local/jobs-service:1.0.0", cfg.JobsServiceImageTag)
+	assert.Equal(t, "local/data-index:1.0.0", cfg.DataIndexImageTag)
+	assert.Equal(t, "local/sonataflow-builder:1.0.0", cfg.SonataFlowBaseBuilderImageTag)
+	assert.Equal(t, "local/sonataflow-devmode:1.0.0", cfg.SonataFlowDevModeImageTag)
+}
+
+func TestInitializeControllersCfgAt_FileNotFound(t *testing.T) {
+	cfg, err := InitializeControllersCfgAt("./whatever.yaml")
+	assert.Error(t, err)
+	assert.NotNil(t, cfg) //get the default
+	assert.True(t, os.IsNotExist(err))
+	// defaults
+	assert.Equal(t, defaultControllersCfg, cfg)
+}
+
+func TestInitializeControllersCfgAt_NotValidYaml(t *testing.T) {
+	cfg, err := InitializeControllersCfgAt("./testdata/controllers-cfg-invalid.yaml")
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+	// defaults
+	assert.Equal(t, defaultControllersCfg, cfg)
+}

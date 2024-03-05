@@ -21,6 +21,7 @@ import (
 	"os"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
+	"github.com/imdario/mergo"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/klog/v2"
 )
@@ -60,14 +61,18 @@ func InitializeControllersCfg() (*ControllersCfg, error) {
 
 // InitializeControllersCfgAt same as InitializeControllersCfg receiving a path as input.
 func InitializeControllersCfgAt(configFilePath string) (*ControllersCfg, error) {
+	controllersCfg = nil
 	yamlFile, err := os.ReadFile(configFilePath)
 	if err != nil {
 		klog.V(log.E).ErrorS(err, "Failed to read controllers config file", "YAML file location", defaultConfigMountPath)
 		return defaultControllersCfg, err
 	}
-	err = yaml.NewYAMLOrJSONDecoder(bytes.NewReader(yamlFile), 100).Decode(controllersCfg)
+	err = yaml.NewYAMLOrJSONDecoder(bytes.NewReader(yamlFile), 100).Decode(&controllersCfg)
 	if err != nil {
 		klog.V(log.E).ErrorS(err, "Failed to unmarshal controllers config file", "YAML file location", defaultConfigMountPath)
+		return defaultControllersCfg, err
+	}
+	if err = mergo.Merge(controllersCfg, defaultControllersCfg); err != nil {
 		return defaultControllersCfg, err
 	}
 	return controllersCfg, nil
