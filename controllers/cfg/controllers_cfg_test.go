@@ -28,8 +28,8 @@ func TestInitializeControllersCfgAt_ValidFile(t *testing.T) {
 
 	assert.Equal(t, int32(555), cfg.HealthFailureThresholdDevMode)
 	assert.Equal(t, "2Gi", cfg.DefaultPvcKanikoSize)
-	assert.Equal(t, "local/jobs-service:1.0.0", cfg.JobsServiceImageTag)
-	assert.Equal(t, "local/data-index:1.0.0", cfg.DataIndexImageTag)
+	assert.Equal(t, "local/jobs-service:1.0.0", cfg.JobsServicePostgreSQLImageTag)
+	assert.Equal(t, "local/data-index:1.0.0", cfg.DataIndexPostgreSQLImageTag)
 	assert.Equal(t, "local/sonataflow-builder:1.0.0", cfg.SonataFlowBaseBuilderImageTag)
 	assert.Equal(t, "local/sonataflow-devmode:1.0.0", cfg.SonataFlowDevModeImageTag)
 }

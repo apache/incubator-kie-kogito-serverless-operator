@@ -44,8 +44,10 @@ type ControllersCfg struct {
 	HealthFailureThresholdDevMode int32  `yaml:"healthFailureThresholdDevMode,omitempty"`
 	KanikoDefaultWarmerImageTag   string `yaml:"kanikoDefaultWarmerImageTag,omitempty"`
 	KanikoExecutorImageTag        string `yaml:"kanikoExecutorImageTag,omitempty"`
-	JobsServiceImageTag           string `yaml:"jobsServiceImageTag,omitempty"`
-	DataIndexImageTag             string `yaml:"dataIndexImageTag,omitempty"`
+	JobsServicePostgreSQLImageTag string `yaml:"jobsServicePostgreSQLImageTag,omitempty"`
+	JobsServiceEphemeralImageTag  string `yaml:"jobsServiceEphemeralImageTag,omitempty"`
+	DataIndexPostgreSQLImageTag   string `yaml:"dataIndexPostgreSQLImageTag,omitempty"`
+	DataIndexEphemeralImageTag    string `yaml:"dataIndexEphemeralImageTag,omitempty"`
 	SonataFlowBaseBuilderImageTag string `yaml:"sonataFlowBaseBuilderImageTag,omitempty"`
 	SonataFlowDevModeImageTag     string `yaml:"sonataFlowDevModeImageTag,omitempty"`
 }

@@ -26892,9 +26892,11 @@ data:
     # Default image used internally by the Operator Managed Kaniko builder to create the executor pods
     kanikoExecutorImageTag: gcr.io/kaniko-project/executor:v1.9.0
     # The Jobs Service image to use, if empty the operator will use the default Apache Community one based on the current operator's version
-    jobsServiceImageTag: ""
+    jobsServicePostgreSQLImageTag: ""
+    jobsServiceEphemeralImageTag: ""
     # The Data Index image to use, if empty the operator will use the default Apache Community one based on the current operator's version
-    dataIndexImageTag: ""
+    dataIndexPostgreSQLImageTag: ""
+    dataIndexEphemeralTag: ""
     # SonataFlow base builder image used in the internal Dockerfile to build workflow applications in preview profile
     # Order of precedence is:
     # 1. SonataFlowPlatform in the given namespace

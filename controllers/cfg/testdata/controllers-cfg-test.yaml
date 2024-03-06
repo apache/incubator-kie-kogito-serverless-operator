@@ -17,7 +17,7 @@ defaultPvcKanikoSize: 2Gi
 healthFailureThresholdDevMode: 555
 kanikoDefaultWarmerImageTag: gcr.io/kaniko-project/warmer:v1.0.0
 kanikoExecutorImageTag: gcr.io/kaniko-project/executor:v1.0.0
-jobsServiceImageTag: "local/jobs-service:1.0.0"
-dataIndexImageTag: "local/data-index:1.0.0"
+jobsServicePostgreSQLImageTag: "local/jobs-service:1.0.0"
+dataIndexPostgreSQLImageTag: "local/data-index:1.0.0"
 sonataFlowBaseBuilderImageTag: "local/sonataflow-builder:1.0.0"
 sonataFlowDevModeImageTag: "local/sonataflow-devmode:1.0.0"
