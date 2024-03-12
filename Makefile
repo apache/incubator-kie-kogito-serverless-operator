@@ -160,18 +160,6 @@ run: manifests generate ## Run a controller from your host.
 debug: build-4-debug ## Run a controller from your host from binary
 	./bin/manager -v=2
 
-.PHONY: docker-build
-docker-build: generate ## Build docker image with the manager.
-	docker build --build-arg SOURCE_DATE_EPOCH="$(shell git log -1 --pretty=%ct)" -t ${IMG} .
-
-.PHONY: podman-build
-podman-build: generate ## Build container image with the manager.
-	podman build --build-arg SOURCE_DATE_EPOCH="$(shell git log -1 --pretty=%ct)" -t ${IMG} .
-
-.PHONY: docker-push
-docker-push: ## Push docker image with the manager.
-	docker push ${IMG}
-
 # This is currently done directly into the CI
 # PLATFORMS defines the target platforms for the manager image be build to provide support to multiple
 # architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:
@@ -190,16 +178,9 @@ docker-buildx: generate ## Build and push docker image for the manager for cross
 	- docker buildx rm project-v3-builder
 	rm Dockerfile.cross
 
-.PHONY: podman-push
-podman-push: ## Push container image with the manager.
-	podman push ${PODMAN_PUSH_PARAMS} ${IMG}
-
 .PHONY: container-build
-container-build: test ## Build the container image
-	cekit -v --descriptor image.yaml build ${build_options} $(BUILDER)
-ifneq ($(ignore_tag),true)
-	$(BUILDER) tag kogito-serverless-operator ${IMG}
-endif
+container-build: ## Build the container image
+	cekit -v --descriptor images/manager-image.yaml build ${build_options} $(BUILDER) --build-arg SOURCE_DATE_EPOCH="$(shell git log -1 --pretty=%ct)"
 
 .PHONY: container-push
 container-push: ## Push the container image
@@ -346,7 +327,7 @@ addheaders:
 generate-all: generate generate-deploy bundle addheaders vet fmt
 
 .PHONY: test-e2e # You will need to have a Minikube/Kind cluster up in running to run this target, and run container-builder before the test
-test-e2e: install-operator-sdk
+test-e2e:
 	go test ./test/e2e/* -v -ginkgo.v -ginkgo.no-color -ginkgo.junit-report=./e2e-test-report.xml -timeout 60m
 
 .PHONY: before-pr
