@@ -15,7 +15,7 @@ on:
 env:
   CEKIT_VERSION: 4.11.0
   GO_VERSION: 1.21
-  PYTHON_VERSION: 3.10
+  PYTHON_VERSION: "3.10"
   KIND_VERSION: v0.20.0
   OPERATOR_IMAGE_NAME: 127.0.0.1:5001/kogito-serverless-operator:0.0.1
 
