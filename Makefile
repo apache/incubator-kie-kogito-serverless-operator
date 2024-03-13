@@ -182,7 +182,7 @@ docker-buildx: generate ## Build and push docker image for the manager for cross
 container-build: ## Build the container image
 	cekit -v --descriptor images/manager-image.yaml build ${build_options} $(BUILDER) --build-arg SOURCE_DATE_EPOCH="$(shell git log -1 --pretty=%ct)"
 ifneq ($(ignore_tag),true)
-	$(BUILDER) tag kogito-serverless-operator ${IMG}
+	$(BUILDER) tag sonataflow-operator:latest ${IMG}
 endif
 
 .PHONY: container-push
