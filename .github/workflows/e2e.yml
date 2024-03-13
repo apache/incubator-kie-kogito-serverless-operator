@@ -55,8 +55,8 @@ jobs:
 
       - name: Install Cekit
         run: |
-          pip install python-docker
           pip install cekit==${{ env.CEKIT_VERSION }}
+          pip install odcs docker python-docker behave lxml krb5
           cekit --version
 
       - name: Setup Kind cluster
