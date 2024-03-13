@@ -55,6 +55,7 @@ jobs:
 
       - name: Install Cekit
         run: |
+          pip install python-docker
           pip install cekit==${{ env.CEKIT_VERSION }}
           cekit --version
 
