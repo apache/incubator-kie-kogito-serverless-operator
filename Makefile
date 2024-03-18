@@ -258,8 +258,11 @@ bundle: manifests kustomize install-operator-sdk ## Generate bundle manifests an
 	operator-sdk bundle validate ./bundle
 
 .PHONY: bundle-build
-bundle-build: ## Build the bundle image.
-	$(BUILDER) build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+bundle-build: ## Build the bundle image
+	cekit -v --descriptor images/bundle-image.yaml build ${build_options} $(BUILDER) --no-squash --build-arg SOURCE_DATE_EPOCH="$(shell git log -1 --pretty=%ct)"
+ifneq ($(ignore_tag),true)
+	$(BUILDER) tag sonataflow-operator-bundle:latest $(BUNDLE_IMG)
+endif
 
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
