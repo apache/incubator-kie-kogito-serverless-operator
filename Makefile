@@ -180,7 +180,7 @@ docker-buildx: generate ## Build and push docker image for the manager for cross
 
 .PHONY: container-build
 container-build: ## Build the container image
-	cekit -v --descriptor images/manager-image.yaml build ${build_options} $(BUILDER) --build-arg SOURCE_DATE_EPOCH="$(shell git log -1 --pretty=%ct)"
+	cekit -v --descriptor images/manager.yaml build ${build_options} $(BUILDER) --build-arg SOURCE_DATE_EPOCH="$(shell git log -1 --pretty=%ct)"
 ifneq ($(ignore_tag),true)
 	$(BUILDER) tag sonataflow-operator:latest ${IMG}
 endif
@@ -259,7 +259,7 @@ bundle: manifests kustomize install-operator-sdk ## Generate bundle manifests an
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image
-	cekit -v --descriptor images/bundle-image.yaml build ${build_options} $(BUILDER) --no-squash --build-arg SOURCE_DATE_EPOCH="$(shell git log -1 --pretty=%ct)"
+	cekit -v --descriptor images/bundle.yaml build ${build_options} $(BUILDER) --no-squash --build-arg SOURCE_DATE_EPOCH="$(shell git log -1 --pretty=%ct)"
 ifneq ($(ignore_tag),true)
 	$(BUILDER) tag sonataflow-operator-bundle:latest $(BUNDLE_IMG)
 endif
