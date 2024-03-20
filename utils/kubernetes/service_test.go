@@ -53,9 +53,9 @@ func Test_retrievingKubernetesServiceURL(t *testing.T) {
 	t.Run("verify that the service URL is returned with the default cluster name on default namespace", func(t *testing.T) {
 		svc := &v1.Service{}
 		svc.Name = "workflow"
-		RetrieveServiceURL(svc)
+		RetrieveWorkflowServiceURL(svc)
 
-		url, err := RetrieveServiceURL(svc)
+		url, err := RetrieveWorkflowServiceURL(svc)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, url)
@@ -67,9 +67,9 @@ func Test_retrievingKubernetesServiceURL(t *testing.T) {
 		svc := &v1.Service{}
 		svc.Name = "workflow"
 		svc.Namespace = "ns"
-		RetrieveServiceURL(svc)
+		RetrieveWorkflowServiceURL(svc)
 
-		url, err := RetrieveServiceURL(svc)
+		url, err := RetrieveWorkflowServiceURL(svc)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, url)

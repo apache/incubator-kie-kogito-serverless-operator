@@ -96,6 +96,9 @@ func WaitForFailedHTTPRequest(namespace string, requestInfo HTTPRequestInfo, tim
 		})
 }
 
+// TODO: implement a ExecuteHTTPRequest using a curl image, so we can query the services from within the cluster
+// TODO: kubectl run -n $NS -it --rm --image=curlimages/curl curly -- http://10.96.83.64
+
 // ExecuteHTTPRequest executes an HTTP request
 func ExecuteHTTPRequest(namespace string, requestInfo HTTPRequestInfo) (*http.Response, error) {
 	// Setup a retry in case the first time it did not work
@@ -303,7 +306,7 @@ func runRequestRoutine(threadID int, waitGroup *sync.WaitGroup, client *http.Cli
 	results[threadID] = HTTPRequestResultSuccess
 }
 
-// IsHTTPResponseArraySize makes and checks whether an http request returns an array of a specific size
+// IsHTTPResponseArraySize makes and checks whether a http request returns an array of a specific size
 func IsHTTPResponseArraySize(namespace string, requestInfo HTTPRequestInfo, arraySize int) (bool, error) {
 	var httpResponseArray []map[string]interface{}
 	err := ExecuteHTTPRequestWithUnmarshalledResponse(namespace, requestInfo, &httpResponseArray)

@@ -38,6 +38,7 @@ import (
 
 func registerSonataFlowSteps(ctx *godog.ScenarioContext, data *Data) {
 	ctx.Step(`^SonataFlow orderprocessing example is deployed$`, data.sonataFlowOrderProcessingExampleIsDeployed)
+	ctx.Step(`^SonataFlow greeting example is deployed$`, data.sonataFlowGreetingExampleIsDeployed)
 	ctx.Step(`^SonataFlow "([^"]*)" has the condition "(Running|Succeed|Built)" set to "(True|False|Unknown)" within (\d+) minutes?$`, data.sonataFlowHasTheConditionSetToWithinMinutes)
 	ctx.Step(`^SonataFlow "([^"]*)" is addressable within (\d+) minutes?$`, data.sonataFlowIsAddressableWithinMinutes)
 	ctx.Step(`^HTTP POST request as Cloud Event on SonataFlow "([^"]*)" is successful within (\d+) minutes? with path "([^"]*)", headers "([^"]*)" and body:$`, data.httpPostRequestAsCloudEventOnSonataFlowIsSuccessfulWithinMinutesWithPathHeadersAndBody)
@@ -50,6 +51,20 @@ func (data *Data) sonataFlowOrderProcessingExampleIsDeployed() error {
 	// TODO or kubectl
 	out, err := framework.CreateCommand("oc", "apply", "-f", filepath.Join(projectDir,
 		test.GetSonataFlowE2eOrderProcessingFolder()), "-n", data.Namespace).Execute()
+
+	if err != nil {
+		framework.GetLogger(data.Namespace).Error(err, fmt.Sprintf("Applying SonataFlow failed, output: %s", out))
+	}
+	return err
+}
+
+func (data *Data) sonataFlowGreetingExampleIsDeployed() error {
+	projectDir, _ := utils.GetProjectDir()
+	projectDir = strings.Replace(projectDir, "/testbdd", "", -1)
+
+	// TODO or kubectl
+	out, err := framework.CreateCommand("oc", "apply", "-f", filepath.Join(projectDir,
+		test.GetSonataFlowE2eGreetingFolder()), "-n", data.Namespace).Execute()
 
 	if err != nil {
 		framework.GetLogger(data.Namespace).Error(err, fmt.Sprintf("Applying SonataFlow failed, output: %s", out))
@@ -78,7 +93,7 @@ func (data *Data) sonataFlowIsAddressableWithinMinutes(name string, timeoutInMin
 			if err != nil {
 				return false, err
 			} else if sonataFlow == nil {
-				return false, fmt.Errorf("No SonataFlow found with name %s in namespace %s", name, data.Namespace)
+				return false, fmt.Errorf("no SonataFlow found with name %s in namespace %s", name, data.Namespace)
 			}
 
 			if sonataFlow.Status.Address.URL == nil {
@@ -96,7 +111,7 @@ func (data *Data) sonataFlowIsAddressableWithinMinutes(name string, timeoutInMin
 func getSonataFlow(namespace, name string) (*v1alpha08.SonataFlow, error) {
 	sonataFlow := &v1alpha08.SonataFlow{}
 	if exists, err := framework.GetObjectWithKey(types.NamespacedName{Namespace: namespace, Name: name}, sonataFlow); err != nil {
-		return nil, fmt.Errorf("Error while trying to look for SonataFlow %s: %w ", name, err)
+		return nil, fmt.Errorf("error while trying to look for SonataFlow %s: %w ", name, err)
 	} else if !exists {
 		return nil, nil
 	}
@@ -111,7 +126,7 @@ func (data *Data) httpPostRequestAsCloudEventOnSonataFlowIsSuccessfulWithinMinut
 	if err != nil {
 		return err
 	} else if sonataFlow == nil {
-		return fmt.Errorf("No SonataFlow found with name %s in namespace %s", name, data.Namespace)
+		return fmt.Errorf("no SonataFlow found with name %s in namespace %s", name, data.Namespace)
 	}
 	sonataFlowUri := sonataFlow.Status.Endpoint
 	uri := strings.TrimSuffix(sonataFlowUri.String(), sonataFlowUri.Path)
@@ -131,10 +146,10 @@ func parseHeaders(headersContent string) (map[string]string, error) {
 		keyValuePair := strings.Split(headerEntry, "=")
 
 		if len(keyValuePair) == 1 {
-			return nil, fmt.Errorf("Header key and value need to be separated by `=`, parsed header: %s", headerEntry)
+			return nil, fmt.Errorf("header key and value need to be separated by `=`, parsed header: %s", headerEntry)
 		}
 		if len(keyValuePair) > 2 {
-			return nil, fmt.Errorf("Found multiple `=` in parsed header: %s", headerEntry)
+			return nil, fmt.Errorf("found multiple `=` in parsed header: %s", headerEntry)
 		}
 
 		headers[keyValuePair[0]] = strings.TrimSpace(keyValuePair[1])
