@@ -35,8 +35,8 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
 )
 
-func statusEnricher(ctx context.Context, c client.Client, workflow *operatorapi.SonataFlow) (client.Object, error) {
-	//If the workflow Status hasn't got a NodePort Endpoint, we are ensuring it will be set
+func workflowAddressableStatusEnricher(ctx context.Context, c client.Client, workflow *operatorapi.SonataFlow) (client.Object, error) {
+	//If the workflow Status hasn't got a NodePort Endpoint, StatusEnricher is ensuring it will be set
 	// If we aren't on OpenShift we will enrich the status with 2 info:
 	// - Address the service can be reached
 	// - Node port used
@@ -49,6 +49,8 @@ func statusEnricher(ctx context.Context, c client.Client, workflow *operatorapi.
 
 	//If the service has got a Port that is a nodePort we have to use it to create the workflow's NodePort Endpoint
 	if service.Spec.Ports != nil && len(service.Spec.Ports) > 0 {
+		// TODO: Replace with LoadBalancer option https://minikube.sigs.k8s.io/docs/handbook/accessing/#using-minikube-tunnel
+		// TODO: remove Endpoint, use only URL
 		if port := findNodePortFromPorts(service.Spec.Ports); port > 0 {
 			labels := workflowproj.GetDefaultLabels(workflow)
 
@@ -74,7 +76,7 @@ func statusEnricher(ctx context.Context, c client.Client, workflow *operatorapi.
 			workflow.Status.Endpoint = url
 		}
 
-		address, err := kubernetes.RetrieveServiceURL(service)
+		address, err := kubernetes.RetrieveWorkflowServiceURL(service)
 		if err != nil {
 			return nil, err
 		}
@@ -99,7 +101,7 @@ func findNodePortFromPorts(ports []v1.ServicePort) int {
 	return 0
 }
 
-func statusEnricherOpenShift(ctx context.Context, client client.Client, workflow *operatorapi.SonataFlow) (client.Object, error) {
+func workflowAddressableStatusEnricherOpenShift(ctx context.Context, client client.Client, workflow *operatorapi.SonataFlow) (client.Object, error) {
 	// On OpenShift we need to retrieve the Route to have the URL the service is available to
 	route := &openshiftv1.Route{}
 	err := client.Get(ctx, types.NamespacedName{Namespace: workflow.Namespace, Name: workflow.Name}, route)

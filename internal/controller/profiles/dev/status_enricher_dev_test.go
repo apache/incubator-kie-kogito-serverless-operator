@@ -41,7 +41,7 @@ func Test_enrichmentStatusOnK8s(t *testing.T) {
 		workflow.Namespace = toK8SNamespace(t.Name())
 		service, _ := common.ServiceCreator(workflow)
 		client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow, service).Build()
-		obj, err := statusEnricher(context.TODO(), client, workflow)
+		obj, err := workflowAddressableStatusEnricher(context.TODO(), client, workflow)
 
 		reflectWorkflow := obj.(*apiv08.SonataFlow)
 		assert.NoError(t, err)
@@ -57,7 +57,7 @@ func Test_enrichmentStatusOnK8s(t *testing.T) {
 		workflow.Namespace = t.Name()
 		service, _ := serviceCreator(workflow)
 		client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow, service).Build()
-		_, err := statusEnricher(context.TODO(), client, workflow)
+		_, err := workflowAddressableStatusEnricher(context.TODO(), client, workflow)
 		assert.Error(t, err)
 
 	})
@@ -73,7 +73,7 @@ func Test_enrichmentStatusOnOCP(t *testing.T) {
 		route.Namespace = workflow.Namespace
 		route.Spec.Host = workflow.Name + "." + workflow.Namespace + ".apps-crc.testing"
 		client := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(workflow, service, route).Build()
-		obj, err := statusEnricherOpenShift(context.TODO(), client, workflow)
+		obj, err := workflowAddressableStatusEnricherOpenShift(context.TODO(), client, workflow)
 
 		reflectWorkflow := obj.(*apiv08.SonataFlow)
 		assert.NoError(t, err)
