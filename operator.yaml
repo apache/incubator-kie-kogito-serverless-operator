@@ -26857,7 +26857,6 @@ subjects:
 ---
 apiVersion: v1
 data:
-  DEFAULT_BUILDER_RESOURCE_NAME: Dockerfile
   DEFAULT_WORKFLOW_EXTENSION: .sw.json
   Dockerfile: "FROM quay.io/kiegroup/kogito-swf-builder-nightly:latest AS builder\n\n#
     variables that can be overridden by the builder\n# To add a Quarkus extension
@@ -26908,6 +26907,8 @@ data:
     # The image to use to deploy SonataFlow workflow images in devmode profile.
     # If empty the operator will use the default Apache Community one based on the current operator's version.
     sonataFlowDevModeImageTag: ""
+    # The default name of the builder configMap in the operator's namespace
+    builderConfigMapName: "sonataflow-operator-builder-config"
 kind: ConfigMap
 metadata:
   name: sonataflow-operator-controllers-config

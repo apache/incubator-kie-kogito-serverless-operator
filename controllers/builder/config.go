@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/cfg"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,9 +36,7 @@ import (
 )
 
 const (
-	envVarPodNamespaceName = "POD_NAMESPACE"
-	// ConfigMapName is the default name for the Builder ConfigMap name
-	ConfigMapName              = "sonataflow-operator-builder-config"
+	envVarPodNamespaceName     = "POD_NAMESPACE"
 	configKeyDefaultExtension  = "DEFAULT_WORKFLOW_EXTENSION"
 	defaultBuilderResourceName = "Dockerfile"
 )
@@ -59,21 +58,22 @@ func GetBuilderConfigMap(client client.Client, fallbackNS string) (*corev1.Confi
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ConfigMapName,
+			Name:      cfg.GetCfg().BuilderConfigMapName,
 			Namespace: namespace,
 		},
 		Data: map[string]string{},
 	}
 
-	err := client.Get(context.TODO(), types.NamespacedName{Name: ConfigMapName, Namespace: namespace}, existingConfigMap)
+	builderConfigMapName := cfg.GetCfg().BuilderConfigMapName
+	err := client.Get(context.TODO(), types.NamespacedName{Name: builderConfigMapName, Namespace: namespace}, existingConfigMap)
 	if err != nil {
-		klog.V(log.E).ErrorS(err, "fetching configmap", "name", ConfigMapName)
+		klog.V(log.E).ErrorS(err, "fetching configmap", "name", builderConfigMapName)
 		return nil, err
 	}
 
 	err = isValidBuilderConfigMap(existingConfigMap)
 	if err != nil {
-		klog.V(log.E).ErrorS(err, "configmap is not valid", "name", ConfigMapName)
+		klog.V(log.E).ErrorS(err, "configmap is not valid", "name", builderConfigMapName)
 		return existingConfigMap, err
 	}
 

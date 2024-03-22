@@ -24,3 +24,5 @@ sonataFlowBaseBuilderImageTag: ""
 # The image to use to deploy SonataFlow workflow images in devmode profile.
 # If empty the operator will use the default Apache Community one based on the current operator's version.
 sonataFlowDevModeImageTag: ""
+# The default name of the builder configMap in the operator's namespace
+builderConfigMapName: "sonataflow-operator-builder-config"

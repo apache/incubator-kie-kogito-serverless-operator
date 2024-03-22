@@ -11,7 +11,6 @@ configMapGenerator:
 - files:
   - Dockerfile=SonataFlow-Builder.containerfile
   literals:
-  - DEFAULT_BUILDER_RESOURCE_NAME=Dockerfile
   - DEFAULT_WORKFLOW_EXTENSION=.sw.json
   name: builder-config
 

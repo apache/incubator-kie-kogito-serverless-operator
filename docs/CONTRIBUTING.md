@@ -168,7 +168,6 @@ See the section on [README](../README.md#getting-started)
 A configmap called `sonataflow-operator-builder-config` will be created under the `sonataflow-operator-system` namespace
 when the Operator will be installed, and it contains:
 
-- DEFAULT_BUILDER_RESOURCE = Dockerfile
 - DEFAULT_WORKFLOW_EXTENSION = .sw.json
 - Dockerfile = `<dockerfile content>`
 

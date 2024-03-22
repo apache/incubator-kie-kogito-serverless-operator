@@ -37,6 +37,7 @@ var defaultControllersCfg = &ControllersCfg{
 	DefaultPvcKanikoSize:          "1Gi",
 	KanikoDefaultWarmerImageTag:   "gcr.io/kaniko-project/warmer:v1.9.0",
 	KanikoExecutorImageTag:        "gcr.io/kaniko-project/executor:v1.9.0",
+	BuilderConfigMapName:          "sonataflow-operator-builder-config",
 }
 
 type ControllersCfg struct {
@@ -50,6 +51,7 @@ type ControllersCfg struct {
 	DataIndexEphemeralImageTag    string `yaml:"dataIndexEphemeralImageTag,omitempty"`
 	SonataFlowBaseBuilderImageTag string `yaml:"sonataFlowBaseBuilderImageTag,omitempty"`
 	SonataFlowDevModeImageTag     string `yaml:"sonataFlowDevModeImageTag,omitempty"`
+	BuilderConfigMapName          string `yaml:"builderConfigMapName,omitempty"`
 }
 
 // InitializeControllersCfg initializes the platform configuration for this instance.
