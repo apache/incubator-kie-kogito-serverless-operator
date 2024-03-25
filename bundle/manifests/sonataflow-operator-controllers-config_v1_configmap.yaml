@@ -21,7 +21,7 @@ data:
     # 1. SonataFlowPlatform in the given namespace
     # 2. This configuration
     # 3. The FROM in the Dockerfile in the operator's namespace "sonataflow-operator-builder-config" configMap.
-    # If 1 or 2, the FROM tag will be replaced by the tag se there.
+    # If 1 or 2, the FROM tag will be replaced by the tag set there.
     # If empty the operator will use the default Apache Community one based on the current operator's version.
     sonataFlowBaseBuilderImageTag: ""
     # The image to use to deploy SonataFlow workflow images in devmode profile.
