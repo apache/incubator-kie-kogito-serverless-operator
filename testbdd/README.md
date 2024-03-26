@@ -87,7 +87,7 @@ make run-tests 2>&1 | tee log.out
 
 ```
 $ make
-$ make container-build
+$ make container-build # or docker-build
 $ podman tag quay.io/kiegroup/kogito-serverless-operator-nightly:latest quay.io/{USERNAME}/kogito-serverless-operator-nightly:latest
 $ podman push quay.io/{USERNAME}/kogito-serverless-operator-nightly:latest
 $ make run-tests cr_deployment_only=true local_cluster=true operator_image_tag=quay.io/{USERNAME}/kogito-serverless-operator-nightly:latest

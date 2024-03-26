@@ -29,7 +29,7 @@ For example, source to image on OpenShift clusters or Kaniko on Kubernetes.
 
 Kogito might use this first phase to assemble a specific application based on the sources pushed to the cluster.
 For simplicity, we skipped this first phase and assembled the project on a "builder image" for Serverless Workflow projects.
-You can see a [draft for this image here](https://github.com/kiegroup/kogito-images/pull/1322).
+You can see a [draft for this image here](https://github.com/apache/incubator-kie-kogito-images/pull/1322).
 
 This base builder image does the project assembling "ahead of time", so there's no need to run this phase like Camel-K does.
 Kogito won't need this level of customization of a project, but there are use cases which could benefit from it such as using MongoDB as the persistence layer rather than Postgres.
