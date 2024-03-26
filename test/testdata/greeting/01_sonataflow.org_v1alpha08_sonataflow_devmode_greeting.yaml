@@ -22,15 +22,11 @@ metadata:
   annotations:
     sonataflow.org/description: Greeting example on k8s!
     sonataflow.org/version: 0.0.1
+    sonataflow.org/expressionLang: jsonpath
     sonataflow.org/profile: dev
 spec:
   flow:
     start: ChooseOnLanguage
-    events:
-      - kind: consumed
-        name: GreetingEvent
-        type: greetingEvent
-        source: greetingEvent
     functions:
       - name: greetFunction
         type: custom
@@ -39,9 +35,9 @@ spec:
       - name: ChooseOnLanguage
         type: switch
         dataConditions:
-          - condition: "${ .language == \"English\" }"
+          - condition: "{{ $.[?(@.language == \"English\")] }}"
             transition: GreetInEnglish
-          - condition: "${ .language == \"Spanish\" }"
+          - condition: "{{ $.[?(@.language == \"Spanish\")] }}"
             transition: GreetInSpanish
         defaultCondition: GreetInEnglish
       - name: GreetInEnglish

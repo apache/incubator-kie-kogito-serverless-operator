@@ -82,7 +82,7 @@ func GetKogitoJobsService(namespace string) (*v1beta1.KogitoSupportingService, e
 
 // WaitForKogitoJobsServiceLogContainsTextWithinMinutes waits until any pods contains a text
 func WaitForKogitoJobsServiceLogContainsTextWithinMinutes(namespace, logText string, timeoutInMin int) error {
-	return WaitForAnyPodsByDeploymentToContainTextInLog(namespace, getJobsServiceName(), logText, timeoutInMin)
+	return WaitForAnyPodsByDeploymentToContainTextInLog(namespace, getJobsServiceName(), getJobsServiceName(), logText, timeoutInMin)
 }
 
 func getJobsServiceName() string {

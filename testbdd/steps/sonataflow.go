@@ -42,8 +42,13 @@ func registerSonataFlowSteps(ctx *godog.ScenarioContext, data *Data) {
 	ctx.Step(`^SonataFlow "([^"]*)" has the condition "(Running|Succeed|Built)" set to "(True|False|Unknown)" within (\d+) minutes?$`, data.sonataFlowHasTheConditionSetToWithinMinutes)
 	ctx.Step(`^SonataFlow "([^"]*)" is addressable within (\d+) minutes?$`, data.sonataFlowIsAddressableWithinMinutes)
 	ctx.Step(`^HTTP POST request as Cloud Event on SonataFlow "([^"]*)" is successful within (\d+) minutes? with path "([^"]*)", headers "([^"]*)" and body:$`, data.httpPostRequestAsCloudEventOnSonataFlowIsSuccessfulWithinMinutesWithPathHeadersAndBody)
+	ctx.Step(`^HTTP GET request on SonataFlow "([^"]*)" is successful within (\d+) minutes? with path "([^"]*)", expectedResponseContains '([^']*)'$`, data.httpGetRequestOnSonataFlowIsSuccessfulWithinMinutesWithResponseContains)
+	ctx.Step(`^HTTP POST request on SonataFlow "([^"]*)" is successful within (\d+) minutes? with path "([^"]*)", expectedResponseContains '([^']*)' and body:$`, data.httpPostRequestOnSonataFlowIsSuccessfulWithinMinutesWithResponseAndBody)
+	ctx.Step(`^SonataFlow "([^"]*)" pods log contains text '([^']*)' within (\d+) minutes$`, data.sonataFlowLogContainsTextWithinMinutes)
+	ctx.Step(`^SonataFlow "([^"]*)" pods log does not contain text '([^']*)' within (\d+) minutes$`, data.sonataFlowLogDoesNotContainTextWithinMinutes)
 }
 
+// TODO: Parametrize example
 func (data *Data) sonataFlowOrderProcessingExampleIsDeployed() error {
 	projectDir, _ := utils.GetProjectDir()
 	projectDir = strings.Replace(projectDir, "/testbdd", "", -1)
@@ -118,6 +123,19 @@ func getSonataFlow(namespace, name string) (*v1alpha08.SonataFlow, error) {
 	return sonataFlow, nil
 }
 
+func (data *Data) sonataFlowLogContainsTextWithinMinutes(name, logText string, timeoutInMin int) error {
+	return framework.WaitForAllPodsByDeploymentToContainTextInLog(data.Namespace, name, "workflow", logText, timeoutInMin)
+}
+
+func (data *Data) sonataFlowLogDoesNotContainTextWithinMinutes(name, logText string, timeoutInMin int) error {
+	err := framework.WaitForAllPodsByDeploymentToContainTextInLog(data.Namespace, name, "workflow", logText, timeoutInMin)
+	if err != nil {
+		return nil
+	} else {
+		return fmt.Errorf("found %s in %s pod logs", logText, name)
+	}
+}
+
 func (data *Data) httpPostRequestAsCloudEventOnSonataFlowIsSuccessfulWithinMinutesWithPathHeadersAndBody(name string, timeoutInMin int, path, headersContent string, body *godog.DocString) error {
 	path = data.ResolveWithScenarioContext(path)
 	bodyContent := data.ResolveWithScenarioContext(body.Content)
@@ -137,6 +155,67 @@ func (data *Data) httpPostRequestAsCloudEventOnSonataFlowIsSuccessfulWithinMinut
 
 	requestInfo := framework.NewPOSTHTTPRequestInfoWithHeaders(uri, path, headers, body.MediaType, bodyContent)
 	return framework.WaitForSuccessfulHTTPRequest(data.Namespace, requestInfo, timeoutInMin)
+}
+
+func (data *Data) httpGetRequestOnSonataFlowIsSuccessfulWithinMinutesWithResponseContains(name string, timeoutInMin int, path, expectedResponseContains string) error {
+	path = data.ResolveWithScenarioContext(path)
+	framework.GetLogger(data.Namespace).Debug("httpGetRequestOnSonataFlowIsSuccessfulWithinMinutesWithResponseContains", "sonataflow", name, "path", path, "expectedResponseContains", expectedResponseContains, "timeout", timeoutInMin)
+	sonataFlow, err := getSonataFlow(data.Namespace, name)
+	if err != nil {
+		return err
+	} else if sonataFlow == nil {
+		return fmt.Errorf("no SonataFlow found with name %s in namespace %s", name, data.Namespace)
+	}
+	sonataFlowUri := sonataFlow.Status.Endpoint
+	uri := strings.TrimSuffix(sonataFlowUri.String(), sonataFlowUri.Path)
+	if err != nil {
+		return err
+	}
+
+	requestInfo := framework.NewGETHTTPRequestInfo(uri, path)
+	actualResponse, err := framework.ExecuteHTTPRequestWithStringResponse(data.Namespace, requestInfo)
+	if err != nil {
+		return err
+	} else {
+		fmt.Printf("Got response %s.\n", actualResponse)
+		result := strings.Contains(actualResponse, expectedResponseContains)
+		if result {
+			return nil
+		} else {
+			return fmt.Errorf("response does not contain - expected response to contain [%s] actual response was [%s]", expectedResponseContains, actualResponse)
+		}
+	}
+}
+
+func (data *Data) httpPostRequestOnSonataFlowIsSuccessfulWithinMinutesWithResponseAndBody(name string, timeoutInMin int, path, expectedResponseContains string, body *godog.DocString) error {
+	path = data.ResolveWithScenarioContext(path)
+	bodyContent := data.ResolveWithScenarioContext(body.Content)
+	framework.GetLogger(data.Namespace).Debug("httpPostRequestOnSonataFlowIsSuccessfulWithinMinutesWithResponseAndBody", "sonataflow", name, "path", path, "bodyMediaType", body.MediaType, "bodyContent", bodyContent, "expectedResponseContains", expectedResponseContains, "timeout", timeoutInMin)
+	sonataFlow, err := getSonataFlow(data.Namespace, name)
+	if err != nil {
+		return err
+	} else if sonataFlow == nil {
+		return fmt.Errorf("no SonataFlow found with name %s in namespace %s", name, data.Namespace)
+	}
+	sonataFlowUri := sonataFlow.Status.Endpoint
+	uri := strings.TrimSuffix(sonataFlowUri.String(), sonataFlowUri.Path)
+	if err != nil {
+		return err
+	}
+
+	requestInfo := framework.NewPOSTHTTPRequestInfo(uri, path, body.MediaType, bodyContent)
+	actualResponse, err := framework.ExecuteHTTPRequestWithStringResponse(data.Namespace, requestInfo)
+	if err != nil {
+		return fmt.Errorf("error during execution of HTTP request. Error %s", err)
+	} else {
+		fmt.Printf("Got response %s.\n", actualResponse)
+		result := strings.Contains(actualResponse, expectedResponseContains)
+		if result {
+			return nil
+		} else {
+			return fmt.Errorf("response does not contain - expected response to contain [%s] actual response was [%s]", expectedResponseContains, actualResponse)
+		}
+	}
 }
 
 func parseHeaders(headersContent string) (map[string]string, error) {
