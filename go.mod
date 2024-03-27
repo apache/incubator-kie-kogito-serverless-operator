@@ -1,6 +1,6 @@
 module github.com/apache/incubator-kie-kogito-serverless-operator
 
-go 1.21
+go 1.22
 
 // Internal dependencies
 replace (
