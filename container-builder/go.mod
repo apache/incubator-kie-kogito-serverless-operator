@@ -1,6 +1,6 @@
 module github.com/apache/incubator-kie-kogito-serverless-operator/container-builder
 
-go 1.22
+go 1.21
 
 require (
 	github.com/docker/docker v24.0.9+incompatible

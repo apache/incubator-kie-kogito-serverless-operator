@@ -11,7 +11,7 @@ on:
 
 env:
   REGISTRY_STORAGE_DELETE_ENABLED : true
-  GO_VERSION: 1.22.1
+  GO_VERSION: 1.21
 
 jobs:
   unit-tests:

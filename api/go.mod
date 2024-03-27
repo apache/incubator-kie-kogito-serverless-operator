@@ -1,6 +1,6 @@
 module github.com/apache/incubator-kie-kogito-serverless-operator/api
 
-go 1.22
+go 1.21
 
 require (
 	github.com/serverlessworkflow/sdk-go/v2 v2.2.5
