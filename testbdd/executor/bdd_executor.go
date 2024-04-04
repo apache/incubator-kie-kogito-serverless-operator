@@ -86,7 +86,7 @@ func ExecuteBDDTests(beforeTestsExecution func(godogOpts *godog.Options) error) 
 
 	features, err := gherkin.ParseFeatures(godogOpts.Tags, godogOpts.Paths)
 	if err != nil {
-		panic(fmt.Errorf("Error parsing features: %v", err))
+		panic(fmt.Errorf("error parsing features: %v", err))
 	}
 	if config.IsShowScenarios() || config.IsShowSteps() {
 		showScenarios(features, config.IsShowSteps())
@@ -96,7 +96,7 @@ func ExecuteBDDTests(beforeTestsExecution func(godogOpts *godog.Options) error) 
 		if !config.IsCrDeploymentOnly() || gherkin.MatchingFeatureWithTags(cliTag, features) {
 			// Check CLI binary is existing if needed
 			if exits, err := framework.CheckCliBinaryExist(); err != nil {
-				panic(fmt.Errorf("Error trying to get CLI binary %v", err))
+				panic(fmt.Errorf("error trying to get CLI binary %v", err))
 			} else if !exits {
 				panic("CLI Binary does not exist on specified path")
 			}
@@ -144,12 +144,12 @@ func appendTag(tag string) {
 func configureTestOutput() {
 	logFolder := framework.GetLogFolder()
 	if err := framework.CreateFolder(logFolder); err != nil {
-		panic(fmt.Errorf("Error while creating log folder %s: %v", logFolder, err))
+		panic(fmt.Errorf("error while creating log folder %s: %v", logFolder, err))
 	}
 
 	mainLogFile, err := os.Create(fmt.Sprintf("%s/%s", logFolder, "junit.xml"))
 	if err != nil {
-		panic(fmt.Errorf("Error creating junit file: %v", err))
+		panic(fmt.Errorf("error creating junit file: %v", err))
 	}
 
 	godogOpts.Output = io.MultiWriter(godogOpts.Output, mainLogFile)
@@ -273,7 +273,7 @@ func deleteNamespaceIfExists(namespace string) {
 	err := framework.OperateOnNamespaceIfExists(namespace, func(namespace string) error {
 		framework.GetLogger(namespace).Info("Delete created namespace", "namespace", namespace)
 		if e := framework.DeleteNamespace(namespace); e != nil {
-			return fmt.Errorf("Error while deleting the namespace: %v", e)
+			return fmt.Errorf("error while deleting the namespace: %v", e)
 		}
 		return nil
 	})
@@ -333,12 +333,12 @@ func stopNamespaceMonitoring(namespace string) {
 func installKogitoOperatorCatalogSource() error {
 	// Create CatalogSource
 	if _, err := framework.CreateKogitoOperatorCatalogSource(); err != nil {
-		return fmt.Errorf("Error installing custer wide Kogito operator using OLM: %v", err)
+		return fmt.Errorf("error installing custer wide Sonataflow operator using OLM: %v", err)
 	}
 
 	// Wait for the CatalogSource
 	if err := framework.WaitForKogitoOperatorCatalogSourceReady(); err != nil {
-		return fmt.Errorf("Error while waiting for Kogito operator CatalogSource initialization: %v", err)
+		return fmt.Errorf("error while waiting for Sonataflow operator CatalogSource initialization: %v", err)
 	}
 
 	return nil
@@ -346,7 +346,7 @@ func installKogitoOperatorCatalogSource() error {
 
 func deleteKogitoOperatorCatalogSource() {
 	if err := framework.DeleteKogitoOperatorCatalogSource(); err != nil {
-		framework.GetMainLogger().Error(err, "Error deleting Kogito operator CatalogSource")
+		framework.GetMainLogger().Error(err, "Error deleting Sonataflow operator CatalogSource")
 	}
 }
 
@@ -354,7 +354,7 @@ func retrieveProfilingData() {
 	framework.GetMainLogger().Info("Retrieve Profiling Data")
 
 	if err := framework.RemoveKogitoOperatorDeployment(installers.SonataFlowNamespace); err != nil {
-		framework.GetMainLogger().Error(err, "Unable to delete Kogito Operator Deployment")
+		framework.GetMainLogger().Error(err, "Unable to delete Sonataflow Operator Deployment")
 		return
 	}
 

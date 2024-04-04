@@ -115,10 +115,11 @@ If you want to have a more readable format, you can specify the `format=pretty` 
 
 #### List of test tags
 
-| Tag name  | Tag meaning                                               |
-|-----------|-----------------------------------------------------------|
-| @smoke    | Smoke tests verifying basic functionality                 |
-| @disabled | Disabled tests, usually with comment describing reasons   |
-|           |                                                           |
-| @devMode  | Tests verifying dev mode profile of the deployed workflow |
+| Tag name  | Tag meaning                                                   |
+|-----------|---------------------------------------------------------------|
+| @smoke    | Smoke tests verifying basic functionality                     |
+| @disabled | Disabled tests, usually with comment describing reasons       |
+|           |                                                               |
+| @devMode  | Tests verifying dev mode profile of the deployed workflow     |
+| @preview  | Tests verifying preview mode profile of the deployed workflow |
 

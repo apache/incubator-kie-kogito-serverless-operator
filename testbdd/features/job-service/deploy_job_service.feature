@@ -1,0 +1,1 @@
+Feature: Deploy SonataFlow Operator and Job Service

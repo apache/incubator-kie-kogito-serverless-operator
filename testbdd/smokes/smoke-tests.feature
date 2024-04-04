@@ -1,0 +1,1 @@
+Feature: Deploy SonataFlow Operator

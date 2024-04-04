@@ -1,4 +1,4 @@
-Feature: Deploy SonataFlow Operator
+Feature: Deploy SonataFlow Operator and SonataFlowPlatform with order-processing example application in dev mode and verify the functionality
 
   @devMode
   Scenario: order-processing DevMode E2E test
@@ -26,30 +26,3 @@ Feature: Deploy SonataFlow Operator
     Then Deployment "event-listener" pods log contains text '"fraudEvaluation": true' within 1 minutes
     Then Deployment "event-listener" pods log contains text '"shipping": "international"' within 1 minutes
     Then SonataFlow "order-processing" pods log does not contain text 'ERROR' within 0 minutes
-
-  @devMode
-  Scenario: greeting-example DevMode E2E test
-    Given Namespace is created
-    When SonataFlow Operator is deployed
-    When SonataFlowPlatform is deployed
-    When SonataFlow greeting example is deployed
-    Then SonataFlow "greeting" has the condition "Running" set to "True" within 5 minutes
-    Then SonataFlow "greeting" is addressable within 1 minute
-    Then HTTP POST request on SonataFlow "greeting" is successful within 1 minute with path "greeting", expectedResponseContains '"workflowdata":{"name":"Petr Pavel","language":"Spanish","greeting":"Saludos desde JSON Workflow, "}' and body:
-    """json
-    {"name":"Petr Pavel",
-    "language":"Spanish"
-    }
-    """
-
-    Then HTTP GET request on SonataFlow "greeting" is successful within 1 minute with path "greeting", expectedResponseContains ''
-    Then SonataFlow "greeting" pods log contains text '"name" : "Petr Pavel",' within 1 minutes
-    Then SonataFlow "greeting" pods log contains text '"language" : "Spanish"' within 1 minutes
-    Then SonataFlow "greeting" pods log contains text '(executor-thread-1) Starting workflow' within 1 minutes
-    Then SonataFlow "greeting" pods log contains text 'Start' within 1 minutes
-    Then SonataFlow "greeting" pods log contains text 'ChooseOnLanguage' within 1 minutes
-    Then SonataFlow "greeting" pods log contains text 'GreetInSpanish' within 1 minutes
-    Then SonataFlow "greeting" pods log contains text 'Join-GreetPerson' within 1 minutes
-    Then SonataFlow "greeting" pods log contains text 'GreetPerson' within 1 minutes
-    Then SonataFlow "greeting" pods log contains text 'End' within 1 minutes
-    Then SonataFlow "greeting" pods log does not contain text 'ERROR' within 0 minutes

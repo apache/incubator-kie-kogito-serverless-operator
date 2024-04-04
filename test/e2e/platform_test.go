@@ -133,6 +133,10 @@ var _ = Describe("Platform Use Cases :: ", Label("platform"), Ordered, func() {
 					return verifyWorkflowIsInRunningStateInNamespace(sf, targetNamespace)
 				}, 15*time.Minute, 1*time.Minute).Should(BeTrue())
 			}
+
+			// TODO: Trigger a workflow
+			// TODO: Find it in the DB
+			// TODO: Verify it is correct
 		},
 			Entry("with both Job Service and Data Index and ephemeral persistence and the workflow in a dev profile", test.GetSonataFlowE2EPlatformServicesDirectory(), metadata.DevProfile.String(), ephemeral),
 			Entry("with both Job Service and Data Index and ephemeral persistence and the workflow in a preview profile", test.GetSonataFlowE2EPlatformServicesDirectory(), metadata.PreviewProfile.String(), ephemeral),
