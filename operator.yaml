@@ -982,7 +982,8 @@ spec:
                       configMaps in the current context.
                     items:
                       description: PropertyVar is the entry for a property set derived
-                        from the Kubernetes API EnvVar.
+                        from the Kubernetes API EnvVar. Note that the name doesn't
+                        have to match C_IDENTIFIER.
                       properties:
                         name:
                           description: The property name

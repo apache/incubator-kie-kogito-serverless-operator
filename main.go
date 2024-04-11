@@ -90,7 +90,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Set global assessors
 	utils.SetIsOpenShift(mgr.GetConfig())
+	utils.SetClient(mgr.GetClient())
 
 	// Fail fast, we can change this behavior in the future to read from defaults instead.
 	if _, err = cfg.InitializeControllersCfg(); err != nil {

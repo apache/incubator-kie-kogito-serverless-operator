@@ -27,6 +27,7 @@ type PropertyPlatformSpec struct {
 }
 
 // PropertyVar is the entry for a property set derived from the Kubernetes API EnvVar.
+// Note that the name doesn't have to match C_IDENTIFIER.
 type PropertyVar struct {
 	// The property name
 	Name string `json:"name"`
