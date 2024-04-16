@@ -73,3 +73,20 @@ const (
 	// Ideally used in production use cases
 	GitOpsProfile ProfileType = "gitops"
 )
+
+const (
+	DefaultProfile = PreviewProfile
+)
+
+var supportedProfiles = map[ProfileType]ProfileType{DevProfile: DevProfile, PreviewProfile: PreviewProfile, GitOpsProfile: GitOpsProfile}
+
+func GetProfileOrDefault(annotation map[string]string) ProfileType {
+	if annotation == nil {
+		return DefaultProfile
+	}
+	if profile, ok := supportedProfiles[ProfileType(annotation[Profile])]; !ok {
+		return DefaultProfile
+	} else {
+		return profile
+	}
+}

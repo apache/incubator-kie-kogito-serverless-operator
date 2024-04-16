@@ -94,7 +94,7 @@ func Test_ensureWorkflowPropertiesConfigMapMutator_DollarReplacement(t *testing.
 
 func TestMergePodSpec(t *testing.T) {
 	workflow := test.GetBaseSonataFlow(t.Name())
-	workflow.Spec.PodTemplate = v1alpha08.PodTemplateSpec{
+	workflow.Spec.PodTemplate = v1alpha08.FlowPodTemplateSpec{
 		Container: v1alpha08.ContainerSpec{
 			// this one we can override
 			Image: "quay.io/example/my-workflow:1.0.0",
@@ -147,7 +147,7 @@ func TestMergePodSpec(t *testing.T) {
 
 func TestMergePodSpec_OverrideContainers(t *testing.T) {
 	workflow := test.GetBaseSonataFlow(t.Name())
-	workflow.Spec.PodTemplate = v1alpha08.PodTemplateSpec{
+	workflow.Spec.PodTemplate = v1alpha08.FlowPodTemplateSpec{
 		PodSpec: v1alpha08.PodSpec{
 			// Try to override the workflow container via the podspec
 			Containers: []corev1.Container{
@@ -213,7 +213,7 @@ func Test_ensureWorkflowTriggersAreCreated(t *testing.T) {
 func TestMergePodSpec_WithPostgreSQL_and_JDBC_URL_field(t *testing.T) {
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflow.Spec = v1alpha08.SonataFlowSpec{
-		PodTemplate: v1alpha08.PodTemplateSpec{
+		PodTemplate: v1alpha08.FlowPodTemplateSpec{
 			Container: v1alpha08.ContainerSpec{
 				// this one we can override
 				Image: "quay.io/example/my-workflow:1.0.0",
@@ -321,7 +321,7 @@ var (
 func TestMergePodSpec_OverrideContainers_WithPostgreSQL_In_Workflow_CR(t *testing.T) {
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflow.Spec = v1alpha08.SonataFlowSpec{
-		PodTemplate: v1alpha08.PodTemplateSpec{
+		PodTemplate: v1alpha08.FlowPodTemplateSpec{
 			PodSpec: v1alpha08.PodSpec{
 				// Try to override the workflow container via the podspec
 				Containers: []corev1.Container{
@@ -510,7 +510,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_And_In_Workflow_CR(t *t
 	}
 	workflow := test.GetBaseSonataFlow(t.Name())
 	workflow.Spec = v1alpha08.SonataFlowSpec{
-		PodTemplate: v1alpha08.PodTemplateSpec{
+		PodTemplate: v1alpha08.FlowPodTemplateSpec{
 			PodSpec: v1alpha08.PodSpec{
 				// Try to override the workflow container via the podspec
 				Containers: []corev1.Container{

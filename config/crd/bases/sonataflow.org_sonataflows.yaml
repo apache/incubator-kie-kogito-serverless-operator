@@ -5627,6 +5627,10 @@ spec:
                       - name
                       type: object
                     type: array
+                  deploymentModel:
+                    description: Defines the kind of deployment model for this pod
+                      spec. In dev profile, only "kubernetes" is valid.
+                    type: string
                   dnsConfig:
                     description: Specifies the DNS parameters of a pod. Parameters
                       specified here will be merged to the generated DNS configuration
