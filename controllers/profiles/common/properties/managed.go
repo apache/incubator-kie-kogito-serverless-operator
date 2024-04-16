@@ -148,17 +148,17 @@ func NewManagedPropertyHandler(workflow *operatorapi.SonataFlow, platform *opera
 	props := properties.NewProperties()
 	props.Set(constants.KogitoUserTasksEventsEnabled, "false")
 	if platform != nil {
-		p, err := services.GenerateDataIndexWorkflowProperties(workflow, platform)
+		p, err := resolvePlatformWorkflowProperties(platform)
+		if err != nil {
+			return nil, err
+		}
+		props.Merge(p)
+		p, err = services.GenerateDataIndexWorkflowProperties(workflow, platform)
 		if err != nil {
 			return nil, err
 		}
 		props.Merge(p)
 		p, err = services.GenerateJobServiceWorkflowProperties(workflow, platform)
-		if err != nil {
-			return nil, err
-		}
-		props.Merge(p)
-		p, err = resolvePlatformWorkflowProperties(platform)
 		if err != nil {
 			return nil, err
 		}
