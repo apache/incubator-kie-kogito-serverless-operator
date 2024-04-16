@@ -20,6 +20,7 @@ import (
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/metadata"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/test"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
 	"github.com/magiconair/properties"
@@ -28,10 +29,57 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	kv1 "knative.dev/serving/pkg/apis/serving/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
+type fakeDeploymentReconciler struct {
+	DeploymentReconciler
+}
+
+func newFakeDeploymentReconciler(stateSupport *common.StateSupport, ensurer *ObjectEnsurers) *fakeDeploymentReconciler {
+	return &fakeDeploymentReconciler{
+		DeploymentReconciler{
+			StateSupport: stateSupport,
+			ensurers:     ensurer,
+		},
+	}
+}
+
+func (d *fakeDeploymentReconciler) Reconcile(ctx context.Context, workflow *v1alpha08.SonataFlow) (reconcile.Result, []client.Object, error) {
+	return d.reconcileWithBuiltImage(ctx, workflow, "")
+}
+
+func Test_CheckDeploymentModelIsKnative(t *testing.T) {
+	workflow := test.GetBaseSonataFlowWithGitOpsProfile(t.Name())
+	workflow.Spec.PodTemplate.DeploymentModel = v1alpha08.KnativeDeploymentModel
+
+	client := test.NewSonataFlowClientBuilderWithKnative().
+		WithRuntimeObjects(workflow).
+		WithStatusSubresource(workflow).
+		Build()
+	stateSupport := fakeReconcilerSupport(client)
+	handler := newFakeDeploymentReconciler(stateSupport, NewObjectEnsurers(stateSupport))
+
+	result, objects, err := handler.Reconcile(context.TODO(), workflow)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, objects)
+	assert.True(t, result.Requeue)
+
+	var ksvc *kv1.Service
+	for _, o := range objects {
+		if _, ok := o.(*kv1.Service); ok {
+			ksvc = o.(*kv1.Service)
+			assert.Equal(t, v1alpha08.DefaultContainerName, ksvc.Spec.Template.Spec.Containers[0].Name)
+			break
+		}
+	}
+	assert.NotNil(t, ksvc)
+}
+
 func Test_CheckPodTemplateChangesReflectDeployment(t *testing.T) {
-	workflow := test.GetBaseSonataFlowWithProdOpsProfile(t.Name())
+	workflow := test.GetBaseSonataFlowWithGitOpsProfile(t.Name())
 
 	client := test.NewSonataFlowClientBuilder().
 		WithRuntimeObjects(workflow).
@@ -53,18 +101,20 @@ func Test_CheckPodTemplateChangesReflectDeployment(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, objects)
 	assert.True(t, result.Requeue)
+	var deployment *v1.Deployment
 	for _, o := range objects {
 		if _, ok := o.(*v1.Deployment); ok {
-			deployment := o.(*v1.Deployment)
+			deployment = o.(*v1.Deployment)
 			assert.Equal(t, expectedImg, deployment.Spec.Template.Spec.Containers[0].Image)
 			assert.Equal(t, v1alpha08.DefaultContainerName, deployment.Spec.Template.Spec.Containers[0].Name)
 			break
 		}
 	}
+	assert.NotNil(t, deployment)
 }
 
 func Test_CheckDeploymentRolloutAfterCMChange(t *testing.T) {
-	workflow := test.GetBaseSonataFlowWithProdOpsProfile(t.Name())
+	workflow := test.GetBaseSonataFlowWithGitOpsProfile(t.Name())
 
 	client := test.NewSonataFlowClientBuilder().
 		WithRuntimeObjects(workflow).
@@ -126,7 +176,7 @@ func Test_CheckDeploymentRolloutAfterCMChange(t *testing.T) {
 }
 
 func Test_CheckDeploymentUnchangedAfterCMChangeOtherKeys(t *testing.T) {
-	workflow := test.GetBaseSonataFlowWithProdOpsProfile(t.Name())
+	workflow := test.GetBaseSonataFlowWithGitOpsProfile(t.Name())
 
 	client := test.NewSonataFlowClientBuilder().
 		WithRuntimeObjects(workflow).

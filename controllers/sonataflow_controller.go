@@ -100,7 +100,7 @@ func (r *SonataFlowReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return profiles.NewReconciler(r.Client, r.Config, r.Recorder, workflow).Reconcile(ctx, workflow)
 }
 
-// TODO: move to webhook
+// TODO: move to webhook see https://github.com/apache/incubator-kie-kogito-serverless-operator/pull/239
 func (r *SonataFlowReconciler) setDefaults(workflow *operatorapi.SonataFlow) {
 	if workflow.Annotations == nil {
 		workflow.Annotations = map[string]string{}

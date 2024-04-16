@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/workflowdef"
+	kv1 "knative.dev/serving/pkg/apis/serving/v1"
 
 	cncfmodel "github.com/serverlessworkflow/sdk-go/v2/model"
 
@@ -106,6 +107,41 @@ func DeploymentCreator(workflow *operatorapi.SonataFlow, plf *operatorapi.Sonata
 	kubeutil.AddOrReplaceContainer(operatorapi.DefaultContainerName, *flowContainer, &deployment.Spec.Template.Spec)
 
 	return deployment, nil
+}
+
+// KServiceCreator creates the default Knative Service object for SonataFlow instances. It's based on the default DeploymentCreator.
+func KServiceCreator(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (client.Object, error) {
+	lbl := workflowproj.GetMergedLabels(workflow)
+	ksvc := &kv1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workflow.Name,
+			Namespace: workflow.Namespace,
+			Labels:    lbl,
+		},
+		Spec: kv1.ServiceSpec{
+			ConfigurationSpec: kv1.ConfigurationSpec{
+				Template: kv1.RevisionTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: lbl,
+					},
+					Spec: kv1.RevisionSpec{
+						PodSpec: corev1.PodSpec{},
+					},
+				},
+			},
+		},
+	}
+
+	if err := mergo.Merge(&ksvc.Spec.Template.Spec.PodSpec, workflow.Spec.PodTemplate.PodSpec.ToPodSpec(), mergo.WithOverride); err != nil {
+		return nil, err
+	}
+	flowContainer, err := defaultContainer(workflow, plf)
+	if err != nil {
+		return nil, err
+	}
+	kubeutil.AddOrReplaceContainer(operatorapi.DefaultContainerName, *flowContainer, &ksvc.Spec.Template.Spec.PodSpec)
+
+	return ksvc, nil
 }
 
 func getReplicasOrDefault(workflow *operatorapi.SonataFlow) *int32 {

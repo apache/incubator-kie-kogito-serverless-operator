@@ -17,6 +17,7 @@ package preview
 import (
 	"context"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/knative"
 	v1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,6 +45,19 @@ func NewDeploymentReconciler(stateSupport *common.StateSupport, ensurer *ObjectE
 }
 
 func (d *DeploymentReconciler) Reconcile(ctx context.Context, workflow *operatorapi.SonataFlow) (reconcile.Result, []client.Object, error) {
+	if workflow.IsKnativeDeployment() {
+		avail, err := knative.GetKnativeAvailability(d.Cfg)
+		if err != nil {
+			return ctrl.Result{}, nil, err
+		}
+		if !avail.Serving {
+			d.Recorder.Eventf(workflow, v1.EventTypeWarning,
+				"KnativeServingNotAvailable",
+				"Knative Serving is not available in this cluster, can't deploy worflow. Please update the deployment model to %s",
+				operatorapi.KubernetesDeploymentModel)
+			return ctrl.Result{Requeue: false}, nil, nil
+		}
+	}
 	return d.reconcileWithBuiltImage(ctx, workflow, "")
 }
 
@@ -52,43 +66,43 @@ func (d *DeploymentReconciler) reconcileWithBuiltImage(ctx context.Context, work
 	userPropsCM, _, err := d.ensurers.userPropsConfigMap.Ensure(ctx, workflow)
 	if err != nil {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.ExternalResourcesNotFoundReason, "Unable to retrieve the user properties config map")
-		_, err = d.PerformStatusUpdate(ctx, workflow)
+		_, _ = d.PerformStatusUpdate(ctx, workflow)
 		return ctrl.Result{}, nil, err
 	}
 	managedPropsCM, _, err := d.ensurers.managedPropsConfigMap.Ensure(ctx, workflow, pl,
 		common.ManagedPropertiesMutateVisitor(ctx, d.StateSupport.Catalog, workflow, pl, userPropsCM.(*v1.ConfigMap)))
 	if err != nil {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.ExternalResourcesNotFoundReason, "Unable to retrieve the managed properties config map")
-		_, err = d.PerformStatusUpdate(ctx, workflow)
+		_, _ = d.PerformStatusUpdate(ctx, workflow)
 		return ctrl.Result{}, nil, err
 	}
 
 	deployment, deploymentOp, err :=
-		d.ensurers.deployment.Ensure(
+		d.ensurers.ByDeploymentModel(workflow).Ensure(
 			ctx,
 			workflow,
 			pl,
-			d.getDeploymentMutateVisitors(workflow, pl, image, userPropsCM.(*v1.ConfigMap), managedPropsCM.(*v1.ConfigMap))...,
+			d.deploymentModelMutateVisitors(workflow, pl, image, userPropsCM.(*v1.ConfigMap), managedPropsCM.(*v1.ConfigMap))...,
 		)
 	if err != nil {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, "Unable to perform the deploy due to ", err)
-		_, err = d.PerformStatusUpdate(ctx, workflow)
+		_, _ = d.PerformStatusUpdate(ctx, workflow)
 		return reconcile.Result{}, nil, err
 	}
 
 	service, _, err := d.ensurers.service.Ensure(ctx, workflow, common.ServiceMutateVisitor(workflow))
 	if err != nil {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, "Unable to make the service available due to ", err)
-		_, err = d.PerformStatusUpdate(ctx, workflow)
+		_, _ = d.PerformStatusUpdate(ctx, workflow)
 		return reconcile.Result{}, nil, err
 	}
 
-	knativeObjs, err := common.NewKnativeEventingHandler(d.StateSupport).Ensure(ctx, workflow)
+	eventingObjs, err := common.NewKnativeEventingHandler(d.StateSupport).Ensure(ctx, workflow)
 	if err != nil {
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, nil, err
 	}
 	objs := []client.Object{deployment, service, managedPropsCM}
-	objs = append(objs, knativeObjs...)
+	objs = append(objs, eventingObjs...)
 
 	if deploymentOp == controllerutil.OperationResultCreated {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
@@ -110,15 +124,22 @@ func (d *DeploymentReconciler) reconcileWithBuiltImage(ctx context.Context, work
 	return result, objs, nil
 }
 
-func (d *DeploymentReconciler) getDeploymentMutateVisitors(
+func (d *DeploymentReconciler) deploymentModelMutateVisitors(
 	workflow *operatorapi.SonataFlow,
 	plf *operatorapi.SonataFlowPlatform,
 	image string,
 	userPropsCM *v1.ConfigMap,
 	managedPropsCM *v1.ConfigMap) []common.MutateVisitor {
+
+	if workflow.IsKnativeDeployment() {
+		return []common.MutateVisitor{common.KServiceMutateVisitor(workflow, plf),
+			common.ImageKServiceMutateVisitor(workflow, image),
+			mountConfigMapsMutateVisitor(workflow, userPropsCM, managedPropsCM)}
+	}
+
 	if utils.IsOpenShift() {
 		return []common.MutateVisitor{common.DeploymentMutateVisitor(workflow, plf),
-			mountProdConfigMapsMutateVisitor(workflow, userPropsCM, managedPropsCM),
+			mountConfigMapsMutateVisitor(workflow, userPropsCM, managedPropsCM),
 			addOpenShiftImageTriggerDeploymentMutateVisitor(workflow, image),
 			common.ImageDeploymentMutateVisitor(workflow, image),
 			common.RolloutDeploymentIfCMChangedMutateVisitor(workflow, userPropsCM, managedPropsCM),
@@ -126,6 +147,6 @@ func (d *DeploymentReconciler) getDeploymentMutateVisitors(
 	}
 	return []common.MutateVisitor{common.DeploymentMutateVisitor(workflow, plf),
 		common.ImageDeploymentMutateVisitor(workflow, image),
-		mountProdConfigMapsMutateVisitor(workflow, userPropsCM, managedPropsCM),
+		mountConfigMapsMutateVisitor(workflow, userPropsCM, managedPropsCM),
 		common.RolloutDeploymentIfCMChangedMutateVisitor(workflow, userPropsCM, managedPropsCM)}
 }

@@ -90,3 +90,13 @@ func GetProfileOrDefault(annotation map[string]string) ProfileType {
 		return profile
 	}
 }
+
+func IsDevProfile(annotation map[string]string) bool {
+	if annotation == nil {
+		return false
+	}
+	if len(annotation[Profile]) == 0 {
+		return false
+	}
+	return ProfileType(annotation[Profile]) == DevProfile
+}

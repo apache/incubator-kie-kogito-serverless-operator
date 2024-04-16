@@ -16,8 +16,6 @@ package v1alpha08
 
 import corev1 "k8s.io/api/core/v1"
 
-type DeploymentModel string
-
 // ContainerSpec is the container for the internal deployments based on the default Kubernetes Container API
 type ContainerSpec struct {
 	// Container image name.

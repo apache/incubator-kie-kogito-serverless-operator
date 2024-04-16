@@ -31,6 +31,10 @@ import (
 
 const DefaultContainerName = "workflow"
 
+// DeploymentModel defines how a given pod will be deployed
+// +kubebuilder:validation:Enum=kubernetes;knative
+type DeploymentModel string
+
 const (
 	// KubernetesDeploymentModel defines a PodSpec to be deployed as a regular Kubernetes Deployment
 	KubernetesDeploymentModel DeploymentModel = "kubernetes"
@@ -47,8 +51,10 @@ type FlowPodTemplateSpec struct {
 	// +optional
 	PodSpec `json:",inline"`
 	// +optional
+	// Replicas define the number of pods to start by default for this deployment model. Ignored in "knative" deployment model.
 	Replicas *int32 `json:"replicas,omitempty"`
 	// Defines the kind of deployment model for this pod spec. In dev profile, only "kubernetes" is valid.
+	// +kubebuilder:validation:Enum=kubernetes;knative
 	DeploymentModel DeploymentModel `json:"deploymentModel,omitempty"`
 }
 
@@ -254,6 +260,10 @@ type SonataFlow struct {
 
 	Spec   SonataFlowSpec   `json:"spec,omitempty"`
 	Status SonataFlowStatus `json:"status,omitempty"`
+}
+
+func (s *SonataFlow) IsKnativeDeployment() bool {
+	return s.Spec.PodTemplate.DeploymentModel == KnativeDeploymentModel
 }
 
 func (s *SonataFlow) HasContainerSpecImage() bool {

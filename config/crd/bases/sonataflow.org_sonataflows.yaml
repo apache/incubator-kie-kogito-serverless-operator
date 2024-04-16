@@ -5628,6 +5628,13 @@ spec:
                       type: object
                     type: array
                   deploymentModel:
+                    allOf:
+                    - enum:
+                      - kubernetes
+                      - knative
+                    - enum:
+                      - kubernetes
+                      - knative
                     description: Defines the kind of deployment model for this pod
                       spec. In dev profile, only "kubernetes" is valid.
                     type: string
@@ -7158,6 +7165,8 @@ spec:
                       type: object
                     type: array
                   replicas:
+                    description: Replicas define the number of pods to start by default
+                      for this deployment model. Ignored in "knative" deployment model.
                     format: int32
                     type: integer
                   resourceClaims:
