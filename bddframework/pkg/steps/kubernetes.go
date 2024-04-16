@@ -97,5 +97,5 @@ func (data *Data) deploymentHasResourcesWithinMinutes(dName string, podNb, timeo
 }
 
 func (data *Data) deploymentPodsLogContainsTextWithinMinutes(dName, logText string, timeoutInMin int) error {
-	return framework.WaitForAllPodsByDeploymentToContainTextInLog(data.Namespace, dName, logText, timeoutInMin)
+	return framework.WaitForAllPodsByDeploymentToContainTextInLog(data.Namespace, dName, dName, logText, timeoutInMin)
 }

@@ -279,16 +279,16 @@ func WaitForAllPodsByDeploymentConfigToContainTextInLog(namespace, dcName, logTe
 }
 
 // WaitForAllPodsByDeploymentToContainTextInLog waits for pods of specified deployment to contain specified text in log
-func WaitForAllPodsByDeploymentToContainTextInLog(namespace, dName, logText string, timeoutInMin int) error {
-	return waitForPodsByDeploymentToContainTextInLog(namespace, dName, logText, timeoutInMin, checkAllPodsContainingTextInLog)
+func WaitForAllPodsByDeploymentToContainTextInLog(namespace, dName, dContainerName, logText string, timeoutInMin int) error {
+	return waitForPodsByDeploymentToContainTextInLog(namespace, dName, dContainerName, logText, timeoutInMin, checkAllPodsContainingTextInLog)
 }
 
 // WaitForAnyPodsByDeploymentToContainTextInLog waits for pods of specified deployment to contain specified text in log
-func WaitForAnyPodsByDeploymentToContainTextInLog(namespace, dName, logText string, timeoutInMin int) error {
-	return waitForPodsByDeploymentToContainTextInLog(namespace, dName, logText, timeoutInMin, checkAnyPodsContainingTextInLog)
+func WaitForAnyPodsByDeploymentToContainTextInLog(namespace, dName, dContainerName, logText string, timeoutInMin int) error {
+	return waitForPodsByDeploymentToContainTextInLog(namespace, dName, dContainerName, logText, timeoutInMin, checkAnyPodsContainingTextInLog)
 }
 
-func waitForPodsByDeploymentToContainTextInLog(namespace, dName, logText string, timeoutInMin int, predicate func(string, []corev1.Pod, string, string) (bool, error)) error {
+func waitForPodsByDeploymentToContainTextInLog(namespace, dName, dContainerName, logText string, timeoutInMin int, predicate func(string, []corev1.Pod, string, string) (bool, error)) error {
 	return WaitForOnOpenshift(namespace, fmt.Sprintf("Pods for deployment '%s' contain text '%s'", dName, logText), timeoutInMin,
 		func() (bool, error) {
 			pods, err := GetPodsByDeployment(namespace, dName)
@@ -296,8 +296,9 @@ func waitForPodsByDeploymentToContainTextInLog(namespace, dName, logText string,
 				return false, err
 			}
 
-			// Container name is equal to deployment config name
-			return predicate(namespace, pods, dName, logText)
+			// Container name is equal to deployment config name,  for sonataflow it is workflow so I added variable that can be set
+			// TODO: Extract this to sonataflow.go as this is so far only useful for us
+			return predicate(namespace, pods, dContainerName, logText)
 		}, CheckPodsByDeploymentInError(namespace, dName))
 }
 

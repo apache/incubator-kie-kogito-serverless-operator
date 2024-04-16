@@ -8,7 +8,7 @@ the operator.
 Add this module to your project's dependencies:
 
 ```shell
-go get github.com/kiegroup/kogito-serverless-workflow/workflowproj
+go get github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj
 ```
 
 Then you should have access to the main entry point of this package, which is the workflow project handler builder.
