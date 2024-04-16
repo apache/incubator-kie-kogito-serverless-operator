@@ -5628,15 +5628,11 @@ spec:
                       type: object
                     type: array
                   deploymentModel:
-                    allOf:
-                    - enum:
-                      - kubernetes
-                      - knative
-                    - enum:
-                      - kubernetes
-                      - knative
                     description: Defines the kind of deployment model for this pod
                       spec. In dev profile, only "kubernetes" is valid.
+                    enum:
+                    - kubernetes
+                    - knative
                     type: string
                   dnsConfig:
                     description: Specifies the DNS parameters of a pod. Parameters

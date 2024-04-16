@@ -54,7 +54,7 @@ type FlowPodTemplateSpec struct {
 	// Replicas define the number of pods to start by default for this deployment model. Ignored in "knative" deployment model.
 	Replicas *int32 `json:"replicas,omitempty"`
 	// Defines the kind of deployment model for this pod spec. In dev profile, only "kubernetes" is valid.
-	// +kubebuilder:validation:Enum=kubernetes;knative
+	// +optional
 	DeploymentModel DeploymentModel `json:"deploymentModel,omitempty"`
 }
 
