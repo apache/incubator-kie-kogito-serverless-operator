@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/workflowdef"
-	kv1 "knative.dev/serving/pkg/apis/serving/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
 	cncfmodel "github.com/serverlessworkflow/sdk-go/v2/model"
 
@@ -112,19 +112,19 @@ func DeploymentCreator(workflow *operatorapi.SonataFlow, plf *operatorapi.Sonata
 // KServiceCreator creates the default Knative Service object for SonataFlow instances. It's based on the default DeploymentCreator.
 func KServiceCreator(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (client.Object, error) {
 	lbl := workflowproj.GetMergedLabels(workflow)
-	ksvc := &kv1.Service{
+	ksvc := &servingv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workflow.Name,
 			Namespace: workflow.Namespace,
 			Labels:    lbl,
 		},
-		Spec: kv1.ServiceSpec{
-			ConfigurationSpec: kv1.ConfigurationSpec{
-				Template: kv1.RevisionTemplateSpec{
+		Spec: servingv1.ServiceSpec{
+			ConfigurationSpec: servingv1.ConfigurationSpec{
+				Template: servingv1.RevisionTemplateSpec{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: lbl,
 					},
-					Spec: kv1.RevisionSpec{
+					Spec: servingv1.RevisionSpec{
 						PodSpec: corev1.PodSpec{},
 					},
 				},
@@ -155,7 +155,7 @@ func getReplicasOrDefault(workflow *operatorapi.SonataFlow) *int32 {
 func defaultContainer(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFlowPlatform) (*corev1.Container, error) {
 	defaultContainerPort := corev1.ContainerPort{
 		ContainerPort: variables.DefaultHTTPWorkflowPortIntStr.IntVal,
-		Name:          utils.HttpScheme,
+		Name:          utils.DefaultServicePortName,
 		Protocol:      corev1.ProtocolTCP,
 	}
 	defaultFlowContainer := &corev1.Container{
@@ -170,6 +170,7 @@ func defaultContainer(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataF
 				},
 			},
 			TimeoutSeconds: healthTimeoutSeconds,
+			PeriodSeconds:  healthStartedPeriodSeconds,
 		},
 		ReadinessProbe: &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
@@ -179,6 +180,7 @@ func defaultContainer(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataF
 				},
 			},
 			TimeoutSeconds: healthTimeoutSeconds,
+			PeriodSeconds:  healthStartedPeriodSeconds,
 		},
 		StartupProbe: &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
@@ -209,7 +211,7 @@ func defaultContainer(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataF
 	defaultFlowContainer.Name = operatorapi.DefaultContainerName
 	portIdx := -1
 	for i := range defaultFlowContainer.Ports {
-		if defaultFlowContainer.Ports[i].Name == utils.HttpScheme ||
+		if defaultFlowContainer.Ports[i].Name == utils.DefaultServicePortName ||
 			defaultFlowContainer.Ports[i].ContainerPort == variables.DefaultHTTPWorkflowPortIntStr.IntVal {
 			portIdx = i
 			break

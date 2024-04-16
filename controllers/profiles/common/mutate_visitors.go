@@ -27,7 +27,7 @@ import (
 	"github.com/imdario/mergo"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	kv1 "knative.dev/serving/pkg/apis/serving/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -66,7 +66,7 @@ func ImageKServiceMutateVisitor(workflow *operatorapi.SonataFlow, image string) 
 			}
 		}
 		return func() error {
-			ksvc := object.(*kv1.Service)
+			ksvc := object.(*servingv1.Service)
 			_, idx := kubeutil.GetContainerByName(operatorapi.DefaultContainerName, &ksvc.Spec.Template.Spec.PodSpec)
 			ksvc.Spec.Template.Spec.Containers[idx].Image = image
 			ksvc.Spec.Template.Spec.Containers[idx].ImagePullPolicy = kubeutil.GetImagePullPolicy(image)
@@ -118,13 +118,13 @@ func KServiceMutateVisitor(workflow *operatorapi.SonataFlow, plf *operatorapi.So
 			if err != nil {
 				return err
 			}
-			return EnsureDeployment(original.(*appsv1.Deployment), object.(*appsv1.Deployment))
+			return EnsureKService(original.(*servingv1.Service), object.(*servingv1.Service))
 		}
 	}
 }
 
 // EnsureKService Ensure that the original Knative Service fields are immutable.
-func EnsureKService(original *kv1.Service, object *kv1.Service) error {
+func EnsureKService(original *servingv1.Service, object *servingv1.Service) error {
 	object.Labels = original.GetLabels()
 
 	// Clean up the volumes, they are inherited from original, additional are added by other visitors

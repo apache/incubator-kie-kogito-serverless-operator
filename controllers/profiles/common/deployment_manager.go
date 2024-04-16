@@ -28,7 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
-	kv1 "knative.dev/serving/pkg/apis/serving/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -63,7 +63,7 @@ type deploymentHandler struct {
 func (d *deploymentHandler) getDeployment(ctx context.Context, workflow *operatorapi.SonataFlow) (*appsv1.Deployment, error) {
 	deploymentName := workflow.Name
 	if workflow.IsKnativeDeployment() {
-		ksvc := &kv1.Service{}
+		ksvc := &servingv1.Service{}
 		if err := d.c.Get(ctx, client.ObjectKeyFromObject(workflow), ksvc); err != nil {
 			if errors.IsNotFound(err) {
 				return nil, nil

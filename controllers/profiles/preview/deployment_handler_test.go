@@ -29,7 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	kv1 "knative.dev/serving/pkg/apis/serving/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -67,10 +67,10 @@ func Test_CheckDeploymentModelIsKnative(t *testing.T) {
 	assert.NotEmpty(t, objects)
 	assert.True(t, result.Requeue)
 
-	var ksvc *kv1.Service
+	var ksvc *servingv1.Service
 	for _, o := range objects {
-		if _, ok := o.(*kv1.Service); ok {
-			ksvc = o.(*kv1.Service)
+		if _, ok := o.(*servingv1.Service); ok {
+			ksvc = o.(*servingv1.Service)
 			assert.Equal(t, v1alpha08.DefaultContainerName, ksvc.Spec.Template.Spec.Containers[0].Name)
 			break
 		}

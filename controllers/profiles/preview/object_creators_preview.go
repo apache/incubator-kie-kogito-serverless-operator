@@ -24,7 +24,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	kv1 "knative.dev/serving/pkg/apis/serving/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -72,7 +72,7 @@ func mountConfigMapsMutateVisitor(workflow *operatorapi.SonataFlow, userPropsCM 
 			var podTemplateSpec *v1.PodSpec
 
 			if workflow.IsKnativeDeployment() {
-				ksvc := object.(*kv1.Service)
+				ksvc := object.(*servingv1.Service)
 				podTemplateSpec = &ksvc.Spec.Template.Spec.PodSpec
 			} else {
 				deployment := object.(*appsv1.Deployment)

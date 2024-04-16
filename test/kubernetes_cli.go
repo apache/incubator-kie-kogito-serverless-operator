@@ -33,7 +33,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
-	kv1 "knative.dev/serving/pkg/apis/serving/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -54,7 +54,7 @@ func NewSonataFlowClientBuilder() *fake.ClientBuilder {
 func NewSonataFlowClientBuilderWithKnative() *fake.ClientBuilder {
 	s := scheme.Scheme
 	utilruntime.Must(operatorapi.AddToScheme(s))
-	utilruntime.Must(kv1.AddToScheme(s))
+	utilruntime.Must(servingv1.AddToScheme(s))
 	return fake.NewClientBuilder().WithScheme(s)
 }
 

@@ -100,7 +100,7 @@ func TestMergePodSpec(t *testing.T) {
 			Image: "quay.io/example/my-workflow:1.0.0",
 			Ports: []corev1.ContainerPort{
 				// let's override a immutable attribute
-				{Name: utils.HttpScheme, ContainerPort: 9090},
+				{Name: utils.DefaultServicePortName, ContainerPort: 9090},
 			},
 			Env: []corev1.EnvVar{
 				// We should be able to override this too
@@ -155,7 +155,7 @@ func TestMergePodSpec_OverrideContainers(t *testing.T) {
 					Name:  v1alpha08.DefaultContainerName,
 					Image: "quay.io/example/my-workflow:1.0.0",
 					Ports: []corev1.ContainerPort{
-						{Name: utils.HttpScheme, ContainerPort: 9090},
+						{Name: utils.DefaultServicePortName, ContainerPort: 9090},
 					},
 					Env: []corev1.EnvVar{
 						{Name: "ENV1", Value: "VALUE_CUSTOM"},
@@ -219,7 +219,7 @@ func TestMergePodSpec_WithPostgreSQL_and_JDBC_URL_field(t *testing.T) {
 				Image: "quay.io/example/my-workflow:1.0.0",
 				Ports: []corev1.ContainerPort{
 					// let's override a immutable attribute
-					{Name: utils.HttpScheme, ContainerPort: 9090},
+					{Name: utils.DefaultServicePortName, ContainerPort: 9090},
 				},
 				Env: []corev1.EnvVar{
 					// We should be able to override this too
@@ -329,7 +329,7 @@ func TestMergePodSpec_OverrideContainers_WithPostgreSQL_In_Workflow_CR(t *testin
 						Name:  v1alpha08.DefaultContainerName,
 						Image: "quay.io/example/my-workflow:1.0.0",
 						Ports: []corev1.ContainerPort{
-							{Name: utils.HttpScheme, ContainerPort: 9090},
+							{Name: utils.DefaultServicePortName, ContainerPort: 9090},
 						},
 						Env: []corev1.EnvVar{
 							{Name: "ENV1", Value: "VALUE_CUSTOM"},
@@ -518,7 +518,7 @@ func TestMergePodSpec_WithServicedPostgreSQL_In_Platform_And_In_Workflow_CR(t *t
 						Name:  v1alpha08.DefaultContainerName,
 						Image: "quay.io/example/my-workflow:1.0.0",
 						Ports: []corev1.ContainerPort{
-							{Name: utils.HttpScheme, ContainerPort: 9090},
+							{Name: utils.DefaultServicePortName, ContainerPort: 9090},
 						},
 						Env: []corev1.EnvVar{
 							{Name: "ENV1", Value: "VALUE_CUSTOM"},
