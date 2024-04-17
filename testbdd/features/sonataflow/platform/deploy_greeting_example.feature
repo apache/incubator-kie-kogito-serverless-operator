@@ -1,7 +1,7 @@
 Feature: Deploy SonataFlow Operator and SonataFlowPlatform with greeting example in dev mode and verify the functionality
 
-  @devMode
-  Scenario: greeting-example DevMode E2E test
+  @devMode1
+  Scenario: greeting-example in DevMode E2E test
     Given Namespace is created
     When SonataFlow Operator is deployed
     When SonataFlowPlatform is deployed
@@ -24,5 +24,6 @@ Feature: Deploy SonataFlow Operator and SonataFlowPlatform with greeting example
     Then SonataFlow "greeting" pods log contains text 'GreetInSpanish' within 1 minutes
     Then SonataFlow "greeting" pods log contains text 'Join-GreetPerson' within 1 minutes
     Then SonataFlow "greeting" pods log contains text 'GreetPerson' within 1 minutes
+    Then SonataFlow "greeting" pods log contains text 'Saludos desde JSON Workflow' within 1 minutes
     Then SonataFlow "greeting" pods log contains text 'End' within 1 minutes
     Then SonataFlow "greeting" pods log does not contain text 'ERROR' within 0 minutes
