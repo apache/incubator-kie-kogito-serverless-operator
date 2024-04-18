@@ -41,6 +41,8 @@ import (
 
 var _ WorkflowDeploymentManager = &deploymentHandler{}
 
+const knativeDeploymentSuffix = "-deployment"
+
 // WorkflowDeploymentManager interface to handle workflow deployment features.
 type WorkflowDeploymentManager interface {
 	// SyncDeploymentStatus updates the workflow status aligned with the deployment counterpart.
@@ -70,7 +72,7 @@ func (d *deploymentHandler) getDeployment(ctx context.Context, workflow *operato
 			}
 			return nil, err
 		}
-		deploymentName = ksvc.Status.LatestCreatedRevisionName
+		deploymentName = ksvc.Status.LatestCreatedRevisionName + knativeDeploymentSuffix
 	}
 	deployment := &appsv1.Deployment{}
 	if err := d.c.Get(ctx, types.NamespacedName{Namespace: workflow.Namespace, Name: deploymentName}, deployment); err != nil {

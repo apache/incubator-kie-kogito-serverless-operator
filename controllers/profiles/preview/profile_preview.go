@@ -53,18 +53,31 @@ const (
 // ReconciliationState that needs access to it must include this struct as an attribute and initialize it in the profile builder.
 // Use NewObjectEnsurers to facilitate building this struct
 type ObjectEnsurers struct {
-	deployment            common.ObjectEnsurerWithPlatform
-	kservice              common.ObjectEnsurerWithPlatform
+	// deployment for this ensurer. Don't call it directly, use DeploymentByDeploymentModel instead
+	deployment common.ObjectEnsurerWithPlatform
+	// kservice Knative Serving deployment for this ensurer. Don't call it directly, use DeploymentByDeploymentModel instead
+	kservice common.ObjectEnsurerWithPlatform
+	// service for this ensurer. Don't call it directly, use ServiceByDeploymentModel instead
 	service               common.ObjectEnsurer
 	userPropsConfigMap    common.ObjectEnsurer
 	managedPropsConfigMap common.ObjectEnsurerWithPlatform
 }
 
-func (o *ObjectEnsurers) ByDeploymentModel(workflow *v1alpha08.SonataFlow) common.ObjectEnsurerWithPlatform {
+// DeploymentByDeploymentModel gets the deployment ensurer based on the SonataFlow deployment model
+func (o *ObjectEnsurers) DeploymentByDeploymentModel(workflow *v1alpha08.SonataFlow) common.ObjectEnsurerWithPlatform {
 	if workflow.IsKnativeDeployment() {
 		return o.kservice
 	}
 	return o.deployment
+}
+
+// ServiceByDeploymentModel gets the service ensurer based on the SonataFlow deployment model
+func (o *ObjectEnsurers) ServiceByDeploymentModel(workflow *v1alpha08.SonataFlow) common.ObjectEnsurer {
+	if workflow.IsKnativeDeployment() {
+		// Knative Serving handles the service
+		return common.NewNoopObjectEnsurer()
+	}
+	return o.service
 }
 
 // NewObjectEnsurers common.ObjectEnsurer(s) for the preview profile.

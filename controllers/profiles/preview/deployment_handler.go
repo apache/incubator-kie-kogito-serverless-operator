@@ -19,7 +19,6 @@ import (
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/knative"
 	v1 "k8s.io/api/core/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -45,75 +44,23 @@ func NewDeploymentReconciler(stateSupport *common.StateSupport, ensurer *ObjectE
 }
 
 func (d *DeploymentReconciler) Reconcile(ctx context.Context, workflow *operatorapi.SonataFlow) (reconcile.Result, []client.Object, error) {
-	if workflow.IsKnativeDeployment() {
-		avail, err := knative.GetKnativeAvailability(d.Cfg)
-		if err != nil {
-			return ctrl.Result{}, nil, err
-		}
-		if !avail.Serving {
-			d.Recorder.Eventf(workflow, v1.EventTypeWarning,
-				"KnativeServingNotAvailable",
-				"Knative Serving is not available in this cluster, can't deploy worflow. Please update the deployment model to %s",
-				operatorapi.KubernetesDeploymentModel)
-			return ctrl.Result{Requeue: false}, nil, nil
-		}
-	}
-	return d.reconcileWithBuiltImage(ctx, workflow, "")
+	return d.reconcileWithImage(ctx, workflow, "")
 }
 
-func (d *DeploymentReconciler) reconcileWithBuiltImage(ctx context.Context, workflow *operatorapi.SonataFlow, image string) (reconcile.Result, []client.Object, error) {
-	pl, _ := platform.GetActivePlatform(ctx, d.C, workflow.Namespace)
-	userPropsCM, _, err := d.ensurers.userPropsConfigMap.Ensure(ctx, workflow)
-	if err != nil {
-		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.ExternalResourcesNotFoundReason, "Unable to retrieve the user properties config map")
-		_, _ = d.PerformStatusUpdate(ctx, workflow)
-		return ctrl.Result{}, nil, err
-	}
-	managedPropsCM, _, err := d.ensurers.managedPropsConfigMap.Ensure(ctx, workflow, pl,
-		common.ManagedPropertiesMutateVisitor(ctx, d.StateSupport.Catalog, workflow, pl, userPropsCM.(*v1.ConfigMap)))
-	if err != nil {
-		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.ExternalResourcesNotFoundReason, "Unable to retrieve the managed properties config map")
-		_, _ = d.PerformStatusUpdate(ctx, workflow)
-		return ctrl.Result{}, nil, err
+func (d *DeploymentReconciler) reconcileWithImage(ctx context.Context, workflow *operatorapi.SonataFlow, image string) (reconcile.Result, []client.Object, error) {
+	// Checks if we need Knative installed
+	if requires, err := d.ensureKnativeServingRequired(workflow); requires || err != nil {
+		return reconcile.Result{Requeue: false}, nil, err
 	}
 
-	deployment, deploymentOp, err :=
-		d.ensurers.ByDeploymentModel(workflow).Ensure(
-			ctx,
-			workflow,
-			pl,
-			d.deploymentModelMutateVisitors(workflow, pl, image, userPropsCM.(*v1.ConfigMap), managedPropsCM.(*v1.ConfigMap))...,
-		)
-	if err != nil {
-		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, "Unable to perform the deploy due to ", err)
-		_, _ = d.PerformStatusUpdate(ctx, workflow)
-		return reconcile.Result{}, nil, err
-	}
-
-	service, _, err := d.ensurers.service.Ensure(ctx, workflow, common.ServiceMutateVisitor(workflow))
-	if err != nil {
-		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, "Unable to make the service available due to ", err)
-		_, _ = d.PerformStatusUpdate(ctx, workflow)
-		return reconcile.Result{}, nil, err
-	}
-
-	eventingObjs, err := common.NewKnativeEventingHandler(d.StateSupport).Ensure(ctx, workflow)
-	if err != nil {
-		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, nil, err
-	}
-	objs := []client.Object{deployment, service, managedPropsCM}
-	objs = append(objs, eventingObjs...)
-
-	if deploymentOp == controllerutil.OperationResultCreated {
-		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
-		if _, err := d.PerformStatusUpdate(ctx, workflow); err != nil {
-			return reconcile.Result{Requeue: false}, nil, err
-		}
-		return reconcile.Result{RequeueAfter: constants.RequeueAfterFollowDeployment, Requeue: true}, objs, nil
+	// Ensure objects
+	result, objs, err := d.ensureObjects(ctx, workflow, image)
+	if err != nil || result.Requeue {
+		return result, objs, err
 	}
 
 	// Follow deployment status
-	result, err := common.DeploymentManager(d.C).SyncDeploymentStatus(ctx, workflow)
+	result, err = common.DeploymentManager(d.C).SyncDeploymentStatus(ctx, workflow)
 	if err != nil {
 		return reconcile.Result{Requeue: false}, nil, err
 	}
@@ -122,6 +69,74 @@ func (d *DeploymentReconciler) reconcileWithBuiltImage(ctx context.Context, work
 		return reconcile.Result{Requeue: false}, nil, err
 	}
 	return result, objs, nil
+}
+
+// ensureKnativeServingRequired returns true if the SonataFlow instance requires Knative deployment and Knative Serving is not available.
+func (d *DeploymentReconciler) ensureKnativeServingRequired(workflow *operatorapi.SonataFlow) (bool, error) {
+	if workflow.IsKnativeDeployment() {
+		avail, err := knative.GetKnativeAvailability(d.Cfg)
+		if err != nil {
+			return true, err
+		}
+		if !avail.Serving {
+			d.Recorder.Eventf(workflow, v1.EventTypeWarning,
+				"KnativeServingNotAvailable",
+				"Knative Serving is not available in this cluster, can't deploy worflow. Please update the deployment model to %s",
+				operatorapi.KubernetesDeploymentModel)
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (d *DeploymentReconciler) ensureObjects(ctx context.Context, workflow *operatorapi.SonataFlow, image string) (reconcile.Result, []client.Object, error) {
+	pl, _ := platform.GetActivePlatform(ctx, d.C, workflow.Namespace)
+	userPropsCM, _, err := d.ensurers.userPropsConfigMap.Ensure(ctx, workflow)
+	if err != nil {
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.ExternalResourcesNotFoundReason, "Unable to retrieve the user properties config map")
+		_, _ = d.PerformStatusUpdate(ctx, workflow)
+		return reconcile.Result{}, nil, err
+	}
+	managedPropsCM, _, err := d.ensurers.managedPropsConfigMap.Ensure(ctx, workflow, pl,
+		common.ManagedPropertiesMutateVisitor(ctx, d.StateSupport.Catalog, workflow, pl, userPropsCM.(*v1.ConfigMap)))
+	if err != nil {
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.ExternalResourcesNotFoundReason, "Unable to retrieve the managed properties config map")
+		_, _ = d.PerformStatusUpdate(ctx, workflow)
+		return reconcile.Result{}, nil, err
+	}
+
+	deployment, deploymentOp, err :=
+		d.ensurers.DeploymentByDeploymentModel(workflow).Ensure(ctx, workflow, pl,
+			d.deploymentModelMutateVisitors(workflow, pl, image, userPropsCM.(*v1.ConfigMap), managedPropsCM.(*v1.ConfigMap))...)
+	if err != nil {
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, "Unable to perform the deploy due to ", err)
+		_, _ = d.PerformStatusUpdate(ctx, workflow)
+		return reconcile.Result{}, nil, err
+	}
+
+	service, _, err := d.ensurers.ServiceByDeploymentModel(workflow).Ensure(ctx, workflow, common.ServiceMutateVisitor(workflow))
+	if err != nil {
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentUnavailableReason, "Unable to make the service available due to ", err)
+		_, _ = d.PerformStatusUpdate(ctx, workflow)
+		return reconcile.Result{}, nil, err
+	}
+
+	eventingObjs, err := common.NewKnativeEventingHandler(d.StateSupport).Ensure(ctx, workflow)
+	if err != nil {
+		return reconcile.Result{}, nil, err
+	}
+
+	objs := []client.Object{deployment, managedPropsCM, service}
+	if deploymentOp == controllerutil.OperationResultCreated {
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
+		if _, err := d.PerformStatusUpdate(ctx, workflow); err != nil {
+			return reconcile.Result{}, nil, err
+		}
+		return reconcile.Result{RequeueAfter: constants.RequeueAfterFollowDeployment, Requeue: true}, objs, nil
+	}
+	objs = append(objs, eventingObjs...)
+
+	return reconcile.Result{}, objs, nil
 }
 
 func (d *DeploymentReconciler) deploymentModelMutateVisitors(
