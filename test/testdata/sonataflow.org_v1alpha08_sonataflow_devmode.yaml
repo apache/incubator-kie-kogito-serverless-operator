@@ -22,10 +22,8 @@ metadata:
   annotations:
     sonataflow.org/description: Greeting example on k8s!
     sonataflow.org/version: 0.0.1
-    sonataflow.org/profile: preview
+    sonataflow.org/profile: dev
 spec:
-  podTemplate:
-    deploymentModel: knative
   flow:
     start: ChooseOnLanguage
     functions:
