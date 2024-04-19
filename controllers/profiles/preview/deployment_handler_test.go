@@ -36,7 +36,7 @@ type fakeDeploymentReconciler struct {
 }
 
 func Test_CheckDeploymentModelIsKnative(t *testing.T) {
-	workflow := test.GetBaseSonataFlowWithGitOpsProfile(t.Name())
+	workflow := test.GetBaseSonataFlowWithPreviewProfile(t.Name())
 	workflow.Spec.PodTemplate.DeploymentModel = v1alpha08.KnativeDeploymentModel
 
 	cli := test.NewSonataFlowClientBuilderWithKnative().
@@ -63,7 +63,7 @@ func Test_CheckDeploymentModelIsKnative(t *testing.T) {
 }
 
 func Test_CheckPodTemplateChangesReflectDeployment(t *testing.T) {
-	workflow := test.GetBaseSonataFlowWithGitOpsProfile(t.Name())
+	workflow := test.GetBaseSonataFlowWithPreviewProfile(t.Name())
 
 	client := test.NewSonataFlowClientBuilder().
 		WithRuntimeObjects(workflow).
@@ -98,7 +98,7 @@ func Test_CheckPodTemplateChangesReflectDeployment(t *testing.T) {
 }
 
 func Test_CheckDeploymentRolloutAfterCMChange(t *testing.T) {
-	workflow := test.GetBaseSonataFlowWithGitOpsProfile(t.Name())
+	workflow := test.GetBaseSonataFlowWithPreviewProfile(t.Name())
 
 	client := test.NewSonataFlowClientBuilder().
 		WithRuntimeObjects(workflow).
@@ -160,7 +160,7 @@ func Test_CheckDeploymentRolloutAfterCMChange(t *testing.T) {
 }
 
 func Test_CheckDeploymentUnchangedAfterCMChangeOtherKeys(t *testing.T) {
-	workflow := test.GetBaseSonataFlowWithGitOpsProfile(t.Name())
+	workflow := test.GetBaseSonataFlowWithPreviewProfile(t.Name())
 
 	client := test.NewSonataFlowClientBuilder().
 		WithRuntimeObjects(workflow).
