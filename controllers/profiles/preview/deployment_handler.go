@@ -48,7 +48,7 @@ func (d *DeploymentReconciler) Reconcile(ctx context.Context, workflow *operator
 }
 
 func (d *DeploymentReconciler) reconcileWithImage(ctx context.Context, workflow *operatorapi.SonataFlow, image string) (reconcile.Result, []client.Object, error) {
-	// Checks if we need Knative installed
+	// Checks if we need Knative installed and is not present.
 	if requires, err := d.ensureKnativeServingRequired(workflow); requires || err != nil {
 		return reconcile.Result{Requeue: false}, nil, err
 	}
@@ -81,7 +81,7 @@ func (d *DeploymentReconciler) ensureKnativeServingRequired(workflow *operatorap
 		if !avail.Serving {
 			d.Recorder.Eventf(workflow, v1.EventTypeWarning,
 				"KnativeServingNotAvailable",
-				"Knative Serving is not available in this cluster, can't deploy worflow. Please update the deployment model to %s",
+				"Knative Serving is not available in this cluster, can't deploy workflow. Please update the deployment model to %s",
 				operatorapi.KubernetesDeploymentModel)
 			return true, nil
 		}
