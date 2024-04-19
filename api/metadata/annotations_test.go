@@ -31,6 +31,7 @@ func TestGetProfile(t *testing.T) {
 		{"Non-existent Profile", args{annotation: map[string]string{Profile: "IDontExist"}}, DefaultProfile},
 		{"Regular Annotation", args{annotation: map[string]string{Profile: GitOpsProfile.String()}}, GitOpsProfile},
 		{"Deprecated Annotation", args{annotation: map[string]string{Profile: ProdProfile.String()}}, DefaultProfile},
+		{"Dev Annotation", args{annotation: map[string]string{Profile: DevProfile.String()}}, DevProfile},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

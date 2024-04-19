@@ -78,6 +78,7 @@ const (
 	DefaultProfile = PreviewProfile
 )
 
+// deprecated prod profile is deprecate and not supported, use preview profile
 var supportedProfiles = map[ProfileType]ProfileType{DevProfile: DevProfile, PreviewProfile: PreviewProfile, GitOpsProfile: GitOpsProfile}
 
 func GetProfileOrDefault(annotation map[string]string) ProfileType {
