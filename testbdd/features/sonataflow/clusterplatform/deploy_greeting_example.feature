@@ -1,7 +1,7 @@
-Feature: Deploy SonataFlow Operator and SonataFlowClusterPlatform and SonataFlowPlatform and greeting example in separate namespace in preview mode
+Feature: Deploy SonataFlowClusterPlatform with default SonataFlowPlatform
 
-  @previewMode
-  Scenario: order-processing DevMode E2E test
+  Background:
     Given Namespace is created
     When SonataFlow Operator is deployed
     When SonataFlowClusterPlatform is deployed
+    When SonataFlowPlatform deployed

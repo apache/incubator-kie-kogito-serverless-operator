@@ -45,7 +45,8 @@ import (
 const (
 	sonataFlowOrderProcessingFolder           = "order-processing"
 	sonataFlowGreetingFolder                  = "greeting"
-	sonataFlowHelloWorldFolder                = "hello-world"
+	sonataFlowCallbackstateTimeoutsFolder     = "callbackstate-timeouts"
+	postgresFolder                            = "persistence/postgres"
 	sonataFlowSampleYamlCR                    = "sonataflow.org_v1alpha08_sonataflow.yaml"
 	SonataFlowGreetingsWithDataInputSchemaCR  = "sonataflow.org_v1alpha08_sonataflow_greetings_datainput.yaml"
 	SonataFlowGreetingsWithStaticResourcesCR  = "sonataflow.org_v1alpha08_sonataflow-metainf.yaml"
@@ -259,6 +260,10 @@ func GetBasePlatformWithDevBaseImageInReadyPhase(namespace string) *operatorapi.
 	return platform
 }
 
+func GetPostgresFolder() string {
+	return e2eSamples + postgresFolder
+}
+
 func GetBasePlatform() *operatorapi.SonataFlowPlatform {
 	return getSonataFlowPlatform(sonataFlowPlatformYamlCR)
 }
@@ -287,10 +292,9 @@ func GetSonataFlowE2eGreetingFolder() string {
 	return e2eSamples + sonataFlowGreetingFolder
 }
 
-func GetSonataFlowE2eHelloWorldFolder() string {
-	return e2eSamples + sonataFlowHelloWorldFolder
+func GetSonataFlowE2eCallbackstateTimeoutsFolder() string {
+	return e2eSamples + sonataFlowCallbackstateTimeoutsFolder
 }
-
 
 func GetSonataFlowE2EPlatformServicesDirectory() string {
 	return filepath.Join(getTestDataDir(), "platform", "services")

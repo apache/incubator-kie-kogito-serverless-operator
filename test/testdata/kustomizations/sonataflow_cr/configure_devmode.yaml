@@ -12,16 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: sonataflow.org/v1alpha08
-kind: SonataFlowPlatform
-metadata:
-  name: sonataflow-platform
-spec:
-  build:
-    template:
-      buildArgs:
-      - name: QUARKUS_EXTENSION
-        value: org.kie.kogito:kogito-addons-quarkus-jobs-knative-eventing:999-SNAPSHOT
-    config:
-      strategyOptions:
-        KanikoBuildCacheEnabled: "true"
+resources:
+- ${TARGET_RESOURCES}
+
+commonAnnotations:
+  sonataflow.org/profile: dev

@@ -23,6 +23,7 @@ metadata:
     sonataflow.org/description: Greeting example on k8s!
     sonataflow.org/version: 0.0.1
     sonataflow.org/expressionLang: jsonpath
+    sonataflow.org/profile: dev
 spec:
   flow:
     start: ChooseOnLanguage
@@ -51,8 +52,6 @@ spec:
         transition: GreetPerson
       - name: GreetPerson
         type: operation
-        stateDataFilter:
-            output: "${ {\"message\": (.greeting + .name)} }"
         actions:
           - name: greetAction
             functionRef:

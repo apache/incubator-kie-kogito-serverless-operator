@@ -26,18 +26,20 @@ import (
 	"github.com/cucumber/godog"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/bddframework/pkg/framework"
-	kogitoSteps "github.com/apache/incubator-kie-kogito-serverless-operator/bddframework/pkg/steps"
+	sonataFlowSteps "github.com/apache/incubator-kie-kogito-serverless-operator/bddframework/pkg/steps"
 )
 
 // Data contains all data needed by Gherkin steps to run
 type Data struct {
-	*kogitoSteps.Data
+	*sonataFlowSteps.Data
 }
 
 // RegisterAllSteps register all steps available to the test suite
 func (data *Data) RegisterAllSteps(ctx *godog.ScenarioContext) {
 	registerOperatorSteps(ctx, data)
 	registerPlatformSteps(ctx, data)
+	registerSonataFlowClusterPlatformSteps(ctx, data)
+    registerPostgresSteps(ctx, data)
 	registerSonataFlowSteps(ctx, data)
 	registerKubernetesSteps(ctx, data)
 
@@ -47,6 +49,6 @@ func (data *Data) RegisterAllSteps(ctx *godog.ScenarioContext) {
 
 func (data *Data) waitSeconds(seconds int) error {
 	framework.GetMainLogger().Info("Waiting for " + strconv.Itoa(seconds) + " s")
-	_ = <-time.After(time.Duration(seconds) * time.Second)
+	time.After(time.Duration(seconds) * time.Second)
 	return nil
 }

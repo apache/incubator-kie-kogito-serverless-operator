@@ -102,6 +102,16 @@ func GetProjectDir() (string, error) {
 	return wd, nil
 }
 
+// GetPostgresDir will return directory where postgres deployments are
+func GetPostgresDir() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return wd, err
+	}
+	wd = strings.Replace(wd, "/test/e2e", "", -1)
+	return wd, nil
+}
+
 // StringToLines read lines from a string
 func StringToLines(s string) (lines []string, err error) {
 	scanner := bufio.NewScanner(strings.NewReader(s))

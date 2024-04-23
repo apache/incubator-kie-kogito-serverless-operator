@@ -30,61 +30,42 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/test"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/test/utils"
 
-	//"github.com/apache/incubator-kie-kogito-serverless-operator/test"
 	"os"
 )
 
 const (
-	minikubePlatform  = "minikube"
-	openshiftPlatform = "openshift"
+	minikubeCluster  = "minikube"
+	openshiftCluster = "openshift"
 )
 
-func registerPlatformSteps(ctx *godog.ScenarioContext, data *Data) {
-	ctx.Step(`^SonataFlowPlatform is deployed$`, data.sonataFlowPlatformIsDeployed)
-	ctx.Step(`^SonataFlowPlatform with postgres config is deployed$`, data.sonataFlowPlatformWithDataIndexIsDeployed)
+func registerSonataFlowClusterPlatformSteps(ctx *godog.ScenarioContext, data *Data) {
+	ctx.Step(`^SonataFlowClusterPlatform is deployed$`, data.SonataFlowClusterPlatformIsDeployed)
 }
 
-func (data *Data) sonataFlowPlatformIsDeployed() error {
+func (data *Data) SonataFlowClusterPlatformIsDeployed() error {
 	projectDir, _ := utils.GetProjectDir()
 	projectDir = strings.Replace(projectDir, "/testbdd", "", -1)
 
 	// TODO or kubectl
-	out, err := framework.CreateCommand("oc", "apply", "-f", filepath.Join(projectDir, getSonataFlowPlatformFilename()), "-n", data.Namespace).Execute()
+	out, err := framework.CreateCommand("oc", "apply", "-f", filepath.Join(projectDir, getSonataFlowClusterPlatformFilename()), "-n", data.Namespace).Execute()
 
 	if err != nil {
-		framework.GetLogger(data.Namespace).Error(err, fmt.Sprintf("Applying SonataFlowPlatform failed, output: %s", out))
+		framework.GetLogger(data.Namespace).Error(err, fmt.Sprintf("Applying SonataFlowClusterPlatform failed, output: %s", out))
 	}
 
 	return err
 }
 
-func (data *Data) sonataFlowPlatformWithDataIndexIsDeployed() error {
-	projectDir, _ := utils.GetProjectDir()
-	projectDir = strings.Replace(projectDir, "/testbdd", "", -1)
-
-	// TODO or kubectl
-	out, err := framework.CreateCommand("oc", "apply", "-f", 
-										filepath.Join(projectDir, getSonataFlowPlatformFilename()),
-										"-n",
-										data.Namespace).Execute()
-
-	if err != nil {
-		framework.GetLogger(data.Namespace).Error(err, fmt.Sprintf("Applying SonataFlowPlatform failed, output: %s", out))
-	}
-
-	return err
-}
-
-func getSonataFlowPlatformFilename() string {
-	if getClusterPlatform() == openshiftPlatform {
+func getSonataFlowClusterPlatformFilename() string {
+	if getCurrentCluster() == openshiftPlatform {
 		return test.GetPlatformOpenshiftE2eTest()
 	}
 	return test.GetPlatformMinikubeE2eTest()
 }
 
-func getClusterPlatform() string {
+func getCurrentCluster() string {
 	if v, ok := os.LookupEnv("CLUSTER_PLATFORM"); ok {
 		return v
 	}
-	return minikubePlatform
+	return minikubeCluster
 }

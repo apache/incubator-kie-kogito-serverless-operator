@@ -38,7 +38,7 @@ import (
 
 func registerSonataFlowSteps(ctx *godog.ScenarioContext, data *Data) {
 	ctx.Step(`^SonataFlow orderprocessing example is deployed$`, data.sonataFlowOrderProcessingExampleIsDeployed)
-	ctx.Step(`^SonataFlow helloworld example is deployed$`, data.sonataFlowHelloWorldExampleIsDeployed)
+	ctx.Step(`^SonataFlow callbackstatetimeouts example is deployed$`, data.sonataFlowCallbackstateTimeoutsIsDeployed)
 	ctx.Step(`^SonataFlow greeting example is deployed$`, data.sonataFlowGreetingExampleIsDeployed)
 	ctx.Step(`^SonataFlow "([^"]*)" has the condition "(Running|Succeed|Built)" set to "(True|False|Unknown)" within (\d+) minutes?$`, data.sonataFlowHasTheConditionSetToWithinMinutes)
 	ctx.Step(`^SonataFlow "([^"]*)" is addressable within (\d+) minutes?$`, data.sonataFlowIsAddressableWithinMinutes)
@@ -64,20 +64,19 @@ func (data *Data) sonataFlowOrderProcessingExampleIsDeployed() error {
 	return err
 }
 
-func (data *Data) sonataFlowHelloWorldExampleIsDeployed() error {
+func (data *Data) sonataFlowCallbackstateTimeoutsIsDeployed() error {
 	projectDir, _ := utils.GetProjectDir()
 	projectDir = strings.Replace(projectDir, "/testbdd", "", -1)
 
 	// TODO or kubectl
 	out, err := framework.CreateCommand("oc", "apply", "-f", filepath.Join(projectDir,
-		test.GetSonataFlowE2eHelloWorldFolder()), "-n", data.Namespace).Execute()
+		test.GetSonataFlowE2eCallbackstateTimeoutsFolder()), "-n", data.Namespace).Execute()
 
 	if err != nil {
 		framework.GetLogger(data.Namespace).Error(err, fmt.Sprintf("Applying SonataFlow failed, output: %s", out))
 	}
 	return err
 }
-
 
 func (data *Data) sonataFlowGreetingExampleIsDeployed() error {
 	projectDir, _ := utils.GetProjectDir()
