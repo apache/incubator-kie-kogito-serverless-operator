@@ -500,7 +500,7 @@ func mergeContainerPreservingEnvVars(dest *corev1.Container, source *corev1.Cont
 	}
 	dest.Env = currentEnv
 	for _, envVar := range source.Env {
-		kubernetes.AddIfNotPresent(dest, envVar)
+		kubernetes.AddEnvIfNotPresent(dest, envVar)
 	}
 	return nil
 }

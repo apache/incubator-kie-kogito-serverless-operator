@@ -60,17 +60,17 @@ func TestCreateOrReplaceEnv(t *testing.T) {
 func TestAddIfNotPresent(t *testing.T) {
 	containerNoEnv := &v1.Container{Env: nil}
 
-	wasAdded := AddIfNotPresent(containerNoEnv, v1.EnvVar{Name: "var1", Value: "value1"})
+	wasAdded := AddEnvIfNotPresent(containerNoEnv, v1.EnvVar{Name: "var1", Value: "value1"})
 	assert.True(t, wasAdded)
 	assert.Equal(t, v1.EnvVar{Name: "var1", Value: "value1"}, containerNoEnv.Env[0])
 
 	containerWithEnv := &v1.Container{Env: []v1.EnvVar{{Name: "var1", Value: "value1"}, {Name: "var2", Value: "value2"}}}
-	wasAdded = AddIfNotPresent(containerWithEnv, v1.EnvVar{Name: "var1", Value: "value1Changed"})
+	wasAdded = AddEnvIfNotPresent(containerWithEnv, v1.EnvVar{Name: "var1", Value: "value1Changed"})
 	assert.False(t, wasAdded)
 	assert.Equal(t, v1.EnvVar{Name: "var1", Value: "value1"}, containerWithEnv.Env[0])
 	assert.Equal(t, v1.EnvVar{Name: "var2", Value: "value2"}, containerWithEnv.Env[1])
 
-	wasAdded = AddIfNotPresent(containerWithEnv, v1.EnvVar{Name: "var3", Value: "value3"})
+	wasAdded = AddEnvIfNotPresent(containerWithEnv, v1.EnvVar{Name: "var3", Value: "value3"})
 	assert.True(t, wasAdded)
 
 	assert.Equal(t, v1.EnvVar{Name: "var1", Value: "value1"}, containerWithEnv.Env[0])
