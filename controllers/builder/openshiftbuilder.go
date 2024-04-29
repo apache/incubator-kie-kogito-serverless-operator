@@ -196,6 +196,15 @@ func (o *openshiftBuilderManager) addExternalResources(config *buildv1.BuildConf
 			DestinationDir: workflowRes.WorkflowPath,
 		})
 	}
+	//TODO WM remove this comment
+	//make the workflow properties available to the OpenShift build config.
+	configMapSources = append(configMapSources, buildv1.ConfigMapBuildSource{
+		ConfigMap:      corev1.LocalObjectReference{Name: workflowproj.GetWorkflowUserPropertiesConfigMapName(workflow)},
+		DestinationDir: ""})
+	configMapSources = append(configMapSources, buildv1.ConfigMapBuildSource{
+		ConfigMap:      corev1.LocalObjectReference{Name: workflowproj.GetWorkflowManagedPropertiesConfigMapName(workflow)},
+		DestinationDir: ""})
+
 	config.Spec.Source.ConfigMaps = configMapSources
 	return nil
 }

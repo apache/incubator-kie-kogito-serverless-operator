@@ -17,11 +17,10 @@ package persistence
 import (
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -40,6 +39,34 @@ const (
 	defaultPostgreSQLUsername  = "sonataflow"
 	defaultPostgresSQLPassword = "sonataflow"
 )
+
+// TODO WM, move to a better place
+type GAV struct {
+	groupId    string
+	artifactId string
+	version    string
+}
+
+type Property struct {
+	name  string
+	value string
+}
+
+func (g *GAV) GroupAndArtifact() string {
+	return fmt.Sprintf("%s:%s", g.groupId, g.artifactId)
+}
+
+func (g *GAV) String() string {
+	return fmt.Sprintf("%s:%s:%s", g.groupId, g.artifactId, g.version)
+}
+
+func (p *Property) Name() string {
+	return p.name
+}
+
+func (p *Property) Value() string {
+	return p.value
+}
 
 func ConfigurePostgreSQLEnv(postgresql *operatorapi.PersistencePostgreSQL, databaseSchema, databaseNamespace string) []corev1.EnvVar {
 	dataSourcePort := constants.DefaultPostgreSQLPort
@@ -144,4 +171,21 @@ func RetrieveConfiguration(primary *v1alpha08.PersistenceOptionsSpec, platformPe
 		}
 	}
 	return c
+}
+
+func GetPostgreSQLExtensions() []GAV {
+	//TODO WM
+	//we need a smart way to distinguish the artifacts in case we have different ones for product/community release.
+	return []GAV{
+		{"io.quarkus", "quarkus-jdbc-postgresql", "3.2.10.Final"},
+		{"io.quarkus", "quarkus-agroal", "3.2.10.Final"},
+		{"org.kie", "kie-addons-quarkus-persistence-jdbc", "999-SNAPSHOT"},
+	}
+}
+
+func GetPostgreSQLBuildProperties() []Property {
+	return []Property{
+		{"kogito.persistence.type", "jdbc"},
+		{"kogito.persistence.proto.marshaller", "false"},
+	}
 }
