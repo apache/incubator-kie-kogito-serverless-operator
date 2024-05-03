@@ -22,7 +22,7 @@ dataIndexPostgreSQLImageTag: "local/data-index:1.0.0"
 sonataFlowBaseBuilderImageTag: "local/sonataflow-builder:1.0.0"
 sonataFlowDevModeImageTag: "local/sonataflow-devmode:1.0.0"
 postgreSQLPersistenceExtensions:
-  - groupId: "io.quarkus"
+  - groupId: io.quarkus
     artifactId: quarkus-jdbc-postgresql
     version: 3.2.10.Final
   - groupId: io.quarkus
