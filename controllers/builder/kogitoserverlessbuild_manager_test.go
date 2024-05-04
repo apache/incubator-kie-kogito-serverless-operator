@@ -15,6 +15,8 @@
 package builder
 
 import (
+	"testing"
+
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/cfg"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/persistence"
@@ -22,7 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 func TestSonataFlowBuildManager_GetOrCreateBuildWithWorkflowPersistence(t *testing.T) {

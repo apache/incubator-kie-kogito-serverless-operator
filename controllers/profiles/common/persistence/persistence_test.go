@@ -15,9 +15,10 @@
 package persistence
 
 import (
+	"testing"
+
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestResolveWorkflowPersistenceProperties_WithWorkflowPersistence(t *testing.T) {
