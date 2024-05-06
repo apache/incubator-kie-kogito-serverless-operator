@@ -1,6 +1,6 @@
 Feature: Deploy SonataFlow Operator and SonataFlowPlatform with greeting example in dev mode and verify the functionality
 
-  @devMode1
+  @devMode123
   Scenario: greeting-example in DevMode E2E test
     Given Namespace is created
     When SonataFlow Operator is deployed

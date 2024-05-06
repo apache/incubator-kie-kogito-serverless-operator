@@ -63,10 +63,10 @@ func (data *Data) sonataFlowPlatformWithDataIndexIsDeployed() error {
 	projectDir = strings.Replace(projectDir, "/testbdd", "", -1)
 
 	// TODO or kubectl
-	out, err := framework.CreateCommand("oc", "apply", "-f", 
-										filepath.Join(projectDir, getSonataFlowPlatformFilename()),
-										"-n",
-										data.Namespace).Execute()
+	out, err := framework.CreateCommand("oc", "apply", "-f",
+		filepath.Join(projectDir, getSonataFlowPlatformFilename()),
+		"-n",
+		data.Namespace).Execute()
 
 	if err != nil {
 		framework.GetLogger(data.Namespace).Error(err, fmt.Sprintf("Applying SonataFlowPlatform failed, output: %s", out))

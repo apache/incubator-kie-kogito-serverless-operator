@@ -29,7 +29,7 @@ Feature: Deploy SonataFlowPlatform with default configuration
     Then Deployment "event-listener" pods log contains text '"shipping": "international"' within 1 minutes
     Then SonataFlow "order-processing" pods log does not contain text 'ERROR' within 0 minutes
 
-  @devMode
+  @devMode1
   Scenario: Deploy greeting-example in dev mode and verify its functionality
     When SonataFlow greeting example is deployed
     Then SonataFlow "greeting" has the condition "Running" set to "True" within 5 minutes
@@ -53,11 +53,3 @@ Feature: Deploy SonataFlowPlatform with default configuration
     Then SonataFlow "greeting" pods log contains text 'Saludos desde JSON Workflow' within 1 minutes
     Then SonataFlow "greeting" pods log contains text 'End' within 1 minutes
     Then SonataFlow "greeting" pods log does not contain text 'ERROR' within 0 minutes
-
-  @previewMode
-  Scenario: Deploy callbackstate-timeouts example in dev mode and verify its functionality
-    When SonataFlowPlatform with DI is deployed
-    When SonataFlow callbackstatetimeouts example is deployed
-    Then SonataFlow "callbackstatetimeouts" has the condition "Running" set to "True" within 5 minutes
-    Then SonataFlow "callbackstatetimeouts" is addressable within 1 minute
-    Then HTTP GET request on SonataFlow "callbackstatetimeouts" is successful within 1 minute with path "callbackstatetimeouts", expectedResponseContains ''

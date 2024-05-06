@@ -26,8 +26,8 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"github.com/apache/incubator-kie-kogito-serverless-operator/test/utils"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/test"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/test/utils"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/bddframework/pkg/framework"
 )
@@ -47,14 +47,14 @@ func (data *Data) postgresIsDeployed() (err error) {
 
 	// TODO or kubectl
 	out, err := framework.CreateCommand("oc", "apply", "-f",
-										filepath.Join(projectDir,
-													test.GetPostgresFolder()),
-													"-n",
-													data.Namespace).Execute()
+		filepath.Join(projectDir,
+			test.GetPostgresFolder()),
+		"-n",
+		data.Namespace).Execute()
 
 	if err != nil {
 		framework.GetLogger(data.Namespace).Error(err, fmt.Sprintf("Applying Postgres deployments failed, output: %s", out))
 	}
 
-	return err;
+	return err
 }
