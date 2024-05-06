@@ -86,6 +86,7 @@ func TestSonataFlowBuildManager_GetOrCreateBuildWithNoPersistence(t *testing.T) 
 	buildManager := prepareGetOrCreateBuildTest(t, &currentPlatform)
 	build, _ := buildManager.GetOrCreateBuild(&workflow)
 	assert.Equal(t, 0, len(build.Spec.BuildArgs))
+	restoreControllersConfig(t)
 }
 
 func testGetOrCreateBuildWithPersistence(t *testing.T, currentPlatform *operatorapi.SonataFlowPlatform, workflow *operatorapi.SonataFlow) {
@@ -94,6 +95,7 @@ func testGetOrCreateBuildWithPersistence(t *testing.T, currentPlatform *operator
 	assert.NotNil(t, build)
 	assert.Equal(t, 1, len(build.Spec.BuildArgs))
 	assertContainsPersistence(t, build.Spec.BuildArgs, 0)
+	restoreControllersConfig(t)
 }
 
 func prepareGetOrCreateBuildTest(t *testing.T, currentPlatform *operatorapi.SonataFlowPlatform) sonataFlowBuildManager {
@@ -113,6 +115,7 @@ func Test_addPersistenceExtensionsWithEmptyArgs(t *testing.T) {
 	addPersistenceExtensions(buildTemplate)
 	assert.Equal(t, 1, len(buildTemplate.BuildArgs))
 	assertContainsPersistence(t, buildTemplate.BuildArgs, 0)
+	restoreControllersConfig(t)
 }
 
 func Test_addPersistenceExtensionsWithNoQuarkusExtensionsArg(t *testing.T) {
@@ -125,6 +128,7 @@ func Test_addPersistenceExtensionsWithNoQuarkusExtensionsArg(t *testing.T) {
 	addPersistenceExtensions(buildTemplate)
 	assert.Equal(t, 2, len(buildTemplate.BuildArgs))
 	assertContainsPersistence(t, buildTemplate.BuildArgs, 1)
+	restoreControllersConfig(t)
 }
 
 func Test_addPersistenceExtensionsWithQuarkusExtensionsArgAndNoPersistenceExtensions(t *testing.T) {
@@ -138,7 +142,7 @@ func Test_addPersistenceExtensionsWithQuarkusExtensionsArgAndNoPersistenceExtens
 	addPersistenceExtensions(buildTemplate)
 	assert.Equal(t, 2, len(buildTemplate.BuildArgs))
 	assertContainsPersistence(t, buildTemplate.BuildArgs, 1)
-
+	restoreControllersConfig(t)
 }
 
 func Test_addPersistenceExtensionsWithQuarkusExtensionsArgAndPersistenceExtensions(t *testing.T) {
@@ -153,6 +157,7 @@ func Test_addPersistenceExtensionsWithQuarkusExtensionsArgAndPersistenceExtensio
 	assert.Equal(t, 2, len(buildTemplate.BuildArgs))
 	assert.Equal(t, v1.EnvVar{Name: "VAR1", Value: "VALUE1"}, buildTemplate.BuildArgs[0])
 	assert.Equal(t, v1.EnvVar{Name: "QUARKUS_EXTENSIONS", Value: "org.acme:org.acme.library:1.0.0,io.quarkus:quarkus-jdbc-postgresql:8.8.0.Final"}, buildTemplate.BuildArgs[1])
+	restoreControllersConfig(t)
 }
 
 func initializeControllersConfig(t *testing.T) {
@@ -161,6 +166,13 @@ func initializeControllersConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 	assert.Equal(t, 3, len(cfg.PostgreSQLPersistenceExtensions))
+}
+
+func restoreControllersConfig(t *testing.T) {
+	// restore the controllers configuration to default values since it's a global configuration, and we don't
+	// want current test interfere with other tests.
+	_, err := cfg.InitializeControllersCfgAt("../../config/manager/controllers_cfg.yaml")
+	assert.NoError(t, err)
 }
 
 func assertContainsPersistence(t *testing.T, buildArgs []v1.EnvVar, position int) {
