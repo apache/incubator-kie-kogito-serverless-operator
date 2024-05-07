@@ -216,6 +216,29 @@ var _ = Describe("Validate the persistence ", Ordered, func() {
 			}
 			return false
 		}, 1*time.Minute).Should(BeTrue())
+		// Persistence initialization checks
+		cmd = exec.Command("kubectl", "get", "pod", "-l", "sonataflow.org/workflow-app", "-n", ns, "-ojsonpath={.items[*].metadata.name}")
+		output, err = utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred())
+		podName := string(output)
+		cmd = exec.Command("kubectl", "logs", podName, "-n", ns)
+		output, err = utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred())
+		logs := string(output)
+		if withPersistence {
+			By("Validate that the workflow persistence was properly initialized")
+			Expect(logs).Should(ContainSubstring("Flyway Community Edition"))
+			Expect(logs).Should(ContainSubstring("Database: jdbc:postgresql://postgres.%s:5432", ns))
+			Expect(logs).Should(ContainSubstring("Creating schema \"callbackstatetimeouts\""))
+			Expect(logs).Should(ContainSubstring("Migrating schema \"callbackstatetimeouts\" to version"))
+			Expect(logs).Should(MatchRegexp("Successfully applied \\d migrations to schema \"callbackstatetimeouts\""))
+			Expect(logs).Should(ContainSubstring("Profile prod activated"))
+		} else {
+			By("Validate that the workflow has no persistence")
+			Expect(logs).ShouldNot(ContainSubstring("Flyway Community Edition"))
+			Expect(logs).ShouldNot(ContainSubstring("Creating schema \"callbackstatetimeouts\""))
+			Expect(logs).Should(ContainSubstring("Profile prod activated"))
+		}
 	},
 		Entry("defined in the workflow from an existing kubernetes service as a reference", test.GetSonataFlowE2EWorkflowPersistenceSampleDataDirectory("by_service"), true),
 		Entry("defined in the workflow and from the sonataflow platform", test.GetSonataFlowE2EWorkflowPersistenceSampleDataDirectory("from_platform_overwritten_by_service"), true),
