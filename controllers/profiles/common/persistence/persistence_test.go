@@ -45,6 +45,22 @@ func TestResolveWorkflowPersistenceProperties_WithPlatformPersistence(t *testing
 	testResolveWorkflowPersistencePropertiesWithPersistence(t, &workflow, &platform)
 }
 
+func TestResolveWorkflowPersistenceProperties_WithPlatformPersistenceButBannedInWorkflow(t *testing.T) {
+	workflow := operatorapi.SonataFlow{}
+	workflow.Spec.Persistence = &operatorapi.PersistenceOptionsSpec{}
+	platform := operatorapi.SonataFlowPlatform{
+		Spec: operatorapi.SonataFlowPlatformSpec{
+			Persistence: &operatorapi.PlatformPersistenceOptionsSpec{
+				PostgreSQL: &operatorapi.PlatformPersistencePostgreSQL{},
+			},
+		},
+	}
+	props, err := ResolveWorkflowPersistenceProperties(&workflow, &platform)
+	assert.NotNil(t, props)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, props.Len())
+}
+
 func TestResolveWorkflowPersistenceProperties_WithNoPersistence(t *testing.T) {
 	workflow := operatorapi.SonataFlow{}
 	platform := operatorapi.SonataFlowPlatform{}

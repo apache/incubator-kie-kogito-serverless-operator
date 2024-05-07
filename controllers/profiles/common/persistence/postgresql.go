@@ -131,7 +131,7 @@ func RetrieveConfiguration(primary *v1alpha08.PersistenceOptionsSpec, platformPe
 
 func UsesPostgreSQLPersistence(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) bool {
 	return (workflow.Spec.Persistence != nil && workflow.Spec.Persistence.PostgreSQL != nil) ||
-		(platform.Spec.Persistence != nil && platform.Spec.Persistence.PostgreSQL != nil)
+		(workflow.Spec.Persistence == nil && platform.Spec.Persistence != nil && platform.Spec.Persistence.PostgreSQL != nil)
 }
 
 // GetPostgreSQLExtensions returns the Quarkus extensions required for postgresql persistence.

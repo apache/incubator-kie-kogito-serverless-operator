@@ -201,17 +201,26 @@ var _ = Describe("Validate the persistence ", Ordered, func() {
 					continue
 				}
 				Expect(h.Status).To(Equal(upStatus), "Pod health is not UP")
-				for _, c := range h.Checks {
-					if c.Name == dbConnectionName {
-						Expect(c.Status).To(Equal(upStatus), "Pod's database connection is not UP")
-						if withPersistence {
+				if withPersistence {
+					connectionCheckFound := false
+					for _, c := range h.Checks {
+						if c.Name == dbConnectionName {
+							Expect(c.Status).To(Equal(upStatus), "Pod's database connection is not UP")
 							Expect(c.Data[defaultDataCheck]).To(Equal(upStatus), "Pod's 'default' database data is not UP")
-							return true
-						} else {
-							Expect(defaultDataCheck).NotTo(BeElementOf(c.Data), "Pod's 'default' database data check exists in health manifest")
-							return true
+							connectionCheckFound = true
 						}
 					}
+					Expect(connectionCheckFound).To(Equal(true), "Connection health check not found, but the wofkflow has persistence")
+					return true
+				} else {
+					connectionCheckFound := false
+					for _, c := range h.Checks {
+						if c.Name == dbConnectionName {
+							connectionCheckFound = true
+						}
+					}
+					Expect(connectionCheckFound).To(Equal(false), "Connection health check was found, but the workflow don't have persistence")
+					return true
 				}
 			}
 			return false
