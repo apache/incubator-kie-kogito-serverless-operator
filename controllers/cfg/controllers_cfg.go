@@ -42,9 +42,17 @@ var defaultControllersCfg = &ControllersCfg{
 }
 
 type GAV struct {
-	GroupId    string `yaml:"GroupId,omitempty"`
-	ArtifactId string `yaml:"ArtifactId,omitempty"`
-	Version    string `yaml:"Version,omitempty"`
+	GroupId    string `yaml:"groupId,omitempty"`
+	ArtifactId string `yaml:"artifactId,omitempty"`
+	Version    string `yaml:"version,omitempty"`
+}
+
+func (g *GAV) GroupAndArtifact() string {
+	return fmt.Sprintf("%s:%s", g.GroupId, g.ArtifactId)
+}
+
+func (g *GAV) String() string {
+	return fmt.Sprintf("%s:%s:%s", g.GroupId, g.ArtifactId, g.Version)
 }
 
 type ControllersCfg struct {
@@ -100,12 +108,4 @@ func GetCfg() *ControllersCfg {
 		return defaultControllersCfg
 	}
 	return controllersCfg
-}
-
-func (g *GAV) GroupAndArtifact() string {
-	return fmt.Sprintf("%s:%s", g.GroupId, g.ArtifactId)
-}
-
-func (g *GAV) String() string {
-	return fmt.Sprintf("%s:%s:%s", g.GroupId, g.ArtifactId, g.Version)
 }
