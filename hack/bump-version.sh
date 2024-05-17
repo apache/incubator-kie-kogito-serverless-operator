@@ -20,7 +20,7 @@ set -e
 script_dir_path=$(dirname "${BASH_SOURCE[0]}")
 source "${script_dir_path}"/env.sh
 
-imageTag='quay.io/kiegroup/kogito-serverless-operator'
+imageTag='docker.io/apache/incubator-kie-sonataflow-operator'
 # shellcheck disable=SC2034
 old_version=$(getOperatorVersion)
 latest_version=$(getOperatorLatestVersion)
@@ -54,11 +54,11 @@ sed -i "s|IMAGE_TAG_BASE ?=.*|IMAGE_TAG_BASE ?= ${imageTag}${imageSuffix}|g" Mak
 sed -i "s|newName:.*|newName: ${imageTag}${imageSuffix}|g" config/manager/kustomization.yaml
 
 # Update kogito-swf-* images
-find . -name "*.yaml" -exec sed -i "s|quay.io/kiegroup/kogito-swf-builder.*:${oldMajorMinorVersion}|quay.io/kiegroup/kogito-swf-builder${imageSuffix}:${newMajorMinorVersion}|" {} +
-sed -i "s|quay.io/kiegroup/kogito-swf-builder.*:${oldMajorMinorVersion}|quay.io/kiegroup/kogito-swf-builder${imageSuffix}:${newMajorMinorVersion}|" Dockerfile
+find . -name "*.yaml" -exec sed -i "s|docker.io/apache/incubator-kie-sonataflow-builder.*:${oldMajorMinorVersion}|docker.io/apache/incubator-kie-sonataflow-builder${imageSuffix}:${newMajorMinorVersion}|" {} +
+sed -i "s|docker.io/apache/incubator-kie-sonataflow-builder.*:${oldMajorMinorVersion}|docker.io/apache/incubator-kie-sonataflow-builder${imageSuffix}:${newMajorMinorVersion}|" Dockerfile
 
-find . -name "*.yaml" -exec sed -i "s|quay.io/kiegroup/kogito-swf-devmode.*:${oldMajorMinorVersion}|quay.io/kiegroup/kogito-swf-devmode${imageSuffix}:${newMajorMinorVersion}|" {} +
-sed -i "s|quay.io/kiegroup/kogito-swf-devmode.*:${oldMajorMinorVersion}|quay.io/kiegroup/kogito-swf-devmode${imageSuffix}:${newMajorMinorVersion}|" Dockerfile
+find . -name "*.yaml" -exec sed -i "s|docker.io/apache/incubator-kie-sonataflow-devmode.*:${oldMajorMinorVersion}|docker.io/apache/incubator-kie-sonataflow-devmode${imageSuffix}:${newMajorMinorVersion}|" {} +
+sed -i "s|docker.io/apache/incubator-kie-sonataflow-devmode.*:${oldMajorMinorVersion}|docker.io/apache/incubator-kie-sonataflow-devmode${imageSuffix}:${newMajorMinorVersion}|" Dockerfile
 
 sed -i -r "s|OperatorVersion =.*|OperatorVersion = \"${new_version}\"|g" version/version.go
 
