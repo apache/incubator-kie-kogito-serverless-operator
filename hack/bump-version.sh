@@ -44,7 +44,7 @@ sed -i "s|newTag:.*|newTag: ${new_version}|g" config/manager/kustomization.yaml
 sed -i "s|IMAGE_TAG_BASE ?=.*|IMAGE_TAG_BASE ?= ${imageTag}|g" Makefile
 sed -i "s|newName:.*|newName: ${imageTag}|g" config/manager/kustomization.yaml
 
-# Update kogito-swf-* images
+# Update sonataflow-* images
 find . -name "*.yaml" -exec sed -i "s|docker.io/apache/incubator-kie-sonataflow-builder.*:${oldMajorMinorVersion}|docker.io/apache/incubator-kie-sonataflow-builder:${newMajorMinorVersion}|" {} +
 sed -i "s|docker.io/apache/incubator-kie-sonataflow-builder.*:${oldMajorMinorVersion}|docker.io/apache/incubator-kie-sonataflow-builder:${newMajorMinorVersion}|" Dockerfile
 
