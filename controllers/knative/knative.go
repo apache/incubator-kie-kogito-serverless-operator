@@ -25,6 +25,9 @@ import (
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
+	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
@@ -35,6 +38,7 @@ import (
 
 var servingClient clientservingv1.ServingV1Interface
 var eventingClient clienteventingv1.EventingV1Interface
+var discoveryClient discovery.DiscoveryInterface
 
 type Availability struct {
 	Eventing bool
@@ -42,7 +46,9 @@ type Availability struct {
 }
 
 const (
-	KSink = "K_SINK"
+	KSink               = "K_SINK"
+	KnativeBundleVolume = "kne-bundle-volume"
+	KCeOverRides        = "K_CE_OVERRIDES"
 )
 
 func GetKnativeServingClient(cfg *rest.Config) (clientservingv1.ServingV1Interface, error) {
@@ -75,8 +81,23 @@ func NewKnativeEventingClient(cfg *rest.Config) (*clienteventingv1.EventingV1Cli
 	return clienteventingv1.NewForConfig(cfg)
 }
 
+func GetDisvoveryClient(cfg *rest.Config) (discovery.DiscoveryInterface, error) {
+	if discoveryClient == nil {
+		if cli, err := discovery.NewDiscoveryClientForConfig(cfg); err != nil {
+			return nil, err
+		} else {
+			discoveryClient = cli
+		}
+	}
+	return discoveryClient, nil
+}
+
+func SetDisvoveryClient(cli discovery.DiscoveryInterface) {
+	discoveryClient = cli
+}
+
 func GetKnativeAvailability(cfg *rest.Config) (*Availability, error) {
-	if cli, err := discovery.NewDiscoveryClientForConfig(cfg); err != nil {
+	if cli, err := GetDisvoveryClient(cfg); err != nil {
 		return nil, err
 	} else {
 		apiList, err := cli.ServerGroups()
@@ -121,4 +142,55 @@ func GetWorkflowSink(workflow *operatorapi.SonataFlow, pl *operatorapi.SonataFlo
 
 func IsKnativeBroker(kRef *duckv1.KReference) bool {
 	return kRef.APIVersion == "eventing.knative.dev/v1" && kRef.Kind == "Broker"
+}
+
+func SaveKnativeData(dest *corev1.PodSpec, source *corev1.PodSpec) {
+	for _, volume := range source.Volumes {
+		if volume.Name == KnativeBundleVolume {
+			kubeutil.AddOrReplaceVolume(dest, volume)
+			break
+		}
+	}
+	for _, container := range source.Containers {
+		for ind, destContainer := range dest.Containers {
+			if destContainer.Name == container.Name {
+				for _, mount := range container.VolumeMounts {
+					if mount.Name == KnativeBundleVolume {
+						kubeutil.AddOrReplaceVolumeMount(ind, dest, mount)
+						break
+					}
+				}
+				for _, env := range container.Env {
+					if env.Name == KSink || env.Name == KCeOverRides {
+						kubeutil.AddOrReplaceEnvVar(ind, dest, env)
+					}
+				}
+			}
+		}
+	}
+}
+
+func moveKnativeVolumeToEnd(vols []corev1.Volume) {
+	for i := 0; i < len(vols)-1; i++ {
+		if vols[i].Name == KnativeBundleVolume {
+			vols[i], vols[i+1] = vols[i+1], vols[i]
+		}
+	}
+}
+
+func moveKnativeVolumeMountToEnd(mounts []corev1.VolumeMount) {
+	for i := 0; i < len(mounts)-1; i++ {
+		if mounts[i].Name == KnativeBundleVolume {
+			mounts[i], mounts[i+1] = mounts[i+1], mounts[i]
+		}
+	}
+}
+
+// Knative Sinkbinding injects K_SINK env, a volume and volumn mount. The volume and volume mount
+// must be in the end of the array to avoid repeadly restarting of the workflow pod
+func RestoreKnativeVolumeAndVolumeMount(deployment *appsv1.Deployment) {
+	moveKnativeVolumeToEnd(deployment.Spec.Template.Spec.Volumes)
+	for i := 0; i < len(deployment.Spec.Template.Spec.Containers); i++ {
+		moveKnativeVolumeMountToEnd(deployment.Spec.Template.Spec.Containers[i].VolumeMounts)
+	}
 }

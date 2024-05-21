@@ -609,7 +609,7 @@ func (d JobServiceHandler) GetSourceBroker() *duckv1.Destination {
 
 func (d JobServiceHandler) GetSink() *duckv1.Destination {
 	if d.platform.Spec.Services.JobService.Sink != nil {
-		return d.platform.Spec.Services.JobService.Source
+		return d.platform.Spec.Services.JobService.Sink
 	}
 	return GetPlatformBroker(d.platform)
 }
@@ -624,7 +624,7 @@ func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.Sonat
 		brokerName := broker.Ref.Name
 		jobCreateTrigger := &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-job-service-create-job-trigger", platform.Name),
+				Name:      fmt.Sprintf("%s-jobs-service-create-job-trigger", platform.Name),
 				Namespace: namespace,
 				Labels:    lbl,
 			},
@@ -651,7 +651,7 @@ func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.Sonat
 		resultObjs = append(resultObjs, jobCreateTrigger)
 		jobDeleteTrigger := &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-job-service-delete-job-trigger", platform.Name),
+				Name:      fmt.Sprintf("%s-jobs-service-delete-job-trigger", platform.Name),
 				Namespace: namespace,
 				Labels:    lbl,
 			},

@@ -98,6 +98,9 @@ func (d *defaultObjectEnsurerWithPlatform) Ensure(ctx context.Context, workflow 
 	if err != nil {
 		return nil, result, err
 	}
+	if object == nil {
+		return nil, result, nil
+	}
 	if result, err = controllerutil.CreateOrPatch(ctx, d.c, object,
 		func() error {
 			for _, v := range visitors {

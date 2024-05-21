@@ -24,6 +24,7 @@ import (
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/container-builder/client"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/knative"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/platform/services"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/variables"
@@ -186,7 +187,8 @@ func createOrUpdateDeployment(ctx context.Context, client client.Client, platfor
 
 	// Create or Update the deployment
 	if op, err := controllerutil.CreateOrUpdate(ctx, client, serviceDeployment, func() error {
-		err := mergo.Merge(&(serviceDeployment.Spec), serviceDeploymentSpec)
+		knative.SaveKnativeData(&serviceDeploymentSpec.Template.Spec, &serviceDeployment.Spec.Template.Spec)
+		err := mergo.Merge(&(serviceDeployment.Spec), serviceDeploymentSpec, mergo.WithOverride)
 		if err != nil {
 			return err
 		}

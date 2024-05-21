@@ -23,23 +23,22 @@ import (
 	"context"
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
-	v1 "knative.dev/pkg/apis/duck/v1"
-
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/clusterplatform"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/knative"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/platform/services"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/test"
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -842,43 +841,20 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.NotNil(t, ksp2.Status.ClusterPlatformRef)
 		assert.Nil(t, ksp2.Status.ClusterPlatformRef.Services)
 	})
-	t.Run("verify that knative resources creation for job service and data index service is performed without error", func(t *testing.T) {
+	t.Run("verify that knative resources creation for job service and data index service with platform level broker is performed without error", func(t *testing.T) {
 		namespace := t.Name()
 		// Create a SonataFlowPlatform object with metadata and spec.
-		ksp := test.GetBasePlatformInReadyPhase(namespace)
+		ksp := test.GetBasePlatformWithBrokerInReadyPhase(namespace)
 		brokerName := "default"
-		enabled := true
 		broker := &eventingv1.Broker{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      brokerName,
 				Namespace: namespace,
 			},
 		}
-		ksp.Spec.Eventing = &v1alpha08.PlatformEventingSpec{
-			Broker: &v1.Destination{
-				Ref: &v1.KReference{
-					APIVersion: v1.SchemeGroupVersion.Version,
-					Kind:       "Broker",
-					Namespace:  namespace,
-					Name:       brokerName,
-				},
-			},
-		}
-		ksp.Spec.Services = &v1alpha08.ServicesPlatformSpec{
-			DataIndex: &v1alpha08.DataIndexServiceSpec{
-				ServiceSpec: v1alpha08.ServiceSpec{
-					Enabled: &enabled,
-				},
-			},
-			JobService: &v1alpha08.JobServiceServiceSpec{
-				ServiceSpec: v1alpha08.ServiceSpec{
-					Enabled: &enabled,
-				},
-			},
-		}
-
 		// Create a fake client to mock API calls.
 		cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(ksp, broker).WithStatusSubresource(ksp, broker).Build()
+		knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
 		// Create a SonataFlowPlatformReconciler object with the scheme and fake client.
 		r := &SonataFlowPlatformReconciler{cl, cl, cl.Scheme(), &rest.Config{}, &record.FakeRecorder{}}
 
@@ -901,6 +877,10 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.Equal(t, "quay.io/kiegroup", ksp.Spec.Build.Config.Registry.Address)
 		assert.Equal(t, "regcred", ksp.Spec.Build.Config.Registry.Secret)
 		assert.Equal(t, v1alpha08.OperatorBuildStrategy, ksp.Spec.Build.Config.BuildStrategy)
+		assert.NotNil(t, ksp.Spec.Eventing)
+		assert.NotNil(t, ksp.Spec.Eventing.Broker)
+		assert.NotNil(t, ksp.Spec.Eventing.Broker.Ref)
+		assert.Equal(t, ksp.Spec.Eventing.Broker.Ref.Name, brokerName)
 		assert.NotNil(t, ksp.Spec.Services.DataIndex)
 		assert.NotNil(t, ksp.Spec.Services.DataIndex.Enabled)
 		assert.Equal(t, true, *ksp.Spec.Services.DataIndex.Enabled)
@@ -913,15 +893,152 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check Triggers
 		trigger := &eventingv1.Trigger{}
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "jobs-service-create-job-trigger", Namespace: ksp.Namespace}, trigger))
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "jobs-service-delete-job-trigger", Namespace: ksp.Namespace}, trigger))
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "data-index-service-jobs-trigger", Namespace: ksp.Namespace}, trigger))
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "data-index-service-processes-definition-trigger", Namespace: ksp.Namespace}, trigger))
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "data-index-service-processes-instance-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-jobs-service-create-job-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-jobs-service-delete-job-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-jobs-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-definition-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-error-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-node-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-sla-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-state-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-variable-trigger", Namespace: ksp.Namespace}, trigger))
 
 		// Check SinkBinding
 		sinkBinding := &sourcesv1.SinkBinding{}
 		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "jobs-service-sb", Namespace: ksp.Namespace}, sinkBinding))
 
+	})
+
+	t.Run("verify that knative resources creation for job service and data index service  with services level brokers is performed without error", func(t *testing.T) {
+		namespace := t.Name()
+		// Create a SonataFlowPlatform object with metadata and spec.
+		ksp := test.GetBasePlatformWithBrokerInReadyPhase(namespace)
+		brokerName := "default"
+		brokerNameDataIndexSource := "broker-di-source"
+		brokerNameJobsServiceSource := "broker-jobs-source"
+		brokerNameJobsServiceSink := "broker-jobs-sink"
+
+		broker := &eventingv1.Broker{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      brokerName,
+				Namespace: namespace,
+			},
+		}
+		brokerDataIndexSource := &eventingv1.Broker{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      brokerNameDataIndexSource,
+				Namespace: namespace,
+			},
+		}
+		brokerJobsServiceSource := &eventingv1.Broker{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      brokerNameJobsServiceSource,
+				Namespace: namespace,
+			},
+		}
+		brokerJobsServiceSink := &eventingv1.Broker{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      brokerNameJobsServiceSink,
+				Namespace: namespace,
+			},
+		}
+		ksp.Spec.Services.DataIndex.Source = &duckv1.Destination{
+			Ref: &duckv1.KReference{
+				Name:       brokerNameDataIndexSource,
+				Namespace:  namespace,
+				APIVersion: "eventing.knative.dev/v1",
+				Kind:       "Broker",
+			},
+		}
+		ksp.Spec.Services.JobService.Sink = &duckv1.Destination{
+			Ref: &duckv1.KReference{
+				Name:       brokerNameJobsServiceSink,
+				Namespace:  namespace,
+				APIVersion: "eventing.knative.dev/v1",
+				Kind:       "Broker",
+			},
+		}
+		ksp.Spec.Services.JobService.Source = &duckv1.Destination{
+			Ref: &duckv1.KReference{
+				Name:       brokerNameJobsServiceSource,
+				Namespace:  namespace,
+				APIVersion: "eventing.knative.dev/v1",
+				Kind:       "Broker",
+			},
+		}
+
+		// Create a fake client to mock API calls.
+		cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(ksp, broker, brokerDataIndexSource, brokerJobsServiceSource, brokerJobsServiceSink).WithStatusSubresource(ksp, broker, brokerDataIndexSource, brokerJobsServiceSource, brokerJobsServiceSink).Build()
+		knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+		// Create a SonataFlowPlatformReconciler object with the scheme and fake client.
+		r := &SonataFlowPlatformReconciler{cl, cl, cl.Scheme(), &rest.Config{}, &record.FakeRecorder{}}
+
+		// Mock request to simulate Reconcile() being called on an event for a
+		// watched resource .
+		req := reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      ksp.Name,
+				Namespace: ksp.Namespace,
+			},
+		}
+		_, err := r.Reconcile(context.TODO(), req)
+		if err != nil {
+			t.Fatalf("reconcile: (%v)", err)
+		}
+
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: ksp.Name, Namespace: ksp.Namespace}, ksp))
+
+		// Perform some checks on the created CR
+		assert.Equal(t, "quay.io/kiegroup", ksp.Spec.Build.Config.Registry.Address)
+		assert.Equal(t, "regcred", ksp.Spec.Build.Config.Registry.Secret)
+		assert.Equal(t, v1alpha08.OperatorBuildStrategy, ksp.Spec.Build.Config.BuildStrategy)
+		assert.NotNil(t, ksp.Spec.Eventing)
+		assert.NotNil(t, ksp.Spec.Eventing.Broker)
+		assert.NotNil(t, ksp.Spec.Eventing.Broker.Ref)
+		assert.Equal(t, ksp.Spec.Eventing.Broker.Ref.Name, brokerName)
+		assert.NotNil(t, ksp.Spec.Services.DataIndex)
+		assert.NotNil(t, ksp.Spec.Services.DataIndex.Enabled)
+		assert.Equal(t, true, *ksp.Spec.Services.DataIndex.Enabled)
+		assert.NotNil(t, ksp.Spec.Services.DataIndex.Source)
+		assert.NotNil(t, ksp.Spec.Services.DataIndex.Source.Ref)
+		assert.Equal(t, ksp.Spec.Services.DataIndex.Source.Ref.Name, brokerNameDataIndexSource)
+		assert.NotNil(t, ksp.Spec.Services.JobService)
+		assert.NotNil(t, ksp.Spec.Services.JobService.Enabled)
+		assert.Equal(t, true, *ksp.Spec.Services.JobService.Enabled)
+		assert.NotNil(t, ksp.Spec.Services.JobService.Source)
+		assert.NotNil(t, ksp.Spec.Services.JobService.Source.Ref)
+		assert.Equal(t, ksp.Spec.Services.JobService.Source.Ref.Name, brokerNameJobsServiceSource)
+		assert.NotNil(t, ksp.Spec.Services.JobService.Sink)
+		assert.NotNil(t, ksp.Spec.Services.JobService.Sink.Ref)
+		assert.Equal(t, ksp.Spec.Services.JobService.Sink.Ref.Name, brokerNameJobsServiceSink)
+		assert.Equal(t, v1alpha08.PlatformClusterKubernetes, ksp.Status.Cluster)
+		assert.Equal(t, "", ksp.Status.GetTopLevelCondition().Reason)
+
+		// Check Triggers to have the service level source used
+		trigger := &eventingv1.Trigger{}
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-jobs-service-create-job-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.Equal(t, trigger.Spec.Broker, brokerNameJobsServiceSource)
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-jobs-service-delete-job-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.Equal(t, trigger.Spec.Broker, brokerNameJobsServiceSource)
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-jobs-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-definition-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.Equal(t, trigger.Spec.Broker, brokerNameDataIndexSource)
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-error-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.Equal(t, trigger.Spec.Broker, brokerNameDataIndexSource)
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-node-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.Equal(t, trigger.Spec.Broker, brokerNameDataIndexSource)
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-sla-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.Equal(t, trigger.Spec.Broker, brokerNameDataIndexSource)
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-state-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.Equal(t, trigger.Spec.Broker, brokerNameDataIndexSource)
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-variable-trigger", Namespace: ksp.Namespace}, trigger))
+		assert.Equal(t, trigger.Spec.Broker, brokerNameDataIndexSource)
+
+		// Check SinkBinding to have the sink level source used
+		sinkBinding := &sourcesv1.SinkBinding{}
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "jobs-service-sb", Namespace: ksp.Namespace}, sinkBinding))
+		assert.NotNil(t, sinkBinding.Spec.Sink)
+		assert.NotNil(t, sinkBinding.Spec.Sink.Ref)
+		assert.Equal(t, sinkBinding.Spec.Sink.Ref.Name, brokerNameJobsServiceSink)
 	})
 }

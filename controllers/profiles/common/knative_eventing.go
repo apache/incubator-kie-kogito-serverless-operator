@@ -20,14 +20,8 @@ import (
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/knative"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	KnativeBundleVolume = "kne-bundle-volume"
 )
 
 var _ KnativeEventingHandler = &knativeObjectManager{}
@@ -80,56 +74,4 @@ func (k knativeObjectManager) Ensure(ctx context.Context, workflow *operatorapi.
 		}
 	}
 	return objs, nil
-}
-
-func moveKnativeVolumeToEnd(vols []corev1.Volume) {
-	for i := 0; i < len(vols)-1; i++ {
-		if vols[i].Name == KnativeBundleVolume {
-			vols[i], vols[i+1] = vols[i+1], vols[i]
-		}
-	}
-}
-
-func moveKnativeVolumeMountToEnd(mounts []corev1.VolumeMount) {
-	for i := 0; i < len(mounts)-1; i++ {
-		if mounts[i].Name == KnativeBundleVolume {
-			mounts[i], mounts[i+1] = mounts[i+1], mounts[i]
-		}
-	}
-}
-
-// Knative Sinkbinding injects K_SINK env, a volume and volumn mount. The volume and volume mount
-// must be in the end of the array to avoid repeadly restarting of the workflow pod
-func restoreKnativeVolumeAndVolumeMount(deployment *appsv1.Deployment) {
-	moveKnativeVolumeToEnd(deployment.Spec.Template.Spec.Volumes)
-	for i := 0; i < len(deployment.Spec.Template.Spec.Containers); i++ {
-		moveKnativeVolumeMountToEnd(deployment.Spec.Template.Spec.Containers[i].VolumeMounts)
-	}
-}
-
-func preserveKnativeVolumeMount(object *appsv1.Deployment) {
-	var kneVol *corev1.Volume = nil
-	for _, v := range object.Spec.Template.Spec.Volumes {
-		if v.Name == KnativeBundleVolume {
-			kneVol = &v
-		}
-	}
-	if kneVol != nil {
-		object.Spec.Template.Spec.Volumes = []corev1.Volume{*kneVol}
-	} else {
-		object.Spec.Template.Spec.Volumes = nil
-	}
-	for i := range object.Spec.Template.Spec.Containers {
-		var kneVolMount *corev1.VolumeMount = nil
-		for _, mount := range object.Spec.Template.Spec.Containers[i].VolumeMounts {
-			if mount.Name == KnativeBundleVolume {
-				kneVolMount = &mount
-			}
-		}
-		if kneVolMount == nil {
-			object.Spec.Template.Spec.Containers[i].VolumeMounts = nil
-		} else {
-			object.Spec.Template.Spec.Containers[i].VolumeMounts = []corev1.VolumeMount{*kneVolMount}
-		}
-	}
 }
