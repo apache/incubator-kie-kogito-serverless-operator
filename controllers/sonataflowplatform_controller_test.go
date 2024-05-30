@@ -905,7 +905,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check SinkBinding
 		sinkBinding := &sourcesv1.SinkBinding{}
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "jobs-service-sb", Namespace: ksp.Namespace}, sinkBinding))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-jobs-service-sb", Namespace: ksp.Namespace}, sinkBinding))
 
 	})
 
@@ -1036,7 +1036,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check SinkBinding to have the sink level source used
 		sinkBinding := &sourcesv1.SinkBinding{}
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "jobs-service-sb", Namespace: ksp.Namespace}, sinkBinding))
+		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-jobs-service-sb", Namespace: ksp.Namespace}, sinkBinding))
 		assert.NotNil(t, sinkBinding.Spec.Sink)
 		assert.NotNil(t, sinkBinding.Spec.Sink.Ref)
 		assert.Equal(t, sinkBinding.Spec.Sink.Ref.Name, brokerNameJobsServiceSink)

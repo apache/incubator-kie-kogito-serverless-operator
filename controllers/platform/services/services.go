@@ -680,7 +680,7 @@ func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.Sonat
 	if sink != nil {
 		sinkBinding := &sourcesv1.SinkBinding{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "jobs-service-sb",
+				Name:      fmt.Sprintf("%s-jobs-service-sb", platform.Name),
 				Namespace: namespace,
 				Labels:    lbl,
 			},
