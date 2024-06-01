@@ -446,7 +446,7 @@ func (j *JobServiceHandler) GenerateServiceProperties() (*properties.Properties,
 
 	if isDataIndexEnabled(j.platform) {
 		props.Set(constants.JobServiceStatusChangeEvents, "true")
-		if /*!isKnativeEnvInjected ||*/ j.GetServiceSource() == nil {
+		if j.GetServiceSource() == nil {
 			di := NewDataIndexHandler(j.platform)
 			props.Set(constants.JobServiceStatusChangeEventsURL, di.GetLocalServiceBaseUrl()+"/jobs")
 		} else {

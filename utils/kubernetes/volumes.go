@@ -127,12 +127,11 @@ func AddOrReplaceVolume(podSpec *corev1.PodSpec, volumes ...corev1.Volume) {
 }
 
 // AddOrReplaceVolumeMount same as AddOrReplaceVolume, but with VolumeMounts in a specific container
-func AddOrReplaceVolumeMount(containerIndex int, podSpec *corev1.PodSpec, mounts ...corev1.VolumeMount) {
+func AddOrReplaceVolumeMount(container *corev1.Container, mounts ...corev1.VolumeMount) {
 	// analogous to AddOrReplaceVolume function, the processing must be realized en order.
 	// see: AddOrReplaceVolume
 	mountsToAdd := make([]corev1.VolumeMount, 0)
 	wasAdded := false
-	container := &podSpec.Containers[containerIndex]
 	for _, mount := range mounts {
 		wasAdded = false
 		for i := 0; !wasAdded && i < len(container.VolumeMounts); i++ {
@@ -152,10 +151,9 @@ func AddOrReplaceVolumeMount(containerIndex int, podSpec *corev1.PodSpec, mounts
 
 // AddOrReplaceEnvVar  adds or removes the given env variables to the PodSpec.
 // If there's already an env variable with the same name, it's replaced.
-func AddOrReplaceEnvVar(containerIndex int, podSpec *corev1.PodSpec, envs ...corev1.EnvVar) {
+func AddOrReplaceEnvVar(container *corev1.Container, envs ...corev1.EnvVar) {
 	envVarsToAdd := make([]corev1.EnvVar, 0)
 	wasAdded := false
-	container := &podSpec.Containers[containerIndex]
 	for _, envVar := range envs {
 		wasAdded = false
 		for i := 0; !wasAdded && i < len(container.Env); i++ {

@@ -155,7 +155,7 @@ func mountDevConfigMapsMutateVisitor(workflow *operatorapi.SonataFlow, flowDefCM
 			if len(deployment.Spec.Template.Spec.Containers[flowContainerIdx].VolumeMounts) == 0 {
 				deployment.Spec.Template.Spec.Containers[flowContainerIdx].VolumeMounts = make([]corev1.VolumeMount, 0, len(volumeMounts))
 			}
-			kubeutil.AddOrReplaceVolumeMount(flowContainerIdx, &deployment.Spec.Template.Spec, volumeMounts...)
+			kubeutil.AddOrReplaceVolumeMount(&deployment.Spec.Template.Spec.Containers[flowContainerIdx], volumeMounts...)
 
 			return nil
 		}

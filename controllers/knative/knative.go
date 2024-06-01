@@ -151,23 +151,21 @@ func SaveKnativeData(dest *corev1.PodSpec, source *corev1.PodSpec) {
 			break
 		}
 	}
-	for _, container := range source.Containers {
-		for ind, destContainer := range dest.Containers {
-			if destContainer.Name == container.Name {
-				for _, mount := range container.VolumeMounts {
-					if mount.Name == KnativeBundleVolume {
-						kubeutil.AddOrReplaceVolumeMount(ind, dest, mount)
-						break
-					}
-				}
-				for _, env := range container.Env {
-					if env.Name == KSink || env.Name == KCeOverRides {
-						kubeutil.AddOrReplaceEnvVar(ind, dest, env)
-					}
+	visitContainers(source, func(container *corev1.Container) {
+		visitContainers(dest, func(destContainer *corev1.Container) {
+			for _, mount := range container.VolumeMounts {
+				if mount.Name == KnativeBundleVolume {
+					kubeutil.AddOrReplaceVolumeMount(destContainer, mount)
+					break
 				}
 			}
-		}
-	}
+			for _, env := range container.Env {
+				if env.Name == KSink || env.Name == KCeOverRides {
+					kubeutil.AddOrReplaceEnvVar(destContainer, env)
+				}
+			}
+		})
+	})
 }
 
 func moveKnativeVolumeToEnd(vols []corev1.Volume) {
@@ -190,7 +188,23 @@ func moveKnativeVolumeMountToEnd(mounts []corev1.VolumeMount) {
 // must be in the end of the array to avoid repeadly restarting of the workflow pod
 func RestoreKnativeVolumeAndVolumeMount(deployment *appsv1.Deployment) {
 	moveKnativeVolumeToEnd(deployment.Spec.Template.Spec.Volumes)
-	for i := 0; i < len(deployment.Spec.Template.Spec.Containers); i++ {
-		moveKnativeVolumeMountToEnd(deployment.Spec.Template.Spec.Containers[i].VolumeMounts)
+	visitContainers(&deployment.Spec.Template.Spec, func(container *corev1.Container) {
+		moveKnativeVolumeMountToEnd(container.VolumeMounts)
+	})
+}
+
+// ContainerVisitor is called with each container
+type ContainerVisitor func(container *corev1.Container)
+
+// visitContainers invokes the visitor function for every container in the given pod template spec
+func visitContainers(podSpec *corev1.PodSpec, visitor ContainerVisitor) {
+	for i := range podSpec.InitContainers {
+		visitor(&podSpec.InitContainers[i])
+	}
+	for i := range podSpec.Containers {
+		visitor(&podSpec.Containers[i])
+	}
+	for i := range podSpec.EphemeralContainers {
+		visitor((*corev1.Container)(&podSpec.EphemeralContainers[i].EphemeralContainerCommon))
 	}
 }
