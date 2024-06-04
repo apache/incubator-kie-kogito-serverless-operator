@@ -164,7 +164,7 @@ func EnsureKService(original *servingv1.Service, object *servingv1.Service) erro
 	}
 
 	// we do a merge to not keep changing the spec since k8s will set default values to the podSpec
-	return mergo.Merge(&object.Spec.Template.Spec.PodSpec, original.Spec.Template.Spec.PodSpec /*, mergo.WithOverride*/)
+	return mergo.Merge(&object.Spec.Template.Spec.PodSpec, original.Spec.Template.Spec.PodSpec)
 }
 
 func ServiceMutateVisitor(workflow *operatorapi.SonataFlow) MutateVisitor {

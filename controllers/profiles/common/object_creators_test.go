@@ -78,7 +78,6 @@ func Test_ensureWorkflowPropertiesConfigMapMutator(t *testing.T) {
 func Test_ensureWorkflowPropertiesConfigMapMutator_DollarReplacement(t *testing.T) {
 	workflow := test.GetBaseSonataFlowWithDevProfile(t.Name())
 	platform := test.GetBasePlatformInReadyPhase(workflow.Namespace)
-	//knative.SetDisvoveryClient(createFakeDiscoveryClient())
 
 	managedProps, _ := ManagedPropsConfigMapCreator(workflow, platform)
 	managedProps.SetName(workflow.Name)

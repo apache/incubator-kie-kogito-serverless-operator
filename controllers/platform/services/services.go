@@ -26,11 +26,11 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
 	"github.com/imdario/mergo"
+	"github.com/magiconair/properties"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-
-	"github.com/magiconair/properties"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
 	"knative.dev/pkg/apis"
@@ -186,7 +186,7 @@ func (d *DataIndexHandler) GetServiceBaseUrl() string {
 }
 
 func (d *DataIndexHandler) GetLocalServiceBaseUrl() string {
-	return GenerateServiceURL(constants.KogitoServiceURLProtocol, d.platform.Namespace, d.GetServiceName())
+	return GenerateServiceURL(constants.DefaultHTTPProtocol, d.platform.Namespace, d.GetServiceName())
 }
 
 func (d *DataIndexHandler) GetEnvironmentVariables() []corev1.EnvVar {
@@ -359,7 +359,7 @@ func (j *JobServiceHandler) GetServiceBaseUrl() string {
 }
 
 func (j *JobServiceHandler) GetLocalServiceBaseUrl() string {
-	return GenerateServiceURL(constants.JobServiceURLProtocol, j.platform.Namespace, j.GetServiceName())
+	return GenerateServiceURL(constants.DefaultHTTPProtocol, j.platform.Namespace, j.GetServiceName())
 }
 
 func (j *JobServiceHandler) GetEnvironmentVariables() []corev1.EnvVar {
@@ -427,7 +427,7 @@ func (j *JobServiceHandler) MergePodSpec(podSpec corev1.PodSpec) (corev1.PodSpec
 func (j *JobServiceHandler) GenerateServiceProperties() (*properties.Properties, error) {
 	props := properties.NewProperties()
 
-	props.Set(constants.KogitoServiceURLProperty, GenerateServiceURL(constants.KogitoServiceURLProtocol, j.platform.Namespace, j.GetServiceName()))
+	props.Set(constants.KogitoServiceURLProperty, GenerateServiceURL(constants.DefaultHTTPProtocol, j.platform.Namespace, j.GetServiceName()))
 	if j.GetServiceSource() == nil {
 		props.Set(constants.JobServiceKafkaSmallRyeHealthProperty, "false")
 	} else {
@@ -643,7 +643,7 @@ func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.Sonat
 						Kind:       "Service",
 					},
 					URI: &apis.URL{
-						Path: "/v2/jobs/events",
+						Path: constants.JobServiceJobEventsPath,
 					},
 				},
 			},
@@ -670,7 +670,7 @@ func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.Sonat
 						Kind:       "Service",
 					},
 					URI: &apis.URL{
-						Path: "/v2/jobs/events",
+						Path: constants.JobServiceJobEventsPath,
 					},
 				},
 			},
@@ -701,4 +701,32 @@ func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.Sonat
 		resultObjs = append(resultObjs, sinkBinding)
 	}
 	return resultObjs, nil
+}
+
+func IsDataIndexEnabled(plf *operatorapi.SonataFlowPlatform) bool {
+	if plf.Spec.Services != nil {
+		if plf.Spec.Services.DataIndex != nil {
+			return pointer.BoolDeref(plf.Spec.Services.DataIndex.Enabled, false)
+		}
+		return false
+	}
+	// Check if DataIndex is enabled in the platform status
+	if plf.Status.ClusterPlatformRef != nil && plf.Status.ClusterPlatformRef.Services != nil && plf.Status.ClusterPlatformRef.Services.DataIndexRef != nil && len(plf.Status.ClusterPlatformRef.Services.DataIndexRef.Url) > 0 {
+		return true
+	}
+	return false
+}
+
+func IsJobServiceEnabled(plf *operatorapi.SonataFlowPlatform) bool {
+	if plf.Spec.Services != nil {
+		if plf.Spec.Services.JobService != nil {
+			return pointer.BoolDeref(plf.Spec.Services.JobService.Enabled, false)
+		}
+		return false
+	}
+	// Check if JobService is enabled in the platform status
+	if plf.Status.ClusterPlatformRef != nil && plf.Status.ClusterPlatformRef.Services != nil && plf.Status.ClusterPlatformRef.Services.JobServiceRef != nil && len(plf.Status.ClusterPlatformRef.Services.JobServiceRef.Url) > 0 {
+		return true
+	}
+	return false
 }

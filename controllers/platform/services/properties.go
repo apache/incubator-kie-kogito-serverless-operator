@@ -200,7 +200,7 @@ func GenerateDataIndexWorkflowProperties(workflow *operatorapi.SonataFlow, platf
 func GenerateJobServiceWorkflowProperties(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (*properties.Properties, error) {
 	props := properties.NewProperties()
 	props.Set(constants.JobServiceRequestEventsConnector, constants.QuarkusHTTP)
-	props.Set(constants.JobServiceRequestEventsURL, fmt.Sprintf("%s://localhost/v2/jobs/events", constants.JobServiceURLProtocol))
+	props.Set(constants.JobServiceRequestEventsURL, fmt.Sprintf("%s://localhost%s", constants.DefaultHTTPProtocol, constants.JobServiceJobEventsPath))
 	sink, err := knative.GetWorkflowSink(workflow, platform)
 	if err != nil {
 		return nil, err

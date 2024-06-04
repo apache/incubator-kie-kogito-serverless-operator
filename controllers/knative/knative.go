@@ -46,9 +46,13 @@ type Availability struct {
 }
 
 const (
-	KSink               = "K_SINK"
-	KnativeBundleVolume = "kne-bundle-volume"
-	KCeOverRides        = "K_CE_OVERRIDES"
+	kSink                     = "K_SINK"
+	knativeBundleVolume       = "kne-bundle-volume"
+	kCeOverRides              = "K_CE_OVERRIDES"
+	knativeServingGroup       = "serving.knative.dev"
+	knativeEventingGroup      = "eventing.knative.dev"
+	knativeEventingAPIVersion = "eventing.knative.dev/v1"
+	knativeBrokerKind         = "Broker"
 )
 
 func GetKnativeServingClient(cfg *rest.Config) (clientservingv1.ServingV1Interface, error) {
@@ -81,7 +85,7 @@ func NewKnativeEventingClient(cfg *rest.Config) (*clienteventingv1.EventingV1Cli
 	return clienteventingv1.NewForConfig(cfg)
 }
 
-func GetDisvoveryClient(cfg *rest.Config) (discovery.DiscoveryInterface, error) {
+func getDiscoveryClient(cfg *rest.Config) (discovery.DiscoveryInterface, error) {
 	if discoveryClient == nil {
 		if cli, err := discovery.NewDiscoveryClientForConfig(cfg); err != nil {
 			return nil, err
@@ -92,12 +96,12 @@ func GetDisvoveryClient(cfg *rest.Config) (discovery.DiscoveryInterface, error) 
 	return discoveryClient, nil
 }
 
-func SetDisvoveryClient(cli discovery.DiscoveryInterface) {
+func SetDiscoveryClient(cli discovery.DiscoveryInterface) {
 	discoveryClient = cli
 }
 
 func GetKnativeAvailability(cfg *rest.Config) (*Availability, error) {
-	if cli, err := GetDisvoveryClient(cfg); err != nil {
+	if cli, err := getDiscoveryClient(cfg); err != nil {
 		return nil, err
 	} else {
 		apiList, err := cli.ServerGroups()
@@ -106,15 +110,28 @@ func GetKnativeAvailability(cfg *rest.Config) (*Availability, error) {
 		}
 		result := new(Availability)
 		for _, group := range apiList.Groups {
-			if group.Name == "serving.knative.dev" {
+			if group.Name == knativeServingGroup {
 				result.Serving = true
 			}
-			if group.Name == "eventing.knative.dev" {
+			if group.Name == knativeEventingGroup {
 				result.Eventing = true
 			}
 		}
 		return result, nil
 	}
+}
+
+// getRemotePlatform returns the remote platfrom referred by a SonataFlowClusterPlatform
+func getRemotePlatform(pl *operatorapi.SonataFlowPlatform) (*operatorapi.SonataFlowPlatform, error) {
+	if pl.Status.ClusterPlatformRef != nil {
+		// Find the platform referred by the cluster platform
+		platform := &operatorapi.SonataFlowPlatform{}
+		if err := utils.GetClient().Get(context.TODO(), types.NamespacedName{Namespace: pl.Status.ClusterPlatformRef.PlatformRef.Namespace, Name: pl.Status.ClusterPlatformRef.PlatformRef.Name}, platform); err != nil {
+			return nil, fmt.Errorf("error reading the platform referred by the cluster platform")
+		}
+		return platform, nil
+	}
+	return nil, nil
 }
 
 func GetWorkflowSink(workflow *operatorapi.SonataFlow, pl *operatorapi.SonataFlowPlatform) (*duckv1.Destination, error) {
@@ -127,26 +144,25 @@ func GetWorkflowSink(workflow *operatorapi.SonataFlow, pl *operatorapi.SonataFlo
 	if pl != nil && pl.Spec.Eventing != nil {
 		// no sink defined in the workflow, use the platform broker
 		return pl.Spec.Eventing.Broker, nil
-	} else if pl.Status.ClusterPlatformRef != nil {
-		// Find the platform referred by the cluster platform
-		platform := &operatorapi.SonataFlowPlatform{}
-		if err := utils.GetClient().Get(context.TODO(), types.NamespacedName{Namespace: pl.Status.ClusterPlatformRef.PlatformRef.Namespace, Name: pl.Status.ClusterPlatformRef.PlatformRef.Name}, platform); err != nil {
-			return nil, fmt.Errorf("error reading the platform referred by the cluster platform")
-		}
-		if platform.Spec.Eventing != nil {
-			return platform.Spec.Eventing.Broker, nil
-		}
+	}
+	// Find the remote platform referred by the cluster platform
+	platform, err := getRemotePlatform(pl)
+	if err != nil {
+		return nil, err
+	}
+	if platform != nil && platform.Spec.Eventing != nil {
+		return platform.Spec.Eventing.Broker, nil
 	}
 	return nil, nil
 }
 
 func IsKnativeBroker(kRef *duckv1.KReference) bool {
-	return kRef.APIVersion == "eventing.knative.dev/v1" && kRef.Kind == "Broker"
+	return kRef.APIVersion == knativeEventingAPIVersion && kRef.Kind == knativeBrokerKind
 }
 
 func SaveKnativeData(dest *corev1.PodSpec, source *corev1.PodSpec) {
 	for _, volume := range source.Volumes {
-		if volume.Name == KnativeBundleVolume {
+		if volume.Name == knativeBundleVolume {
 			kubeutil.AddOrReplaceVolume(dest, volume)
 			break
 		}
@@ -154,13 +170,13 @@ func SaveKnativeData(dest *corev1.PodSpec, source *corev1.PodSpec) {
 	visitContainers(source, func(container *corev1.Container) {
 		visitContainers(dest, func(destContainer *corev1.Container) {
 			for _, mount := range container.VolumeMounts {
-				if mount.Name == KnativeBundleVolume {
+				if mount.Name == knativeBundleVolume {
 					kubeutil.AddOrReplaceVolumeMount(destContainer, mount)
 					break
 				}
 			}
 			for _, env := range container.Env {
-				if env.Name == KSink || env.Name == KCeOverRides {
+				if env.Name == kSink || env.Name == kCeOverRides {
 					kubeutil.AddOrReplaceEnvVar(destContainer, env)
 				}
 			}
@@ -170,7 +186,7 @@ func SaveKnativeData(dest *corev1.PodSpec, source *corev1.PodSpec) {
 
 func moveKnativeVolumeToEnd(vols []corev1.Volume) {
 	for i := 0; i < len(vols)-1; i++ {
-		if vols[i].Name == KnativeBundleVolume {
+		if vols[i].Name == knativeBundleVolume {
 			vols[i], vols[i+1] = vols[i+1], vols[i]
 		}
 	}
@@ -178,13 +194,13 @@ func moveKnativeVolumeToEnd(vols []corev1.Volume) {
 
 func moveKnativeVolumeMountToEnd(mounts []corev1.VolumeMount) {
 	for i := 0; i < len(mounts)-1; i++ {
-		if mounts[i].Name == KnativeBundleVolume {
+		if mounts[i].Name == knativeBundleVolume {
 			mounts[i], mounts[i+1] = mounts[i+1], mounts[i]
 		}
 	}
 }
 
-// Knative Sinkbinding injects K_SINK env, a volume and volumn mount. The volume and volume mount
+// Knative Sinkbinding injects K_SINK env, a volume and volume mount. The volume and volume mount
 // must be in the end of the array to avoid repeadly restarting of the workflow pod
 func RestoreKnativeVolumeAndVolumeMount(deployment *appsv1.Deployment) {
 	moveKnativeVolumeToEnd(deployment.Spec.Template.Spec.Volumes)
@@ -193,11 +209,11 @@ func RestoreKnativeVolumeAndVolumeMount(deployment *appsv1.Deployment) {
 	})
 }
 
-// ContainerVisitor is called with each container
-type ContainerVisitor func(container *corev1.Container)
+// containerVisitor is called with each container
+type containerVisitor func(container *corev1.Container)
 
 // visitContainers invokes the visitor function for every container in the given pod template spec
-func visitContainers(podSpec *corev1.PodSpec, visitor ContainerVisitor) {
+func visitContainers(podSpec *corev1.PodSpec, visitor containerVisitor) {
 	for i := range podSpec.InitContainers {
 		visitor(&podSpec.InitContainers[i])
 	}

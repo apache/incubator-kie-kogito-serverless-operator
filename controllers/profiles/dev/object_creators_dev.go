@@ -96,7 +96,7 @@ func deploymentMutateVisitor(workflow *operatorapi.SonataFlow, plf *operatorapi.
 	}
 }
 
-func ensureWorkflowDefConfigMapMutator(workflow *operatorapi.SonataFlow, support *common.StateSupport) common.MutateVisitor {
+func ensureWorkflowDefConfigMapMutator(workflow *operatorapi.SonataFlow) common.MutateVisitor {
 	return func(object client.Object) controllerutil.MutateFn {
 		return func() error {
 			if kubeutil.IsObjectNew(object) {

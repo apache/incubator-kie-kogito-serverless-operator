@@ -22,6 +22,7 @@ package constants
 const (
 	QuarkusHTTP                      = "quarkus-http"
 	Post                             = "POST"
+	DefaultHTTPProtocol              = "http"
 	ConfigMapWorkflowPropsVolumeName = "workflow-properties"
 
 	JobServiceRequestEventsURL            = "mp.messaging.outgoing.kogito-job-service-job-request-events.url"
@@ -31,11 +32,9 @@ const (
 	JobServiceStatusChangeEventsURL       = "mp.messaging.outgoing.kogito-job-service-job-status-events-http.url"
 	JobServiceStatusChangeEventsConnector = "mp.messaging.outgoing.kogito-job-service-job-status-events-http.connector"
 	JobServiceStatusChangeEventsMethod    = "mp.messaging.outgoing.kogito-job-service-job-status-events-http.method"
-	JobServiceURLProtocol                 = "http"
 	JobServiceDataSourceReactiveURL       = "quarkus.datasource.reactive.url"
 	JobServiceJobEventsPath               = "/v2/jobs/events"
 
-	KogitoProcessEventsProtocol                 = "http"
 	KogitoProcessInstancesEventsConnector       = "mp.messaging.outgoing.kogito-processinstances-events.connector"
 	KogitoProcessInstancesEventsMethod          = "mp.messaging.outgoing.kogito-processinstances-events.method"
 	KogitoProcessInstancesEventsURL             = "mp.messaging.outgoing.kogito-processinstances-events.url"
@@ -60,7 +59,6 @@ const (
 	// KogitoJobServiceURL configures the jobs service, this value can be used internally by the workflow.
 	KogitoJobServiceURL                   = "kogito.jobs-service.url"
 	KogitoServiceURLProperty              = "kogito.service.url"
-	KogitoServiceURLProtocol              = "http"
 	DataIndexKafkaSmallRyeHealthProperty  = `quarkus.smallrye-health.check."io.quarkus.kafka.client.health.KafkaHealthCheck".enabled`
 	JobServiceKafkaSmallRyeHealthProperty = `quarkus.smallrye-health.check."org.kie.kogito.jobs.service.messaging.http.health.knative.KSinkInjectionHealthCheck".enabled`
 

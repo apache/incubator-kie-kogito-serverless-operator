@@ -110,9 +110,9 @@ func (a *managedPropertyHandler) Build() string {
 func (a *managedPropertyHandler) withKogitoServiceUrl() ManagedPropertyHandler {
 	var kogitoServiceUrl string
 	if len(a.workflow.Namespace) > 0 {
-		kogitoServiceUrl = fmt.Sprintf("%s://%s.%s", constants.KogitoServiceURLProtocol, a.workflow.Name, a.workflow.Namespace)
+		kogitoServiceUrl = fmt.Sprintf("%s://%s.%s", constants.DefaultHTTPProtocol, a.workflow.Name, a.workflow.Namespace)
 	} else {
-		kogitoServiceUrl = fmt.Sprintf("%s://%s", constants.KogitoServiceURLProtocol, a.workflow.Name)
+		kogitoServiceUrl = fmt.Sprintf("%s://%s", constants.DefaultHTTPProtocol, a.workflow.Name)
 	}
 	return a.addDefaultManagedProperty(constants.KogitoServiceURLProperty, kogitoServiceUrl)
 }

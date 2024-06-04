@@ -22,13 +22,13 @@ package common
 import (
 	"context"
 
-	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
-	"k8s.io/klog/v2"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
+	"k8s.io/klog/v2"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 var _ ObjectEnsurer = &defaultObjectEnsurer{}
@@ -224,7 +224,8 @@ func ensureObject(ctx context.Context, workflow *operatorapi.SonataFlow, visitor
 					return visitorErr
 				}
 			}
-			if workflow.Namespace != object.GetNamespace() {
+			_, ok := object.(*eventingv1.Trigger)
+			if ok && workflow.Namespace != object.GetNamespace() {
 				// This is for Knative trigger in a different namespace
 				// Set the finalizer for trigger cleanup when the workflow is deleted
 				return setWorkflowFinalizer(ctx, c, workflow)

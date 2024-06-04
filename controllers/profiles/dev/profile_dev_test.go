@@ -60,7 +60,7 @@ func Test_OverrideStartupProbe(t *testing.T) {
 
 	client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
 
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
@@ -88,7 +88,7 @@ func Test_recoverFromFailureNoDeployment(t *testing.T) {
 
 	workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentFailureReason, "")
 	client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 	reconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
 	// we are in failed state and have no objects
@@ -129,7 +129,7 @@ func Test_newDevProfile(t *testing.T) {
 	workflow := test.GetBaseSonataFlow(t.Name())
 
 	client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
@@ -212,7 +212,7 @@ func Test_newDevProfile(t *testing.T) {
 func Test_devProfileImageDefaultsNoPlatform(t *testing.T) {
 	workflow := test.GetBaseSonataFlowWithDevProfile(t.Name())
 	client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
@@ -231,7 +231,7 @@ func Test_devProfileWithImageSnapshotOverrideWithPlatform(t *testing.T) {
 	platform := test.GetBasePlatformWithDevBaseImageInReadyPhase(workflow.Namespace)
 
 	client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow, platform).WithStatusSubresource(workflow, platform).Build()
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
@@ -250,7 +250,7 @@ func Test_devProfileWithWPlatformWithoutDevBaseImageAndWithBaseImage(t *testing.
 	platform := test.GetBasePlatformWithBaseImageInReadyPhase(workflow.Namespace)
 
 	client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow, platform).WithStatusSubresource(workflow, platform).Build()
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
@@ -269,7 +269,7 @@ func Test_devProfileWithPlatformWithoutDevBaseImageAndWithoutBaseImage(t *testin
 	platform := test.GetBasePlatformInReadyPhase(workflow.Namespace)
 
 	client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow, platform).WithStatusSubresource(workflow, platform).Build()
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
@@ -289,7 +289,7 @@ func Test_newDevProfileWithExternalConfigMaps(t *testing.T) {
 		operatorapi.ConfigMapWorkflowResource{ConfigMap: corev1.LocalObjectReference{Name: configmapName}, WorkflowPath: "routes"})
 
 	client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow).WithStatusSubresource(workflow).Build()
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 
@@ -404,7 +404,7 @@ func Test_VolumeWithCapitalizedPaths(t *testing.T) {
 	workflow := test.GetSonataFlow(test.SonataFlowGreetingsWithStaticResourcesCR, t.Name())
 
 	client := test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow, configMap).WithStatusSubresource(workflow, configMap).Build()
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 
 	devReconciler := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder())
 

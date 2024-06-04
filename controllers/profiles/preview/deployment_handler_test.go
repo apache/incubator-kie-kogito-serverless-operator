@@ -45,7 +45,7 @@ func Test_CheckDeploymentModelIsKnative(t *testing.T) {
 		WithStatusSubresource(workflow).
 		Build()
 	stateSupport := fakeReconcilerSupport(cli)
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 	handler := NewDeploymentReconciler(stateSupport, NewObjectEnsurers(stateSupport))
 
 	result, objects, err := handler.ensureObjects(context.TODO(), workflow, "")
@@ -72,7 +72,7 @@ func Test_CheckPodTemplateChangesReflectDeployment(t *testing.T) {
 		WithStatusSubresource(workflow).
 		Build()
 	stateSupport := fakeReconcilerSupport(client)
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 	handler := NewDeploymentReconciler(stateSupport, NewObjectEnsurers(stateSupport))
 
 	result, objects, err := handler.Reconcile(context.TODO(), workflow)
@@ -108,7 +108,7 @@ func Test_CheckDeploymentRolloutAfterCMChange(t *testing.T) {
 		WithStatusSubresource(workflow).
 		Build()
 	stateSupport := fakeReconcilerSupport(client)
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 	handler := NewDeploymentReconciler(stateSupport, NewObjectEnsurers(stateSupport))
 
 	result, objects, err := handler.Reconcile(context.TODO(), workflow)
@@ -171,7 +171,7 @@ func Test_CheckDeploymentUnchangedAfterCMChangeOtherKeys(t *testing.T) {
 		WithStatusSubresource(workflow).
 		Build()
 	stateSupport := fakeReconcilerSupport(client)
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 	handler := NewDeploymentReconciler(stateSupport, NewObjectEnsurers(stateSupport))
 
 	result, objects, err := handler.Reconcile(context.TODO(), workflow)

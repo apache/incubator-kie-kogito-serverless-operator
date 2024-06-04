@@ -40,7 +40,7 @@ func Test_Reconciler_ProdOps(t *testing.T) {
 		WithRuntimeObjects(workflow).
 		WithStatusSubresource(workflow, &operatorapi.SonataFlowBuild{}).Build()
 
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 
 	result, err := NewProfileForOpsReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)

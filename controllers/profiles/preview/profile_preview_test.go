@@ -50,7 +50,7 @@ func Test_Reconciler_ProdCustomPod(t *testing.T) {
 	client := test.NewSonataFlowClientBuilder().
 		WithRuntimeObjects(workflow, build, platform).
 		WithStatusSubresource(workflow, build, platform).Build()
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 	_, err := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 
@@ -81,7 +81,7 @@ func Test_reconcilerProdBuildConditions(t *testing.T) {
 	client := test.NewSonataFlowClientBuilder().
 		WithRuntimeObjects(workflow, platform).
 		WithStatusSubresource(workflow, platform, &operatorapi.SonataFlowBuild{}).Build()
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 	result, err := NewProfileReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 
@@ -143,7 +143,7 @@ func Test_deployWorkflowReconciliationHandler_handleObjects(t *testing.T) {
 		WithRuntimeObjects(workflow, platform, build).
 		WithStatusSubresource(workflow, platform, build).
 		Build()
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 	handler := &deployWithBuildWorkflowState{
 		StateSupport: fakeReconcilerSupport(client),
 		ensurers:     NewObjectEnsurers(&common.StateSupport{C: client}),
@@ -172,7 +172,7 @@ func Test_GenerationAnnotationCheck(t *testing.T) {
 	client := test.NewSonataFlowClientBuilder().
 		WithRuntimeObjects(workflow, platform).
 		WithStatusSubresource(workflow, platform, &operatorapi.SonataFlowBuild{}).Build()
-	knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 	handler := &deployWithBuildWorkflowState{
 		StateSupport: fakeReconcilerSupport(client),
 		ensurers:     NewObjectEnsurers(&common.StateSupport{C: client}),

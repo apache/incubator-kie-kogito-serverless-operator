@@ -854,7 +854,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		}
 		// Create a fake client to mock API calls.
 		cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(ksp, broker).WithStatusSubresource(ksp, broker).Build()
-		knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+		knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 		// Create a SonataFlowPlatformReconciler object with the scheme and fake client.
 		r := &SonataFlowPlatformReconciler{cl, cl, cl.Scheme(), &rest.Config{}, &record.FakeRecorder{}}
 
@@ -969,7 +969,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Create a fake client to mock API calls.
 		cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(ksp, broker, brokerDataIndexSource, brokerJobsServiceSource, brokerJobsServiceSink).WithStatusSubresource(ksp, broker, brokerDataIndexSource, brokerJobsServiceSource, brokerJobsServiceSink).Build()
-		knative.SetDisvoveryClient(test.CreateFakeKnativeDiscoveryClient())
+		knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 		// Create a SonataFlowPlatformReconciler object with the scheme and fake client.
 		r := &SonataFlowPlatformReconciler{cl, cl, cl.Scheme(), &rest.Config{}, &record.FakeRecorder{}}
 

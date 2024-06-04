@@ -213,12 +213,10 @@ func (h *deployWithBuildWorkflowState) Do(ctx context.Context, workflow *operato
 	// didn't change, business as usual
 	result, objs, err := NewDeploymentReconciler(h.StateSupport, h.ensurers).reconcileWithImage(ctx, workflow, build.Status.ImageTag)
 	if err != nil {
-		workflow.Status.Manager().MarkFalse(api.DeployedConditionType, api.DeploymentFailureReason, fmt.Sprintf("Error in deploy the workflow:%s", err))
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.DeploymentFailureReason, fmt.Sprintf("Error in deploy the workflow:%s", err))
 		_, err = h.PerformStatusUpdate(ctx, workflow)
 		return result, nil, err
 	}
-	workflow.Status.Manager().MarkTrue(api.DeployedConditionType)
-	_, err = h.PerformStatusUpdate(ctx, workflow)
 	return result, objs, err
 }
 

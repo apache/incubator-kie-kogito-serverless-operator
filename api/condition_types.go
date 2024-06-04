@@ -39,8 +39,6 @@ const (
 	SucceedConditionType ConditionType = "Succeed"
 	// BuiltConditionType describes the condition of a resource that needs to be build.
 	BuiltConditionType ConditionType = "Built"
-	// DeployedConditionType describes the condition of a resource that needs to be deployed.
-	DeployedConditionType ConditionType = "Deployed"
 )
 
 const (
