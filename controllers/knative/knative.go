@@ -134,16 +134,22 @@ func getRemotePlatform(pl *operatorapi.SonataFlowPlatform) (*operatorapi.SonataF
 	return nil, nil
 }
 
+func getDestinationWithNamespace(dest *duckv1.Destination, namespace string) *duckv1.Destination {
+	if len(dest.Ref.Namespace) == 0 {
+		dest.Ref.Namespace = namespace
+	}
+	return dest
+}
 func GetWorkflowSink(workflow *operatorapi.SonataFlow, pl *operatorapi.SonataFlowPlatform) (*duckv1.Destination, error) {
 	if workflow == nil {
 		return nil, nil
 	}
 	if workflow.Spec.Sink != nil {
-		return workflow.Spec.Sink, nil
+		return getDestinationWithNamespace(workflow.Spec.Sink, workflow.Namespace), nil
 	}
 	if pl != nil && pl.Spec.Eventing != nil {
 		// no sink defined in the workflow, use the platform broker
-		return pl.Spec.Eventing.Broker, nil
+		return getDestinationWithNamespace(pl.Spec.Eventing.Broker, pl.Namespace), nil
 	}
 	// Find the remote platform referred by the cluster platform
 	platform, err := getRemotePlatform(pl)
@@ -151,7 +157,7 @@ func GetWorkflowSink(workflow *operatorapi.SonataFlow, pl *operatorapi.SonataFlo
 		return nil, err
 	}
 	if platform != nil && platform.Spec.Eventing != nil {
-		return platform.Spec.Eventing.Broker, nil
+		return getDestinationWithNamespace(platform.Spec.Eventing.Broker, platform.Namespace), nil
 	}
 	return nil, nil
 }
