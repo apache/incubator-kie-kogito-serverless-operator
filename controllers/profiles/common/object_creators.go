@@ -38,6 +38,7 @@ import (
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/tracker"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -379,7 +380,7 @@ func TriggersCreator(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFl
 		// The trigger must be created in the same namespace as the broker
 		trigger := &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      strings.ToLower(fmt.Sprintf("%s-%s-trigger", workflow.Name, event.Name)),
+				Name:      kmeta.ChildName(strings.ToLower(fmt.Sprintf("%s-%s-", workflow.Name, event.Name)), string(workflow.GetUID())),
 				Namespace: brokerRef.Namespace,
 				Labels:    lbl,
 			},

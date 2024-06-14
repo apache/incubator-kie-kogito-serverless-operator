@@ -35,6 +35,7 @@ import (
 	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/tracker"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -554,10 +555,10 @@ func (d *DataIndexHandler) GetSourceBroker() *duckv1.Destination {
 	return GetPlatformBroker(d.platform)
 }
 
-func (d *DataIndexHandler) newTrigger(labels map[string]string, brokerName, namespace, platformName, serviceName, tag, eventType, path string) *eventingv1.Trigger {
+func (d *DataIndexHandler) newTrigger(labels map[string]string, brokerName, namespace, serviceName, tag, eventType, path string, platform *operatorapi.SonataFlowPlatform) *eventingv1.Trigger {
 	return &eventingv1.Trigger{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-data-index-%s-trigger", platformName, tag),
+			Name:      kmeta.ChildName(fmt.Sprintf("data-index-%s-", tag), string(platform.GetUID())),
 			Namespace: namespace,
 			Labels:    labels,
 		},
@@ -591,13 +592,13 @@ func (d *DataIndexHandler) GenerateKnativeResources(platform *operatorapi.Sonata
 	namespace := platform.Namespace
 	serviceName := d.GetServiceName()
 	return []client.Object{
-		d.newTrigger(lbl, brokerName, namespace, platform.Name, serviceName, "process-error", "ProcessInstanceErrorDataEvent", pathProcesses),
-		d.newTrigger(lbl, brokerName, namespace, platform.Name, serviceName, "process-node", "ProcessInstanceNodeDataEvent", pathProcesses),
-		d.newTrigger(lbl, brokerName, namespace, platform.Name, serviceName, "process-sla", "ProcessInstanceSLADataEvent", pathProcesses),
-		d.newTrigger(lbl, brokerName, namespace, platform.Name, serviceName, "process-state", "ProcessInstanceStateDataEvent", pathProcesses),
-		d.newTrigger(lbl, brokerName, namespace, platform.Name, serviceName, "process-variable", "ProcessInstanceVariableDataEvent", pathProcesses),
-		d.newTrigger(lbl, brokerName, namespace, platform.Name, serviceName, "process-definition", "ProcessDefinitionEvent", pathDefinitions),
-		d.newTrigger(lbl, brokerName, namespace, platform.Name, serviceName, "jobs", "JobEvent", pathJobs)}, nil
+		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-error", "ProcessInstanceErrorDataEvent", pathProcesses, platform),
+		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-node", "ProcessInstanceNodeDataEvent", pathProcesses, platform),
+		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-sla", "ProcessInstanceSLADataEvent", pathProcesses, platform),
+		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-state", "ProcessInstanceStateDataEvent", pathProcesses, platform),
+		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-variable", "ProcessInstanceVariableDataEvent", pathProcesses, platform),
+		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-definition", "ProcessDefinitionEvent", pathDefinitions, platform),
+		d.newTrigger(lbl, brokerName, namespace, serviceName, "jobs", "JobEvent", pathJobs, platform)}, nil
 }
 
 func (d JobServiceHandler) GetSourceBroker() *duckv1.Destination {
@@ -624,7 +625,7 @@ func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.Sonat
 		brokerName := broker.Ref.Name
 		jobCreateTrigger := &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-jobs-service-create-job-trigger", platform.Name),
+				Name:      kmeta.ChildName("jobs-service-create-job-", string(platform.GetUID())),
 				Namespace: namespace,
 				Labels:    lbl,
 			},
@@ -651,7 +652,7 @@ func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.Sonat
 		resultObjs = append(resultObjs, jobCreateTrigger)
 		jobDeleteTrigger := &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-jobs-service-delete-job-trigger", platform.Name),
+				Name:      kmeta.ChildName("jobs-service-delete-job-", string(platform.GetUID())),
 				Namespace: namespace,
 				Labels:    lbl,
 			},
