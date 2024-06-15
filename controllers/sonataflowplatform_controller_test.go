@@ -39,6 +39,8 @@ import (
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/kmeta"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -893,15 +895,16 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check Triggers
 		trigger := &eventingv1.Trigger{}
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-jobs-service-create-job-trigger", Namespace: ksp.Namespace}, trigger))
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-jobs-service-delete-job-trigger", Namespace: ksp.Namespace}, trigger))
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-jobs-trigger", Namespace: ksp.Namespace}, trigger))
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-definition-trigger", Namespace: ksp.Namespace}, trigger))
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-error-trigger", Namespace: ksp.Namespace}, trigger))
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-node-trigger", Namespace: ksp.Namespace}, trigger))
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-sla-trigger", Namespace: ksp.Namespace}, trigger))
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-state-trigger", Namespace: ksp.Namespace}, trigger))
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-variable-trigger", Namespace: ksp.Namespace}, trigger))
+		validateTrigger(t, cl, "jobs-service-create-job-", ksp.Namespace, ksp, trigger)
+		validateTrigger(t, cl, "jobs-service-delete-job-", ksp.Namespace, ksp, trigger)
+		validateTrigger(t, cl, "data-index-jobs-", ksp.Namespace, ksp, trigger)
+		validateTrigger(t, cl, "jobs-service-create-job-", ksp.Namespace, ksp, trigger)
+		validateTrigger(t, cl, "data-index-process-definition-", ksp.Namespace, ksp, trigger)
+		validateTrigger(t, cl, "data-index-process-error-", ksp.Namespace, ksp, trigger)
+		validateTrigger(t, cl, "data-index-process-node-", ksp.Namespace, ksp, trigger)
+		validateTrigger(t, cl, "data-index-process-sla-", ksp.Namespace, ksp, trigger)
+		validateTrigger(t, cl, "data-index-process-state-", ksp.Namespace, ksp, trigger)
+		validateTrigger(t, cl, "data-index-process-variable-", ksp.Namespace, ksp, trigger)
 
 		// Check SinkBinding
 		sinkBinding := &sourcesv1.SinkBinding{}
@@ -1016,22 +1019,23 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Check Triggers to have the service level source used
 		trigger := &eventingv1.Trigger{}
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-jobs-service-create-job-trigger", Namespace: ksp.Namespace}, trigger))
+		validateTrigger(t, cl, "jobs-service-create-job-", ksp.Namespace, ksp, trigger)
 		assert.Equal(t, trigger.Spec.Broker, brokerNameJobsServiceSource)
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-jobs-service-delete-job-trigger", Namespace: ksp.Namespace}, trigger))
+		validateTrigger(t, cl, "jobs-service-delete-job-", ksp.Namespace, ksp, trigger)
 		assert.Equal(t, trigger.Spec.Broker, brokerNameJobsServiceSource)
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-jobs-trigger", Namespace: ksp.Namespace}, trigger))
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-definition-trigger", Namespace: ksp.Namespace}, trigger))
+		validateTrigger(t, cl, "data-index-jobs-", ksp.Namespace, ksp, trigger)
+		validateTrigger(t, cl, "jobs-service-create-job-", ksp.Namespace, ksp, trigger)
+		validateTrigger(t, cl, "data-index-process-definition-", ksp.Namespace, ksp, trigger)
 		assert.Equal(t, trigger.Spec.Broker, brokerNameDataIndexSource)
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-error-trigger", Namespace: ksp.Namespace}, trigger))
+		validateTrigger(t, cl, "data-index-process-error-", ksp.Namespace, ksp, trigger)
 		assert.Equal(t, trigger.Spec.Broker, brokerNameDataIndexSource)
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-node-trigger", Namespace: ksp.Namespace}, trigger))
+		validateTrigger(t, cl, "data-index-process-node-", ksp.Namespace, ksp, trigger)
 		assert.Equal(t, trigger.Spec.Broker, brokerNameDataIndexSource)
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-sla-trigger", Namespace: ksp.Namespace}, trigger))
+		validateTrigger(t, cl, "data-index-process-sla-", ksp.Namespace, ksp, trigger)
 		assert.Equal(t, trigger.Spec.Broker, brokerNameDataIndexSource)
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-state-trigger", Namespace: ksp.Namespace}, trigger))
+		validateTrigger(t, cl, "data-index-process-state-", ksp.Namespace, ksp, trigger)
 		assert.Equal(t, trigger.Spec.Broker, brokerNameDataIndexSource)
-		assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: "sonataflow-platform-data-index-process-variable-trigger", Namespace: ksp.Namespace}, trigger))
+		validateTrigger(t, cl, "data-index-process-variable-", ksp.Namespace, ksp, trigger)
 		assert.Equal(t, trigger.Spec.Broker, brokerNameDataIndexSource)
 
 		// Check SinkBinding to have the sink level source used
@@ -1041,4 +1045,8 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		assert.NotNil(t, sinkBinding.Spec.Sink.Ref)
 		assert.Equal(t, sinkBinding.Spec.Sink.Ref.Name, brokerNameJobsServiceSink)
 	})
+}
+
+func validateTrigger(t *testing.T, cl client.WithWatch, prefix string, namespace string, ksp *v1alpha08.SonataFlowPlatform, trigger *eventingv1.Trigger) {
+	assert.NoError(t, cl.Get(context.TODO(), types.NamespacedName{Name: kmeta.ChildName(prefix, string(ksp.GetUID())), Namespace: namespace}, trigger))
 }

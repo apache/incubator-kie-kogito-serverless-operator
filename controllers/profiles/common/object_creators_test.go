@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
+	"knative.dev/pkg/kmeta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
@@ -267,7 +268,8 @@ func TestEnsureWorkflowTriggersWithPlatformBrokerAreCreated(t *testing.T) {
 	assert.NotEmpty(t, triggers)
 	assert.Len(t, triggers, 2)
 	//Check the 1st trigger
-	trigger := getTrigger("vet-vetappointmentrequestreceived-trigger", triggers)
+	name := kmeta.ChildName("vet-vetappointmentrequestreceived-", string(workflow.GetUID()))
+	trigger := getTrigger(name, triggers)
 	assert.NotNil(t, trigger)
 	assert.NotNil(t, trigger.GetLabels())
 	assert.Equal(t, trigger.GetLabels(), map[string]string{"app": "vet",
@@ -282,7 +284,8 @@ func TestEnsureWorkflowTriggersWithPlatformBrokerAreCreated(t *testing.T) {
 	assert.Len(t, trigger.Spec.Filter.Attributes, 1)
 	assert.Equal(t, trigger.Spec.Filter.Attributes["type"], "events.vet.appointments.request")
 	//Check the 2nd trigger
-	trigger = getTrigger("vet-vetappointmentinfo-trigger", triggers)
+	name = kmeta.ChildName("vet-vetappointmentinfo-", string(workflow.GetUID()))
+	trigger = getTrigger(name, triggers)
 	assert.NotNil(t, trigger)
 	assert.NotNil(t, trigger.GetLabels())
 	assert.Equal(t, trigger.GetLabels(), map[string]string{"app": "vet",
@@ -305,7 +308,8 @@ func TestEnsureWorkflowTriggersWithWorkflowBrokerAreCreated(t *testing.T) {
 	assert.NotEmpty(t, triggers)
 	assert.Len(t, triggers, 2)
 	//Check the 1st trigger
-	trigger := getTrigger("vet-vetappointmentrequestreceived-trigger", triggers)
+	name := kmeta.ChildName("vet-vetappointmentrequestreceived-", string(workflow.GetUID()))
+	trigger := getTrigger(name, triggers)
 	assert.NotNil(t, trigger)
 	assert.NotNil(t, trigger.GetLabels())
 	assert.Equal(t, trigger.GetLabels(), map[string]string{"app": "vet",
@@ -317,7 +321,8 @@ func TestEnsureWorkflowTriggersWithWorkflowBrokerAreCreated(t *testing.T) {
 	assert.Len(t, trigger.Spec.Filter.Attributes, 1)
 	assert.Equal(t, trigger.Spec.Filter.Attributes["type"], "events.vet.appointments.request")
 	//Check the 2nd trigger
-	trigger = getTrigger("vet-vetappointmentinfo-trigger", triggers)
+	name = kmeta.ChildName("vet-vetappointmentinfo-", string(workflow.GetUID()))
+	trigger = getTrigger(name, triggers)
 	assert.NotNil(t, trigger)
 	assert.NotNil(t, trigger.GetLabels())
 	assert.Equal(t, trigger.GetLabels(), map[string]string{"app": "vet",
