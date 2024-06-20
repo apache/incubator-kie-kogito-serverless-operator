@@ -20,7 +20,6 @@
 package utils
 
 import (
-	"github.com/RHsyseng/operator-utils/pkg/utils/openshift"
 	"k8s.io/client-go/rest"
 )
 
@@ -34,9 +33,9 @@ func IsOpenShift() bool {
 // SetIsOpenShift sets the global flag isOpenShift by the controller manager.
 // We don't need to keep fetching the API every reconciliation cycle that we need to know about the platform.
 func SetIsOpenShift(cfg *rest.Config) {
-	var err error
-	isOpenShift, err = openshift.IsOpenShift(cfg)
-	if err != nil {
-		panic("Impossible to verify if the cluster is OpenShift or not: " + err.Error())
-	}
+	//var err error
+	//isOpenShift, err = openshift.IsOpenShift(cfg)
+	//if err != nil {
+	//	panic("Impossible to verify if the cluster is OpenShift or not: " + err.Error())
+	//}
 }

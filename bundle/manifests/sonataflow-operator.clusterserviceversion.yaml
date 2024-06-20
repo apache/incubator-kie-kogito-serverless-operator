@@ -120,11 +120,12 @@ metadata:
     capabilities: Basic Install
     categories: Application Runtime
     containerImage: docker.io/apache/incubator-kie-sonataflow-operator:main
+    createdAt: "2024-06-19T20:40:50Z"
     description: SonataFlow Kubernetes Operator for deploying workflow applications
       based on the CNCF Serverless Workflow specification
-    operators.operatorframework.io/builder: operator-sdk-v1.25.0
+    operators.operatorframework.io/builder: operator-sdk-v1.35.0
     operators.operatorframework.io/internal-objects: '["sonataflowbuilds.sonataflow.org"]'
-    operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
     repository: https://github.com/apache/incubator-kie-kogito-serverless-operator
     support: Red Hat
   name: sonataflow-operator.v999.0.0-snapshot
@@ -796,7 +797,7 @@ spec:
                 - --upstream=http://127.0.0.1:8080/
                 - --logtostderr=true
                 - --v=0
-                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.13.0
+                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.13.1
                 name: kube-rbac-proxy
                 ports:
                 - containerPort: 8443
