@@ -23,7 +23,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/platform"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/platform"
 	buildv1 "github.com/openshift/api/build/v1"
 	imgv1 "github.com/openshift/api/image/v1"
 	buildfake "github.com/openshift/client-go/build/clientset/versioned/fake"

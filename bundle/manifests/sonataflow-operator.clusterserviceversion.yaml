@@ -120,7 +120,7 @@ metadata:
     capabilities: Basic Install
     categories: Application Runtime
     containerImage: docker.io/apache/incubator-kie-sonataflow-operator:main
-    createdAt: "2024-06-19T20:40:50Z"
+    createdAt: "2024-06-21T17:47:30Z"
     description: SonataFlow Kubernetes Operator for deploying workflow applications
       based on the CNCF Serverless Workflow specification
     operators.operatorframework.io/builder: operator-sdk-v1.35.0
