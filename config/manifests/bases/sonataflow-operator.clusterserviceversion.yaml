@@ -164,6 +164,9 @@ spec:
       - description: Info generic information related to the build
         displayName: info
         path: info
+      - description: Triggers list of triggers created for the SonataFlowPlatform
+        displayName: triggers
+        path: triggers
       - description: Version the operator version controlling this Platform
         displayName: version
         path: version
@@ -232,6 +235,9 @@ spec:
           workflow
         displayName: services
         path: services
+      - description: Triggers list of triggers created for the SonataFlow
+        displayName: triggers
+        path: triggers
       version: v1alpha08
   description: |-
     SonataFlow Kubernetes Operator for deploying workflow applications

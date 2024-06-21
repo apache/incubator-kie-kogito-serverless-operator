@@ -44,11 +44,7 @@ func generateKnativeEventingWorkflowProperties(workflow *operatorapi.SonataFlow,
 	}
 	if workflowdef.ContainsEventKind(workflow, cncfmodel.EventKindConsumed) {
 		props.Set(constants.KogitoIncomingEventsConnector, constants.QuarkusHTTP)
-		var path = "/"
-		if sink.URI != nil {
-			path = sink.URI.Path
-		}
-		props.Set(constants.KogitoIncomingEventsPath, path)
+		props.Set(constants.KogitoIncomingEventsPath, "/")
 	}
 	return props, nil
 }

@@ -37,6 +37,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -241,6 +243,8 @@ func createOrUpdateService(ctx context.Context, client client.Client, platform *
 
 func getLabels(platform *operatorapi.SonataFlowPlatform, psh services.PlatformServiceHandler) (map[string]string, map[string]string) {
 	lbl := map[string]string{
+		workflowproj.LabelApp:          platform.Name,
+		workflowproj.LabelAppNamespace: platform.Namespace,
 		workflowproj.LabelService:      psh.GetServiceName(),
 		workflowproj.LabelK8SName:      psh.GetContainerName(),
 		workflowproj.LabelK8SComponent: psh.GetServiceName(),
@@ -287,25 +291,66 @@ func createOrUpdateConfigMap(ctx context.Context, client client.Client, platform
 	return nil
 }
 
-func createOrUpdateKnativeResources(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, psh services.PlatformServiceHandler) error {
-
-	lbl, _ := getLabels(platform, psh)
-	if objs, err := psh.GenerateKnativeResources(platform, lbl); err != nil {
-		return err
-	} else if len(objs) > 0 {
-		for _, obj := range objs {
-			if op, err := controllerutil.CreateOrUpdate(ctx, client, obj, func() error {
-				if err := controllerutil.SetControllerReference(platform, obj, client.Scheme()); err != nil {
-					return err
-				}
-				return nil
-			}); err != nil {
-				return err
-			} else {
-				klog.V(log.I).InfoS("Knative Eventing resources successfully created", "operation", op)
-			}
-		}
-		return nil
+func setSonataFlowPlatformFinalizer(ctx context.Context, c client.Client, platform *operatorapi.SonataFlowPlatform) error {
+	if !controllerutil.ContainsFinalizer(platform, constants.TriggerFinalizer) {
+		controllerutil.AddFinalizer(platform, constants.TriggerFinalizer)
+		return c.Update(ctx, platform)
 	}
 	return nil
+}
+
+func createOrUpdateKnativeResources(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, psh services.PlatformServiceHandler) error {
+	lbl, _ := getLabels(platform, psh)
+	objs, err := psh.GenerateKnativeResources(platform, lbl)
+	if err != nil {
+		return err
+	}
+	for _, obj := range objs {
+		if platform.Namespace == obj.GetNamespace() {
+			if err := controllerutil.SetControllerReference(platform, obj, client.Scheme()); err != nil {
+				return err
+			}
+		}
+		if triggerDef, ok := obj.(*eventingv1.Trigger); ok {
+			trigger := &eventingv1.Trigger{
+				ObjectMeta: triggerDef.ObjectMeta,
+			}
+			op, err := controllerutil.CreateOrUpdate(ctx, client, trigger, func() error {
+				trigger.Spec = triggerDef.Spec
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+			if op == controllerutil.OperationResultCreated { // trigger has been successfully created
+				addToSonataFlowPlatformTriggerList(platform, trigger)
+				if platform.Namespace != obj.GetNamespace() {
+					// This is for Knative trigger in a different namespace
+					// Set the finalizer for trigger cleanup when the platform is deleted
+					return setSonataFlowPlatformFinalizer(ctx, client, platform)
+				}
+			}
+		} else if sbDef, ok := obj.(*sourcesv1.SinkBinding); ok {
+			sinkBinding := &sourcesv1.SinkBinding{
+				ObjectMeta: sbDef.ObjectMeta,
+			}
+			_, err := controllerutil.CreateOrUpdate(ctx, client, sinkBinding, func() error {
+				sinkBinding.Spec = sbDef.Spec
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func addToSonataFlowPlatformTriggerList(platform *operatorapi.SonataFlowPlatform, trigger *eventingv1.Trigger) {
+	for _, t := range platform.Status.Triggers {
+		if t.Name == trigger.Name && t.Namespace == trigger.Namespace {
+			return // trigger already exists
+		}
+	}
+	platform.Status.Triggers = append(platform.Status.Triggers, operatorapi.SonataFlowPlatformTriggerRef{Name: trigger.Name, Namespace: trigger.Namespace})
 }

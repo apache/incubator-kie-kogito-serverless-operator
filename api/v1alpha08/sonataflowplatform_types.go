@@ -108,6 +108,19 @@ type SonataFlowPlatformStatus struct {
 	// ClusterPlatformRef information related to the (optional) active SonataFlowClusterPlatform
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="clusterPlatformRef"
 	ClusterPlatformRef *SonataFlowClusterPlatformRefStatus `json:"clusterPlatformRef,omitempty"`
+	// Triggers list of triggers created for the SonataFlowPlatform
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="triggers"
+	Triggers []SonataFlowPlatformTriggerRef `json:"triggers,omitempty"`
+}
+
+// SonataFlowPlatformTriggerRef defines a trigger created for the SonataFlowPlatform.
+type SonataFlowPlatformTriggerRef struct {
+	// Name of the Trigger
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Trigger_Name"
+	Name string `json:"name"`
+	// Namespace of the Trigger
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Trigger_NS"
+	Namespace string `json:"namespace"`
 }
 
 // SonataFlowClusterPlatformRefStatus information related to the (optional) active SonataFlowClusterPlatform

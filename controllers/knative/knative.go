@@ -26,14 +26,17 @@ import (
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
 	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
-	appsv1 "k8s.io/api/apps/v1"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	clienteventingv1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/eventing/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	clientservingv1 "knative.dev/serving/pkg/client/clientset/versioned/typed/serving/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 var servingClient clientservingv1.ServingV1Interface
@@ -135,7 +138,7 @@ func getRemotePlatform(pl *operatorapi.SonataFlowPlatform) (*operatorapi.SonataF
 }
 
 func getDestinationWithNamespace(dest *duckv1.Destination, namespace string) *duckv1.Destination {
-	if len(dest.Ref.Namespace) == 0 {
+	if dest != nil && dest.Ref != nil && len(dest.Ref.Namespace) == 0 {
 		dest.Ref.Namespace = namespace
 	}
 	return dest
@@ -147,7 +150,7 @@ func GetWorkflowSink(workflow *operatorapi.SonataFlow, pl *operatorapi.SonataFlo
 	if workflow.Spec.Sink != nil {
 		return getDestinationWithNamespace(workflow.Spec.Sink, workflow.Namespace), nil
 	}
-	if pl != nil && pl.Spec.Eventing != nil {
+	if pl != nil && pl.Spec.Eventing != nil && pl.Spec.Eventing.Broker != nil {
 		// no sink defined in the workflow, use the platform broker
 		return getDestinationWithNamespace(pl.Spec.Eventing.Broker, pl.Namespace), nil
 	}
@@ -156,7 +159,7 @@ func GetWorkflowSink(workflow *operatorapi.SonataFlow, pl *operatorapi.SonataFlo
 	if err != nil {
 		return nil, err
 	}
-	if platform != nil && platform.Spec.Eventing != nil {
+	if platform != nil && platform.Spec.Eventing != nil && platform.Spec.Eventing.Broker != nil {
 		return getDestinationWithNamespace(platform.Spec.Eventing.Broker, platform.Namespace), nil
 	}
 	return nil, nil
@@ -208,9 +211,9 @@ func moveKnativeVolumeMountToEnd(mounts []corev1.VolumeMount) {
 
 // Knative Sinkbinding injects K_SINK env, a volume and volume mount. The volume and volume mount
 // must be in the end of the array to avoid repeadly restarting of the workflow pod
-func RestoreKnativeVolumeAndVolumeMount(deployment *appsv1.Deployment) {
-	moveKnativeVolumeToEnd(deployment.Spec.Template.Spec.Volumes)
-	visitContainers(&deployment.Spec.Template.Spec, func(container *corev1.Container) {
+func RestoreKnativeVolumeAndVolumeMount(podSpec *corev1.PodSpec) {
+	moveKnativeVolumeToEnd(podSpec.Volumes)
+	visitContainers(podSpec, func(container *corev1.Container) {
 		moveKnativeVolumeMountToEnd(container.VolumeMounts)
 	})
 }
@@ -229,4 +232,23 @@ func visitContainers(podSpec *corev1.PodSpec, visitor containerVisitor) {
 	for i := range podSpec.EphemeralContainers {
 		visitor((*corev1.Container)(&podSpec.EphemeralContainers[i].EphemeralContainerCommon))
 	}
+}
+
+// if a trigger is changed and it has namespace different from the platform is changed, reconcile the parent SonataFlowPlatform in the cluster.
+func MapTriggerToPlatformRequests(ctx context.Context, object client.Object) []reconcile.Request {
+	if trigger, ok := object.(*eventingv1.Trigger); ok {
+		nameFound := ""
+		namespaceFound := ""
+		for k, v := range trigger.GetLabels() {
+			if k == workflowproj.LabelApp {
+				nameFound = v
+			} else if k == workflowproj.LabelAppNamespace {
+				namespaceFound = v
+			}
+		}
+		if len(nameFound) > 0 && len(namespaceFound) > 0 && namespaceFound != trigger.Namespace {
+			return []reconcile.Request{reconcile.Request{NamespacedName: types.NamespacedName{Name: nameFound, Namespace: namespaceFound}}}
+		}
+	}
+	return nil
 }

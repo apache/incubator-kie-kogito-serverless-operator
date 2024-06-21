@@ -121,7 +121,7 @@ func (a *managedPropertyHandler) withKogitoServiceUrl() ManagedPropertyHandler {
 // See Service Discovery https://kubernetes.io/docs/concepts/services-networking/service/#dns
 func (a *managedPropertyHandler) withKafkaHealthCheckDisabled() ManagedPropertyHandler {
 	a.addDefaultManagedProperty(
-		constants.DataIndexKafkaSmallRyeHealthProperty,
+		constants.DataIndexKafkaHealthCheck,
 		"false",
 	)
 	return a

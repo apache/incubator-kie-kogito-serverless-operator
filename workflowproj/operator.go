@@ -35,6 +35,10 @@ const (
 	// ApplicationPropertiesFileName is the default application properties file name holding user properties
 	ApplicationPropertiesFileName      = "application.properties"
 	workflowManagedConfigMapNameSuffix = "-managed-props"
+	// LabelApp key to use among object selectors, "app" is used among k8s applications to group objects in some UI consoles
+	LabelApp = "app"
+	// LabelAppNamespace namespace the k8s application is deployed
+	LabelAppNamespace = "app-namespace"
 	// LabelService key to use among object selectors
 	LabelService = metadata.Domain + "/service"
 	// LabelWorkflow specialized label managed by the controller

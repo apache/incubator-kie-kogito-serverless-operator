@@ -209,8 +209,8 @@ func (d *defaultObjectsEnsurer) Ensure(ctx context.Context, workflow *operatorap
 }
 
 func setWorkflowFinalizer(ctx context.Context, c client.Client, workflow *operatorapi.SonataFlow) error {
-	if !controllerutil.ContainsFinalizer(workflow, constants.WorkflowTriggerFinalizer) {
-		controllerutil.AddFinalizer(workflow, constants.WorkflowTriggerFinalizer)
+	if !controllerutil.ContainsFinalizer(workflow, constants.TriggerFinalizer) {
+		controllerutil.AddFinalizer(workflow, constants.TriggerFinalizer)
 		return c.Update(ctx, workflow)
 	}
 	return nil
@@ -224,11 +224,13 @@ func ensureObject(ctx context.Context, workflow *operatorapi.SonataFlow, visitor
 					return visitorErr
 				}
 			}
-			_, ok := object.(*eventingv1.Trigger)
-			if ok && workflow.Namespace != object.GetNamespace() {
-				// This is for Knative trigger in a different namespace
-				// Set the finalizer for trigger cleanup when the workflow is deleted
-				return setWorkflowFinalizer(ctx, c, workflow)
+			if trigger, ok := object.(*eventingv1.Trigger); ok {
+				addToSonataFlowTriggerList(workflow, trigger)
+				if workflow.Namespace != object.GetNamespace() {
+					// This is for Knative trigger in a different namespace
+					// Set the finalizer for trigger cleanup when the workflow is deleted
+					return setWorkflowFinalizer(ctx, c, workflow)
+				}
 			}
 			return controllerutil.SetControllerReference(workflow, object, c.Scheme())
 		}); err != nil {
@@ -236,4 +238,13 @@ func ensureObject(ctx context.Context, workflow *operatorapi.SonataFlow, visitor
 	}
 	klog.V(log.I).InfoS("Object operation finalized", "result", result, "kind", object.GetObjectKind().GroupVersionKind().String(), "name", object.GetName(), "namespace", object.GetNamespace())
 	return object, result, nil
+}
+
+func addToSonataFlowTriggerList(workflow *operatorapi.SonataFlow, trigger *eventingv1.Trigger) {
+	for _, t := range workflow.Status.Triggers {
+		if t.Name == trigger.Name && t.Namespace == trigger.Namespace {
+			return // trigger already exists
+		}
+	}
+	workflow.Status.Triggers = append(workflow.Status.Triggers, operatorapi.SonataFlowTriggerRef{Name: trigger.Name, Namespace: trigger.Namespace})
 }

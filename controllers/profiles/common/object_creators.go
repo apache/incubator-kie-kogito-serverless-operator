@@ -55,6 +55,15 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
 )
 
+const (
+	knativeServingAPIVersion = "serving.knative.dev/v1"
+	knativeServiceKind       = "Service"
+	deploymentAPIVersion     = "apps/v1"
+	deploymentKind           = "Deployment"
+	k8sServiceAPIVersion     = "v1"
+	k8sServiceKind           = "Service"
+)
+
 // ObjectCreator is the func that creates the initial reference object, if the object doesn't exist in the cluster, this one is created.
 // Can be used as a reference to keep the object immutable
 type ObjectCreator func(workflow *operatorapi.SonataFlow) (client.Object, error)
@@ -290,6 +299,13 @@ func SinkBindingCreator(workflow *operatorapi.SonataFlow, plf *operatorapi.Sonat
 		return nil, nil /*nothing to do*/
 	}
 
+	apiVersion := deploymentAPIVersion
+	kind := deploymentKind
+	if workflow.Spec.PodTemplate.DeploymentModel == operatorapi.KnativeDeploymentModel {
+		apiVersion = knativeServingAPIVersion // use knative serving API Version
+		kind = knativeServiceKind
+	}
+
 	// subject must be deployment to inject K_SINK, service won't work
 	sinkBinding := &sourcesv1.SinkBinding{
 		ObjectMeta: metav1.ObjectMeta{
@@ -305,8 +321,8 @@ func SinkBindingCreator(workflow *operatorapi.SonataFlow, plf *operatorapi.Sonat
 				Subject: tracker.Reference{
 					Name:       workflow.Name,
 					Namespace:  workflow.Namespace,
-					APIVersion: "apps/v1",
-					Kind:       "Deployment",
+					APIVersion: apiVersion,
+					Kind:       kind,
 				},
 			},
 		},
@@ -359,6 +375,12 @@ func TriggersCreator(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFl
 	var resultObjects []client.Object
 	lbl := workflowproj.GetMergedLabels(workflow)
 
+	apiVersion := k8sServiceAPIVersion
+	kind := k8sServiceKind
+	if workflow.Spec.PodTemplate.DeploymentModel == operatorapi.KnativeDeploymentModel {
+		apiVersion = knativeServingAPIVersion // use knative serving API Version
+		kind = knativeServiceKind
+	}
 	//consumed
 	events := workflow.Spec.Flow.Events
 	for _, event := range events {
@@ -395,8 +417,8 @@ func TriggersCreator(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFl
 					Ref: &duckv1.KReference{
 						Name:       workflow.Name,
 						Namespace:  workflow.Namespace,
-						APIVersion: "v1",
-						Kind:       "Service",
+						APIVersion: apiVersion,
+						Kind:       kind,
 					},
 				},
 			},

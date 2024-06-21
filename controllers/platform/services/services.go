@@ -271,7 +271,7 @@ func (d *DataIndexHandler) GetServiceSource() *duckv1.Destination {
 func (d *DataIndexHandler) GenerateServiceProperties() (*properties.Properties, error) {
 	props := properties.NewProperties()
 	props.Set(constants.KogitoServiceURLProperty, d.GetLocalServiceBaseUrl())
-	props.Set(constants.DataIndexKafkaSmallRyeHealthProperty, "false")
+	props.Set(constants.DataIndexKafkaHealthCheck, "false")
 	return props, nil
 }
 
@@ -430,9 +430,9 @@ func (j *JobServiceHandler) GenerateServiceProperties() (*properties.Properties,
 
 	props.Set(constants.KogitoServiceURLProperty, GenerateServiceURL(constants.DefaultHTTPProtocol, j.platform.Namespace, j.GetServiceName()))
 	if j.GetServiceSource() == nil {
-		props.Set(constants.JobServiceKafkaSmallRyeHealthProperty, "false")
+		props.Set(constants.JobServiceKSinkInjectionHealthCheck, "false")
 	} else {
-		props.Set(constants.JobServiceKafkaSmallRyeHealthProperty, "true")
+		props.Set(constants.JobServiceKSinkInjectionHealthCheck, "true")
 	}
 
 	// add data source reactive URL
@@ -572,7 +572,7 @@ func (d *DataIndexHandler) newTrigger(labels map[string]string, brokerName, name
 			Subscriber: duckv1.Destination{
 				Ref: &duckv1.KReference{
 					Name:       serviceName,
-					Namespace:  namespace,
+					Namespace:  platform.Namespace,
 					APIVersion: "v1",
 					Kind:       "Service",
 				},
@@ -585,11 +585,14 @@ func (d *DataIndexHandler) newTrigger(labels map[string]string, brokerName, name
 }
 func (d *DataIndexHandler) GenerateKnativeResources(platform *operatorapi.SonataFlowPlatform, lbl map[string]string) ([]client.Object, error) {
 	broker := d.GetSourceBroker()
-	if broker == nil {
+	if broker == nil || len(broker.Ref.Name) == 0 {
 		return nil, nil // Nothing to do
 	}
 	brokerName := broker.Ref.Name
-	namespace := platform.Namespace
+	namespace := broker.Ref.Namespace
+	if len(namespace) == 0 {
+		namespace = platform.Namespace
+	}
 	serviceName := d.GetServiceName()
 	return []client.Object{
 		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-error", "ProcessInstanceErrorDataEvent", pathProcesses, platform),
@@ -618,11 +621,14 @@ func (d JobServiceHandler) GetSink() *duckv1.Destination {
 func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.SonataFlowPlatform, lbl map[string]string) ([]client.Object, error) {
 	broker := j.GetSourceBroker()
 	sink := j.GetSink()
-	namespace := platform.Namespace
 	resultObjs := []client.Object{}
 
-	if broker != nil {
+	if broker != nil && len(broker.Ref.Name) > 0 {
 		brokerName := broker.Ref.Name
+		namespace := broker.Ref.Namespace
+		if len(namespace) == 0 {
+			namespace = platform.Namespace
+		}
 		jobCreateTrigger := &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      kmeta.ChildName("jobs-service-create-job-", string(platform.GetUID())),
@@ -639,7 +645,7 @@ func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.Sonat
 				Subscriber: duckv1.Destination{
 					Ref: &duckv1.KReference{
 						Name:       j.GetServiceName(),
-						Namespace:  namespace,
+						Namespace:  platform.Namespace,
 						APIVersion: "v1",
 						Kind:       "Service",
 					},
@@ -666,7 +672,7 @@ func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.Sonat
 				Subscriber: duckv1.Destination{
 					Ref: &duckv1.KReference{
 						Name:       j.GetServiceName(),
-						Namespace:  namespace,
+						Namespace:  platform.Namespace,
 						APIVersion: "v1",
 						Kind:       "Service",
 					},
@@ -682,7 +688,7 @@ func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.Sonat
 		sinkBinding := &sourcesv1.SinkBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("%s-jobs-service-sb", platform.Name),
-				Namespace: namespace,
+				Namespace: platform.Namespace,
 				Labels:    lbl,
 			},
 			Spec: sourcesv1.SinkBindingSpec{
@@ -692,7 +698,7 @@ func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.Sonat
 				BindingSpec: duckv1.BindingSpec{
 					Subject: tracker.Reference{
 						Name:       j.GetServiceName(),
-						Namespace:  namespace,
+						Namespace:  platform.Namespace,
 						APIVersion: "apps/v1",
 						Kind:       "Deployment",
 					},

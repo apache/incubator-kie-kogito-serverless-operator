@@ -57,10 +57,10 @@ const (
 	// of its start health check.
 	KogitoJobServiceHealthCheckEnabled = "kogito.jobs-service.health-enabled"
 	// KogitoJobServiceURL configures the jobs service, this value can be used internally by the workflow.
-	KogitoJobServiceURL                   = "kogito.jobs-service.url"
-	KogitoServiceURLProperty              = "kogito.service.url"
-	DataIndexKafkaSmallRyeHealthProperty  = `quarkus.smallrye-health.check."io.quarkus.kafka.client.health.KafkaHealthCheck".enabled`
-	JobServiceKafkaSmallRyeHealthProperty = `quarkus.smallrye-health.check."org.kie.kogito.jobs.service.messaging.http.health.knative.KSinkInjectionHealthCheck".enabled`
+	KogitoJobServiceURL                 = "kogito.jobs-service.url"
+	KogitoServiceURLProperty            = "kogito.service.url"
+	DataIndexKafkaHealthCheck           = `quarkus.smallrye-health.check."io.quarkus.kafka.client.health.KafkaHealthCheck".enabled`
+	JobServiceKSinkInjectionHealthCheck = `quarkus.smallrye-health.check."org.kie.kogito.jobs.service.messaging.http.health.knative.KSinkInjectionHealthCheck".enabled`
 
 	DataIndexServiceName = "data-index-service"
 	JobServiceName       = "jobs-service"

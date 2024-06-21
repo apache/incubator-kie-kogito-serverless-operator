@@ -28,17 +28,18 @@ import (
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 	profiles "github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/factory"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -97,10 +98,10 @@ func (r *SonataFlowReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	r.setDefaults(workflow)
 	// If the workflow is being deleted, clean up the triggers on a different namespace
-	if workflow.DeletionTimestamp != nil && controllerutil.ContainsFinalizer(workflow, constants.WorkflowTriggerFinalizer) {
+	if workflow.DeletionTimestamp != nil && controllerutil.ContainsFinalizer(workflow, constants.TriggerFinalizer) {
 		err := r.cleanupTriggers(ctx, workflow)
 		if err != nil {
-			klog.V(log.E).ErrorS(err, "Failed to clean up triggers")
+			klog.V(log.E).ErrorS(err, "Failed to clean up triggers for workflow %s", workflow.Name)
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, nil
@@ -136,25 +137,19 @@ func (r *SonataFlowReconciler) cleanupTriggers(ctx context.Context, workflow *op
 		return err
 	}
 	if avail.Eventing {
-		triggers := &eventingv1.TriggerList{}
-		opts := &client.ListOptions{
-			LabelSelector: labels.SelectorFromSet(labels.Set{
-				workflowproj.LabelWorkflow:          workflow.Name,
-				workflowproj.LabelWorkflowNamespace: workflow.Namespace,
-			},
-			),
-			Namespace: plf.Status.ClusterPlatformRef.PlatformRef.Namespace,
-		}
-		if err := r.Client.List(ctx, triggers, opts); err != nil {
-			return err
-		}
-		for _, trigger := range triggers.Items {
-			if err := r.Client.Delete(ctx, &trigger); err != nil {
+		for _, triggerRef := range workflow.Status.Triggers {
+			trigger := &eventingv1.Trigger{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      triggerRef.Name,
+					Namespace: triggerRef.Namespace,
+				},
+			}
+			if err := r.Client.Delete(ctx, trigger); err != nil {
 				return err
 			}
 		}
 	}
-	controllerutil.RemoveFinalizer(workflow, constants.WorkflowTriggerFinalizer)
+	controllerutil.RemoveFinalizer(workflow, constants.TriggerFinalizer)
 	return r.Client.Update(ctx, workflow)
 }
 
@@ -236,6 +231,9 @@ func (r *SonataFlowReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.Service{}).
 		Owns(&corev1.ConfigMap{}).
+		Owns(&servingv1.Service{}).
+		Owns(&eventingv1.Trigger{}).
+		Owns(&sourcesv1.SinkBinding{}).
 		Owns(&operatorapi.SonataFlowBuild{}).
 		Watches(&operatorapi.SonataFlowPlatform{}, handler.EnqueueRequestsFromMapFunc(func(c context.Context, a client.Object) []reconcile.Request {
 			plat, ok := a.(*operatorapi.SonataFlowPlatform)
@@ -253,5 +251,6 @@ func (r *SonataFlowReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			}
 			return buildEnqueueRequestsFromMapFunc(mgr.GetClient(), build)
 		})).
+		Watches(&eventingv1.Trigger{}, handler.EnqueueRequestsFromMapFunc(knative.MapTriggerToPlatformRequests)).
 		Complete(r)
 }

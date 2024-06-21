@@ -182,7 +182,9 @@ func (d *DeploymentReconciler) deploymentModelMutateVisitors(
 	if workflow.IsKnativeDeployment() {
 		return []common.MutateVisitor{common.KServiceMutateVisitor(workflow, plf),
 			common.ImageKServiceMutateVisitor(workflow, image),
-			mountConfigMapsMutateVisitor(workflow, userPropsCM, managedPropsCM)}
+			mountConfigMapsMutateVisitor(workflow, userPropsCM, managedPropsCM),
+			common.RestoreKServiceVolumeAndVolumeMountMutateVisitor(),
+		}
 	}
 
 	if utils.IsOpenShift() {
@@ -190,11 +192,13 @@ func (d *DeploymentReconciler) deploymentModelMutateVisitors(
 			mountConfigMapsMutateVisitor(workflow, userPropsCM, managedPropsCM),
 			addOpenShiftImageTriggerDeploymentMutateVisitor(workflow, image),
 			common.ImageDeploymentMutateVisitor(workflow, image),
+			common.RestoreDeploymentVolumeAndVolumeMountMutateVisitor(),
 			common.RolloutDeploymentIfCMChangedMutateVisitor(workflow, userPropsCM, managedPropsCM),
 		}
 	}
 	return []common.MutateVisitor{common.DeploymentMutateVisitor(workflow, plf),
 		common.ImageDeploymentMutateVisitor(workflow, image),
 		mountConfigMapsMutateVisitor(workflow, userPropsCM, managedPropsCM),
+		common.RestoreDeploymentVolumeAndVolumeMountMutateVisitor(),
 		common.RolloutDeploymentIfCMChangedMutateVisitor(workflow, userPropsCM, managedPropsCM)}
 }

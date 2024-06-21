@@ -197,6 +197,19 @@ type SonataFlowStatus struct {
 	// Platform displays which platform is being used by this workflow
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="platform"
 	Platform *SonataFlowPlatformRef `json:"platform,omitempty"`
+	// Triggers list of triggers created for the SonataFlow
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="triggers"
+	Triggers []SonataFlowTriggerRef `json:"triggers,omitempty"`
+}
+
+// SonataFlowTriggerRef defines a trigger created for the SonataFlow.
+type SonataFlowTriggerRef struct {
+	// Name of the Trigger
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Trigger_Name"
+	Name string `json:"name"`
+	// Namespace of the Trigger
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Trigger_NS"
+	Namespace string `json:"namespace"`
 }
 
 func (s *SonataFlowStatus) GetTopLevelConditionType() api.ConditionType {

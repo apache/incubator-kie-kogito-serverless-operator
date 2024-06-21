@@ -9558,6 +9558,23 @@ spec:
                         type: string
                     type: object
                 type: object
+              triggers:
+                description: Triggers list of triggers created for the SonataFlow
+                items:
+                  description: SonataFlowTriggerRef defines a trigger created for
+                    the SonataFlow.
+                  properties:
+                    name:
+                      description: Name of the Trigger
+                      type: string
+                    namespace:
+                      description: Namespace of the Trigger
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
             type: object
         type: object
     served: true
