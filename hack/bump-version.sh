@@ -35,7 +35,7 @@ newMajorMinorVersion=${new_version%.*}
 
 echo "Set new version to ${new_version} (majorMinor = ${newMajorMinorVersion})"
 
-sed -i "s|version: ${old_version}|version: ${new_version}|g" image.yaml
+sed -i "s|version: ${old_version}|version: ${new_version}|g" images/manager.yaml
 
 sed -i "s|^VERSION ?=.*|VERSION ?= ${new_version}|g" Makefile
 sed -i "s|^REDUCED_VERSION ?=.*|REDUCED_VERSION ?= ${newMajorMinorVersion}|g" Makefile
