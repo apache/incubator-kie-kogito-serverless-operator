@@ -19,19 +19,23 @@
 # runs the e2e locally
 # You must have minikube installed
 MINIKUBE_PROFILE=${1:-minikube}
+SKIP_IMG_BUILD=${2:-0}
+TEST_LABELS=${3:-"flows-non-persistence"} # possible values are flows-non-persistence, flows-persistence, platform
+
 echo "Using minikube profile ${MINIKUBE_PROFILE}"
 export OPERATOR_IMAGE_NAME=localhost/kogito-serverless-operator:0.0.1
 
 # clean up previous runs
 kubectl get namespaces -o name | awk -F/ '/^namespace\/test/ {print $2}' | xargs kubectl delete namespace
 make undeploy ignore-not-found=true
-make deploy IMG="${OPERATOR_IMAGE_NAME}"
 
-eval "$(minikube -p "${MINIKUBE_PROFILE}" docker-env)"
-if ! make container-build BUILDER=docker IMG="${OPERATOR_IMAGE_NAME}"; then
-  echo "Failure: Failed to build image, exiting " >&2
-  exit 1
+if [ "${SKIP_IMG_BUILD}" = "0" ]; then
+  eval "$(minikube -p "${MINIKUBE_PROFILE}" docker-env)"
+  if ! make container-build BUILDER=docker IMG="${OPERATOR_IMAGE_NAME}"; then
+    echo "Failure: Failed to build image, exiting " >&2
+    exit 1
+  fi
 fi
 
 make deploy IMG="${OPERATOR_IMAGE_NAME}"
-make test-e2e
+make test-e2e label="${TEST_LABELS}"

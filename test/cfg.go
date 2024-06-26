@@ -25,6 +25,6 @@ import (
 // a particular test must populate it with values form a given file. As part of the given test finalization we can
 // invoke this function to restore the global configuration.
 func RestoreControllersConfig(t *testing.T) {
-	_, err := cfg.InitializeControllersCfgAt(getProjectDir() + "/config/manager/controllers_cfg.yaml")
+	_, err := cfg.InitializeControllersCfgAt(getProjectDir() + "/test/testdata/controllers-cfg-default.yaml")
 	assert.NoError(t, err)
 }
