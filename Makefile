@@ -337,8 +337,9 @@ addheaders:
 generate-all: generate generate-deploy bundle addheaders vet fmt
 
 .PHONY: test-e2e # You will need to have a Minikube/Kind cluster up in running to run this target, and run container-builder before the test
+label = "flows-non-persistence" # possible values are flows-non-persistence, flows-persistence, platform
 test-e2e:
-	go test ./test/e2e/* -v -ginkgo.v -ginkgo.no-color -ginkgo.junit-report=./e2e-test-report.xml -timeout 60m
+	go test ./test/e2e/* -v -ginkgo.v -ginkgo.no-color -ginkgo.label-filter=$(label) -ginkgo.junit-report=./e2e-test-report.xml -timeout 60m
 
 .PHONY: before-pr
 before-pr: test generate-all

@@ -40,7 +40,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("SonataFlow Operator", Ordered, func() {
+var _ = Describe("Workflow Non-Persistence Use Cases :: ", Label("flows-non-persistence"), Ordered, func() {
 
 	var targetNamespace string
 	BeforeEach(func() {
@@ -58,10 +58,11 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 		}
 	})
 
-	Describe("ensure that Operator and Operand(s) can run in restricted namespaces", func() {
+	Describe("ensure basic workflow deployments", func() {
 		projectDir, _ := utils.GetProjectDir()
 
 		It("should successfully deploy the Simple Workflow in  GitOps mode and verify if it's running", func() {
+			Skip("Image unavailable at Dockerhub, skipping test: https://github.com/apache/incubator-kie-kogito-serverless-operator/issues/498")
 			By("creating an instance of the SonataFlow Operand(CR)")
 			EventuallyWithOffset(1, func() error {
 				cmd := exec.Command("kubectl", "apply", "-f", filepath.Join(projectDir,
@@ -142,7 +143,7 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 
 })
 
-var _ = Describe("Validate the persistence ", Ordered, func() {
+var _ = Describe("Workflow Persistence Use Cases :: ", Label("flows-persistence"), Ordered, func() {
 
 	const (
 		dbConnectionName = "Database connections health check"

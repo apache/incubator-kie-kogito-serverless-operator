@@ -44,7 +44,7 @@ const (
 	ephemeralJobService  = "ephemeral-job-service"
 )
 
-var _ = Describe("Validate the persistence", Ordered, func() {
+var _ = Describe("Platform Use Cases :: ", Label("platform"), Ordered, func() {
 
 	var (
 		projectDir      string
