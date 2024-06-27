@@ -25,7 +25,7 @@ imageTag='docker.io/apache/incubator-kie-sonataflow-operator'
 old_version=$(getImageTagVersion)
 new_version=$1
 
-if [ -z "${new_version}" ]; then
+if [ -z "${new_versionhttps://github.com/rodrigonull/incubator-kie-kogito-serverless-operator/commit/75a335817942eae8e1e89a608a542a145ced80ea}" ]; then
   echo "Please inform the new version"
   exit 1
 fi
@@ -45,12 +45,6 @@ sed -i "s|IMAGE_TAG_BASE ?=.*|IMAGE_TAG_BASE ?= ${imageTag}|g" Makefile
 sed -i "s|newName:.*|newName: ${imageTag}|g" config/manager/kustomization.yaml
 
 # Update sonataflow-* images
-find . -name "*.yaml" -exec sed -i "s|docker.io/apache/incubator-kie-sonataflow-builder.*:${oldMajorMinorVersion}|docker.io/apache/incubator-kie-sonataflow-builder:${newMajorMinorVersion}|" {} +
-sed -i "s|docker.io/apache/incubator-kie-sonataflow-builder.*:${oldMajorMinorVersion}|docker.io/apache/incubator-kie-sonataflow-builder:${newMajorMinorVersion}|" Dockerfile
-
-find . -name "*.yaml" -exec sed -i "s|docker.io/apache/incubator-kie-sonataflow-devmode.*:${oldMajorMinorVersion}|docker.io/apache/incubator-kie-sonataflow-devmode:${newMajorMinorVersion}|" {} +
-sed -i "s|docker.io/apache/incubator-kie-sonataflow-devmode.*:${oldMajorMinorVersion}|docker.io/apache/incubator-kie-sonataflow-devmode:${newMajorMinorVersion}|" Dockerfile
-
 sed -i -r "s|operatorVersion =.*|operatorVersion = \"${new_version}\"|g" version/version.go
 
 sed -i "s|containerImage:.*|containerImage: ${imageTag}:${newMajorMinorVersion}|g" $(getCsvFile)
