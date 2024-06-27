@@ -25,7 +25,7 @@ imageTag='docker.io/apache/incubator-kie-sonataflow-operator'
 old_version=$(getImageTagVersion)
 new_version=$1
 
-if [ -z "${new_versionhttps://github.com/rodrigonull/incubator-kie-kogito-serverless-operator/commit/75a335817942eae8e1e89a608a542a145ced80ea}" ]; then
+if [ -z "${new_version}" ]; then
   echo "Please inform the new version"
   exit 1
 fi
