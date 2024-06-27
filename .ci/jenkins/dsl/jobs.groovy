@@ -190,7 +190,7 @@ void setupE2EJob(JobType jobType, String clusterName, Map extraEnv = [:]) {
 
         GIT_AUTHOR_CREDS_ID: "${GIT_AUTHOR_CREDENTIALS_ID}",
 
-        OPERATOR_IMAGE_NAME: 'incubator-kie-sonataflow-operator,
+        OPERATOR_IMAGE_NAME: 'incubator-kie-sonataflow-operator',
         MAX_REGISTRY_RETRIES: 3,
         PROPERTIES_FILE_NAME: 'deployment.properties',
     ])
