@@ -27,6 +27,10 @@ Dockerfile
 /.idea/
 /.vscode/
 /target/
+/__debug*
+database/
 
 database/index.db
 e2e-test-report.xml
+
+bundle_tmp*

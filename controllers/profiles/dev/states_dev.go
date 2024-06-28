@@ -81,7 +81,7 @@ func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatora
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
 	}
-	managedPropsCM, _, err := e.ensurers.managedPropsConfigMap.Ensure(ctx, workflow, pl, common.ManagedPropertiesMutateVisitor(ctx, e.StateSupport.Catalog, workflow, pl, userPropsCM.(*corev1.ConfigMap)))
+	managedPropsCM, _, err := e.ensurers.managedPropsConfigMap.Ensure(ctx, workflow, pl, common.ManagedPropertiesMutateVisitor(ctx, e.Catalog, workflow, pl, userPropsCM.(*corev1.ConfigMap)))
 	if err != nil {
 		return ctrl.Result{Requeue: false}, objs, err
 	}
@@ -117,7 +117,7 @@ func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatora
 	}
 	objs = append(objs, route)
 
-	if knativeObjs, err := common.NewKnativeEventingHandler(e.StateSupport).Ensure(ctx, workflow); err != nil {
+	if knativeObjs, err := common.NewKnativeEventingHandler(e.StateSupport, pl).Ensure(ctx, workflow); err != nil {
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, objs, err
 	} else {
 		objs = append(objs, knativeObjs...)

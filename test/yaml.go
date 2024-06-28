@@ -34,6 +34,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/discovery"
+	discfake "k8s.io/client-go/discovery/fake"
+	clienttesting "k8s.io/client-go/testing"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -48,6 +51,7 @@ const (
 	SonataFlowGreetingsDataInputSchemaConfig  = "v1_configmap_greetings_datainput.yaml"
 	SonataFlowGreetingsStaticFilesConfig      = "v1_configmap_greetings_staticfiles.yaml"
 	sonataFlowPlatformYamlCR                  = "sonataflow.org_v1alpha08_sonataflowplatform.yaml"
+	sonataFlowPlatformWithBrokerYamlCR        = "sonataflow.org_v1alpha08_sonataflowplatform_withBroker.yaml"
 	sonataFlowPlatformWithCacheMinikubeYamlCR = "sonataflow.org_v1alpha08_sonataflowplatform_withCache_minikube.yaml"
 	sonataFlowPlatformForOpenshift            = "sonataflow.org_v1alpha08_sonataflowplatform_openshift.yaml"
 	sonataFlowClusterPlatformYamlCR           = "sonataflow.org_v1alpha08_sonataflowclusterplatform.yaml"
@@ -256,6 +260,14 @@ func GetBasePlatform() *operatorapi.SonataFlowPlatform {
 	return getSonataFlowPlatform(sonataFlowPlatformYamlCR)
 }
 
+func GetBasePlatformWithBroker() *operatorapi.SonataFlowPlatform {
+	return getSonataFlowPlatform(sonataFlowPlatformWithBrokerYamlCR)
+}
+
+func GetBasePlatformWithBrokerInReadyPhase(namespace string) *operatorapi.SonataFlowPlatform {
+	return GetSonataFlowPlatformInReadyPhase(sonataFlowPlatformWithBrokerYamlCR, namespace)
+}
+
 func GetPlatformMinikubeE2eTest() string {
 	return e2eSamples + sonataFlowPlatformWithCacheMinikubeYamlCR
 }
@@ -316,4 +328,15 @@ func getProjectDir() string {
 	}
 
 	return projectDir
+}
+
+func CreateFakeKnativeDiscoveryClient() discovery.DiscoveryInterface {
+	return &discfake.FakeDiscovery{
+		Fake: &clienttesting.Fake{
+			Resources: []*metav1.APIResourceList{
+				{GroupVersion: "serving.knative.dev/v1"},
+				{GroupVersion: "eventing.knative.dev/v1"},
+			},
+		},
+	}
 }

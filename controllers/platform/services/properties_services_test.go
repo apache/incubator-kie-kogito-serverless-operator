@@ -177,7 +177,7 @@ func setJobServiceEnabledValue(v *bool) plfmOptionFn {
 			p.Spec.Services = &operatorapi.ServicesPlatformSpec{}
 		}
 		if p.Spec.Services.JobService == nil {
-			p.Spec.Services.JobService = &operatorapi.ServiceSpec{}
+			p.Spec.Services.JobService = &operatorapi.JobServiceServiceSpec{}
 		}
 		p.Spec.Services.JobService.Enabled = v
 	}
@@ -189,7 +189,7 @@ func setDataIndexEnabledValue(v *bool) plfmOptionFn {
 			p.Spec.Services = &operatorapi.ServicesPlatformSpec{}
 		}
 		if p.Spec.Services.DataIndex == nil {
-			p.Spec.Services.DataIndex = &operatorapi.ServiceSpec{}
+			p.Spec.Services.DataIndex = &operatorapi.DataIndexServiceSpec{}
 		}
 		p.Spec.Services.DataIndex.Enabled = v
 	}
@@ -201,7 +201,7 @@ func emptyDataIndexServiceSpec() plfmOptionFn {
 			p.Spec.Services = &operatorapi.ServicesPlatformSpec{}
 		}
 		if p.Spec.Services.DataIndex == nil {
-			p.Spec.Services.DataIndex = &operatorapi.ServiceSpec{}
+			p.Spec.Services.DataIndex = &operatorapi.DataIndexServiceSpec{}
 		}
 	}
 }
@@ -212,7 +212,7 @@ func emptyJobServiceSpec() plfmOptionFn {
 			p.Spec.Services = &operatorapi.ServicesPlatformSpec{}
 		}
 		if p.Spec.Services.JobService == nil {
-			p.Spec.Services.JobService = &operatorapi.ServiceSpec{}
+			p.Spec.Services.JobService = &operatorapi.JobServiceServiceSpec{}
 		}
 	}
 }
@@ -235,7 +235,7 @@ func setJobServiceJDBC(jdbc string) plfmOptionFn {
 			p.Spec.Services = &operatorapi.ServicesPlatformSpec{}
 		}
 		if p.Spec.Services.JobService == nil {
-			p.Spec.Services.JobService = &operatorapi.ServiceSpec{}
+			p.Spec.Services.JobService = &operatorapi.JobServiceServiceSpec{}
 		}
 		if p.Spec.Services.JobService.Persistence == nil {
 			p.Spec.Services.JobService.Persistence = &operatorapi.PersistenceOptionsSpec{}
@@ -253,7 +253,7 @@ func setDataIndexJDBC(jdbc string) plfmOptionFn {
 			p.Spec.Services = &operatorapi.ServicesPlatformSpec{}
 		}
 		if p.Spec.Services.DataIndex == nil {
-			p.Spec.Services.DataIndex = &operatorapi.ServiceSpec{}
+			p.Spec.Services.DataIndex = &operatorapi.DataIndexServiceSpec{}
 		}
 		if p.Spec.Services.DataIndex.Persistence == nil {
 			p.Spec.Services.DataIndex.Persistence = &operatorapi.PersistenceOptionsSpec{}

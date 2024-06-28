@@ -912,6 +912,60 @@ spec:
                       of the operator's default.
                     type: string
                 type: object
+              eventing:
+                description: Eventing describes the information required for Knative
+                  Eventing integration in the platform.
+                properties:
+                  broker:
+                    description: Broker to communicate with workflow deployment.  It
+                      can be the default broker when the workflow, Dataindex, or Jobservice
+                      does not have a sink or source specified.
+                    properties:
+                      CACerts:
+                        description: CACerts are Certification Authority (CA) certificates
+                          in PEM format according to https://www.rfc-editor.org/rfc/rfc7468.
+                          If set, these CAs are appended to the set of CAs provided
+                          by the Addressable target, if any.
+                        type: string
+                      ref:
+                        description: Ref points to an Addressable.
+                        properties:
+                          address:
+                            description: Address points to a specific Address Name.
+                            type: string
+                          apiVersion:
+                            description: API version of the referent.
+                            type: string
+                          group:
+                            description: 'Group of the API, without the version of
+                              the group. This can be used as an alternative to the
+                              APIVersion, and then resolved using ResolveGroup. Note:
+                              This API is EXPERIMENTAL and might break anytime. For
+                              more details: https://github.com/knative/eventing/issues/5086'
+                            type: string
+                          kind:
+                            description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                            type: string
+                          namespace:
+                            description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                              This is optional field, it gets defaulted to the object
+                              holding it if left out.'
+                            type: string
+                        required:
+                        - kind
+                        - name
+                        type: object
+                      uri:
+                        description: URI can be an absolute URL(non-empty scheme and
+                          non-empty host) pointing to the target or a relative URI.
+                          Relative URIs will be resolved using the base URI retrieved
+                          from Ref.
+                        type: string
+                    type: object
+                type: object
               persistence:
                 description: Persistence defines the platform persistence configuration.
                   When this field is set, the configuration is used as the persistence
@@ -8919,6 +8973,56 @@ spec:
                               type: object
                             type: array
                         type: object
+                      source:
+                        description: Defines the source where the Dataindex receives
+                          events from
+                        properties:
+                          CACerts:
+                            description: CACerts are Certification Authority (CA)
+                              certificates in PEM format according to https://www.rfc-editor.org/rfc/rfc7468.
+                              If set, these CAs are appended to the set of CAs provided
+                              by the Addressable target, if any.
+                            type: string
+                          ref:
+                            description: Ref points to an Addressable.
+                            properties:
+                              address:
+                                description: Address points to a specific Address
+                                  Name.
+                                type: string
+                              apiVersion:
+                                description: API version of the referent.
+                                type: string
+                              group:
+                                description: 'Group of the API, without the version
+                                  of the group. This can be used as an alternative
+                                  to the APIVersion, and then resolved using ResolveGroup.
+                                  Note: This API is EXPERIMENTAL and might break anytime.
+                                  For more details: https://github.com/knative/eventing/issues/5086'
+                                type: string
+                              kind:
+                                description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                                type: string
+                              name:
+                                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                type: string
+                              namespace:
+                                description: 'Namespace of the referent. More info:
+                                  https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                                  This is optional field, it gets defaulted to the
+                                  object holding it if left out.'
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                          uri:
+                            description: URI can be an absolute URL(non-empty scheme
+                              and non-empty host) pointing to the target or a relative
+                              URI. Relative URIs will be resolved using the base URI
+                              retrieved from Ref.
+                            type: string
+                        type: object
                     type: object
                   jobService:
                     description: 'Deploys the Job service for use by workflows without
@@ -16791,6 +16895,106 @@ spec:
                               type: object
                             type: array
                         type: object
+                      sink:
+                        description: Defines the sink where the Jobservice sends events
+                          to
+                        properties:
+                          CACerts:
+                            description: CACerts are Certification Authority (CA)
+                              certificates in PEM format according to https://www.rfc-editor.org/rfc/rfc7468.
+                              If set, these CAs are appended to the set of CAs provided
+                              by the Addressable target, if any.
+                            type: string
+                          ref:
+                            description: Ref points to an Addressable.
+                            properties:
+                              address:
+                                description: Address points to a specific Address
+                                  Name.
+                                type: string
+                              apiVersion:
+                                description: API version of the referent.
+                                type: string
+                              group:
+                                description: 'Group of the API, without the version
+                                  of the group. This can be used as an alternative
+                                  to the APIVersion, and then resolved using ResolveGroup.
+                                  Note: This API is EXPERIMENTAL and might break anytime.
+                                  For more details: https://github.com/knative/eventing/issues/5086'
+                                type: string
+                              kind:
+                                description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                                type: string
+                              name:
+                                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                type: string
+                              namespace:
+                                description: 'Namespace of the referent. More info:
+                                  https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                                  This is optional field, it gets defaulted to the
+                                  object holding it if left out.'
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                          uri:
+                            description: URI can be an absolute URL(non-empty scheme
+                              and non-empty host) pointing to the target or a relative
+                              URI. Relative URIs will be resolved using the base URI
+                              retrieved from Ref.
+                            type: string
+                        type: object
+                      source:
+                        description: Defines the source where the Jobservice receives
+                          events from
+                        properties:
+                          CACerts:
+                            description: CACerts are Certification Authority (CA)
+                              certificates in PEM format according to https://www.rfc-editor.org/rfc/rfc7468.
+                              If set, these CAs are appended to the set of CAs provided
+                              by the Addressable target, if any.
+                            type: string
+                          ref:
+                            description: Ref points to an Addressable.
+                            properties:
+                              address:
+                                description: Address points to a specific Address
+                                  Name.
+                                type: string
+                              apiVersion:
+                                description: API version of the referent.
+                                type: string
+                              group:
+                                description: 'Group of the API, without the version
+                                  of the group. This can be used as an alternative
+                                  to the APIVersion, and then resolved using ResolveGroup.
+                                  Note: This API is EXPERIMENTAL and might break anytime.
+                                  For more details: https://github.com/knative/eventing/issues/5086'
+                                type: string
+                              kind:
+                                description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                                type: string
+                              name:
+                                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                type: string
+                              namespace:
+                                description: 'Namespace of the referent. More info:
+                                  https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                                  This is optional field, it gets defaulted to the
+                                  object holding it if left out.'
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                          uri:
+                            description: URI can be an absolute URL(non-empty scheme
+                              and non-empty host) pointing to the target or a relative
+                              URI. Relative URIs will be resolved using the base URI
+                              retrieved from Ref.
+                            type: string
+                        type: object
                     type: object
                 type: object
             type: object
@@ -16885,6 +17089,23 @@ spec:
                 description: The generation observed by the deployment controller.
                 format: int64
                 type: integer
+              triggers:
+                description: Triggers list of triggers created for the SonataFlowPlatform
+                items:
+                  description: SonataFlowPlatformTriggerRef defines a trigger created
+                    for the SonataFlowPlatform.
+                  properties:
+                    name:
+                      description: Name of the Trigger
+                      type: string
+                    namespace:
+                      description: Namespace of the Trigger
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
               version:
                 description: Version the operator version controlling this Platform
                 type: string
@@ -26299,6 +26520,63 @@ spec:
                       will be resolved using the base URI retrieved from Ref.
                     type: string
                 type: object
+              sources:
+                description: Sources describes the list of sources used to create
+                  triggers for events consumed by this SonataFlow instance.
+                items:
+                  description: SonataFlowSourceSpec defines the desired state of a
+                    source used for trigger creation
+                  properties:
+                    CACerts:
+                      description: CACerts are Certification Authority (CA) certificates
+                        in PEM format according to https://www.rfc-editor.org/rfc/rfc7468.
+                        If set, these CAs are appended to the set of CAs provided
+                        by the Addressable target, if any.
+                      type: string
+                    eventType:
+                      description: Defines the eventType to filter the events
+                      type: string
+                    ref:
+                      description: Ref points to an Addressable.
+                      properties:
+                        address:
+                          description: Address points to a specific Address Name.
+                          type: string
+                        apiVersion:
+                          description: API version of the referent.
+                          type: string
+                        group:
+                          description: 'Group of the API, without the version of the
+                            group. This can be used as an alternative to the APIVersion,
+                            and then resolved using ResolveGroup. Note: This API is
+                            EXPERIMENTAL and might break anytime. For more details:
+                            https://github.com/knative/eventing/issues/5086'
+                          type: string
+                        kind:
+                          description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                          type: string
+                        name:
+                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                          type: string
+                        namespace:
+                          description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                            This is optional field, it gets defaulted to the object
+                            holding it if left out.'
+                          type: string
+                      required:
+                      - kind
+                      - name
+                      type: object
+                    uri:
+                      description: URI can be an absolute URL(non-empty scheme and
+                        non-empty host) pointing to the target or a relative URI.
+                        Relative URIs will be resolved using the base URI retrieved
+                        from Ref.
+                      type: string
+                  required:
+                  - eventType
+                  type: object
+                type: array
             required:
             - flow
             type: object
@@ -26397,6 +26675,23 @@ spec:
                         type: string
                     type: object
                 type: object
+              triggers:
+                description: Triggers list of triggers created for the SonataFlow
+                items:
+                  description: SonataFlowTriggerRef defines a trigger created for
+                    the SonataFlow.
+                  properties:
+                    name:
+                      description: Name of the Trigger
+                      type: string
+                    namespace:
+                      description: Namespace of the Trigger
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
             type: object
         type: object
     served: true
@@ -26988,16 +27283,16 @@ subjects:
 apiVersion: v1
 data:
   DEFAULT_WORKFLOW_EXTENSION: .sw.json
-  Dockerfile: "FROM docker.io/apache/incubator-kie-sonataflow-builder:main AS builder\n\n#
+  Dockerfile: "FROM quay.io/kiegroup/kogito-swf-builder-nightly:latest AS builder\n\n#
     variables that can be overridden by the builder\n# To add a Quarkus extension
     to your application\nARG QUARKUS_EXTENSIONS\n# Args to pass to the Quarkus CLI
     add extension command\nARG QUARKUS_ADD_EXTENSION_ARGS\n# Additional java/mvn arguments
     to pass to the builder\nARG MAVEN_ARGS_APPEND\n\n# Copy from build context to
     skeleton resources project\nCOPY --chown=1001 . ./resources\n\nRUN /home/kogito/launch/build-app.sh
     ./resources\n  \n#=============================\n# Runtime Run\n#=============================\nFROM
-    registry.access.redhat.com/ubi9/openjdk-17-runtime:latest\n\nENV LANG='en_US.UTF-8'
-    LANGUAGE='en_US:en'\n  \n# We make four distinct layers so if there are application
-    changes the library layers can be re-used\nCOPY --from=builder --chown=185 /home/kogito/serverless-workflow-project/target/quarkus-app/lib/
+    registry.access.redhat.com/ubi9/openjdk-17:latest\n\nENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'\n
+    \ \n# We make four distinct layers so if there are application changes the library
+    layers can be re-used\nCOPY --from=builder --chown=185 /home/kogito/serverless-workflow-project/target/quarkus-app/lib/
     /deployments/lib/\nCOPY --from=builder --chown=185 /home/kogito/serverless-workflow-project/target/quarkus-app/*.jar
     /deployments/\nCOPY --from=builder --chown=185 /home/kogito/serverless-workflow-project/target/quarkus-app/app/
     /deployments/app/\nCOPY --from=builder --chown=185 /home/kogito/serverless-workflow-project/target/quarkus-app/quarkus/
@@ -27021,11 +27316,11 @@ data:
     # Default image used internally by the Operator Managed Kaniko builder to create the executor pods
     kanikoExecutorImageTag: gcr.io/kaniko-project/executor:v1.9.0
     # The Jobs Service image to use, if empty the operator will use the default Apache Community one based on the current operator's version
-    jobsServicePostgreSQLImageTag: ""
-    jobsServiceEphemeralImageTag: ""
+    jobsServicePostgreSQLImageTag: "quay.io/kiegroup/kogito-jobs-service-postgresql:weekly-latest"
+    jobsServiceEphemeralImageTag: "quay.io/kiegroup/kogito-jobs-service-ephemeral:weekly-latest"
     # The Data Index image to use, if empty the operator will use the default Apache Community one based on the current operator's version
-    dataIndexPostgreSQLImageTag: ""
-    dataIndexEphemeralImageTag: ""
+    dataIndexPostgreSQLImageTag: "quay.io/kiegroup/kogito-data-index-postgresql:weekly-latest"
+    dataIndexEphemeralImageTag: "quay.io/kiegroup/kogito-data-index-ephemeral:weekly-latest"
     # SonataFlow base builder image used in the internal Dockerfile to build workflow applications in preview profile
     # Order of precedence is:
     # 1. SonataFlowPlatform in the given namespace
@@ -27033,10 +27328,10 @@ data:
     # 3. The FROM in the Dockerfile in the operator's namespace "sonataflow-operator-builder-config" configMap.
     # If 1 or 2, the FROM tag will be replaced by the tag se there.
     # If empty the operator will use the default Apache Community one based on the current operator's version.
-    sonataFlowBaseBuilderImageTag: ""
+    sonataFlowBaseBuilderImageTag: "quay.io/kiegroup/kogito-swf-builder-nightly:latest"
     # The image to use to deploy SonataFlow workflow images in devmode profile.
     # If empty the operator will use the default Apache Community one based on the current operator's version.
-    sonataFlowDevModeImageTag: ""
+    sonataFlowDevModeImageTag: "quay.io/kiegroup/kogito-swf-devmode-nightly:latest"
     # The default name of the builder configMap in the operator's namespace
     builderConfigMapName: "sonataflow-operator-builder-config"
     # Quarkus extensions required for workflows persistence. These extensions are used by the SonataFlow build system,

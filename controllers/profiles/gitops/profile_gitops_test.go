@@ -20,6 +20,7 @@ import (
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api"
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/knative"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/test"
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
@@ -38,6 +39,9 @@ func Test_Reconciler_ProdOps(t *testing.T) {
 	client := test.NewSonataFlowClientBuilder().
 		WithRuntimeObjects(workflow).
 		WithStatusSubresource(workflow, &operatorapi.SonataFlowBuild{}).Build()
+
+	knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
+
 	result, err := NewProfileForOpsReconciler(client, &rest.Config{}, test.NewFakeRecorder()).Reconcile(context.TODO(), workflow)
 	assert.NoError(t, err)
 
@@ -64,5 +68,10 @@ func Test_Reconciler_ProdOps(t *testing.T) {
 
 	assert.NotNil(t, deployment.ObjectMeta)
 	assert.NotNil(t, deployment.ObjectMeta.Labels)
-	assert.Equal(t, deployment.ObjectMeta.Labels, map[string]string{"test": "test", "app": "simple", "sonataflow.org/workflow-app": "simple"})
+	assert.Equal(t, deployment.ObjectMeta.Labels, map[string]string{
+		"test":                              "test",
+		"app":                               "simple",
+		"sonataflow.org/workflow-app":       "simple",
+		"sonataflow.org/workflow-namespace": workflow.Namespace,
+	})
 }

@@ -37,10 +37,14 @@ const (
 	workflowManagedConfigMapNameSuffix = "-managed-props"
 	// LabelApp key to use among object selectors, "app" is used among k8s applications to group objects in some UI consoles
 	LabelApp = "app"
+	// LabelAppNamespace namespace the k8s application is deployed
+	LabelAppNamespace = "app-namespace"
 	// LabelService key to use among object selectors
 	LabelService = metadata.Domain + "/service"
 	// LabelWorkflow specialized label managed by the controller
 	LabelWorkflow = metadata.Domain + "/workflow-app"
+	// LabelWorkflowNamespace specialized label managed by the controller indicating the namespace of the workflow
+	LabelWorkflowNamespace = metadata.Domain + "/workflow-namespace"
 )
 
 // SetTypeToObject sets the Kind and ApiVersion to a given object since the default constructor won't do it.
@@ -85,8 +89,9 @@ func GetManagedPropertiesFileName(workflow *operatorapi.SonataFlow) string {
 // GetDefaultLabels gets the default labels based on the given workflow.
 func GetDefaultLabels(workflow *operatorapi.SonataFlow) map[string]string {
 	return map[string]string{
-		LabelApp:      workflow.Name,
-		LabelWorkflow: workflow.Name,
+		LabelApp:               workflow.Name,
+		LabelWorkflow:          workflow.Name,
+		LabelWorkflowNamespace: workflow.Namespace,
 	}
 }
 
