@@ -154,7 +154,7 @@ build-4-debug: generate ## Build manager binary with debug options.
 
 .PHONY: run
 run: manifests generate ## Run a controller from your host.
-	go run ./main.go
+	go run ./main.go -v=2 -controller-cfg-path=$(CURDIR)/config/manager/controllers_cfg.yaml
 
 .PHONY: debug
 debug: build-4-debug ## Run a controller from your host from binary
