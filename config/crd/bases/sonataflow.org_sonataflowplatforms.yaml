@@ -565,6 +565,9 @@ spec:
                         description: 'Determines whether workflows without the `sonataflow.org/profile:
                           dev` annotation should be configured to use this service'
                         type: boolean
+                      migrateDBOnStartUp:
+                        description: Whether to migrate database on service startup?
+                        type: boolean
                       persistence:
                         description: Persists service to a datasource of choice. Ephemeral
                           by default.
@@ -8436,6 +8439,9 @@ spec:
                       enabled:
                         description: 'Determines whether workflows without the `sonataflow.org/profile:
                           dev` annotation should be configured to use this service'
+                        type: boolean
+                      migrateDBOnStartUp:
+                        description: Whether to migrate database on service startup?
                         type: boolean
                       persistence:
                         description: Persists service to a datasource of choice. Ephemeral
