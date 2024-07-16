@@ -36,6 +36,4 @@ type ServiceSpec struct {
 	// PodTemplate describes the deployment details of this platform service instance.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="podTemplate"
 	PodTemplate PodTemplateSpec `json:"podTemplate,omitempty"`
-	// Whether to migrate database on service startup?
-	MigrateDBOnStartUp bool `json:"migrateDBOnStartUp,omitempty"`
 }
