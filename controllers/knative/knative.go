@@ -28,11 +28,13 @@ import (
 	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	clienteventingv1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/eventing/v1"
+	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	clientservingv1 "knative.dev/serving/pkg/client/clientset/versioned/typed/serving/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -143,6 +145,22 @@ func getDestinationWithNamespace(dest *duckv1.Destination, namespace string) *du
 	}
 	return dest
 }
+
+func ValidateBroker(name, namespace string) error {
+	broker := &eventingv1.Broker{}
+	if err := utils.GetClient().Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, broker); err != nil {
+		if errors.IsNotFound(err) {
+			return fmt.Errorf("broker %s in namespace %s does not exist", name, namespace)
+		}
+		return err
+	}
+	cond := broker.Status.GetCondition(apis.ConditionReady)
+	if cond != nil && cond.Status == corev1.ConditionTrue {
+		return nil
+	}
+	return fmt.Errorf("broker %s in namespace %s is not ready", name, namespace)
+}
+
 func GetWorkflowSink(workflow *operatorapi.SonataFlow, pl *operatorapi.SonataFlowPlatform) (*duckv1.Destination, error) {
 	if workflow == nil {
 		return nil, nil

@@ -398,6 +398,9 @@ func TriggersCreator(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataFl
 		if !knative.IsKnativeBroker(brokerRef) {
 			return nil, fmt.Errorf("no valid broker configured for eventType %s in SonataFlow %s", event.Type, workflow.Name)
 		}
+		if err := knative.ValidateBroker(brokerRef.Name, brokerRef.Namespace); err != nil {
+			return nil, err
+		}
 		// construct eventingv1.Trigger
 		// The trigger must be created in the same namespace as the broker
 		trigger := &eventingv1.Trigger{

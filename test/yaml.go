@@ -38,6 +38,7 @@ import (
 	discfake "k8s.io/client-go/discovery/fake"
 	clienttesting "k8s.io/client-go/testing"
 	"k8s.io/klog/v2"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -57,9 +58,9 @@ const (
 	sonataFlowClusterPlatformYamlCR           = "sonataflow.org_v1alpha08_sonataflowclusterplatform.yaml"
 	sonataFlowBuilderConfig                   = "sonataflow-operator-builder-config_v1_configmap.yaml"
 	sonataFlowBuildSucceed                    = "sonataflow.org_v1alpha08_sonataflowbuild.yaml"
-
-	e2eSamples    = "test/testdata/"
-	manifestsPath = "bundle/manifests/"
+	knativeDefaultBrokerCR                    = "knative_default_broker.yaml"
+	e2eSamples                                = "test/testdata/"
+	manifestsPath                             = "bundle/manifests/"
 )
 
 var projectDir = ""
@@ -339,4 +340,11 @@ func CreateFakeKnativeDiscoveryClient() discovery.DiscoveryInterface {
 			},
 		},
 	}
+}
+
+func GetDefaultBroker(namespace string) *eventingv1.Broker {
+	broker := &eventingv1.Broker{}
+	GetKubernetesResource(knativeDefaultBrokerCR, broker)
+	broker.Namespace = namespace
+	return broker
 }

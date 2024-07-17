@@ -29,10 +29,10 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/platform/services"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/test"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
 	"github.com/stretchr/testify/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -100,6 +100,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Create a fake client to mock API calls.
 		cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(ksp).WithStatusSubresource(ksp).Build()
+		utils.SetClient(cl)
 		// Create a SonataFlowPlatformReconciler object with the scheme and fake client.
 		r := &SonataFlowPlatformReconciler{cl, cl, cl.Scheme(), &rest.Config{}, &record.FakeRecorder{}}
 
@@ -847,15 +848,12 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		namespace := t.Name()
 		// Create a SonataFlowPlatform object with metadata and spec.
 		ksp := test.GetBasePlatformWithBrokerInReadyPhase(namespace)
-		brokerName := "default"
-		broker := &eventingv1.Broker{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      brokerName,
-				Namespace: namespace,
-			},
-		}
+		broker := test.GetDefaultBroker(namespace)
+		brokerName := broker.Name
+
 		// Create a fake client to mock API calls.
 		cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(ksp, broker).WithStatusSubresource(ksp, broker).Build()
+		utils.SetClient(cl)
 		knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 		// Create a SonataFlowPlatformReconciler object with the scheme and fake client.
 		r := &SonataFlowPlatformReconciler{cl, cl, cl.Scheme(), &rest.Config{}, &record.FakeRecorder{}}
@@ -920,31 +918,14 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		brokerNameDataIndexSource := "broker-di-source"
 		brokerNameJobsServiceSource := "broker-jobs-source"
 		brokerNameJobsServiceSink := "broker-jobs-sink"
+		broker := test.GetDefaultBroker(namespace)
+		brokerDataIndexSource := test.GetDefaultBroker(namespace)
+		brokerDataIndexSource.Name = brokerNameDataIndexSource
+		brokerJobsServiceSource := test.GetDefaultBroker(namespace)
+		brokerJobsServiceSource.Name = brokerNameJobsServiceSource
+		brokerJobsServiceSink := test.GetDefaultBroker(namespace)
+		brokerJobsServiceSink.Name = brokerNameJobsServiceSink
 
-		broker := &eventingv1.Broker{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      brokerName,
-				Namespace: namespace,
-			},
-		}
-		brokerDataIndexSource := &eventingv1.Broker{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      brokerNameDataIndexSource,
-				Namespace: namespace,
-			},
-		}
-		brokerJobsServiceSource := &eventingv1.Broker{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      brokerNameJobsServiceSource,
-				Namespace: namespace,
-			},
-		}
-		brokerJobsServiceSink := &eventingv1.Broker{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      brokerNameJobsServiceSink,
-				Namespace: namespace,
-			},
-		}
 		ksp.Spec.Services.DataIndex.Source = &duckv1.Destination{
 			Ref: &duckv1.KReference{
 				Name:       brokerNameDataIndexSource,
@@ -972,6 +953,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 		// Create a fake client to mock API calls.
 		cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(ksp, broker, brokerDataIndexSource, brokerJobsServiceSource, brokerJobsServiceSink).WithStatusSubresource(ksp, broker, brokerDataIndexSource, brokerJobsServiceSource, brokerJobsServiceSink).Build()
+		utils.SetClient(cl)
 		knative.SetDiscoveryClient(test.CreateFakeKnativeDiscoveryClient())
 		// Create a SonataFlowPlatformReconciler object with the scheme and fake client.
 		r := &SonataFlowPlatformReconciler{cl, cl, cl.Scheme(), &rest.Config{}, &record.FakeRecorder{}}

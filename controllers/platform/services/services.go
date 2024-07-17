@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/cfg"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/knative"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
 	"github.com/imdario/mergo"
@@ -593,6 +594,9 @@ func (d *DataIndexHandler) GenerateKnativeResources(platform *operatorapi.Sonata
 	if len(namespace) == 0 {
 		namespace = platform.Namespace
 	}
+	if err := knative.ValidateBroker(brokerName, namespace); err != nil {
+		return nil, err
+	}
 	serviceName := d.GetServiceName()
 	return []client.Object{
 		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-error", "ProcessInstanceErrorDataEvent", pathProcesses, platform),
@@ -628,6 +632,9 @@ func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.Sonat
 		namespace := broker.Ref.Namespace
 		if len(namespace) == 0 {
 			namespace = platform.Namespace
+		}
+		if err := knative.ValidateBroker(brokerName, namespace); err != nil {
+			return nil, err
 		}
 		jobCreateTrigger := &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{

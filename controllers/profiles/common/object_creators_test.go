@@ -262,6 +262,11 @@ func TestEnsureWorkflowTriggersWithPlatformBrokerAreCreated(t *testing.T) {
 	plf := test.GetBasePlatformWithBroker()
 	plf.Namespace = "platform-namespace"
 	plf.Spec.Eventing.Broker.Ref.Namespace = plf.Namespace
+	broker := test.GetDefaultBroker(plf.Namespace)
+
+	// Create a fake client to mock API calls.
+	cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(workflow, broker).WithStatusSubresource(workflow, broker).Build()
+	utils.SetClient(cl)
 
 	triggers, err := TriggersCreator(workflow, plf)
 	assert.NoError(t, err)
@@ -303,12 +308,21 @@ func TestEnsureWorkflowTriggersWithWorkflowBrokerAreCreated(t *testing.T) {
 	workflow.Spec.Sources[0].Destination.Ref.Namespace = workflow.Namespace
 	workflow.Spec.Sources[1].Destination.Ref.Namespace = workflow.Namespace
 	plf := test.GetBasePlatform() // No broker defined in the platform
+	broker1 := test.GetDefaultBroker(workflow.Namespace)
+	broker1.Name = "broker-appointments-request"
+	broker2 := test.GetDefaultBroker(workflow.Namespace)
+	broker2.Name = "broker-appointments"
+	// Create a fake client to mock API calls.
+	cl := test.NewKogitoClientBuilderWithOpenShift().WithRuntimeObjects(workflow, plf, broker1, broker2).WithStatusSubresource(workflow, plf, broker1, broker2).Build()
+	utils.SetClient(cl)
+
 	triggers, err := TriggersCreator(workflow, plf)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, triggers)
 	assert.Len(t, triggers, 2)
 	//Check the 1st trigger
 	name := kmeta.ChildName("vet-vetappointmentrequestreceived-", string(workflow.GetUID()))
+
 	trigger := getTrigger(name, triggers)
 	assert.NotNil(t, trigger)
 	assert.NotNil(t, trigger.GetLabels())
