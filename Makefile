@@ -233,7 +233,11 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 KUSTOMIZE_VERSION ?= v4.5.2
 CONTROLLER_TOOLS_VERSION ?= v0.9.2
 KIND_VERSION ?= v0.20.0
+KNATIVE_VERSION ?= v1.13.2
+TIMEOUT_SECS ?= 180s
 
+KNATIVE_SERVING_PREFIX ?= "https://github.com/knative/serving/releases/download/knative-$(KNATIVE_VERSION)"
+KNATIVE_EVENTING_PREFIX ?= "https://github.com/knative/eventing/releases/download/knative-$(KNATIVE_VERSION)"
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
@@ -350,8 +354,21 @@ install-kind:
 
 .PHONY: create-cluster
 create-cluster: install-kind
-	kind get clusters | grep kind >/dev/null || ./hack/ci/create-kind-cluster-with-registry.sh
+	kind get clusters | grep kind >/dev/null || ./hack/ci/create-kind-cluster-with-registry.sh $(BUILDER)
 
+.PHONY: deploy-knative
+deploy-knative: create-cluster
+	kubectl apply -f $(KNATIVE_SERVING_PREFIX)/serving-crds.yaml
+	kubectl apply -f $(KNATIVE_SERVING_PREFIX)/serving-core.yaml
+	kubectl apply -f $(KNATIVE_EVENTING_PREFIX)/eventing-crds.yaml
+	kubectl apply -f $(KNATIVE_EVENTING_PREFIX)/eventing-core.yaml
+	kubectl wait  --for=condition=Available=True deploy/eventing-controller -n knative-eventing --timeout=$(TIMEOUT_SECS)
+	kubectl wait  --for=condition=Available=True deploy/eventing-webhook -n knative-eventing --timeout=$(TIMEOUT_SECS)
+	kubectl wait  --for=condition=Available=True deploy/controller -n knative-serving --timeout=$(TIMEOUT_SECS)
+	kubectl wait  --for=condition=Available=True deploy/webhook -n knative-serving --timeout=$(TIMEOUT_SECS)
+	kubectl wait  --for=condition=Available=True deploy/autoscaler -n knative-serving --timeout=$(TIMEOUT_SECS)
+	kubectl wait  --for=condition=Available=True deploy/activator -n knative-serving --timeout=$(TIMEOUT_SECS)
+	
 .PHONY: delete-cluster
 delete-cluster: install-kind
-	kind delete cluster && docker rm -f kind-registry
+	kind delete cluster && $(BUILDER) rm -f kind-registry
