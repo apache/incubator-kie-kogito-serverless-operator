@@ -48,7 +48,7 @@ fi
 # 3 Create registry container
 ${container_engine} run \
   -d --restart=always -p "127.0.0.1:${reg_port}:5000" --network bridge --name "${reg_name}" \
-  -v /tmp/certs:/certs \
+  -v /tmp:/certs \
   registry:2
   
 # 4. Connect the registry to the cluster network if not already connected
