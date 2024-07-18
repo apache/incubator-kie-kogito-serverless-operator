@@ -12,19 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: sonataflow.org/v1alpha08
-kind: SonataFlowPlatform
+apiVersion: v1
+kind: Namespace
 metadata:
-  name: sonataflow-platform
+  name: knative-serving
+---
+apiVersion: operator.knative.dev/v1beta1
+kind: KnativeServing
+metadata:
+  name: knative-serving
+  namespace: knative-serving
 spec:
-  eventing:
-    broker:
-      ref:
-        apiVersion: eventing.knative.dev/v1
-        kind: Broker
-        name: default
-        namespace: default
-  build:
-    config:
-      strategyOptions:
-        KanikoBuildCacheEnabled: "true"
+  ingress:
+    kourier:
+      enabled: true
+  config:
+    network:
+      ingress-class: "kourier.ingress.networking.knative.dev"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: knative-eventing
+---
+apiVersion: operator.knative.dev/v1beta1
+kind: KnativeEventing
+metadata:
+  name: knative-eventing
+  namespace: knative-eventing

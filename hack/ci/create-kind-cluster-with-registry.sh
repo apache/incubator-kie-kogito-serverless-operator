@@ -32,6 +32,21 @@ reg_port='5001'
 cat <<EOF | kind create cluster -n kind --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        system-reserved: memory=1Gi
+- role: worker
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        system-reserved: memory=2Gi
 containerdConfigPatches:
 - |-
   [plugins."io.containerd.grpc.v1.cri".registry]

@@ -17,6 +17,13 @@ kind: SonataFlowPlatform
 metadata:
   name: sonataflow-platform
 spec:
+  eventing:
+    broker:
+      ref:
+        apiVersion: eventing.knative.dev/v1
+        kind: Broker
+        name: default
+        namespace: default
   persistence:
     postgresql:
       secretRef:

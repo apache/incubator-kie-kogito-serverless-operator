@@ -61,7 +61,7 @@ jobs:
           cekit --version
 
       - name: Setup Kind cluster
-        run: make KIND_VERSION=${{ env.KIND_VERSION }} create-cluster
+        run: make KIND_VERSION=${{ env.KIND_VERSION }} BUILDER=docker create-cluster
 
       - name: Deploy Knative Eventing and Serving
         run: make KNATIVE_VERSION=${{ env.KNATIVE_VERSION }} deploy-knative

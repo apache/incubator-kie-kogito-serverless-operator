@@ -341,8 +341,8 @@ addheaders:
 generate-all: generate generate-deploy bundle addheaders vet fmt
 
 .PHONY: test-e2e # You will need to have a Minikube/Kind cluster up in running to run this target, and run container-builder before the test
-test-e2e:
-	go test ./test/e2e/* -v -ginkgo.v -ginkgo.no-color -ginkgo.junit-report=./e2e-test-report.xml -timeout 60m
+test-e2e: deploy-broker
+	go test ./test/e2e/* -v -ginkgo.v -ginkgo.no-color -ginkgo.junit-report=./e2e-test-report.xml -timeout 75m
 
 .PHONY: before-pr
 before-pr: test generate-all
@@ -358,17 +358,18 @@ create-cluster: install-kind
 
 .PHONY: deploy-knative
 deploy-knative: create-cluster
-	kubectl apply -f $(KNATIVE_SERVING_PREFIX)/serving-crds.yaml
-	kubectl apply -f $(KNATIVE_SERVING_PREFIX)/serving-core.yaml
-	kubectl apply -f $(KNATIVE_EVENTING_PREFIX)/eventing-crds.yaml
-	kubectl apply -f $(KNATIVE_EVENTING_PREFIX)/eventing-core.yaml
-	kubectl wait  --for=condition=Available=True deploy/eventing-controller -n knative-eventing --timeout=$(TIMEOUT_SECS)
-	kubectl wait  --for=condition=Available=True deploy/eventing-webhook -n knative-eventing --timeout=$(TIMEOUT_SECS)
-	kubectl wait  --for=condition=Available=True deploy/controller -n knative-serving --timeout=$(TIMEOUT_SECS)
-	kubectl wait  --for=condition=Available=True deploy/webhook -n knative-serving --timeout=$(TIMEOUT_SECS)
-	kubectl wait  --for=condition=Available=True deploy/autoscaler -n knative-serving --timeout=$(TIMEOUT_SECS)
-	kubectl wait  --for=condition=Available=True deploy/activator -n knative-serving --timeout=$(TIMEOUT_SECS)
+	kubectl apply -f https://github.com/knative/operator/releases/download/knative-$(KNATIVE_VERSION)/operator.yaml
+	kubectl wait  --for=condition=Available=True deploy/knative-operator -n default --timeout=$(TIMEOUT_SECS)
+	kubectl apply -f ./test/testdata/knative_serving_eventing.yaml
+	kubectl wait  --for=condition=Ready=True KnativeServing/knative-serving -n knative-serving --timeout=$(TIMEOUT_SECS)
+	kubectl wait  --for=condition=Ready=True KnativeEventing/knative-eventing -n knative-eventing --timeout=$(TIMEOUT_SECS)
 	
+# deploy a default broker for e2e test
+.PHONY: deploy-brokermake 
+deploy-broker:
+	kubectl apply -f ./test/testdata/eventing.knative.dev_v1_broker.yaml -n default
+	kubectl wait --for=condition=Ready=True broker.eventing.knative.dev/default -n default --timeout=$(TIMEOUT_SECS)
+
 .PHONY: delete-cluster
 delete-cluster: install-kind
 	kind delete cluster && $(BUILDER) rm -f kind-registry

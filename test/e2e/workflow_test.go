@@ -52,8 +52,11 @@ var _ = Describe("SonataFlow Operator", Ordered, func() {
 	AfterEach(func() {
 		// Remove resources in test namespace
 		if !CurrentSpecReport().Failed() && len(targetNamespace) > 0 {
-			cmd := exec.Command("kubectl", "delete", "namespace", targetNamespace, "--wait")
+			cmd := exec.Command("kubectl", "delete", "sonataflow", "--all", "-n", targetNamespace, "--wait")
 			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+			cmd = exec.Command("kubectl", "delete", "namespace", targetNamespace, "--wait")
+			_, err = utils.Run(cmd)
 			Expect(err).NotTo(HaveOccurred())
 		}
 	})
@@ -161,8 +164,11 @@ var _ = Describe("Validate the persistence ", Ordered, func() {
 	AfterEach(func() {
 		// Remove platform CR if it exists
 		if len(ns) > 0 {
-			cmd := exec.Command("kubectl", "delete", "namespace", ns, "--wait")
+			cmd := exec.Command("kubectl", "delete", "sonataflow", "--all", "-n", ns, "--wait")
 			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+			cmd = exec.Command("kubectl", "delete", "namespace", ns, "--wait")
+			_, err = utils.Run(cmd)
 			Expect(err).NotTo(HaveOccurred())
 		}
 
