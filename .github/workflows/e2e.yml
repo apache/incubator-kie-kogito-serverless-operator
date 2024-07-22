@@ -80,8 +80,24 @@ jobs:
           make deploy IMG=${{ env.OPERATOR_IMAGE_NAME }}
           kubectl wait pod -A -l control-plane=sonataflow-operator --for condition=Ready
 
-      - name: Run tests
-        run: make test-e2e
+      - name: Run tests for workflows without persistence
+        run: make test-e2e label=flows-non-persistence
+
+      - name: Retrieve cluster events and list pods
+        if: failure()
+        run: |
+          kubectl get events
+          kubectl get pod -A
+      - name: Run tests for workflows with persistence
+        run: make test-e2e label=flows-persistence
+
+      - name: Retrieve cluster events and list pods
+        if: failure()
+        run: |
+          kubectl get events
+          kubectl get pod -A
+      - name: Run tests for platform use cases
+        run: make test-e2e label=platform
 
       - name: Retrieve cluster events and list pods
         if: failure()

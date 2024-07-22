@@ -26,14 +26,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/workflowdef"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
-
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/workflowdef"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/container-builder/client"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
@@ -93,9 +92,10 @@ func setPlatformDefaults(p *operatorapi.SonataFlowPlatform, verbose bool) error 
 
 	if p.Spec.Build.Config.IsStrategyOptionEnabled(kanikoBuildCacheEnabled) {
 		p.Spec.Build.Config.BuildStrategyOptions[kanikoPVCName] = p.Name
-		if len(p.Spec.Build.Config.BaseImage) == 0 {
-			p.Spec.Build.Config.BaseImage = workflowdef.GetDefaultWorkflowBuilderImageTag()
-		}
+	}
+
+	if len(p.Spec.Build.Config.BaseImage) == 0 {
+		p.Spec.Build.Config.BaseImage = workflowdef.GetDefaultWorkflowBuilderImageTag()
 	}
 
 	if p.Spec.Build.Config.BuildStrategy == operatorapi.OperatorBuildStrategy && !p.Spec.Build.Config.IsStrategyOptionEnabled(kanikoBuildCacheEnabled) {
@@ -161,6 +161,7 @@ func GetRegistryAddress(ctx context.Context, c client.Client) (*string, error) {
 // GetCustomizedBuilderDockerfile gets the Dockerfile as defined in the default platform ConfigMap, apply any custom requirements and return.
 func GetCustomizedBuilderDockerfile(dockerfile string, platform operatorapi.SonataFlowPlatform) string {
 	if len(platform.Spec.Build.Config.BaseImage) > 0 {
+		klog.V(log.D).InfoS("Using Custom Dockerfile", "base image", platform.Spec.Build.Config.BaseImage)
 		dockerfile = strings.Replace(dockerfile, GetFromImageTagDockerfile(dockerfile), platform.Spec.Build.Config.BaseImage, 1)
 	}
 	return dockerfile
