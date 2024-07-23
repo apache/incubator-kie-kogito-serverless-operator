@@ -129,7 +129,7 @@ func (r *SonataFlowReconciler) setDefaults(workflow *operatorapi.SonataFlow) {
 
 func (r *SonataFlowReconciler) cleanupTriggers(ctx context.Context, workflow *operatorapi.SonataFlow) error {
 	plf, _ := platform.GetActivePlatform(ctx, r.Client, workflow.Namespace)
-	if plf.Status.ClusterPlatformRef == nil {
+	if plf == nil || len(plf.Status.Triggers) == 0 {
 		return nil
 	}
 	avail, err := knative.GetKnativeAvailability(r.Config)
