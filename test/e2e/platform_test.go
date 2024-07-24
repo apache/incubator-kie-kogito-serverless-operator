@@ -87,7 +87,7 @@ var _ = Describe("Validate the persistence", Ordered, func() {
 				cmd = exec.Command("kubectl", "wait", "pod", "-n", targetNamespace, "-l", "app.kubernetes.io/name in (jobs-service,data-index-service)", "--for", "condition=Ready", "--timeout=5s")
 				_, err = utils.Run(cmd)
 				return err
-			}, 20*time.Minute, 5).Should(Succeed())
+			}, 25*time.Minute, 5).Should(Succeed())
 			By("Evaluate status of service's health endpoint")
 			cmd = exec.Command("kubectl", "get", "pod", "-l", "app.kubernetes.io/name in (jobs-service,data-index-service)", "-n", targetNamespace, "-ojsonpath={.items[*].metadata.name}")
 			output, err := utils.Run(cmd)

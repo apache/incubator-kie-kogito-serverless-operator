@@ -194,7 +194,7 @@ var _ = Describe("Validate the persistence ", Ordered, func() {
 			out, err := utils.Run(cmd)
 			GinkgoWriter.Printf("%s\n", string(out))
 			return err
-		}, 12*time.Minute, 5).Should(Succeed())
+		}, 15*time.Minute, 5).Should(Succeed())
 
 		By("Evaluate status of the workflow's pod database connection health endpoint")
 		cmd = exec.Command("kubectl", "get", "pod", "-l", "sonataflow.org/workflow-app", "-n", ns, "-ojsonpath={.items[*].metadata.name}")

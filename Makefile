@@ -341,7 +341,7 @@ addheaders:
 generate-all: generate generate-deploy bundle addheaders vet fmt
 
 .PHONY: test-e2e # You will need to have a Minikube/Kind cluster up in running to run this target, and run container-builder before the test
-test-e2e: deploy-broker
+test-e2e:
 	go test ./test/e2e/* -v -ginkgo.v -ginkgo.no-color -ginkgo.junit-report=./e2e-test-report.xml -timeout 75m
 
 .PHONY: before-pr
@@ -364,12 +364,6 @@ deploy-knative: create-cluster
 	kubectl wait  --for=condition=Ready=True KnativeServing/knative-serving -n knative-serving --timeout=$(TIMEOUT_SECS)
 	kubectl wait  --for=condition=Ready=True KnativeEventing/knative-eventing -n knative-eventing --timeout=$(TIMEOUT_SECS)
 	
-# deploy a default broker for e2e test
-.PHONY: deploy-brokermake 
-deploy-broker:
-	kubectl apply -f ./test/testdata/eventing.knative.dev_v1_broker.yaml -n default
-	kubectl wait --for=condition=Ready=True broker.eventing.knative.dev/default -n default --timeout=$(TIMEOUT_SECS)
-
 .PHONY: delete-cluster
 delete-cluster: install-kind
 	kind delete cluster && $(BUILDER) rm -f kind-registry

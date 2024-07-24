@@ -23,7 +23,6 @@ spec:
         apiVersion: eventing.knative.dev/v1
         kind: Broker
         name: default
-        namespace: default
   persistence:
     postgresql:
       secretRef:
