@@ -69,6 +69,7 @@ func Test_Reconciler_ProdOps(t *testing.T) {
 	assert.NotNil(t, deployment.ObjectMeta)
 	assert.NotNil(t, deployment.ObjectMeta.Labels)
 	assert.Equal(t, deployment.ObjectMeta.Labels, map[string]string{
+		"app":                               "simple",
 		"test":                              "test",
 		"sonataflow.org/workflow-app":       "simple",
 		"sonataflow.org/workflow-namespace": workflow.Namespace,

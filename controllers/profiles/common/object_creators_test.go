@@ -201,6 +201,7 @@ func TestEnsureWorkflowSinkBindingWithWorkflowSinkIsCreated(t *testing.T) {
 	assert.Equal(t, reflectSinkBinding.Spec.Sink.Ref.Name, "default")
 	assert.NotNil(t, reflectSinkBinding.GetLabels())
 	assert.Equal(t, reflectSinkBinding.ObjectMeta.Labels, map[string]string{
+		"app":                               "vet",
 		"sonataflow.org/workflow-app":       "vet",
 		"sonataflow.org/workflow-namespace": workflow.Namespace,
 		"app.kubernetes.io/name":            "vet",
@@ -229,7 +230,10 @@ func TestEnsureWorkflowSinkBindingWithPlatformBrokerIsCreated(t *testing.T) {
 	assert.NotNil(t, reflectSinkBinding.GetLabels())
 	assert.Equal(t, reflectSinkBinding.ObjectMeta.Labels, map[string]string{"app": "vet",
 		"sonataflow.org/workflow-app":       "vet",
-		"sonataflow.org/workflow-namespace": workflow.Namespace})
+		"sonataflow.org/workflow-namespace": workflow.Namespace,
+		"app.kubernetes.io/name":            "vet",
+		"app.kubernetes.io/component":       "serverless-workflow",
+		"app.kubernetes.io/managed-by":      "sonataflow-operator"})
 }
 
 func TestEnsureWorkflowSinkBindingWithoutBrokerAreNotCreated(t *testing.T) {
@@ -295,7 +299,10 @@ func TestEnsureWorkflowTriggersWithPlatformBrokerAreCreated(t *testing.T) {
 	assert.NotNil(t, trigger.GetLabels())
 	assert.Equal(t, trigger.GetLabels(), map[string]string{"app": "vet",
 		"sonataflow.org/workflow-app":       "vet",
-		"sonataflow.org/workflow-namespace": workflow.Namespace})
+		"sonataflow.org/workflow-namespace": workflow.Namespace,
+		"app.kubernetes.io/name":            "vet",
+		"app.kubernetes.io/component":       "serverless-workflow",
+		"app.kubernetes.io/managed-by":      "sonataflow-operator"})
 	assert.Equal(t, trigger.Namespace, plf.Namespace) //trigger should be in the platform namespace
 	assert.Equal(t, trigger.Spec.Broker, "default")
 	assert.NotNil(t, trigger.Spec.Filter)
@@ -328,7 +335,10 @@ func TestEnsureWorkflowTriggersWithWorkflowBrokerAreCreated(t *testing.T) {
 	assert.NotNil(t, trigger.GetLabels())
 	assert.Equal(t, trigger.GetLabels(), map[string]string{"app": "vet",
 		"sonataflow.org/workflow-app":       "vet",
-		"sonataflow.org/workflow-namespace": workflow.Namespace})
+		"sonataflow.org/workflow-namespace": workflow.Namespace,
+		"app.kubernetes.io/name":            "vet",
+		"app.kubernetes.io/component":       "serverless-workflow",
+		"app.kubernetes.io/managed-by":      "sonataflow-operator"})
 	assert.Equal(t, trigger.Namespace, workflow.Namespace) //trigger should be in the workflow namespace
 	assert.Equal(t, trigger.Spec.Broker, "broker-appointments-request")
 	assert.NotNil(t, trigger.Spec.Filter)
@@ -341,7 +351,10 @@ func TestEnsureWorkflowTriggersWithWorkflowBrokerAreCreated(t *testing.T) {
 	assert.NotNil(t, trigger.GetLabels())
 	assert.Equal(t, trigger.GetLabels(), map[string]string{"app": "vet",
 		"sonataflow.org/workflow-app":       "vet",
-		"sonataflow.org/workflow-namespace": workflow.Namespace})
+		"sonataflow.org/workflow-namespace": workflow.Namespace,
+		"app.kubernetes.io/name":            "vet",
+		"app.kubernetes.io/component":       "serverless-workflow",
+		"app.kubernetes.io/managed-by":      "sonataflow-operator"})
 	assert.Equal(t, trigger.Namespace, workflow.Namespace) //trigger should be in the workflow namespace
 	assert.Equal(t, trigger.Spec.Broker, "broker-appointments")
 	assert.NotNil(t, trigger.Spec.Filter)

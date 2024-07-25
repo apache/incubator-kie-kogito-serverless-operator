@@ -66,6 +66,7 @@ func Test_Reconciler_ProdCustomPod(t *testing.T) {
 	assert.NotNil(t, deployment.ObjectMeta)
 	assert.NotNil(t, deployment.ObjectMeta.Labels)
 	assert.Equal(t, deployment.ObjectMeta.Labels, map[string]string{
+		"app":                               "greeting",
 		"test":                              "test",
 		"sonataflow.org/workflow-app":       "greeting",
 		"sonataflow.org/workflow-namespace": workflow.Namespace,
