@@ -31,7 +31,7 @@ const (
 	// When released, this version should reflect the `major.minor` version in the registry.
 	// For example, docker.io/apache/incubator-kie-sonataflow-operator:10.0
 	tagVersion        = "main"
-	serviceTagVersion = "weekly-latest"
+	serviceTagVersion = "main-20240728" // weekly-latest
 )
 
 // GetOperatorVersion gets the current binary version of the operator. Do not use it to compose image tags!

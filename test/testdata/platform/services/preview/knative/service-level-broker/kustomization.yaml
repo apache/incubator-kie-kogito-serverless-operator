@@ -12,9 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: eventing.knative.dev/v1
-kind: Broker
-metadata:
-  name: default
-spec: {}
+resources:
+- 00-broker.yaml
+- 01-postgres.yaml
+- 02-sonataflow_platform.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+secretGenerator:
+  - name: postgres-secrets
+    literals:
+      - POSTGRES_USER=sonataflow
+      - POSTGRES_PASSWORD=sonataflow
+      - POSTGRES_DATABASE=sonataflow
+      - PGDATA=/var/lib/pgsql/data/userdata
+
+sortOptions:
+  order: fifo
 

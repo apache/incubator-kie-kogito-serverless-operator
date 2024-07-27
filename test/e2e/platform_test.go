@@ -83,11 +83,20 @@ var _ = Describe("Validate the persistence", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			By("Wait for SonataFlowPlatform CR to complete deployment")
 			// wait for service deployments to be ready
-			EventuallyWithOffset(1, func() error {
+			EventuallyWithOffset(1, func() bool {
 				cmd = exec.Command("kubectl", "wait", "pod", "-n", targetNamespace, "-l", "app.kubernetes.io/name in (jobs-service,data-index-service)", "--for", "condition=Ready", "--timeout=5s")
 				_, err = utils.Run(cmd)
-				return err
-			}, 25*time.Minute, 5).Should(Succeed())
+				if err != nil {
+					return false
+				}
+				if profile == metadata.PreviewProfile.String() {
+					GinkgoWriter.Println("waitForPodRestartCompletion")
+					waitForPodRestartCompletion("app.kubernetes.io/name=jobs-service", targetNamespace)
+					GinkgoWriter.Println("waitForPodRestartCompletion done")
+					return true
+				}
+				return true
+			}, 25*time.Minute, 5).Should(BeTrue())
 			By("Evaluate status of service's health endpoint")
 			cmd = exec.Command("kubectl", "get", "pod", "-l", "app.kubernetes.io/name in (jobs-service,data-index-service)", "-n", targetNamespace, "-ojsonpath={.items[*].metadata.name}")
 			output, err := utils.Run(cmd)
@@ -156,4 +165,39 @@ var _ = Describe("Validate the persistence", Ordered, func() {
 		Entry("and both Job Service and Data Index using the one defined in each service, discarding the one from the platform CR", test.GetSonataFlowE2EPlatformPersistenceSampleDataDirectory("overwritten_by_services")),
 	)
 
+	DescribeTable("when deploying a SonataFlowPlatform CR with brokers", func(testcaseDir string) {
+		By("Deploy the CR")
+		var manifests []byte
+		EventuallyWithOffset(1, func() error {
+			var err error
+			cmd := exec.Command("kubectl", "kustomize", testcaseDir)
+			manifests, err = utils.Run(cmd)
+			return err
+		}, time.Minute, time.Second).Should(Succeed())
+		cmd := exec.Command("kubectl", "create", "-n", targetNamespace, "-f", "-")
+		cmd.Stdin = bytes.NewBuffer(manifests)
+		_, err := utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred())
+		By("Wait for SonatatFlowPlatform CR to complete deployment")
+		// wait for service deployments to be ready
+		EventuallyWithOffset(1, func() error {
+			cmd = exec.Command("kubectl", "wait", "pod", "-n", targetNamespace, "-l", "app.kubernetes.io/name in (jobs-service,data-index-service)", "--for", "condition=Ready", "--timeout=5s")
+			_, err = utils.Run(cmd)
+			return err
+		}, 10*time.Minute, 5).Should(Succeed())
+
+		GinkgoWriter.Println("waitForPodRestartCompletion")
+		waitForPodRestartCompletion("app.kubernetes.io/name=jobs-service", targetNamespace)
+		GinkgoWriter.Println("waitForPodRestartCompletion done")
+
+		By("Evaluate status of all service's health endpoint")
+		cmd = exec.Command("kubectl", "get", "pod", "-l", "app.kubernetes.io/name in (jobs-service,data-index-service)", "-n", targetNamespace, "-ojsonpath={.items[*].metadata.name}")
+		output, err := utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred())
+		for _, pn := range strings.Split(string(output), " ") {
+			verifyHealthStatusInPod(pn, targetNamespace)
+		}
+	},
+		Entry("and both Job Service and Data Index have service level brokers", test.GetSonataFlowE2EPlatformServicesKnativeDirectory("service-level-broker")),
+	)
 })

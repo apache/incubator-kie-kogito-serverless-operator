@@ -39,14 +39,14 @@ nodes:
     kind: InitConfiguration
     nodeRegistration:
       kubeletExtraArgs:
-        system-reserved: memory=1Gi
+        system-reserved: memory=2Gi
 - role: worker
   kubeadmConfigPatches:
   - |
     kind: InitConfiguration
     nodeRegistration:
       kubeletExtraArgs:
-        system-reserved: memory=2Gi
+        system-reserved: memory=4Gi
 containerdConfigPatches:
 - |-
   [plugins."io.containerd.grpc.v1.cri".registry]

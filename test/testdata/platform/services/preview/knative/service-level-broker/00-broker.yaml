@@ -17,4 +17,23 @@ kind: Broker
 metadata:
   name: default
 spec: {}
+---
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: di-source
+spec: {}
+---
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: js-sink
+spec: {}
+---
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: js-source
+spec: {}
+
 

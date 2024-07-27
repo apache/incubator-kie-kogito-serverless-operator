@@ -13,7 +13,6 @@
 # limitations under the License.
 
 resources:
-- 00-broker.yaml
 - 01-postgres.yaml
 - 02-sonataflow_platform.yaml
 - 03-sonataflow_callbackstatetimeouts.sw.yaml
