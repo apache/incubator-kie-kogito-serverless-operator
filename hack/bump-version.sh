@@ -44,7 +44,6 @@ sed -i "s|newTag:.*|newTag: ${new_version}|g" config/manager/kustomization.yaml
 sed -i "s|IMAGE_TAG_BASE ?=.*|IMAGE_TAG_BASE ?= ${imageTag}|g" Makefile
 sed -i "s|newName:.*|newName: ${imageTag}|g" config/manager/kustomization.yaml
 
-# Update sonataflow-* images
 sed -i -r "s|operatorVersion =.*|operatorVersion = \"${new_version}\"|g" version/version.go
 
 sed -i "s|containerImage:.*|containerImage: ${imageTag}:${newMajorMinorVersion}|g" $(getCsvFile)
