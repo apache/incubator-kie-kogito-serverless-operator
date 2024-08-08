@@ -11,7 +11,7 @@ kanikoExecutorImageTag: gcr.io/kaniko-project/executor:v1.9.0
 jobsServicePostgreSQLImageTag: "apache/incubator-kie-kogito-jobs-service-postgresql:weekly-latest"
 jobsServiceEphemeralImageTag: ""
 # The Data Index image to use, if empty the operator will use the default Apache Community one based on the current operator's version
-dataIndexPostgreSQLImageTag: "apache/incubator-kie-kogito-data-index-postgresql:weekly-latest"
+dataIndexPostgreSQLImageTag: ""
 dataIndexEphemeralImageTag: ""
 # SonataFlow base builder image used in the internal Dockerfile to build workflow applications in preview profile
 # Order of precedence is:
