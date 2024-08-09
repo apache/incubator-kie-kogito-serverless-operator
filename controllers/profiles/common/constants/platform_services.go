@@ -47,6 +47,7 @@ const (
 	KogitoProcessDefinitionsEventsErrorsEnabled = "kogito.events.processdefinitions.errors.propagate"
 	KogitoProcessDefinitionsEventsPath          = "/definitions"
 	KogitoUserTasksEventsEnabled                = "kogito.events.usertasks.enabled"
+	KogitoJobsPath                              = "/jobs"
 	// KogitoDataIndexHealthCheckEnabled configures if a workflow must check for the data index availability as part
 	// of its start health check.
 	KogitoDataIndexHealthCheckEnabled = "kogito.data-index.health-enabled"

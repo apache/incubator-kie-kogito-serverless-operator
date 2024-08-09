@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/test/utils"
 
 	//nolint:golint
@@ -230,4 +231,41 @@ func waitForPodRestartCompletion(label, ns string) {
 		}
 		return true
 	}, 1*time.Minute, 5).Should(BeTrue())
+}
+
+func verifyTrigger(triggers []operatorapi.SonataFlowPlatformTriggerRef, namePrefix, path, ns, broker string) error {
+	for _, ref := range triggers {
+		if strings.HasPrefix(ref.Name, namePrefix) && ref.Namespace == ns {
+			return verifyTriggerData(ref.Name, ns, path, broker)
+		}
+	}
+	return fmt.Errorf("failed to find trigger to verify with prefix: %v, namespace: %v", namePrefix, ns)
+}
+
+func verifyTriggerData(name, ns, path, broker string) error {
+	cmd := exec.Command("kubectl", "get", "trigger", name, "-n", ns, "-ojsonpath={.spec.broker} {.status.subscriberUri} {.status.conditions[?(@.type=='Ready')].status}")
+	out, err := utils.Run(cmd)
+	if err != nil {
+		GinkgoWriter.Println(fmt.Errorf("failed to get pod: %v", err))
+		return err
+	}
+	data := strings.Fields(string(out))
+	if len(data) == 3 && broker == data[0] && strings.HasSuffix(data[1], path) && data[2] == "True" {
+		return nil
+	}
+	return fmt.Errorf("failed to verify trigger %v, data=%s", name, string(out))
+}
+
+func verifySinkBinding(name, ns, broker string) error {
+	cmd := exec.Command("kubectl", "get", "sinkbinding", name, "-n", ns, "-ojsonpath={.status.sinkUri} {.status.conditions[?(@.type=='Ready')].status}")
+	out, err := utils.Run(cmd)
+	if err != nil {
+		GinkgoWriter.Println(fmt.Errorf("failed to get pod: %v", err))
+		return err
+	}
+	data := strings.Fields(string(out))
+	if len(data) == 2 && strings.HasSuffix(data[0], broker) && data[1] == "True" {
+		return nil
+	}
+	return fmt.Errorf("failed to verify sinkbinding %v, data=%s", name, string(out))
 }

@@ -49,9 +49,6 @@ import (
 const (
 	quarkusHibernateORMDatabaseGeneration string = "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION"
 	quarkusFlywayMigrateAtStart           string = "QUARKUS_FLYWAY_MIGRATE_AT_START"
-	pathProcesses                         string = "/processes"
-	pathDefinitions                       string = "/definitions"
-	pathJobs                              string = "/jobs"
 )
 
 type PlatformServiceHandler interface {
@@ -391,6 +388,13 @@ func (j *JobServiceHandler) GetPodResourceRequirements() corev1.ResourceRequirem
 }
 
 func (j *JobServiceHandler) GetReplicaCount() int32 {
+	if j.GetSink() != nil { //job services has sink configured
+		injected, _ := knative.IsKSinkInjected(j.GetServiceCmName(), j.platform.Namespace)
+		if injected {
+			return 1
+		}
+		return 0 // JS deployment does not have K_SINK injected yet
+	}
 	return 1
 }
 
@@ -599,13 +603,13 @@ func (d *DataIndexHandler) GenerateKnativeResources(platform *operatorapi.Sonata
 	}
 	serviceName := d.GetServiceName()
 	return []client.Object{
-		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-error", "ProcessInstanceErrorDataEvent", pathProcesses, platform),
-		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-node", "ProcessInstanceNodeDataEvent", pathProcesses, platform),
-		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-sla", "ProcessInstanceSLADataEvent", pathProcesses, platform),
-		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-state", "ProcessInstanceStateDataEvent", pathProcesses, platform),
-		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-variable", "ProcessInstanceVariableDataEvent", pathProcesses, platform),
-		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-definition", "ProcessDefinitionEvent", pathDefinitions, platform),
-		d.newTrigger(lbl, brokerName, namespace, serviceName, "jobs", "JobEvent", pathJobs, platform)}, nil
+		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-error", "ProcessInstanceErrorDataEvent", constants.KogitoProcessInstancesEventsPath, platform),
+		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-node", "ProcessInstanceNodeDataEvent", constants.KogitoProcessInstancesEventsPath, platform),
+		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-sla", "ProcessInstanceSLADataEvent", constants.KogitoProcessInstancesEventsPath, platform),
+		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-state", "ProcessInstanceStateDataEvent", constants.KogitoProcessInstancesEventsPath, platform),
+		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-variable", "ProcessInstanceVariableDataEvent", constants.KogitoProcessInstancesEventsPath, platform),
+		d.newTrigger(lbl, brokerName, namespace, serviceName, "process-definition", "ProcessDefinitionEvent", constants.KogitoProcessDefinitionsEventsPath, platform),
+		d.newTrigger(lbl, brokerName, namespace, serviceName, "jobs", "JobEvent", constants.KogitoJobsPath, platform)}, nil
 }
 
 func (d JobServiceHandler) GetSourceBroker() *duckv1.Destination {

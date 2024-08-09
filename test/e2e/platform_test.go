@@ -16,6 +16,7 @@ package e2e
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os/exec"
@@ -24,6 +25,9 @@ import (
 	"time"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/metadata"
+	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
+
+	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/test"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/test/utils"
 
@@ -47,8 +51,9 @@ const (
 var _ = Describe("Validate the persistence", Ordered, func() {
 
 	var (
-		projectDir      string
-		targetNamespace string
+		projectDir       string
+		targetNamespace  string
+		targetNamespace2 string
 	)
 
 	BeforeEach(func() {
@@ -56,13 +61,25 @@ var _ = Describe("Validate the persistence", Ordered, func() {
 		cmd := exec.Command("kubectl", "create", "namespace", targetNamespace)
 		_, err := utils.Run(cmd)
 		Expect(err).NotTo(HaveOccurred())
+
+		targetNamespace2 = fmt.Sprintf("test-%d", rand.Intn(1024)+1)
+		cmd = exec.Command("kubectl", "create", "namespace", targetNamespace2)
+		_, err = utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
 		// Remove resources in test namespace with no failure
-		if !CurrentSpecReport().Failed() && len(targetNamespace) > 0 {
-			cmd := exec.Command("kubectl", "delete", "namespace", targetNamespace, "--wait")
-			_, err := utils.Run(cmd)
-			Expect(err).NotTo(HaveOccurred())
+		if !CurrentSpecReport().Failed() {
+			if len(targetNamespace) > 0 {
+				cmd := exec.Command("kubectl", "delete", "namespace", targetNamespace, "--wait")
+				_, err := utils.Run(cmd)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			if len(targetNamespace2) > 0 {
+				cmd := exec.Command("kubectl", "delete", "namespace", targetNamespace2, "--wait")
+				_, err := utils.Run(cmd)
+				Expect(err).NotTo(HaveOccurred())
+			}
 		}
 	})
 	var _ = Context("with platform services", func() {
@@ -96,7 +113,7 @@ var _ = Describe("Validate the persistence", Ordered, func() {
 					return true
 				}
 				return true
-			}, 25*time.Minute, 5).Should(BeTrue())
+			}, 30*time.Minute, 5).Should(BeTrue())
 			By("Evaluate status of service's health endpoint")
 			cmd = exec.Command("kubectl", "get", "pod", "-l", "app.kubernetes.io/name in (jobs-service,data-index-service)", "-n", targetNamespace, "-ojsonpath={.items[*].metadata.name}")
 			output, err := utils.Run(cmd)
@@ -197,7 +214,113 @@ var _ = Describe("Validate the persistence", Ordered, func() {
 		for _, pn := range strings.Split(string(output), " ") {
 			verifyHealthStatusInPod(pn, targetNamespace)
 		}
+		By("Evaluate triggers and sinkbindings")
+		cmd = exec.Command("kubectl", "get", "sonataflowplatform", "sonataflow-platform", "-n", targetNamespace, "-ojsonpath={.status.triggers}")
+		output, err = utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred())
+		var triggers []operatorapi.SonataFlowPlatformTriggerRef
+		err = json.Unmarshal(output, &triggers)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "data-index-process-error-", constants.KogitoProcessInstancesEventsPath, targetNamespace, "di-source")).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "data-index-process-node-", constants.KogitoProcessInstancesEventsPath, targetNamespace, "di-source")).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "data-index-process-sla-", constants.KogitoProcessInstancesEventsPath, targetNamespace, "di-source")).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "data-index-process-state-", constants.KogitoProcessInstancesEventsPath, targetNamespace, "di-source")).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "data-index-process-variable-", constants.KogitoProcessInstancesEventsPath, targetNamespace, "di-source")).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "data-index-process-definition-", constants.KogitoProcessDefinitionsEventsPath, targetNamespace, "di-source")).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "data-index-jobs-", constants.KogitoJobsPath, targetNamespace, "di-source")).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "jobs-service-create-job-", constants.JobServiceJobEventsPath, targetNamespace, "js-source")).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "jobs-service-delete-job-", constants.JobServiceJobEventsPath, targetNamespace, "js-source")).NotTo(HaveOccurred())
+		Expect(verifySinkBinding("sonataflow-platform-jobs-service-sb", targetNamespace, "js-sink")).NotTo(HaveOccurred())
 	},
 		Entry("and both Job Service and Data Index have service level brokers", test.GetSonataFlowE2EPlatformServicesKnativeDirectory("service-level-broker")),
+	)
+
+	DescribeTable("when deploying a SonataFlowPlatform CR with platform broker", func(testcaseDir, brokerNamespace string) {
+		brokerName := "default"
+		By("Deploy the broker")
+		cmd := exec.Command("kubectl", "create", "-n", brokerNamespace, "-f", filepath.Join(projectDir,
+			testcaseDir, "broker"))
+		_, err := utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Wait for the broker to be ready")
+		EventuallyWithOffset(1, func() error {
+			cmd = exec.Command("kubectl", "wait", "broker", brokerName, "-n", brokerNamespace, "--for", "condition=Ready=True", "--timeout=5s")
+			_, err = utils.Run(cmd)
+			return err
+		}, time.Minute, time.Second).Should(Succeed())
+
+		By("Deploy the SonataFlowPlatform CR")
+		var manifests []byte
+		EventuallyWithOffset(1, func() error {
+			var err error
+			cmd := exec.Command("kubectl", "kustomize", testcaseDir, "|", fmt.Sprintf("BROKER_NAMESPACE=%s", brokerNamespace), "envsubst")
+			manifests, err = utils.Run(cmd)
+			return err
+		}, time.Minute, time.Second).Should(Succeed())
+		cmd = exec.Command("kubectl", "create", "-n", targetNamespace, "-f", "-")
+		cmd.Stdin = bytes.NewBuffer(manifests)
+		_, err = utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred())
+		By("Wait for SonatatFlowPlatform CR to complete deployment")
+		// wait for service deployments to be ready
+		EventuallyWithOffset(1, func() error {
+			cmd = exec.Command("kubectl", "wait", "pod", "-n", targetNamespace, "-l", "app.kubernetes.io/name in (jobs-service,data-index-service)", "--for", "condition=Ready", "--timeout=5s")
+			_, err = utils.Run(cmd)
+			return err
+		}, 10*time.Minute, 5).Should(Succeed())
+
+		GinkgoWriter.Println("waitForPodRestartCompletion")
+		waitForPodRestartCompletion("app.kubernetes.io/name=jobs-service", targetNamespace)
+		GinkgoWriter.Println("waitForPodRestartCompletion done")
+
+		By("Evaluate status of all service's health endpoint")
+		cmd = exec.Command("kubectl", "get", "pod", "-l", "app.kubernetes.io/name in (jobs-service,data-index-service)", "-n", targetNamespace, "-ojsonpath={.items[*].metadata.name}")
+		output, err := utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred())
+		for _, pn := range strings.Split(string(output), " ") {
+			verifyHealthStatusInPod(pn, targetNamespace)
+		}
+		By("Evaluate triggers and sinkbindings for DI and JS")
+		cmd = exec.Command("kubectl", "get", "sonataflowplatform", "sonataflow-platform", "-n", targetNamespace, "-ojsonpath={.status.triggers}")
+		output, err = utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred())
+		var triggers []operatorapi.SonataFlowPlatformTriggerRef
+		err = json.Unmarshal(output, &triggers)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "data-index-process-error-", constants.KogitoProcessInstancesEventsPath, brokerNamespace, brokerName)).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "data-index-process-node-", constants.KogitoProcessInstancesEventsPath, brokerNamespace, brokerName)).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "data-index-process-sla-", constants.KogitoProcessInstancesEventsPath, brokerNamespace, brokerName)).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "data-index-process-state-", constants.KogitoProcessInstancesEventsPath, brokerNamespace, brokerName)).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "data-index-process-variable-", constants.KogitoProcessInstancesEventsPath, brokerNamespace, brokerName)).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "data-index-process-definition-", constants.KogitoProcessDefinitionsEventsPath, brokerNamespace, brokerName)).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "data-index-jobs-", constants.KogitoJobsPath, brokerNamespace, brokerName)).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "jobs-service-create-job-", constants.JobServiceJobEventsPath, brokerNamespace, brokerName)).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, "jobs-service-delete-job-", constants.JobServiceJobEventsPath, brokerNamespace, brokerName)).NotTo(HaveOccurred())
+		Expect(verifySinkBinding("sonataflow-platform-jobs-service-sb", targetNamespace, brokerName)).NotTo(HaveOccurred())
+
+		By("Deploy the SonataFlow CR")
+		cmd = exec.Command("kubectl", "create", "-n", targetNamespace, "-f", filepath.Join(projectDir,
+			testcaseDir, "sonataflow"))
+		manifests, err = utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred())
+
+		sfName := "callbackstatetimeouts"
+		By("Evaluate status of SonataFlow CR")
+		EventuallyWithOffset(1, func() bool {
+			return verifyWorkflowIsInRunningStateInNamespace(sfName, targetNamespace)
+		}, 10*time.Minute, 5).Should(BeTrue())
+
+		By("Evaluate triggers and sinkbindings for the workflow")
+		cmd = exec.Command("kubectl", "get", "sonataflow", sfName, "-n", targetNamespace, "-ojsonpath={.status.triggers}")
+		output, err = utils.Run(cmd)
+		Expect(err).NotTo(HaveOccurred())
+		err = json.Unmarshal(output, &triggers)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(verifyTrigger(triggers, sfName, "", brokerNamespace, brokerName)).NotTo(HaveOccurred())
+		Expect(verifySinkBinding(fmt.Sprintf("%s-sb", sfName), targetNamespace, brokerName)).NotTo(HaveOccurred())
+	},
+		Entry("and with broker and platform in the same namespace", test.GetSonataFlowE2EPlatformServicesKnativeDirectory("platform-level-broker"), targetNamespace),
+		Entry("and with broker and platform in a separate namespace", test.GetSonataFlowE2EPlatformServicesKnativeDirectory("platform-level-broker"), targetNamespace2),
 	)
 })

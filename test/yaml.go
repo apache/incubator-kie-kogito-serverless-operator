@@ -286,7 +286,7 @@ func GetSonataFlowE2EPlatformServicesDirectory() string {
 }
 
 func GetSonataFlowE2EPlatformServicesKnativeDirectory(subdir string) string {
-	return filepath.Join(getTestDataDir(), "platform", "services", "knative", subdir)
+	return filepath.Join(getTestDataDir(), "platform", "services", "preview", "knative", subdir)
 }
 
 func GetSonataFlowE2EPlatformNoServicesDirectory() string {
