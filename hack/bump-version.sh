@@ -23,6 +23,7 @@ source "${script_dir_path}"/env.sh
 imageTag='docker.io/apache/incubator-kie-sonataflow-operator'
 # shellcheck disable=SC2034
 old_version=$(getImageTagVersion)
+old_operator_version=$(getOperatorVersion)
 new_version=$1
 
 if [ -z "${new_version}" ]; then
@@ -47,6 +48,12 @@ sed -i "s|newName:.*|newName: ${imageTag}|g" config/manager/kustomization.yaml
 sed -i -r "s|operatorVersion =.*|operatorVersion = \"${new_version}\"|g" version/version.go
 
 sed -i "s|containerImage:.*|containerImage: ${imageTag}:${newMajorMinorVersion}|g" $(getCsvFile)
+
+# Begin: Sonataflow DB Migrator tool
+sed -i "s|OPERATOR_VERSION=${old_operator_version}|OPERATOR_VERSION=${new_version}|g" images/tools/sonataflow-db-migrator/build-container-image.sh
+sed -i "s|<version>${old_operator_version}</version>|<version>${new_version}</version>|g" images/tools/sonataflow-db-migrator/pom.xml
+sed -i "s|OPERATOR_VERSION=${old_operator_version}|OPERATOR_VERSION=${new_version}|g" images/tools/sonataflow-db-migrator/src/main/cekit/modules/kogito-postgres-db-migration-deps/migration.sh
+# End: Sonataflow DB Migrator tool
 
 make generate-all
 make vet
