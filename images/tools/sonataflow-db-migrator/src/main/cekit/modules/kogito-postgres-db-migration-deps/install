@@ -18,13 +18,15 @@
 # under the License.
 #
 
-mkdir -p /home/default
-cd /home/default
+set -x
+set -e
 
-chgrp -R 0 /home/default
-chown -R 0 /home/default
-chmod -R g=u /home/default
+useradd -m kogito
 
-chmod +x /home/default/migration.sh
+cd /home/kogito || exit
 
-microdnf clean all
+chgrp -R 0 /home/kogito
+chown -R 0 /home/kogito
+chmod -R g=u /home/kogito
+
+chmod +x /home/kogito/migration.sh

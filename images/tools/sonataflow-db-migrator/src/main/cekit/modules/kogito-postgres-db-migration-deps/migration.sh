@@ -18,4 +18,19 @@
 # under the License.
 #
 
-java -jar /home/default/sonataflow-db-migrator-1.0-SNAPSHOT-runner.jar
+set -x
+set -e
+
+OPERATOR_VERSION=999.0.0
+
+for arg in "$@"; do
+   case "$arg" in
+      OPERATOR_VERSION=*) OPERATOR_VERSION="${arg#*=}" ;;
+   esac
+done
+
+cd /home/kogito/
+
+mv sonataflow-db-migrator-runner.jar sonataflow-db-migrator-"$OPERATOR_VERSION"-runner.jar
+
+java -jar sonataflow-db-migrator-"$OPERATOR_VERSION"-runner.jar

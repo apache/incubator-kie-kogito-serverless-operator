@@ -40,6 +40,6 @@ modules:
    - name: kogito-postgres-db-migration-deps
 
 run:
-  workdir: "/home/default"
+  workdir: "/home/kogito"
   entrypoint:
-    - "/home/default/migration.sh"
+    - "/home/kogito/migration.sh"

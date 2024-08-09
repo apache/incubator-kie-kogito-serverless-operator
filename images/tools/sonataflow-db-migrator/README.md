@@ -25,7 +25,7 @@ virtualenv ~/cekit
 source ~/cekit/bin/activate;
 ```
 
-Assuming you have Postgres database running locally and e.g. have a di database for data index and js database for jobs service, you can run the image by command as follows, just substitute appropriate values.
+Assuming you have a Postgres database running locally, e.g., a `di` database for data index and a `js` database for jobs service, you can run the image with the following command. Substitute appropriate values:
 ```shell
 podman run \ 
 --env MIGRATE_DB_DATAINDEX=true \

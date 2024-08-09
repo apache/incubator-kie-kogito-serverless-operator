@@ -22,9 +22,9 @@ version: "1.0"
 artifacts:
   - name: migration.sh
     path: migration.sh
-    dest: /home/default
-  - name: sonataflow-db-migrator-1.0-SNAPSHOT-runner.jar
-    path: sonataflow-db-migrator-1.0-SNAPSHOT-runner.jar
-    dest: /home/default
+    dest: /home/kogito
+  - name: sonataflow-db-migrator-runner.jar
+    path: sonataflow-db-migrator-runner.jar
+    dest: /home/kogito
 execute:
   - script: install
