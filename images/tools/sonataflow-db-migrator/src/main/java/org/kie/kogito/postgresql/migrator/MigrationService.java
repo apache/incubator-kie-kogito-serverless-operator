@@ -51,7 +51,9 @@ public class MigrationService {
             flywayService.clean();
         }
         flywayService.migrate();
-        Log.info(flywayService.info().current().getVersion().toString());
+        if (flywayService.info() != null) {
+            Log.info(flywayService.info().current().getVersion().toString());
+        }
     }
 
     public void migrateDataIndex() {

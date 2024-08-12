@@ -30,7 +30,7 @@ cleanup () {
     rm -f src/main/cekit/modules/kogito-postgres-db-migration-deps/sonataflow-db-migrator-runner.jar
 }
 
-# Script variables with default values
+# Script variables with default values. These values will be updated by hack/bump-version.sh, don't change it.
 OPERATOR_VERSION=999.0.0 # comes from version.go
 DDL_VERSION=10.0.999-SNAPSHOT
 DDL_FILE=kogito-ddl-10.0.999-20240806.011718-23-db-scripts.zip

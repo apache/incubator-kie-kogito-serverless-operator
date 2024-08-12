@@ -18,6 +18,7 @@
  */
 package org.kie.kogito.postgresql.migrator;
 
+import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import jakarta.inject.Inject;
@@ -49,7 +50,7 @@ public class DBMigrator implements QuarkusApplication {
                 dbConnectionChecker.checkDataIndexDBConnection();
             } catch (SQLException e) {
                 Log.error( "Error obtaining data index database connection. Cannot proceed, exiting.");
-                System.exit(-1);
+                Quarkus.asyncExit(-1);
                 return -1;
             }
             service.migrateDataIndex();
@@ -60,13 +61,13 @@ public class DBMigrator implements QuarkusApplication {
                 dbConnectionChecker.checkJobsServiceDBConnection();
             } catch (SQLException e) {
                 Log.error( "Error obtaining jobs service database connection. Cannot proceed, exiting.");
-                System.exit(-2);
+                Quarkus.asyncExit(-2);
                 return -2;
             }
             service.migrateJobsService();
         }
 
-        System.exit(0);
+        Quarkus.asyncExit(0);
         return 0;
     }
 }
