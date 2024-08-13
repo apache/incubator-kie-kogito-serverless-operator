@@ -15,6 +15,8 @@
         <quarkus.platform.version>3.13.0</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
+        <jacoco.version>0.8.12</jacoco.version>
+        <systemrules.version>1.19.0</systemrules.version>
     </properties>
 
     <dependencyManagement>
@@ -64,7 +66,7 @@
         <dependency>
             <groupId>com.github.stefanbirkner</groupId>
             <artifactId>system-rules</artifactId>
-            <version>1.19.0</version>
+            <version>${systemrules.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -136,7 +138,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.12</version>
+                <version> ${jacoco.version} </version>
                 <executions>
                     <execution>
                         <goals>
