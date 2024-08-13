@@ -932,7 +932,6 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 	t.Run("verify that knative resources creation for job service and data index service  with services level brokers is performed without error", func(t *testing.T) {
 		namespace := t.Name()
-
 		// Create a SonataFlowPlatform object with metadata and spec.
 		ksp := test.GetBasePlatformWithBrokerInReadyPhase(namespace)
 		brokerName := "default"
