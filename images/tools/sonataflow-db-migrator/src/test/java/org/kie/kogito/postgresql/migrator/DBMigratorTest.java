@@ -24,10 +24,6 @@ public class DBMigratorTest {
 
     DBMigrator dbMigrator = new DBMigrator();
 
-    @BeforeAll
-    public static void init() {
-    }
-
     @BeforeEach
     public void setupEach() {
         migrationService = mock(MigrationService.class);

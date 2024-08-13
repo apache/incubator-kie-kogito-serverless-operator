@@ -16,10 +16,6 @@ public class MigrationServiceTest {
 
     MigrationService migrationService = new MigrationService();
 
-    @BeforeAll
-    public static void init() {
-    }
-
     @BeforeEach
     public void setupEach() {
         flyway = mock(Flyway.class);

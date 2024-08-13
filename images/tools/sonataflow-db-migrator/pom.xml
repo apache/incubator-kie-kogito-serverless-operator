@@ -172,10 +172,10 @@
 
     <repositories>
         <repository>
-            <id>central</id>
-            <name>Maven Central</name>
+            <id>apache</id>
+            <name>Apache Maven</name>
             <layout>default</layout>
-            <url>https://repo1.maven.org/maven2</url>
+            <url>https://repo.maven.apache.org/maven2/</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
