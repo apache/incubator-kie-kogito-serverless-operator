@@ -22,6 +22,7 @@ spec:
       strategyOptions:
         KanikoBuildCacheEnabled: "true"
   persistence:
+    migrateDBOnStartUp: false # as the service's enabled flag is false
     postgresql:
       secretRef:
         name: postgres-secrets
@@ -35,6 +36,7 @@ spec:
     dataIndex:
       enabled: false
       persistence:
+        migrateDBOnStartUp: false # as the service's enabled flag is false
         postgresql:
           jdbcUrl: jdbc:postgresql://postgres:5432/sonataflow?currentSchema=data-index-service
           secretRef:
@@ -50,6 +52,7 @@ spec:
     jobService:
       enabled: false
       persistence:
+        migrateDBOnStartUp: false # as the service's enabled flag is false
         postgresql:
           jdbcUrl: jdbc:postgresql://postgres:5432/sonataflow?currentSchema=jobs-service
           secretRef:

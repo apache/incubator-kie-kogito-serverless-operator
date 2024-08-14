@@ -18,6 +18,7 @@ metadata:
   name: sonataflow-platform
 spec:
   persistence:
+    migrateDBOnStartUp: false # as the service's enabled flag is false
     postgresql:
       secretRef:
         name: postgres-secrets
