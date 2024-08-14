@@ -8,7 +8,7 @@ kanikoDefaultWarmerImageTag: gcr.io/kaniko-project/warmer:v1.9.0
 # Default image used internally by the Operator Managed Kaniko builder to create the executor pods
 kanikoExecutorImageTag: gcr.io/kaniko-project/executor:v1.9.0
 # The Jobs Service image to use, if empty the operator will use the default Apache Community one based on the current operator's version
-jobsServicePostgreSQLImageTag: "apache/incubator-kie-kogito-jobs-service-postgresql:weekly-latest"
+jobsServicePostgreSQLImageTag: ""
 jobsServiceEphemeralImageTag: ""
 # The Data Index image to use, if empty the operator will use the default Apache Community one based on the current operator's version
 dataIndexPostgreSQLImageTag: ""
