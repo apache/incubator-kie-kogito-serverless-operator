@@ -228,7 +228,7 @@ func (d DataIndexHandler) ConfigurePersistence(containerSpec *corev1.Container) 
 		migrateDBOnStart := strconv.FormatBool(d.platform.Spec.Services.DataIndex.Persistence.MigrateDBOnStartUp)
 		// specific to DataIndex
 		c.Env = append(c.Env, corev1.EnvVar{Name: quarkusHibernateORMDatabaseGeneration, Value: "update"}, corev1.EnvVar{Name: quarkusFlywayMigrateAtStart, Value: migrateDBOnStart})
-		
+
 		return c
 	}
 	return containerSpec
