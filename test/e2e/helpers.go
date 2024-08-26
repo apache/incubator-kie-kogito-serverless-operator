@@ -52,7 +52,7 @@ const (
 	ephemeralJobService  = "ephemeral-job-service"
 )
 
-const randomIntRange = 16384 //Set to large number to avoid cluster namespace name collisions 
+const randomIntRange = 16384 //Set to large number to avoid cluster namespace name collisions
 
 var (
 	upStatus string = "UP"
