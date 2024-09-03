@@ -274,11 +274,19 @@ func TestSonataFlowPlatformController(t *testing.T) {
 		// Check with persistence set
 		ksp.Spec = v1alpha08.SonataFlowPlatformSpec{
 			Services: &v1alpha08.ServicesPlatformSpec{
-				DataIndex: &v1alpha08.ServiceSpec{
-					Persistence: &v1alpha08.PersistenceOptionsSpec{},
+				DataIndex: &v1alpha08.DataIndexServiceSpec{
+					ServiceSpec: v1alpha08.ServiceSpec{
+						Persistence: &v1alpha08.PersistenceOptionsSpec{
+							MigrateDBOnStartUp: false,
+						},
+					},
 				},
-				JobService: &v1alpha08.ServiceSpec{
-					Persistence: &v1alpha08.PersistenceOptionsSpec{},
+				JobService: &v1alpha08.JobServiceServiceSpec{
+					ServiceSpec: v1alpha08.ServiceSpec{
+						Persistence: &v1alpha08.PersistenceOptionsSpec{
+							MigrateDBOnStartUp: false,
+						},
+					},
 				},
 			},
 			Persistence: &v1alpha08.PlatformPersistenceOptionsSpec{
@@ -924,6 +932,7 @@ func TestSonataFlowPlatformController(t *testing.T) {
 
 	t.Run("verify that knative resources creation for job service and data index service  with services level brokers is performed without error", func(t *testing.T) {
 		namespace := t.Name()
+
 		// Create a SonataFlowPlatform object with metadata and spec.
 		ksp := test.GetBasePlatformWithBrokerInReadyPhase(namespace)
 		brokerName := "default"
