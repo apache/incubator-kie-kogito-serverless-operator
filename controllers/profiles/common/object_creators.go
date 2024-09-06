@@ -90,7 +90,6 @@ const (
 	healthStartedFailureThreshold    = 5
 	healthStartedPeriodSeconds       = 15
 	healthStartedInitialDelaySeconds = 10
-	healthSuccessThreshold           = 1
 )
 
 // DeploymentCreator is an objectCreator for a base Kubernetes Deployments for profiles that need to deploy the workflow on a vanilla deployment.
@@ -186,44 +185,34 @@ func defaultContainer(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataF
 		LivenessProbe: &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
 				HTTPGet: &corev1.HTTPGetAction{
-					Path:   constants.QuarkusHealthPathLive,
-					Port:   variables.DefaultHTTPWorkflowPortIntStr,
-					Scheme: corev1.URISchemeHTTP,
+					Path: constants.QuarkusHealthPathLive,
+					Port: variables.DefaultHTTPWorkflowPortIntStr,
 				},
 			},
-			InitialDelaySeconds: healthStartedInitialDelaySeconds,
-			TimeoutSeconds:      healthTimeoutSeconds,
-			FailureThreshold:    healthStartedFailureThreshold,
-			PeriodSeconds:       healthStartedPeriodSeconds,
-			SuccessThreshold:    healthSuccessThreshold,
+			TimeoutSeconds: healthTimeoutSeconds,
+			PeriodSeconds:  healthStartedPeriodSeconds,
 		},
 		ReadinessProbe: &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
 				HTTPGet: &corev1.HTTPGetAction{
-					Path:   constants.QuarkusHealthPathReady,
-					Port:   variables.DefaultHTTPWorkflowPortIntStr,
-					Scheme: corev1.URISchemeHTTP,
+					Path: constants.QuarkusHealthPathReady,
+					Port: variables.DefaultHTTPWorkflowPortIntStr,
 				},
 			},
-			InitialDelaySeconds: healthStartedInitialDelaySeconds,
-			TimeoutSeconds:      healthTimeoutSeconds,
-			FailureThreshold:    healthStartedFailureThreshold,
-			PeriodSeconds:       healthStartedPeriodSeconds,
-			SuccessThreshold:    healthSuccessThreshold,
+			TimeoutSeconds: healthTimeoutSeconds,
+			PeriodSeconds:  healthStartedPeriodSeconds,
 		},
 		StartupProbe: &corev1.Probe{
 			ProbeHandler: corev1.ProbeHandler{
 				HTTPGet: &corev1.HTTPGetAction{
-					Path:   constants.QuarkusHealthPathStarted,
-					Port:   variables.DefaultHTTPWorkflowPortIntStr,
-					Scheme: corev1.URISchemeHTTP,
+					Path: constants.QuarkusHealthPathStarted,
+					Port: variables.DefaultHTTPWorkflowPortIntStr,
 				},
 			},
 			InitialDelaySeconds: healthStartedInitialDelaySeconds,
 			TimeoutSeconds:      healthTimeoutSeconds,
 			FailureThreshold:    healthStartedFailureThreshold,
 			PeriodSeconds:       healthStartedPeriodSeconds,
-			SuccessThreshold:    healthSuccessThreshold,
 		},
 		SecurityContext: kubeutil.SecurityDefaults(),
 	}
