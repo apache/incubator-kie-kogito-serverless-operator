@@ -185,21 +185,15 @@ func (r *SonataFlowPlatformReconciler) Reconcile(ctx context.Context, req reconc
 }
 
 func (r *SonataFlowPlatformReconciler) cleanupTriggers(ctx context.Context, platform *operatorapi.SonataFlowPlatform) error {
-	avail, err := knative.GetKnativeAvailability(r.Config)
-	if err != nil {
-		return err
-	}
-	if avail.Eventing {
-		for _, triggerRef := range platform.Status.Triggers {
-			trigger := &eventingv1.Trigger{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      triggerRef.Name,
-					Namespace: triggerRef.Namespace,
-				},
-			}
-			if err := r.Client.Delete(ctx, trigger); err != nil {
-				return err
-			}
+	for _, triggerRef := range platform.Status.Triggers {
+		trigger := &eventingv1.Trigger{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      triggerRef.Name,
+				Namespace: triggerRef.Namespace,
+			},
+		}
+		if err := r.Client.Delete(ctx, trigger); err != nil && !errors.IsNotFound(err) {
+			return err
 		}
 	}
 	controllerutil.RemoveFinalizer(platform, constants.TriggerFinalizer)

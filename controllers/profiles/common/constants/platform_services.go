@@ -37,7 +37,6 @@ const (
 	JobServiceJobEventsPath                         = "/v2/jobs/events"
 	JobServiceLeaderCheckExpirationInSeconds        = "kogito.jobs-service.management.leader-check.expiration-in-seconds"
 	DefaultJobServiceLeaderCheckExpirationInSeconds = "60"
-	JobServiceRequestEventsURL                      = "mp.messaging.outgoing.kogito-job-service-job-request-events.url"
 
 	KogitoProcessInstancesEventsConnector       = "mp.messaging.outgoing.kogito-processinstances-events.connector"
 	KogitoProcessInstancesEventsMethod          = "mp.messaging.outgoing.kogito-processinstances-events.method"

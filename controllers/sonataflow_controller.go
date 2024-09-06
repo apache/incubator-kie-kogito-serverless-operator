@@ -128,25 +128,15 @@ func (r *SonataFlowReconciler) setDefaults(workflow *operatorapi.SonataFlow) {
 }
 
 func (r *SonataFlowReconciler) cleanupTriggers(ctx context.Context, workflow *operatorapi.SonataFlow) error {
-	plf, _ := platform.GetActivePlatform(ctx, r.Client, workflow.Namespace)
-	if plf == nil || len(plf.Status.Triggers) == 0 {
-		return nil
-	}
-	avail, err := knative.GetKnativeAvailability(r.Config)
-	if err != nil {
-		return err
-	}
-	if avail.Eventing {
-		for _, triggerRef := range workflow.Status.Triggers {
-			trigger := &eventingv1.Trigger{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      triggerRef.Name,
-					Namespace: triggerRef.Namespace,
-				},
-			}
-			if err := r.Client.Delete(ctx, trigger); err != nil {
-				return err
-			}
+	for _, triggerRef := range workflow.Status.Triggers {
+		trigger := &eventingv1.Trigger{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      triggerRef.Name,
+				Namespace: triggerRef.Namespace,
+			},
+		}
+		if err := r.Client.Delete(ctx, trigger); err != nil && !errors.IsNotFound(err) {
+			return err
 		}
 	}
 	controllerutil.RemoveFinalizer(workflow, constants.TriggerFinalizer)
