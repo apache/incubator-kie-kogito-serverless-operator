@@ -169,6 +169,14 @@ func (d *DeploymentReconciler) ensureObjects(ctx context.Context, workflow *oper
 	}
 	objs = append(objs, eventingObjs...)
 
+	monitoringObjs, err := common.NewMonitoringEventingHandler(d.StateSupport).Ensure(ctx, workflow)
+	if err != nil {
+		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "Unable to deploy monitoring objects due to ", err)
+		_, _ = d.PerformStatusUpdate(ctx, workflow)
+		return reconcile.Result{}, nil, err
+	}
+
+	objs = append(objs, monitoringObjs...)
 	return reconcile.Result{}, objs, nil
 }
 

@@ -21,8 +21,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
 - name: controller
-  newName: docker.io/apache/incubator-kie-sonataflow-operator
-  newTag: latest
+  newName: quay.io/jianrzha/kogito-serverless-operator
+  newTag: 0.0.104
 # Patching the manager deployment file to add an env var with the operator namespace in
 patchesJson6902:
 - patch: |-

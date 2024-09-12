@@ -29,6 +29,7 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/workflowdef"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
+	monv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	cncfmodel "github.com/serverlessworkflow/sdk-go/v2/model"
 
 	"github.com/imdario/mergo"
@@ -64,6 +65,8 @@ const (
 	deploymentKind           = "Deployment"
 	k8sServiceAPIVersion     = "v1"
 	k8sServiceKind           = "Service"
+	k8sServicePortName       = "web"
+	k8sServicePortPath       = "/q/metrics"
 )
 
 // ObjectCreator is the func that creates the initial reference object, if the object doesn't exist in the cluster, this one is created.
@@ -262,6 +265,7 @@ func ServiceCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
 		Spec: corev1.ServiceSpec{
 			Selector: lbl,
 			Ports: []corev1.ServicePort{{
+				Name:       k8sServicePortName,
 				Protocol:   corev1.ProtocolTCP,
 				Port:       defaultHTTPServicePort,
 				TargetPort: variables.DefaultHTTPWorkflowPortIntStr,
@@ -445,4 +449,34 @@ func ManagedPropsConfigMapCreator(workflow *operatorapi.SonataFlow, platform *op
 		return nil, err
 	}
 	return workflowproj.CreateNewManagedPropsConfigMap(workflow, props), nil
+}
+
+// ServiceMonitorCreator is an ObjectsCreator for Service Monitor for the workflow service.
+// It will create v1.SinkBinding based on events defined in workflow.
+func ServiceMonitorCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
+	lbl := workflowproj.GetMergedLabels(workflow)
+
+	// subject must be deployment to inject K_SINK, service won't work
+	serviceMonitor := &monv1.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workflow.Name,
+			Namespace: workflow.Namespace,
+			Labels:    lbl,
+		},
+		Spec: monv1.ServiceMonitorSpec{
+			Selector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					workflowproj.LabelWorkflow:          workflow.Name,
+					workflowproj.LabelWorkflowNamespace: workflow.Namespace,
+				},
+			},
+			Endpoints: []monv1.Endpoint{
+				monv1.Endpoint{
+					Port: k8sServicePortName,
+					Path: k8sServicePortPath,
+				},
+			},
+		},
+	}
+	return serviceMonitor, nil
 }
