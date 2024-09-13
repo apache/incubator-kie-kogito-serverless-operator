@@ -34,6 +34,7 @@ type monitoringObjectManager struct {
 func NewMonitoringEventingHandler(support *StateSupport) MonitoringEventingHandler {
 	return &monitoringObjectManager{
 		serviceMonitor: NewObjectEnsurer(support.C, ServiceMonitorCreator),
+		dataSource:     NewObjectEnsurer(support.C, DataSourceCreator),
 		StateSupport:   support,
 	}
 }
@@ -60,17 +61,18 @@ func (k monitoringObjectManager) Ensure(ctx context.Context, workflow *operatora
 		} else if serviceMonitor != nil {
 			objs = append(objs, serviceMonitor)
 		}
-		/*
-				triggers := k.trigger.Ensure(ctx, workflow)
-				for _, trigger := range triggers {
-					if trigger.Error != nil {
-						return objs, trigger.Error
-					}
-					objs = append(objs, trigger.Object)
-				}
-			}
-		*/
-		return objs, nil
 	}
-	return nil, nil
+
+	if !MonitoringAvail.Grafana {
+		klog.V(log.I).InfoS("Grafana is not installed")
+	} else {
+		// create grafana data source
+		dataSource, _, err := k.dataSource.Ensure(ctx, workflow)
+		if err != nil {
+			return objs, err
+		} else if dataSource != nil {
+			objs = append(objs, dataSource)
+		}
+	}
+	return objs, nil
 }

@@ -29,7 +29,8 @@ type MonitoringAvailability struct {
 }
 
 const (
-	prometheusGroup = "prometheuses.monitoring.coreos.com"
+	prometheusGroup = "monitoring.coreos.com"
+	grafanaGroup    = "grafana.integreatly.org"
 )
 
 func GetMonitoringAvailability(cfg *rest.Config) (*MonitoringAvailability, error) {
@@ -45,7 +46,7 @@ func GetMonitoringAvailability(cfg *rest.Config) (*MonitoringAvailability, error
 			if group.Name == prometheusGroup {
 				result.Prometheus = true
 			}
-			if group.Name == knativeEventingGroup {
+			if group.Name == grafanaGroup {
 				result.Grafana = true
 			}
 		}

@@ -29,7 +29,8 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/workflowdef"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
-	monv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	grafana "github.com/grafana/grafana-operator/v5/api/v1beta1"
+	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	cncfmodel "github.com/serverlessworkflow/sdk-go/v2/model"
 
 	"github.com/imdario/mergo"
@@ -452,26 +453,54 @@ func ManagedPropsConfigMapCreator(workflow *operatorapi.SonataFlow, platform *op
 }
 
 // ServiceMonitorCreator is an ObjectsCreator for Service Monitor for the workflow service.
-// It will create v1.SinkBinding based on events defined in workflow.
 func ServiceMonitorCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
 	lbl := workflowproj.GetMergedLabels(workflow)
 
 	// subject must be deployment to inject K_SINK, service won't work
-	serviceMonitor := &monv1.ServiceMonitor{
+	serviceMonitor := &prometheus.ServiceMonitor{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workflow.Name,
 			Namespace: workflow.Namespace,
 			Labels:    lbl,
 		},
-		Spec: monv1.ServiceMonitorSpec{
+		Spec: prometheus.ServiceMonitorSpec{
 			Selector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					workflowproj.LabelWorkflow:          workflow.Name,
 					workflowproj.LabelWorkflowNamespace: workflow.Namespace,
 				},
 			},
-			Endpoints: []monv1.Endpoint{
-				monv1.Endpoint{
+			Endpoints: []prometheus.Endpoint{
+				prometheus.Endpoint{
+					Port: k8sServicePortName,
+					Path: k8sServicePortPath,
+				},
+			},
+		},
+	}
+	return serviceMonitor, nil
+}
+
+// DataSourceCreator is an ObjectsCreator for the grafana data source for the workflow service.
+func DataSourceCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
+	lbl := workflowproj.GetMergedLabels(workflow)
+
+	// subject must be deployment to inject K_SINK, service won't work
+	serviceMonitor := &grafana.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workflow.Name,
+			Namespace: workflow.Namespace,
+			Labels:    lbl,
+		},
+		Spec: prometheus.ServiceMonitorSpec{
+			Selector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					workflowproj.LabelWorkflow:          workflow.Name,
+					workflowproj.LabelWorkflowNamespace: workflow.Namespace,
+				},
+			},
+			Endpoints: []prometheus.Endpoint{
+				prometheus.Endpoint{
 					Port: k8sServicePortName,
 					Path: k8sServicePortPath,
 				},

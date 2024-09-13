@@ -236,6 +236,7 @@ KIND_VERSION ?= v0.20.0
 KNATIVE_VERSION ?= v1.13.2
 TIMEOUT_SECS ?= 180s
 PROMETHEUS_VERSION ?= v0.70.0
+GRAFANA_VERSION ?= v5.13.0
 
 KNATIVE_SERVING_PREFIX ?= "https://github.com/knative/serving/releases/download/knative-$(KNATIVE_VERSION)"
 KNATIVE_EVENTING_PREFIX ?= "https://github.com/knative/eventing/releases/download/knative-$(KNATIVE_VERSION)"
@@ -367,12 +368,15 @@ deploy-knative: create-cluster
 	kubectl wait  --for=condition=Ready=True KnativeServing/knative-serving -n knative-serving --timeout=$(TIMEOUT_SECS)
 	kubectl wait  --for=condition=Ready=True KnativeEventing/knative-eventing -n knative-eventing --timeout=$(TIMEOUT_SECS)
 
-.PHONY: deploy-prometheus
-deploy-prometheus: create-cluster
+.PHONY: deploy-monitoring
+deploy-monitoring: create-cluster
 	kubectl create -f https://github.com/prometheus-operator/prometheus-operator/releases/download/$(PROMETHEUS_VERSION)/bundle.yaml
 	kubectl wait  --for=condition=Available=True deploy/prometheus-operator -n default --timeout=$(TIMEOUT_SECS)
-	kubectl apply -f ./test/testdata/prometheus.yaml
+	kubectl create -f https://github.com/grafana/grafana-operator/releases/$(GRAFANA_VERSION)/download/kustomize-cluster_scoped.yaml
+	kubectl wait  --for=condition=Available=True deploy/grafana-operator-controller-manager -n grafana --timeout=$(TIMEOUT_SECS)
+	kubectl apply -f ./test/testdata/monitoring.yaml
 	kubectl wait  --for=condition=Available=True prometheus/prometheus -n default --timeout=$(TIMEOUT_SECS)
+	kubectl wait  --for=condition=Available=True deploy/grafana-deployment -n default --timeout=$(TIMEOUT_SECS)
 	
 .PHONY: delete-cluster
 delete-cluster: install-kind
