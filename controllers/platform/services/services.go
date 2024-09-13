@@ -23,8 +23,8 @@ import (
 	"fmt"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/cfg"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/knative"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/utils/knative"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
 	"github.com/imdario/mergo"
 	"github.com/magiconair/properties"

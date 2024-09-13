@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/knative"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/utils/knative"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -154,12 +154,21 @@ func (d *DeploymentReconciler) ensureObjects(ctx context.Context, workflow *oper
 		return reconcile.Result{}, nil, err
 	}
 
+	objs := []client.Object{deployment, managedPropsCM, service}
 	eventingObjs, err := common.NewKnativeEventingHandler(d.StateSupport, pl).Ensure(ctx, workflow)
 	if err != nil {
 		return reconcile.Result{}, nil, err
 	}
-
-	objs := []client.Object{deployment, managedPropsCM, service}
+	objs = append(objs, eventingObjs...)
+	if pl.Spec.MonitoringEnabled {
+		monitoringObjs, err := common.NewMonitoringEventingHandler(d.StateSupport).Ensure(ctx, workflow)
+		if err != nil {
+			workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "Unable to deploy monitoring objects due to ", err)
+			_, _ = d.PerformStatusUpdate(ctx, workflow)
+			return reconcile.Result{}, nil, err
+		}
+		objs = append(objs, monitoringObjs...)
+	}
 	if deploymentOp == controllerutil.OperationResultCreated {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
 		if _, err := d.PerformStatusUpdate(ctx, workflow); err != nil {
@@ -167,16 +176,6 @@ func (d *DeploymentReconciler) ensureObjects(ctx context.Context, workflow *oper
 		}
 		return reconcile.Result{RequeueAfter: constants.RequeueAfterFollowDeployment, Requeue: true}, objs, nil
 	}
-	objs = append(objs, eventingObjs...)
-
-	monitoringObjs, err := common.NewMonitoringEventingHandler(d.StateSupport).Ensure(ctx, workflow)
-	if err != nil {
-		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "Unable to deploy monitoring objects due to ", err)
-		_, _ = d.PerformStatusUpdate(ctx, workflow)
-		return reconcile.Result{}, nil, err
-	}
-
-	objs = append(objs, monitoringObjs...)
 	return reconcile.Result{}, objs, nil
 }
 

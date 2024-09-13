@@ -73,10 +73,6 @@ func (o *ObjectEnsurers) DeploymentByDeploymentModel(workflow *v1alpha08.SonataF
 
 // ServiceByDeploymentModel gets the service ensurer based on the SonataFlow deployment model
 func (o *ObjectEnsurers) ServiceByDeploymentModel(workflow *v1alpha08.SonataFlow) common.ObjectEnsurer {
-	if workflow.IsKnativeDeployment() {
-		// Knative Serving handles the service
-		return common.NewNoopObjectEnsurer()
-	}
 	return o.service
 }
 

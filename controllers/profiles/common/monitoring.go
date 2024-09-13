@@ -18,8 +18,8 @@ import (
 	"context"
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/knative"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/utils/monitoring"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -34,7 +34,6 @@ type monitoringObjectManager struct {
 func NewMonitoringEventingHandler(support *StateSupport) MonitoringEventingHandler {
 	return &monitoringObjectManager{
 		serviceMonitor: NewObjectEnsurer(support.C, ServiceMonitorCreator),
-		dataSource:     NewObjectEnsurer(support.C, DataSourceCreator),
 		StateSupport:   support,
 	}
 }
@@ -46,12 +45,12 @@ type MonitoringEventingHandler interface {
 func (k monitoringObjectManager) Ensure(ctx context.Context, workflow *operatorapi.SonataFlow) ([]client.Object, error) {
 	var objs []client.Object
 
-	MonitoringAvail, err := knative.GetMonitoringAvailability(k.Cfg)
+	monitoringAvail, err := monitoring.GetPrometheusAvailability(k.Cfg)
 	if err != nil {
-		klog.V(log.I).InfoS("Error checking Monitoring Eventing: %v", err)
+		klog.V(log.I).InfoS("Error checking Prometheus availability: %v", err)
 		return nil, err
 	}
-	if !MonitoringAvail.Prometheus {
+	if !monitoringAvail {
 		klog.V(log.I).InfoS("Prometheus is not installed")
 	} else {
 		// create serviceMonitor
@@ -60,18 +59,6 @@ func (k monitoringObjectManager) Ensure(ctx context.Context, workflow *operatora
 			return objs, err
 		} else if serviceMonitor != nil {
 			objs = append(objs, serviceMonitor)
-		}
-	}
-
-	if !MonitoringAvail.Grafana {
-		klog.V(log.I).InfoS("Grafana is not installed")
-	} else {
-		// create grafana data source
-		dataSource, _, err := k.dataSource.Ensure(ctx, workflow)
-		if err != nil {
-			return objs, err
-		} else if dataSource != nil {
-			objs = append(objs, dataSource)
 		}
 	}
 	return objs, nil

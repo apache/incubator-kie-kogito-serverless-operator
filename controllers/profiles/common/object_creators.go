@@ -29,7 +29,6 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/workflowdef"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
-	grafana "github.com/grafana/grafana-operator/v5/api/v1beta1"
 	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	cncfmodel "github.com/serverlessworkflow/sdk-go/v2/model"
 
@@ -47,13 +46,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/knative"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/platform/services"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/constants"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/persistence"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/properties"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/profiles/common/variables"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/utils/knative"
 	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/utils/openshift"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
@@ -67,7 +66,9 @@ const (
 	k8sServiceAPIVersion     = "v1"
 	k8sServiceKind           = "Service"
 	k8sServicePortName       = "web"
-	k8sServicePortPath       = "/q/metrics"
+	knativeServicePortName   = "user-port"
+	metricsServicePortPath   = "/q/metrics"
+	knativeServiceRouteLabel = "serving.knative.dev/route"
 )
 
 // ObjectCreator is the func that creates the initial reference object, if the object doesn't exist in the cluster, this one is created.
@@ -256,24 +257,42 @@ func defaultContainer(workflow *operatorapi.SonataFlow, plf *operatorapi.SonataF
 // It maps the default HTTP port (80) to the target Java application webserver on port 8080.
 func ServiceCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
 	lbl := workflowproj.GetMergedLabels(workflow)
-
-	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      workflow.Name,
-			Namespace: workflow.Namespace,
-			Labels:    lbl,
-		},
-		Spec: corev1.ServiceSpec{
-			Selector: lbl,
-			Ports: []corev1.ServicePort{{
-				Name:       k8sServicePortName,
-				Protocol:   corev1.ProtocolTCP,
-				Port:       defaultHTTPServicePort,
-				TargetPort: variables.DefaultHTTPWorkflowPortIntStr,
-			}},
-		},
+	var service *corev1.Service
+	if workflow.IsKnativeDeployment() {
+		service = &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-metrics", workflow.Name), // default service name is already used by knaitve service
+				Namespace: workflow.Namespace,
+				Labels:    lbl,
+			},
+			Spec: corev1.ServiceSpec{
+				Selector: lbl,
+				Ports: []corev1.ServicePort{{
+					Name:       knativeServicePortName,
+					Protocol:   corev1.ProtocolTCP,
+					Port:       defaultHTTPServicePort,
+					TargetPort: variables.DefaultHTTPWorkflowPortIntStr,
+				}},
+			},
+		}
+	} else {
+		service = &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      workflow.Name,
+				Namespace: workflow.Namespace,
+				Labels:    lbl,
+			},
+			Spec: corev1.ServiceSpec{
+				Selector: lbl,
+				Ports: []corev1.ServicePort{{
+					Name:       k8sServicePortName,
+					Protocol:   corev1.ProtocolTCP,
+					Port:       defaultHTTPServicePort,
+					TargetPort: variables.DefaultHTTPWorkflowPortIntStr,
+				}},
+			},
+		}
 	}
-
 	return service, nil
 }
 
@@ -444,7 +463,6 @@ func UserPropsConfigMapCreator(workflow *operatorapi.SonataFlow) (client.Object,
 
 // ManagedPropsConfigMapCreator creates an empty ConfigMap to hold the external application properties
 func ManagedPropsConfigMapCreator(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (client.Object, error) {
-
 	props, err := properties.ApplicationManagedProperties(workflow, platform)
 	if err != nil {
 		return nil, err
@@ -455,57 +473,45 @@ func ManagedPropsConfigMapCreator(workflow *operatorapi.SonataFlow, platform *op
 // ServiceMonitorCreator is an ObjectsCreator for Service Monitor for the workflow service.
 func ServiceMonitorCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
 	lbl := workflowproj.GetMergedLabels(workflow)
-
-	// subject must be deployment to inject K_SINK, service won't work
+	var spec *prometheus.ServiceMonitorSpec
+	if workflow.IsKnativeDeployment() {
+		spec = &prometheus.ServiceMonitorSpec{
+			Selector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					workflowproj.LabelWorkflow:          workflow.Name,
+					workflowproj.LabelWorkflowNamespace: workflow.Namespace,
+				},
+			},
+			Endpoints: []prometheus.Endpoint{
+				{
+					Port: knativeServicePortName,
+					Path: metricsServicePortPath,
+				},
+			},
+		}
+	} else {
+		spec = &prometheus.ServiceMonitorSpec{
+			Selector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					workflowproj.LabelWorkflow:          workflow.Name,
+					workflowproj.LabelWorkflowNamespace: workflow.Namespace,
+				},
+			},
+			Endpoints: []prometheus.Endpoint{
+				{
+					Port: k8sServicePortName,
+					Path: metricsServicePortPath,
+				},
+			},
+		}
+	}
 	serviceMonitor := &prometheus.ServiceMonitor{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workflow.Name,
 			Namespace: workflow.Namespace,
 			Labels:    lbl,
 		},
-		Spec: prometheus.ServiceMonitorSpec{
-			Selector: metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					workflowproj.LabelWorkflow:          workflow.Name,
-					workflowproj.LabelWorkflowNamespace: workflow.Namespace,
-				},
-			},
-			Endpoints: []prometheus.Endpoint{
-				prometheus.Endpoint{
-					Port: k8sServicePortName,
-					Path: k8sServicePortPath,
-				},
-			},
-		},
-	}
-	return serviceMonitor, nil
-}
-
-// DataSourceCreator is an ObjectsCreator for the grafana data source for the workflow service.
-func DataSourceCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
-	lbl := workflowproj.GetMergedLabels(workflow)
-
-	// subject must be deployment to inject K_SINK, service won't work
-	serviceMonitor := &grafana.ServiceMonitor{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      workflow.Name,
-			Namespace: workflow.Namespace,
-			Labels:    lbl,
-		},
-		Spec: prometheus.ServiceMonitorSpec{
-			Selector: metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					workflowproj.LabelWorkflow:          workflow.Name,
-					workflowproj.LabelWorkflowNamespace: workflow.Namespace,
-				},
-			},
-			Endpoints: []prometheus.Endpoint{
-				prometheus.Endpoint{
-					Port: k8sServicePortName,
-					Path: k8sServicePortPath,
-				},
-			},
-		},
+		Spec: *spec,
 	}
 	return serviceMonitor, nil
 }

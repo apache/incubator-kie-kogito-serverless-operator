@@ -372,7 +372,7 @@ deploy-knative: create-cluster
 deploy-monitoring: create-cluster
 	kubectl create -f https://github.com/prometheus-operator/prometheus-operator/releases/download/$(PROMETHEUS_VERSION)/bundle.yaml
 	kubectl wait  --for=condition=Available=True deploy/prometheus-operator -n default --timeout=$(TIMEOUT_SECS)
-	kubectl create -f https://github.com/grafana/grafana-operator/releases/$(GRAFANA_VERSION)/download/kustomize-cluster_scoped.yaml
+	kubectl create -f https://github.com/grafana/grafana-operator/releases/download/$(GRAFANA_VERSION)/kustomize-cluster_scoped.yaml
 	kubectl wait  --for=condition=Available=True deploy/grafana-operator-controller-manager -n grafana --timeout=$(TIMEOUT_SECS)
 	kubectl apply -f ./test/testdata/monitoring.yaml
 	kubectl wait  --for=condition=Available=True prometheus/prometheus -n default --timeout=$(TIMEOUT_SECS)

@@ -17,39 +17,32 @@
  * under the License.
  */
 
-package knative
+package monitoring
 
 import (
+	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
 	"k8s.io/client-go/rest"
 )
-
-type MonitoringAvailability struct {
-	Prometheus bool
-	Grafana    bool
-}
 
 const (
 	prometheusGroup = "monitoring.coreos.com"
 	grafanaGroup    = "grafana.integreatly.org"
 )
 
-func GetMonitoringAvailability(cfg *rest.Config) (*MonitoringAvailability, error) {
-	if cli, err := getDiscoveryClient(cfg); err != nil {
-		return nil, err
-	} else {
-		apiList, err := cli.ServerGroups()
-		if err != nil {
-			return nil, err
-		}
-		result := new(MonitoringAvailability)
-		for _, group := range apiList.Groups {
-			if group.Name == prometheusGroup {
-				result.Prometheus = true
-			}
-			if group.Name == grafanaGroup {
-				result.Grafana = true
-			}
-		}
-		return result, nil
+func GetPrometheusAvailability(cfg *rest.Config) (bool, error) {
+	cli, err := utils.GetDiscoveryClient(cfg)
+	if err != nil {
+		return false, err
 	}
+	apiList, err := cli.ServerGroups()
+	if err != nil {
+		return false, err
+	}
+	for _, group := range apiList.Groups {
+		if group.Name == prometheusGroup {
+			return true, nil
+		}
+
+	}
+	return false, nil
 }

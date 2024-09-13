@@ -32,6 +32,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 
+	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,8 +52,8 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/knative"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/controllers/platform"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/utils/knative"
 )
 
 // SonataFlowReconciler reconciles a SonataFlow object
@@ -66,6 +67,7 @@ type SonataFlowReconciler struct {
 //+kubebuilder:rbac:groups=sonataflow.org,resources=sonataflows,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=sonataflow.org,resources=sonataflows/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=sonataflow.org,resources=sonataflows/finalizers,verbs=update
+//+kubebuilder:rbac:groups="monitoring.coreos.com",resources=servicemonitors,verbs=get;list;watch;create;update;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -224,6 +226,7 @@ func (r *SonataFlowReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&servingv1.Service{}).
 		Owns(&eventingv1.Trigger{}).
 		Owns(&sourcesv1.SinkBinding{}).
+		Owns(&prometheus.ServiceMonitor{}).
 		Owns(&operatorapi.SonataFlowBuild{}).
 		Watches(&operatorapi.SonataFlowPlatform{}, handler.EnqueueRequestsFromMapFunc(func(c context.Context, a client.Object) []reconcile.Request {
 			plat, ok := a.(*operatorapi.SonataFlowPlatform)

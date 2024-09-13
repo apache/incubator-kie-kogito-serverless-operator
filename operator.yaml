@@ -966,6 +966,10 @@ spec:
                         type: string
                     type: object
                 type: object
+              monitoringEnabled:
+                description: MonitoringEnabled indicates whether prometheus service
+                  monitors should be created for metrics scraping
+                type: boolean
               persistence:
                 description: Persistence defines the platform persistence configuration.
                   When this field is set, the configuration is used as the persistence
@@ -26898,6 +26902,17 @@ metadata:
   name: sonataflow-operator-manager-role
 rules:
 - apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
   - sonataflow.org
   resources:
   - sonataflowbuilds
@@ -27409,7 +27424,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: quay.io/jianrzha/kogito-serverless-operator:0.0.104
+        image: docker.io/apache/incubator-kie-sonataflow-operator:latest
         livenessProbe:
           httpGet:
             path: /healthz
