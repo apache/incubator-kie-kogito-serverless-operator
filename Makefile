@@ -55,9 +55,9 @@ endif
 # Image URL to use all building/pushing image targets
 IMG ?= $(IMAGE_TAG_BASE):$(REDUCED_VERSION)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.24
+ENVTEST_K8S_VERSION = 1.26
 
-OPERATOR_SDK_VERSION ?= 1.25.0
+OPERATOR_SDK_VERSION ?= 1.35.0
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -96,7 +96,7 @@ help: ## Display this help.
 
 .PHONY: manifests
 manifests: generate ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:allowDangerousTypes=true webhook paths="./api/..." paths="./controllers/..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:allowDangerousTypes=true webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
@@ -120,6 +120,14 @@ test: manifests generate envtest vet fmt test-api ## Run tests.
 .PHONY: test-api
 test-api:
 	cd api && make test
+
+.PHONY: lint
+lint: golangci-lint ## Run golangci-lint linter
+	$(GOLANGCI_LINT) run
+
+.PHONY: lint-fix
+lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
+	$(GOLANGCI_LINT) run --fix
 
 ######
 # Test proxy commands
@@ -145,16 +153,16 @@ test-workflowproj:
 ##@ Build
 
 .PHONY: build
-build: generate ## Build manager binary.
-	CGO_ENABLED=0 go build -trimpath -ldflags=-buildid= -o bin/manager main.go
+build: manifests generate fmt vet ## Build manager binary.
+	CGO_ENABLED=0 go build -trimpath -ldflags=-buildid= -o bin/manager cmd/main.go
 
 .PHONY: build-4-debug
 build-4-debug: generate ## Build manager binary with debug options.
-	go build -gcflags="all=-N -l" -o bin/manager main.go
+	go build -gcflags="all=-N -l" -o bin/manager cmd/main.go
 
 .PHONY: run
 run: manifests generate ## Run a controller from your host.
-	go run ./main.go -v=2 -controller-cfg-path=$(CURDIR)/config/manager/controllers_cfg.yaml
+	go run ./cmd/main.go -v=2 -controller-cfg-path=$(CURDIR)/config/manager/controllers_cfg.yaml
 
 .PHONY: debug
 debug: build-4-debug ## Run a controller from your host from binary
@@ -225,13 +233,18 @@ $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
 ## Tool Binaries
-KUSTOMIZE ?= $(LOCALBIN)/kustomize
+KUBECTL ?= kubectl
+KUSTOMIZE ?= $(LOCALBIN)/kustomize-$(KUSTOMIZE_VERSION)
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
-ENVTEST ?= $(LOCALBIN)/setup-envtest
+ENVTEST ?= $(LOCALBIN)/setup-envtest-$(ENVTEST_VERSION)
+GOLANGCI_LINT = $(LOCALBIN)/golangci-lint-$(GOLANGCI_LINT_VERSION)
 
 ## Tool Versions
-KUSTOMIZE_VERSION ?= v4.5.2
-CONTROLLER_TOOLS_VERSION ?= v0.9.2
+KUSTOMIZE_VERSION ?= v5.4.1
+CONTROLLER_TOOLS_VERSION ?= v0.15.0
+ENVTEST_VERSION ?= release-0.18
+GOLANGCI_LINT_VERSION ?= v1.57.2
+
 KIND_VERSION ?= v0.20.0
 KNATIVE_VERSION ?= v1.13.2
 TIMEOUT_SECS ?= 180s
@@ -239,10 +252,11 @@ TIMEOUT_SECS ?= 180s
 KNATIVE_SERVING_PREFIX ?= "https://github.com/knative/serving/releases/download/knative-$(KNATIVE_VERSION)"
 KNATIVE_EVENTING_PREFIX ?= "https://github.com/knative/eventing/releases/download/knative-$(KNATIVE_VERSION)"
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
+
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
-	test -s $(LOCALBIN)/kustomize || GO111MODULE=on GOBIN=$(LOCALBIN) go install sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VERSION)
+	$(call go-install-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v5,$(KUSTOMIZE_VERSION))
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
@@ -250,9 +264,29 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 	test -s $(LOCALBIN)/controller-gen || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
 
 .PHONY: envtest
-envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
+envtest: $(ENVTEST) ## Download setup-envtest locally if necessary.
 $(ENVTEST): $(LOCALBIN)
-	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest,$(ENVTEST_VERSION))
+
+.PHONY: golangci-lint
+golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
+$(GOLANGCI_LINT): $(LOCALBIN)
+	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,${GOLANGCI_LINT_VERSION})
+
+# go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
+# $1 - target path with name of binary (ideally with version)
+# $2 - package url which can be installed
+# $3 - specific version of package
+define go-install-tool
+@[ -f $(1) ] || { \
+set -e; \
+package=$(2)@$(3) ;\
+echo "Downloading $${package}" ;\
+GOBIN=$(LOCALBIN) go install $${package} ;\
+mv "$$(echo "$(1)" | sed "s/-$(3)$$//")" $(1) ;\
+}
+endef
+
 
 .PHONY: bundle
 bundle: manifests kustomize install-operator-sdk ## Generate bundle manifests and metadata, then validate generated files.
@@ -328,10 +362,7 @@ bump-version:
 	./hack/bump-version.sh $(new_version) $(snapshot)
 
 install-operator-sdk:
-	./hack/ci/install-operator-sdk.sh
-
-align-osl-config:
-	./hack/align-osl-config.sh
+	./hack/install-operator-sdk.sh
 
 .PHONY: addheaders
 addheaders:
@@ -341,10 +372,11 @@ addheaders:
 generate-all: generate generate-deploy bundle addheaders vet fmt
 
 .PHONY: test-e2e # You will need to have a Minikube/Kind cluster up in running to run this target, and run container-builder before the test
+label = "flows-non-persistence" # possible values are flows-non-persistence, flows-persistence, platform
 test-e2e:
-	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/clusterplatform_test.go  -v -ginkgo.v -ginkgo.no-color -ginkgo.junit-report=./e2e-test-report-clusterplatform_test.xml -timeout 60m;
-	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/platform_test.go  -v -ginkgo.v -ginkgo.no-color -ginkgo.junit-report=./e2e-test-report-platform_test.xml -timeout 60m;
-	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/workflow_test.go  -v -ginkgo.v -ginkgo.no-color -ginkgo.junit-report=./e2e-test-report-workflow_test.xml -timeout 60m;
+	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/clusterplatform_test.go  -v -ginkgo.v -ginkgo.no-color -ginkgo.github-output -ginkgo.label-filter=$(label) -ginkgo.junit-report=./e2e-test-report-clusterplatform_test.xml -timeout 60m;
+	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/platform_test.go  -v -ginkgo.v -ginkgo.no-color -ginkgo.github-output -ginkgo.label-filter=$(label) -ginkgo.junit-report=./e2e-test-report-platform_test.xml -timeout 60m;
+	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/workflow_test.go  -v -ginkgo.v -ginkgo.no-color -ginkgo.github-output -ginkgo.label-filter=$(label) -ginkgo.junit-report=./e2e-test-report-workflow_test.xml -timeout 60m;
 
 .PHONY: before-pr
 before-pr: test generate-all
