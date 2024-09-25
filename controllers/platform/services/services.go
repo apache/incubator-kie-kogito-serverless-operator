@@ -48,7 +48,7 @@ import (
 
 const (
 	quarkusHibernateORMDatabaseGeneration string = "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION"
-	kieFlywayEnabled           			  string = "KIE_FLYWAY_ENABLED"
+	kieFlywayEnabled                      string = "KIE_FLYWAY_ENABLED"
 )
 
 type PlatformServiceHandler interface {
