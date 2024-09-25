@@ -26,7 +26,7 @@ spec:
   podTemplate:
     container:
       env:
-      - name: QUARKUS_FLYWAY_MIGRATE_AT_START
+      - name: KIE_FLYWAY_ENABLED
         value: "true"
   flow:
     start: PrintStartMessage

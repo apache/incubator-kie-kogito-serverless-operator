@@ -48,7 +48,7 @@ import (
 
 const (
 	quarkusHibernateORMDatabaseGeneration string = "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION"
-	quarkusFlywayMigrateAtStart           string = "QUARKUS_FLYWAY_MIGRATE_AT_START"
+	quarkusFlywayMigrateAtStart           string = "KIE_FLYWAY_ENABLED"
 )
 
 type PlatformServiceHandler interface {
@@ -425,7 +425,7 @@ func (j *JobServiceHandler) ConfigurePersistence(containerSpec *corev1.Container
 		// since Services, and services Persistence are optional references.
 
 		// Specific to Job Service
-		c.Env = append(c.Env, corev1.EnvVar{Name: "QUARKUS_FLYWAY_MIGRATE_AT_START", Value: "true"})
+		c.Env = append(c.Env, corev1.EnvVar{Name: "KIE_FLYWAY_ENABLED", Value: "true"})
 		c.Env = append(c.Env, corev1.EnvVar{Name: "KOGITO_JOBS_SERVICE_LOADJOBERRORSTRATEGY", Value: "FAIL_SERVICE"})
 		return c
 	}
