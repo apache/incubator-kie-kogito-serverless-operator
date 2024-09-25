@@ -48,7 +48,7 @@ import (
 
 const (
 	quarkusHibernateORMDatabaseGeneration string = "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION"
-	quarkusFlywayMigrateAtStart           string = "KIE_FLYWAY_ENABLED"
+	kieFlywayEnabled           			  string = "KIE_FLYWAY_ENABLED"
 )
 
 type PlatformServiceHandler interface {
@@ -245,7 +245,7 @@ func (d *DataIndexHandler) ConfigurePersistence(containerSpec *corev1.Container)
 		// since Services, and services Persistence are optional references.
 
 		// specific to DataIndex
-		c.Env = append(c.Env, corev1.EnvVar{Name: quarkusHibernateORMDatabaseGeneration, Value: "update"}, corev1.EnvVar{Name: quarkusFlywayMigrateAtStart, Value: "true"})
+		c.Env = append(c.Env, corev1.EnvVar{Name: quarkusHibernateORMDatabaseGeneration, Value: "update"}, corev1.EnvVar{Name: kieFlywayEnabled, Value: "true"})
 		return c
 	}
 	return containerSpec
