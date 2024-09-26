@@ -24,13 +24,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/knative"
+	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
+
 	"k8s.io/klog/v2"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api"
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	clientr "github.com/apache/incubator-kie-kogito-serverless-operator/container-builder/client"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/clusterplatform"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/knative"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/platform"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/platform/services"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/profiles/common/constants"
@@ -44,7 +46,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
 	ctrlrun "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrl "sigs.k8s.io/controller-runtime/pkg/client"

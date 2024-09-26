@@ -16,7 +16,7 @@ env:
   GO_VERSION: 1.22
   PYTHON_VERSION: "3.10"
   KIND_VERSION: v0.20.0
-  KNATIVE_VERSION: v1.13.2
+  KNATIVE_VERSION: v1.12.5
   OPERATOR_IMAGE_NAME: "127.0.0.1:5001/kogito-serverless-operator:0.0.1"
 
 jobs:
@@ -84,28 +84,19 @@ jobs:
           make deploy IMG=${{ env.OPERATOR_IMAGE_NAME }}
           kubectl wait pod -A -l control-plane=sonataflow-operator --for condition=Ready
 
-      - name: Run tests for workflows without persistence
+      - name: [Ephemeral Workflows] Run e2e tests
         run: make test-e2e label=flows-non-persistence
 
-      - name: Retrieve cluster events and list pods
-        if: failure()
-        run: |
-          kubectl get events
-          kubectl get pod -A
-
-      - name: Run tests for workflows with persistence
+      - name: [Persistence Workflows] Run e2e tests
         run: make test-e2e label=flows-persistence
 
-      - name: Retrieve cluster events and list pods
-        if: failure()
-        run: |
-          kubectl get events
-          kubectl get pod -A
-
-      - name: Run tests for platform use cases
+      - name: [Platform] Run e2e tests
         run: make test-e2e label=platform
 
-      - name: Retrieve cluster events and list pods
+      - name: [Cluster Platform] Run e2e tests
+        run: make test-e2e label=cluster
+
+      - name: Get KIND logs after failure run
         if: failure()
         run: |
           kubectl get events
@@ -119,7 +110,7 @@ jobs:
 
       - name: Upload kind logs
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: kind-logs-${{ env.JOB_NAME }}-${{ github.run_id }}
           path: /tmp/kind/logs

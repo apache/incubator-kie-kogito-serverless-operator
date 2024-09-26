@@ -40,7 +40,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Validate a clusterplatform", Ordered, func() {
+var _ = Describe("Cluster Platform Use Cases :: ", Label("cluster"), Ordered, func() {
 
 	var (
 		projectDir       string

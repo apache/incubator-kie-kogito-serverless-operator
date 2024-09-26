@@ -44,7 +44,7 @@ const (
 	workflowAppLabel = "sonataflow.org/workflow-app"
 )
 
-var _ = Describe("SonataFlow Operator :: Workflow Non-Persistence Use Cases :: ", Label("flows-non-persistence"), Ordered, func() {
+var _ = Describe("Workflow Non-Persistence Use Cases :: ", Label("flows-non-persistence"), Ordered, func() {
 
 	var targetNamespace string
 	BeforeEach(func() {
@@ -149,7 +149,7 @@ var _ = Describe("SonataFlow Operator :: Workflow Non-Persistence Use Cases :: "
 
 })
 
-var _ = Describe("SonataFlow Operator :: Workflow Persistence Use Cases :: ", Label("flows-persistence"), Ordered, func() {
+var _ = Describe("Workflow Persistence Use Cases :: ", Label("flows-persistence"), Ordered, func() {
 
 	const (
 		dbConnectionName = "Database connections health check"

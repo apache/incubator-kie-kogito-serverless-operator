@@ -23,6 +23,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/knative"
+	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
+
 	"k8s.io/klog/v2"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/api/metadata"
@@ -39,8 +43,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
-	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -52,7 +54,6 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/knative"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/platform"
 )
 

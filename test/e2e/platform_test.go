@@ -40,7 +40,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("SonataFlow Operator :: Platform Use Cases :: ", Label("platform"), Ordered, func() {
+var _ = Describe("Platform Use Cases :: ", Label("platform"), Ordered, func() {
 
 	var (
 		projectDir       string

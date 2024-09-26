@@ -96,30 +96,40 @@ help: ## Display this help.
 
 .PHONY: manifests
 manifests: generate ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd:allowDangerousTypes=true webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases
+	@echo "📄 Generating WebhookConfiguration, ClusterRole, and CRD objects..."
+	@$(CONTROLLER_GEN) rbac:roleName=manager-role crd:allowDangerousTypes=true webhook paths="./api/..." paths="./internal/controller/..." output:crd:artifacts:config=config/crd/bases > /dev/null 2>&1
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./container-builder/api/..."
+	@echo "🔄 Generating DeepCopy methods for APIs..."
+	@$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/..." paths="./container-builder/api/..." > /dev/null 2>&1
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
-	./hack/goimports.sh
-	go work sync
-	go mod tidy
-	go fmt ./...
+	@echo "🧹 Running go fmt and goimports..."
+	@./hack/goimports.sh > /dev/null 2>&1
+	@go work sync > /dev/null 2>&1
+	@go mod tidy > /dev/null 2>&1
+	@go fmt ./... > /dev/null 2>&1
 
 .PHONY: vet
 vet: ## Run go vet against code.
-	go vet ./...
+	@echo "🔍 Running go vet..."
+	@go vet ./... > /dev/null 2>&1
 
 .PHONY: test
-test: manifests generate envtest vet fmt test-api ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $(shell go list ./... | grep -v /test/) -coverprofile cover.out
+test: manifests generate envtest test-api ## Run tests.
+	@echo "🔍 Running controller tests..."
+	@KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" \
+	go test $(shell go list ./... | grep -v /test/) -coverprofile cover.out > /dev/null 2>&1
+	@echo "✅  Tests completed successfully. Coverage report generated: cover.out."
 
 .PHONY: test-api
 test-api:
-	cd api && make test
+	@echo "🔄 Running API tests..."
+	@cd api && make test > /dev/null 2>&1
+	@echo "✅  API tests completed successfully."
+
 
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter
@@ -218,8 +228,11 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 
 .PHONY: generate-deploy
 generate-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default > operator.yaml
+	@echo "🚀 Updating controller image to ${IMG}..."
+	@cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG} > /dev/null 2>&1
+	@echo "📄 Building deployment YAML..."
+	@$(KUSTOMIZE) build config/default > operator.yaml
+
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
@@ -260,8 +273,8 @@ $(KUSTOMIZE): $(LOCALBIN)
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
-$(CONTROLLER_GEN): $(LOCALBIN)
-	test -s $(LOCALBIN)/controller-gen || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+	@echo "⬇️ Ensuring controller-gen is installed..."
+	@test -s $(LOCALBIN)/controller-gen || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION) > /dev/null 2>&1
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download setup-envtest locally if necessary.
@@ -290,10 +303,14 @@ endef
 
 .PHONY: bundle
 bundle: manifests kustomize install-operator-sdk ## Generate bundle manifests and metadata, then validate generated files.
-	operator-sdk generate kustomize manifests -q
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle $(BUNDLE_GEN_FLAGS)
-	operator-sdk bundle validate ./bundle
+	@echo "📦 Generating bundle manifests and metadata..."
+	@operator-sdk generate kustomize manifests -q > /dev/null 2>&1
+	@echo "🔧 Setting controller image in Kustomize..."
+	@cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG) > /dev/null 2>&1
+	@echo "🔨 Building Kustomize and generating bundle..."
+	@$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle $(BUNDLE_GEN_FLAGS) > /dev/null 2>&1
+	@echo "🛠️ Validating generated bundle..."
+	@operator-sdk bundle validate ./bundle > /dev/null 2>&1
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image
@@ -361,25 +378,54 @@ snapshot = ""
 bump-version:
 	./hack/bump-version.sh $(new_version) $(snapshot)
 
+.PHONY: install-operator-sdk
 install-operator-sdk:
-	./hack/install-operator-sdk.sh
+	@echo "📦 Installing Operator SDK..."
+	@./hack/install-operator-sdk.sh > /dev/null 2>&1
+
 
 .PHONY: addheaders
 addheaders:
-	./hack/addheaders.sh
+	@echo "📝 Adding headers to files..."
+	@./hack/addheaders.sh > /dev/null 2>&1
 
 .PHONY: generate-all
-generate-all: generate generate-deploy bundle addheaders vet fmt
+generate-all: generate generate-deploy bundle
+	@$(MAKE) addheaders
+	@$(MAKE) vet
+	@$(MAKE) fmt
 
-.PHONY: test-e2e # You will need to have a Minikube/Kind cluster up in running to run this target, and run container-builder before the test
-label = "flows-non-persistence" # possible values are flows-non-persistence, flows-persistence, platform
+.PHONY: test-e2e # You will need to have a Minikube/Kind cluster up and running to run this target, and run container-builder before the test
+label = "flows-non-persistence" # possible values are flows-non-persistence, flows-persistence, platform, cluster
 test-e2e:
-	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/clusterplatform_test.go  -v -ginkgo.v -ginkgo.no-color -ginkgo.github-output -ginkgo.label-filter=$(label) -ginkgo.junit-report=./e2e-test-report-clusterplatform_test.xml -timeout 60m;
-	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/platform_test.go  -v -ginkgo.v -ginkgo.no-color -ginkgo.github-output -ginkgo.label-filter=$(label) -ginkgo.junit-report=./e2e-test-report-platform_test.xml -timeout 60m;
-	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/workflow_test.go  -v -ginkgo.v -ginkgo.no-color -ginkgo.github-output -ginkgo.label-filter=$(label) -ginkgo.junit-report=./e2e-test-report-workflow_test.xml -timeout 60m;
+ifeq ($(label), cluster)
+	@echo "🌐 Running e2e tests for cluster..."
+	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/clusterplatform_test.go \
+	-v -ginkgo.v -ginkgo.no-color -ginkgo.github-output -ginkgo.label-filter=$(label) \
+	-ginkgo.junit-report=./e2e-test-report-clusterplatform_test.xml -timeout 60m;
+else ifeq ($(label), platform)
+	@echo "📦 Running e2e tests for platform..."
+	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/platform_test.go \
+	-v -ginkgo.v -ginkgo.no-color -ginkgo.github-output -ginkgo.label-filter=$(label) \
+	-ginkgo.junit-report=./e2e-test-report-platform_test.xml -timeout 60m;
+else ifeq ($(label), flows-non-persistence)
+	@echo "🔄 Running e2e tests for flows-non-persistence..."
+	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/workflow_test.go \
+	-v -ginkgo.v -ginkgo.no-color -ginkgo.github-output -ginkgo.label-filter=$(label) \
+	-ginkgo.junit-report=./e2e-test-report-workflow_test.xml -timeout 60m;
+else ifeq ($(label), flows-persistence)
+	@echo "🔁 Running e2e tests for flows-persistence..."
+	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/workflow_test.go \
+	-v -ginkgo.v -ginkgo.no-color -ginkgo.github-output -ginkgo.label-filter=$(label) \
+	-ginkgo.junit-report=./e2e-test-report-workflow_test.xml -timeout 60m;
+else
+	@echo "❌  Invalid label. Please use one of: cluster, platform, flows-non-persistence, flows-persistence"
+endif
+
 
 .PHONY: before-pr
-before-pr: test generate-all
+before-pr: generate-all test ## Run generate-all before executing tests.
+	@echo "✅  Your working branch is done."
 
 
 .PHONY: install-kind
@@ -391,7 +437,7 @@ create-cluster: install-kind
 	kind get clusters | grep kind >/dev/null || ./hack/ci/create-kind-cluster-with-registry.sh $(BUILDER)
 
 .PHONY: deploy-knative
-deploy-knative: create-cluster
+deploy-knative:
 	kubectl apply -f https://github.com/knative/operator/releases/download/knative-$(KNATIVE_VERSION)/operator.yaml
 	kubectl wait  --for=condition=Available=True deploy/knative-operator -n default --timeout=$(TIMEOUT_SECS)
 	kubectl apply -f ./test/testdata/knative_serving_eventing.yaml
