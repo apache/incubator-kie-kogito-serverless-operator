@@ -8696,6 +8696,11 @@ spec:
                             type: string
                         type: object
                     type: object
+                  jobBasedDbMigration:
+                    description: |-
+                      true = Use DB Migration Job with DB Migrator tool image
+                      false = Use built-in DB migration capability within services e.g. DI/JS
+                    type: boolean
                   jobService:
                     description: 'Deploys the Job service for use by workflows without
                       the `sonataflow.org/profile: dev` annotation.'
@@ -16886,6 +16891,11 @@ spec:
                 description: The generation observed by the deployment controller.
                 format: int64
                 type: integer
+              sonataFlowPlatformDBMigrationStatus:
+                properties:
+                  dbMigrationStatus:
+                    type: string
+                type: object
               triggers:
                 description: Triggers list of triggers created for the SonataFlowPlatform
                 items:
@@ -16898,6 +16908,11 @@ spec:
                     namespace:
                       description: Namespace of the Trigger
                       type: string
+                    sonataFlowPlatformDBMigrationStatus:
+                      properties:
+                        dbMigrationStatus:
+                          type: string
+                      type: object
                   required:
                   - name
                   - namespace

@@ -21,6 +21,7 @@ package services
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/cfg"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/knative"
@@ -89,6 +90,8 @@ type PlatformServiceHandler interface {
 	IsServiceSetInSpec() bool
 	// IsServiceEnabledInSpec returns true if the service is enabled in the spec.
 	IsServiceEnabledInSpec() bool
+	// IsPersistenceSetInSpec returns true if the service has persistence set in the spec.
+	IsPersistenceSetInSpec() bool
 	// GetLocalServiceBaseUrl returns the base url of the local service
 	GetLocalServiceBaseUrl() string
 	// GetServiceBaseUrl returns the base url of the service, based on whether using local or cluster-scoped service.
@@ -167,6 +170,10 @@ func (d *DataIndexHandler) IsServiceEnabledInSpec() bool {
 	return isDataIndexEnabled(d.platform)
 }
 
+func (d DataIndexHandler) IsPersistenceSetInSpec() bool {
+	return d.IsServiceSetInSpec() && d.platform.Spec.Services.DataIndex.Persistence != nil
+}
+
 func (d *DataIndexHandler) isServiceEnabledInStatus() bool {
 	return d.platform != nil && d.platform.Status.ClusterPlatformRef != nil &&
 		d.platform.Status.ClusterPlatformRef.Services != nil && d.platform.Status.ClusterPlatformRef.Services.DataIndexRef != nil &&
@@ -232,12 +239,14 @@ func (d *DataIndexHandler) ConfigurePersistence(containerSpec *corev1.Container)
 		c := containerSpec.DeepCopy()
 		c.Image = d.GetServiceImageName(constants.PersistenceTypePostgreSQL)
 		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p.PostgreSQL, d.GetServiceName(), d.platform.Namespace)...)
-		// TODO upcoming work as part of the DB Migrator incorporation should continue where
-		// assignments like -> migrateDBOnStart := strconv.FormatBool(d.platform.Spec.Services.DataIndex.Persistence.MigrateDBOnStartUp) introduces nil pointer references,
-		// since Services, and services Persistence are optional references.
+
+		migrateDBOnStart := "true"
+		if d.platform.Spec.Services.DataIndex.Persistence != nil {
+			migrateDBOnStart = strconv.FormatBool(d.platform.Spec.Services.DataIndex.Persistence.MigrateDBOnStartUp)
+		}
 
 		// specific to DataIndex
-		c.Env = append(c.Env, corev1.EnvVar{Name: quarkusHibernateORMDatabaseGeneration, Value: "update"}, corev1.EnvVar{Name: quarkusFlywayMigrateAtStart, Value: "true"})
+		c.Env = append(c.Env, corev1.EnvVar{Name: quarkusHibernateORMDatabaseGeneration, Value: "update"}, corev1.EnvVar{Name: quarkusFlywayMigrateAtStart, Value: migrateDBOnStart})
 		return c
 	}
 	return containerSpec
@@ -340,6 +349,10 @@ func (j *JobServiceHandler) IsServiceEnabledInSpec() bool {
 	return isJobServiceEnabled(j.platform)
 }
 
+func (j JobServiceHandler) IsPersistenceSetInSpec() bool {
+	return j.IsServiceSetInSpec() && j.platform.Spec.Services.DataIndex.Persistence != nil
+}
+
 func (j *JobServiceHandler) isServiceEnabledInStatus() bool {
 	return j.platform != nil && j.platform.Status.ClusterPlatformRef != nil &&
 		j.platform.Status.ClusterPlatformRef.Services != nil && j.platform.Status.ClusterPlatformRef.Services.JobServiceRef != nil &&
@@ -403,12 +416,13 @@ func (j *JobServiceHandler) ConfigurePersistence(containerSpec *corev1.Container
 		c.Image = j.GetServiceImageName(constants.PersistenceTypePostgreSQL)
 		p := persistence.RetrievePostgreSQLConfiguration(j.platform.Spec.Services.JobService.Persistence, j.platform.Spec.Persistence, j.GetServiceName())
 		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p.PostgreSQL, j.GetServiceName(), j.platform.Namespace)...)
-		// TODO upcoming work as part of the DB Migrator incorporation should continue where
-		// assignments like -> migrateDBOnStart := strconv.FormatBool(j.platform.Spec.Services.JobService.Persistence.MigrateDBOnStartUp) introduces nil pointer references,
-		// since Services, and services Persistence are optional references.
+		migrateDBOnStart := "true"
+		if j.platform.Spec.Services.JobService.Persistence != nil {
+			migrateDBOnStart = strconv.FormatBool(j.platform.Spec.Services.JobService.Persistence.MigrateDBOnStartUp)
+		}
 
 		// Specific to Job Service
-		c.Env = append(c.Env, corev1.EnvVar{Name: "QUARKUS_FLYWAY_MIGRATE_AT_START", Value: "true"})
+		c.Env = append(c.Env, corev1.EnvVar{Name: "QUARKUS_FLYWAY_MIGRATE_AT_START", Value: migrateDBOnStart})
 		c.Env = append(c.Env, corev1.EnvVar{Name: "KOGITO_JOBS_SERVICE_LOADJOBERRORSTRATEGY", Value: "FAIL_SERVICE"})
 		return c
 	}
@@ -502,6 +516,13 @@ func isJobServiceSet(platform *operatorapi.SonataFlowPlatform) bool {
 
 func isServicesSet(platform *operatorapi.SonataFlowPlatform) bool {
 	return platform != nil && platform.Spec.Services != nil
+}
+
+func IsJobBasedDBMigration(platform *operatorapi.SonataFlowPlatform) bool {
+	if platform != nil && platform.Spec.Services != nil {
+		return platform.Spec.Services.JobBasedDbMigration
+	}
+	return false
 }
 
 func GenerateServiceURL(protocol string, namespace string, name string) string {

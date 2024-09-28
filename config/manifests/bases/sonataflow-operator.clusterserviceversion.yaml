@@ -164,9 +164,13 @@ spec:
       - description: Info generic information related to the Platform
         displayName: info
         path: info
+      - displayName: dbMigrationStatus
+        path: sonataFlowPlatformDBMigrationStatus
       - description: Triggers list of triggers created for the SonataFlowPlatform
         displayName: triggers
         path: triggers
+      - displayName: dbMigrationStatus
+        path: triggers[0].sonataFlowPlatformDBMigrationStatus
       - description: Version the operator version controlling this Platform
         displayName: version
         path: version
