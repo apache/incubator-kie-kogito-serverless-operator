@@ -98,13 +98,13 @@ func newObjectEnsurersOpenShift(support *common.StateSupport) *objectEnsurers {
 
 func newStatusEnrichers(support *common.StateSupport) *statusEnrichers {
 	return &statusEnrichers{
-		networkInfo: common.NewStatusEnricher(support.C, statusEnricher),
+		networkInfo: common.NewStatusEnricher(support.C, workflowAddressableStatusEnricher),
 	}
 }
 
 func newStatusEnrichersOpenShift(support *common.StateSupport) *statusEnrichers {
 	return &statusEnrichers{
-		networkInfo: common.NewStatusEnricher(support.C, statusEnricherOpenShift),
+		networkInfo: common.NewStatusEnricher(support.C, workflowAddressableStatusEnricher),
 	}
 }
 

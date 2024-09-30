@@ -109,7 +109,7 @@ const (
 	defaultOperatorProfilingDataAccessYamlURI = "../profiling/kogito-operator-profiling-data-access.yaml"
 	defaultOperatorProfilingOutputFileURI     = "./bdd-cover.out"
 
-	defaultKogitoExamplesURI = "https://github.com/kiegroup/kogito-examples"
+	defaultKogitoExamplesURI = "https://github.com/apache/incubator-kie-kogito-examples"
 
 	defaultLoadFactor      = 1
 	defaultHTTPRetryNumber = 3
@@ -328,6 +328,11 @@ func GetOperatorProfilingOutputFileURI() string {
 // GetOperatorYamlURI return the uri for kogito-operator.yaml file
 func GetOperatorYamlURI() string {
 	return env.operatorYamlURI
+}
+
+// GetPostgresYamlURI return the uri for postgres.yaml file
+func GetPostgresYamlURI() string {
+	return "../test/testdata/persistence/postgres/01-postgres.yaml"
 }
 
 // GetRhpamOperatorYamlURI return the uri for rhpam-kogito-operator.yaml file

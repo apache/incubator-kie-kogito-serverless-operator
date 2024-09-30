@@ -1,4 +1,4 @@
-Feature: Deploy SonataFlow Operator
+Feature: Deploy SonataFlow Operator and SonataFlowPlatform with order-processing example application in dev mode and verify the functionality
 
   @devMode
   Scenario: order-processing DevMode E2E test
@@ -19,6 +19,10 @@ Feature: Deploy SonataFlow Operator
 
     Then Deployment "event-listener" pods log contains text 'source: /process/shippinghandling' within 1 minutes
     Then Deployment "event-listener" pods log contains text 'source: /process/fraudhandling' within 1 minutes
-    Then Deployment "event-listener" pods log contains text '"id":"f0643c68-609c-48aa-a820-5df423fa4fe0","country":"Czech Republic","total":10000,"description":"iPhone 12"' within 1 minutes
-    Then Deployment "event-listener" pods log contains text '"fraudEvaluation":true' within 1 minutes
-    Then Deployment "event-listener" pods log contains text '"shipping":"international"' within 1 minutes
+    Then Deployment "event-listener" pods log contains text '"id": "f0643c68-609c-48aa-a820-5df423fa4fe0",' within 1 minutes
+    Then Deployment "event-listener" pods log contains text '"country": "Czech Republic",' within 1 minutes
+    Then Deployment "event-listener" pods log contains text '"total": 10000,' within 1 minutes
+    Then Deployment "event-listener" pods log contains text '"description": "iPhone 12",' within 1 minutes
+    Then Deployment "event-listener" pods log contains text '"fraudEvaluation": true' within 1 minutes
+    Then Deployment "event-listener" pods log contains text '"shipping": "international"' within 1 minutes
+    Then SonataFlow "order-processing" pods log does not contain text 'ERROR' within 0 minutes

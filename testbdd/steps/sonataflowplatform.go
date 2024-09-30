@@ -41,6 +41,8 @@ const (
 
 func registerPlatformSteps(ctx *godog.ScenarioContext, data *Data) {
 	ctx.Step(`^SonataFlowPlatform is deployed$`, data.sonataFlowPlatformIsDeployed)
+	ctx.Step(`^SonataFlowPlatform with postgres config is deployed$`, data.sonataFlowPlatformWithDataIndexIsDeployed)
+	ctx.Step(`^SonataFlowPlatform with DataIndexAndJobsService using Postgres is deployed$`, data.sonataFlowPlatformWithDataIndexAndJobsServiceUsingPostgresIsDeployed)
 }
 
 func (data *Data) sonataFlowPlatformIsDeployed() error {
@@ -52,6 +54,44 @@ func (data *Data) sonataFlowPlatformIsDeployed() error {
 
 	if err != nil {
 		framework.GetLogger(data.Namespace).Error(err, fmt.Sprintf("Applying SonataFlowPlatform failed, output: %s", out))
+	}
+
+	return err
+}
+
+func (data *Data) sonataFlowPlatformWithDataIndexIsDeployed() error {
+	projectDir, _ := utils.GetProjectDir()
+	projectDir = strings.Replace(projectDir, "/testbdd", "", -1)
+
+	// TODO or kubectl
+	out, err := framework.CreateCommand("oc", "apply", "-f",
+		filepath.Join(projectDir, getSonataFlowPlatformFilename()),
+		"-n",
+		data.Namespace).Execute()
+
+	if err != nil {
+		framework.GetLogger(data.Namespace).Error(err, fmt.Sprintf("Applying SonataFlowPlatform failed, output: %s", out))
+	}
+
+	return err
+}
+
+func (data *Data) sonataFlowPlatformWithDataIndexAndJobsServiceUsingPostgresIsDeployed() error {
+	projectDir, _ := utils.GetProjectDir()
+	projectDir = strings.Replace(projectDir, "/testbdd", "", -1)
+
+	// TODO or kubectl
+	out, err := framework.CreateCommand("oc", "apply", "-f",
+		filepath.Join(projectDir, test.GetSFPlatformWithDIandJSUsingPostgres()),
+		"-n",
+		data.Namespace).Execute()
+
+	jobServiceDepErr := framework.WaitForDeploymentRunning(data.Namespace, "sonataflow-platform-jobs-service", 1, 2)
+
+	dataIndexDepErr := framework.WaitForDeploymentRunning(data.Namespace, "sonataflow-platform-data-index-service", 1, 2)
+
+	if err != nil || jobServiceDepErr != nil || dataIndexDepErr != nil {
+		framework.GetLogger(data.Namespace).Error(err, fmt.Sprintf("Applying SonataFlowPlatform WithDataIndexAndJobsServiceUsingPostgres failed, output: %s", out))
 	}
 
 	return err

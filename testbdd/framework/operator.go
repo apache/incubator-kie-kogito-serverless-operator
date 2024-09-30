@@ -91,7 +91,7 @@ func SonataFlowOperatorExists(namespace string) (bool, error) {
 	operatorDeployment := &v1.Deployment{}
 	namespacedName := types.NamespacedName{Namespace: namespace, Name: sonataFlowOperatorDeploymentName} // done to reuse the framework function
 	if exists, err := framework.GetObjectWithKey(namespacedName, operatorDeployment); err != nil {
-		return false, fmt.Errorf("Error while trying to look for Deploment %s: %v ", sonataFlowOperatorDeploymentName, err)
+		return false, fmt.Errorf("error while trying to look for Deploment %s: %v ", sonataFlowOperatorDeploymentName, err)
 	} else if !exists {
 		return false, nil
 	}
@@ -101,7 +101,7 @@ func SonataFlowOperatorExists(namespace string) (bool, error) {
 	}
 
 	if operatorDeployment.Status.AvailableReplicas != 1 {
-		return false, fmt.Errorf("Unexpected number of pods for %s Operator. Expected %d but got %d ", operator.Name, 1, operatorDeployment.Status.AvailableReplicas)
+		return false, fmt.Errorf("unexpected number of pods for %s Operator. Expected %d but got %d ", operator.Name, 1, operatorDeployment.Status.AvailableReplicas)
 	}
 
 	return true, nil
