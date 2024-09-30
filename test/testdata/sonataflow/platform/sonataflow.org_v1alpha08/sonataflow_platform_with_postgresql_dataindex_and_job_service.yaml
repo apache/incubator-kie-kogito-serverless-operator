@@ -17,10 +17,6 @@ kind: SonataFlowPlatform
 metadata:
   name: sonataflow-platform
 spec:
-  build:
-    config:
-      strategyOptions:
-        KanikoBuildCacheEnabled: "true"
   services:
     dataIndex:
       enabled: true

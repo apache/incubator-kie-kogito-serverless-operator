@@ -29,7 +29,7 @@ Feature: Deploy SonataFlowPlatform with default configuration
     Then Deployment "event-listener" pods log contains text '"shipping": "international"' within 1 minutes
     Then SonataFlow "order-processing" pods log does not contain text 'ERROR' within 0 minutes
 
-  @devMode1
+  @devMode
   Scenario: Deploy greeting-example in dev mode and verify its functionality
     When SonataFlow greeting example is deployed
     Then SonataFlow "greeting" has the condition "Running" set to "True" within 5 minutes

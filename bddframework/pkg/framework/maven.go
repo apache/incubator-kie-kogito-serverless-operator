@@ -21,7 +21,7 @@ package framework
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/bddframework/pkg/config"
@@ -165,7 +165,7 @@ func (mvnCmd *mavenCommandStruct) setSettingsXML() error {
 	}
 
 	// Create settings.xml in directory
-	if err := ioutil.WriteFile(fmt.Sprintf("%s/settings.xml", mvnCmd.directory), []byte(settings.Generate()), 0644); err != nil {
+	if err := os.WriteFile(fmt.Sprintf("%s/settings.xml", mvnCmd.directory), []byte(settings.Generate()), 0644); err != nil {
 		return err
 	}
 

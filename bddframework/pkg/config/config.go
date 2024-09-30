@@ -330,6 +330,11 @@ func GetOperatorYamlURI() string {
 	return env.operatorYamlURI
 }
 
+// GetPostgresYamlURI return the uri for postgres.yaml file
+func GetPostgresYamlURI() string {
+	return "../test/testdata/persistence/postgres/01-postgres.yaml"
+}
+
 // GetRhpamOperatorYamlURI return the uri for rhpam-kogito-operator.yaml file
 func GetRhpamOperatorYamlURI() string {
 	return env.rhpamOperatorYamlURI

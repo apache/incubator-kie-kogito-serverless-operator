@@ -27,13 +27,13 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/testbdd/installers"
 
 	"github.com/apache/incubator-kie-kogito-serverless-operator/bddframework/pkg/config"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/bddframework/pkg/framework"
 	kogitoInstallers "github.com/apache/incubator-kie-kogito-serverless-operator/bddframework/pkg/installers"
 )
 
 func registerOperatorSteps(ctx *godog.ScenarioContext, data *Data) {
 	ctx.Step(`^SonataFlow Operator is deployed$`, data.sonataFlowOperatorIsDeployed)
-	// Unused currently
-	//ctx.Step(`^SonataFlow Operator has (\d+) (?:pod|pods) running"$`, data.sonataFlowOperatorHasPodsRunning)
+	ctx.Step(`^SonataFlow Operator has (\d+) (?:pod|pods) running"$`, data.sonataFlowOperatorHasPodsRunning)
 	// Not migrated yet
 	//ctx.Step(`^Kogito operator should be installed$`, data.kogitoOperatorShouldBeInstalled)
 	//ctx.Step(`^CLI install Kogito operator$`, data.cliInstallKogitoOperator)
@@ -52,9 +52,10 @@ func (data *Data) sonataFlowOperatorIsDeployed() (err error) {
 	return installer.Install(data.Namespace)
 }
 
-//func (data *Data) sonataFlowOperatorHasPodsRunning(numberOfPods int, name, phase string) error {
-//	return framework.WaitForPodsWithLabel(data.Namespace, "control-plane", "sonataflow-operator", numberOfPods, 1)
-//}
+func (data *Data) sonataFlowOperatorHasPodsRunning(numberOfPods int, name, phase string) error {
+	return framework.WaitForPodsWithLabel(name, "control-plane", "sonataflow-operator", numberOfPods, 1)
+}
+
 //
 //func (data *Data) kogitoOperatorShouldBeInstalled() error {
 //	return framework.WaitForKogitoOperatorRunning(data.Namespace)

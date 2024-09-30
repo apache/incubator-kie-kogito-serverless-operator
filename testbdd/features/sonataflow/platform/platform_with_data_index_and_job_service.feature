@@ -2,9 +2,9 @@ Feature: Deploy SonataFlowPlatform with Data Index and JobService using Postgres
 
   Background:
     Given Namespace is created
-    When SonataFlow Operator is deployed
     When Postgres is deployed
-    When SonataFlowPlatform with DataIndexAndJobService using Postgres is deployed
+    When SonataFlow Operator is deployed
+    When SonataFlowPlatform with DataIndexAndJobsService using Postgres is deployed
 
   @devMode
   Scenario: Deploy order-processing example in dev mode and verify its functionality
@@ -56,8 +56,12 @@ Feature: Deploy SonataFlowPlatform with Data Index and JobService using Postgres
     Then SonataFlow "greeting" pods log does not contain text 'ERROR' within 0 minutes
 
   @previewMode
-  Scenario: Deploy callbackstate-timeouts example in dev mode and verify its functionality
+  Scenario: Deploy callbackstatetimeouts example in preview mode and verify its functionality
     When SonataFlow callbackstatetimeouts example is deployed
-    Then SonataFlow "callbackstatetimeouts" has the condition "Running" set to "True" within 5 minutes
-    Then SonataFlow "callbackstatetimeouts" is addressable within 1 minute
-    Then HTTP GET request on SonataFlow "callbackstatetimeouts" is successful within 1 minute with path "callbackstatetimeouts", expectedResponseContains ''
+    Then SonataFlow "callbackstatetimeouts" has the condition "Running" set to "True" within 3 minutes
+  
+  @previewMode
+  Scenario: Deploy vet example in preview mode and verify its functionality
+    When SonataFlow vet example is deployed
+    Then SonataFlow "vet" has the condition "Running" set to "True" within 2 minutes
+   

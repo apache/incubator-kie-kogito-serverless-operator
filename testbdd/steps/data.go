@@ -39,7 +39,7 @@ func (data *Data) RegisterAllSteps(ctx *godog.ScenarioContext) {
 	registerOperatorSteps(ctx, data)
 	registerPlatformSteps(ctx, data)
 	registerSonataFlowClusterPlatformSteps(ctx, data)
-	//registerPostgresSteps(ctx, data)
+	registerPostgresSteps(ctx, data)
 	registerSonataFlowSteps(ctx, data)
 	registerKubernetesSteps(ctx, data)
 

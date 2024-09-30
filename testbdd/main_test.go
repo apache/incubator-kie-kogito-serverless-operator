@@ -33,5 +33,7 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	// TODO: Deploy OCP
+
 	executor.ExecuteBDDTests(nil)
 }

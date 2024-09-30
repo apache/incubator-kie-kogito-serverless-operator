@@ -20,41 +20,29 @@
 package steps
 
 import (
-	"fmt"
-	"path/filepath"
-	"strings"
-
 	"github.com/cucumber/godog"
 
-	"github.com/apache/incubator-kie-kogito-serverless-operator/test"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/test/utils"
-
 	"github.com/apache/incubator-kie-kogito-serverless-operator/bddframework/pkg/framework"
+	kogitoInstallers "github.com/apache/incubator-kie-kogito-serverless-operator/bddframework/pkg/installers"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/testbdd/installers"
 )
 
 func registerPostgresSteps(ctx *godog.ScenarioContext, data *Data) {
-	ctx.Step(`^Postgres is deployed$`, data.postgresIsDeployed())
+	ctx.Step(`^Postgres is deployed$`, data.postgresIsDeployed)
 	// Unused currently
-	//ctx.Step(`^SonataFlow Operator has (\d+) (?:pod|pods) running"$`, data.sonataFlowOperatorHasPodsRunning)
-	// Not migrated yet
-	//ctx.Step(`^Kogito operator should be installed$`, data.kogitoOperatorShouldBeInstalled)
-	//ctx.Step(`^CLI install Kogito operator$`, data.cliInstallKogitoOperator)
+	//ctx.Step(`^Postgres deployment has (\d+) (?:pod|pods) running"$`, data.sonataFlowOperatorHasPodsRunning)
 }
 
 func (data *Data) postgresIsDeployed() (err error) {
-	projectDir, _ := utils.GetProjectDir()
-	projectDir = strings.Replace(projectDir, "/testbdd", "", -1)
-
-	// TODO or kubectl
-	out, err := framework.CreateCommand("oc", "apply", "-f",
-		filepath.Join(projectDir,
-			test.GetPostgresFolder()),
-		"-n",
-		data.Namespace).Execute()
+	var installer kogitoInstallers.ServiceInstaller
+	installer, err = installers.GetPostgresInstaller()
 
 	if err != nil {
-		framework.GetLogger(data.Namespace).Error(err, fmt.Sprintf("Applying Postgres deployments failed, output: %s", out))
+		return err
 	}
+	return installer.Install(data.Namespace)
+}
 
-	return err
+func (data *Data) postgresDeploymentHasPodsRunning(numberOfPods int, name, phase string) error {
+	return framework.WaitForPodsWithLabel(data.Namespace, "app.kubernetes.io/name", "postgres", numberOfPods, 1)
 }

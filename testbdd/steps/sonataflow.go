@@ -40,6 +40,7 @@ func registerSonataFlowSteps(ctx *godog.ScenarioContext, data *Data) {
 	ctx.Step(`^SonataFlow orderprocessing example is deployed$`, data.sonataFlowOrderProcessingExampleIsDeployed)
 	ctx.Step(`^SonataFlow callbackstatetimeouts example is deployed$`, data.sonataFlowCallbackstateTimeoutsIsDeployed)
 	ctx.Step(`^SonataFlow greeting example is deployed$`, data.sonataFlowGreetingExampleIsDeployed)
+	ctx.Step(`^SonataFlow vet example is deployed$`, data.sonataFlowVetExampleIsDeployed)
 	ctx.Step(`^SonataFlow "([^"]*)" has the condition "(Running|Succeed|Built)" set to "(True|False|Unknown)" within (\d+) minutes?$`, data.sonataFlowHasTheConditionSetToWithinMinutes)
 	ctx.Step(`^SonataFlow "([^"]*)" is addressable within (\d+) minutes?$`, data.sonataFlowIsAddressableWithinMinutes)
 	ctx.Step(`^HTTP POST request as Cloud Event on SonataFlow "([^"]*)" is successful within (\d+) minutes? with path "([^"]*)", headers "([^"]*)" and body:$`, data.httpPostRequestAsCloudEventOnSonataFlowIsSuccessfulWithinMinutesWithPathHeadersAndBody)
@@ -57,6 +58,21 @@ func (data *Data) sonataFlowOrderProcessingExampleIsDeployed() error {
 	// TODO or kubectl
 	out, err := framework.CreateCommand("oc", "apply", "-f", filepath.Join(projectDir,
 		test.GetSonataFlowE2eOrderProcessingFolder()), "-n", data.Namespace).Execute()
+
+	if err != nil {
+		framework.GetLogger(data.Namespace).Error(err, fmt.Sprintf("Applying SonataFlow failed, output: %s", out))
+	}
+	return err
+}
+
+// TODO: Parametrize example
+func (data *Data) sonataFlowVetExampleIsDeployed() error {
+	projectDir, _ := utils.GetProjectDir()
+	projectDir = strings.Replace(projectDir, "/testbdd", "", -1)
+
+	// TODO or kubectl
+	out, err := framework.CreateCommand("oc", "apply", "-f", filepath.Join(projectDir,
+		test.GetSonataFlowE2eVetFolder()), "-n", data.Namespace).Execute()
 
 	if err != nil {
 		framework.GetLogger(data.Namespace).Error(err, fmt.Sprintf("Applying SonataFlow failed, output: %s", out))
@@ -192,7 +208,7 @@ func (data *Data) httpGetRequestOnSonataFlowIsSuccessfulWithinMinutesWithRespons
 	if err != nil {
 		return err
 	} else {
-		fmt.Printf("Got response %s.\n", actualResponse)
+		fmt.Printf("got response %s.\n", actualResponse)
 		result := strings.Contains(actualResponse, expectedResponseContains)
 		if result {
 			return nil
@@ -223,7 +239,7 @@ func (data *Data) httpPostRequestOnSonataFlowIsSuccessfulWithinMinutesWithRespon
 	if err != nil {
 		return fmt.Errorf("error during execution of HTTP request. Error %s", err)
 	} else {
-		fmt.Printf("Got response %s.\n", actualResponse)
+		fmt.Printf("got response %s.\n", actualResponse)
 		result := strings.Contains(actualResponse, expectedResponseContains)
 		if result {
 			return nil
