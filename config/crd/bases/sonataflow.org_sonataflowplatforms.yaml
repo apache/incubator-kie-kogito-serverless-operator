@@ -8696,10 +8696,12 @@ spec:
                             type: string
                         type: object
                     type: object
-                  jobBasedDbMigration:
+                  jobBasedDbMigrationDI:
                     description: |-
                       true = Use DB Migration Job with DB Migrator tool image
-                      false = Use built-in DB migration capability within services e.g. DI/JS
+                      false = Use built-in DB migration capability within services e.g. DI/JS, use MigrateDBOnStartUp flag
+                    type: boolean
+                  jobBasedDbMigrationJS:
                     type: boolean
                   jobService:
                     description: 'Deploys the Job service for use by workflows without

@@ -63,19 +63,27 @@ func (action *serviceAction) CanHandle(platform *operatorapi.SonataFlowPlatform)
 
 // checkNReportInconsistentDBMigrationFlags emit warning in logs, if Job based migration is true and also DI/JS migrateDBOnStartUp is true, does not return error
 func (action *serviceAction) checkNReportInconsistentDBMigrationFlags(platform *operatorapi.SonataFlowPlatform, pshDI services.PlatformServiceHandler, pshJS services.PlatformServiceHandler) {
-	isJobBasedDBMigration := services.IsJobBasedDBMigration(platform)
-	diMigrateDBOnStartUp := false
-	jsMigrateDBOnStartUp := false
+	isJobBasedDBMigrationDI := services.IsJobBasedDBMigrationDI(platform)
+	isJobBasedDBMigrationJS := services.IsJobBasedDBMigrationJS(platform)
+	isJobBasedDBMigration := isJobBasedDBMigrationDI || isJobBasedDBMigrationJS
+
+	migrateDBOnStartUpDI := false
+	migrateDBOnStartUpJS := false
 	if pshDI.IsPersistenceSetInSpec() {
-		diMigrateDBOnStartUp = platform.Spec.Services.DataIndex.Persistence.MigrateDBOnStartUp
+		migrateDBOnStartUpDI = platform.Spec.Services.DataIndex.Persistence.MigrateDBOnStartUp
 	}
 
 	if pshJS.IsPersistenceSetInSpec() {
-		jsMigrateDBOnStartUp = platform.Spec.Services.JobService.Persistence.MigrateDBOnStartUp
+		migrateDBOnStartUpJS = platform.Spec.Services.JobService.Persistence.MigrateDBOnStartUp
 	}
 
-	if isJobBasedDBMigration && (diMigrateDBOnStartUp || jsMigrateDBOnStartUp) {
-		klog.V(log.W).InfoS("Inconsistent DB migration flags detected and it may cause unexpected errors or behaviours, please check SonataFlowPlatform deployment: ", "jobBasedDBMigration", isJobBasedDBMigration, "diMigrateDBOnStartUp", diMigrateDBOnStartUp, "jsMigrateDBOnStartUp", jsMigrateDBOnStartUp)
+	isServiceBasedDBMigration := migrateDBOnStartUpDI || migrateDBOnStartUpJS
+
+	// Check if both job based and service based db migration is specified
+	if (isJobBasedDBMigrationDI && migrateDBOnStartUpDI) || (isJobBasedDBMigrationJS && migrateDBOnStartUpJS) {
+		klog.V(log.W).InfoS("Both job based DB migration and service based DB migration flags detected, which may cause unexpected errors or behaviours, please check SonataFlowPlatform deployment: ", "jobBasedDBMigrationDI", isJobBasedDBMigrationDI, "jobBasedDBMigrationJS", isJobBasedDBMigrationJS, "migrateDBOnStartUpDI", migrateDBOnStartUpDI, "migrateDBOnStartUpJS", migrateDBOnStartUpJS)
+	} else if !isJobBasedDBMigration && !isServiceBasedDBMigration {
+		klog.V(log.I).InfoS("No job based or service based db migration flags specified, the services will expect the tables needed by them in the configured database: ", "jobBasedDBMigrationDI", isJobBasedDBMigrationDI, "jobBasedDBMigrationJS", isJobBasedDBMigrationJS, "migrateDBOnStartUpDI", migrateDBOnStartUpDI, "migrateDBOnStartUpJS", migrateDBOnStartUpJS)
 	}
 }
 
@@ -123,7 +131,7 @@ func (action *serviceAction) Handle(ctx context.Context, platform *operatorapi.S
 	psJS := services.NewJobServiceHandler(platform)
 
 	// Invoke DB Migration only if both or either DI/JS services are requested, in addition to jobBasedDBMigration
-	if services.IsJobBasedDBMigration(platform) && (psDI.IsServiceSetInSpec() || psJS.IsServiceSetInSpec()) {
+	if (services.IsJobBasedDBMigrationDI(platform) || services.IsJobBasedDBMigrationJS(platform)) && (psDI.IsServiceSetInSpec() || psJS.IsServiceSetInSpec()) {
 		klog.V(log.I).InfoS("Starting DB Migration Job: ")
 		err := action.createOrUpdateDBMigrationJob(ctx, action.client, platform, psDI, psJS)
 		if err != nil {

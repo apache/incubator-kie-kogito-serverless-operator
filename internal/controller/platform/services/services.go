@@ -518,9 +518,16 @@ func isServicesSet(platform *operatorapi.SonataFlowPlatform) bool {
 	return platform != nil && platform.Spec.Services != nil
 }
 
-func IsJobBasedDBMigration(platform *operatorapi.SonataFlowPlatform) bool {
+func IsJobBasedDBMigrationDI(platform *operatorapi.SonataFlowPlatform) bool {
 	if platform != nil && platform.Spec.Services != nil {
-		return platform.Spec.Services.JobBasedDbMigration
+		return platform.Spec.Services.JobBasedDbMigrationDI
+	}
+	return false
+}
+
+func IsJobBasedDBMigrationJS(platform *operatorapi.SonataFlowPlatform) bool {
+	if platform != nil && platform.Spec.Services != nil {
+		return platform.Spec.Services.JobBasedDbMigrationJS
 	}
 	return false
 }

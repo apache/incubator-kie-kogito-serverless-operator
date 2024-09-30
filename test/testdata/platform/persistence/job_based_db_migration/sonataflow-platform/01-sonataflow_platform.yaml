@@ -21,7 +21,8 @@ spec:
       strategyOptions:
         KanikoBuildCacheEnabled: "true"
   services:
-    jobBasedDbMigration: true
+    jobBasedDbMigrationDI: true
+    jobBasedDbMigrationJS: true
     dataIndex:
       enabled: true
       persistence:
