@@ -232,7 +232,7 @@ var _ = Describe("Platform Use Cases :: ", Label("platform"), Ordered, func() {
 		var manifests []byte
 		EventuallyWithOffset(1, func() error {
 			var err error
-			cmd := exec.Command("kubectl", "kustomize", testcaseDir + "/pg-service")
+			cmd := exec.Command("kubectl", "kustomize", testcaseDir+"/pg-service")
 			manifests, err = utils.Run(cmd)
 			return err
 		}, time.Minute, time.Second).Should(Succeed())
@@ -252,7 +252,7 @@ var _ = Describe("Platform Use Cases :: ", Label("platform"), Ordered, func() {
 		By("Deploy the CR")
 		EventuallyWithOffset(1, func() error {
 			var err error
-			cmd := exec.Command("kubectl", "kustomize", testcaseDir + "/sonataflow-platform")
+			cmd := exec.Command("kubectl", "kustomize", testcaseDir+"/sonataflow-platform")
 			manifests, err = utils.Run(cmd)
 			return err
 		}, time.Minute, time.Second).Should(Succeed())
