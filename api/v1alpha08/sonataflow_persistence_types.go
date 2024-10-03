@@ -51,10 +51,13 @@ type PersistenceOptionsSpec struct {
 	// +optional
 	PostgreSQL *PersistencePostgreSQL `json:"postgresql,omitempty"`
 
-	// Whether to migrate database on service startup?
+	// DB Migration approach for service?
+	// job: use job based approach
+	// service: service itself shall migrate the db
+	// none: no db migration needed
 	// +optional
-	// +default: false
-	MigrateDBOnStartUp bool `json:"migrateDBOnStartUp"`
+	// +kubebuilder:default:=service
+	DBMigrationApproach string `json:"dbMigrationApproach,omitempty"`
 }
 
 // PersistencePostgreSQL configure postgresql connection for service(s).

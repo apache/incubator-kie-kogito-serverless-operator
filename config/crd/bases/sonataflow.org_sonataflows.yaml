@@ -1997,9 +1997,14 @@ spec:
                   for the workflow
                 maxProperties: 2
                 properties:
-                  migrateDBOnStartUp:
-                    description: Whether to migrate database on service startup?
-                    type: boolean
+                  dbMigrationApproach:
+                    default: service
+                    description: |-
+                      DB Migration approach for service?
+                      job: use job based approach
+                      service: service itself shall migrate the db
+                      none: no db migration needed
+                    type: string
                   postgresql:
                     description: Connect configured services to a postgresql database.
                     maxProperties: 2

@@ -41,6 +41,7 @@ import (
 	"knative.dev/pkg/tracker"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/profiles/common/constants"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/profiles/common/persistence"
@@ -50,6 +51,12 @@ import (
 const (
 	quarkusHibernateORMDatabaseGeneration string = "QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION"
 	quarkusFlywayMigrateAtStart           string = "QUARKUS_FLYWAY_MIGRATE_AT_START"
+)
+
+const (
+	serviceBasedDBMigration string = "service"
+	jobBasedDBMigration     string = "job"
+	noDBMigration           string = "none"
 )
 
 type PlatformServiceHandler interface {
@@ -108,10 +115,39 @@ type PlatformServiceHandler interface {
 
 	// Check if K_SINK has injected for Job Service. No Op for Data Index
 	CheckKSinkInjected() (bool, error)
+
+	// Returns whether job based, service based or no DB migration is needed
+	GetDBMigrationApproach() string
+	// Returns true if job based db migration, false otherwise
+	IsJobsBasedDBMigration() bool
+	// Returns true if service based db migration, false otherwise
+	IsServiceBasedDBMigration() bool
+	// Returns true if no DB migration is needed
+	IsNoDBMigration() bool
 }
 
 type DataIndexHandler struct {
 	platform *operatorapi.SonataFlowPlatform
+}
+
+// GetDBMigrationApproach returns DB migration approach
+func (d *DataIndexHandler) GetDBMigrationApproach() string {
+	return getDBMigrationApproach(d.platform.Spec.Services.DataIndex.Persistence)
+}
+
+// IsJobsBasedDBMigration returns true if job based db migration, false otherwise
+func (d *DataIndexHandler) IsJobsBasedDBMigration() bool {
+	return isJobsBasedDBMigration(d.platform.Spec.Services.DataIndex.Persistence)
+}
+
+// IsNoDBMigration returns true if no db migration, false otherwise
+func (d *DataIndexHandler) IsNoDBMigration() bool {
+	return isNoDBMigration(d.platform.Spec.Services.DataIndex.Persistence)
+}
+
+// IsServiceBasedDBMigration returns true if service based db migration false otherwise
+func (d *DataIndexHandler) IsServiceBasedDBMigration() bool {
+	return isServiceBasedDBMigration(d.platform.Spec.Services.DataIndex.Persistence)
 }
 
 func NewDataIndexHandler(platform *operatorapi.SonataFlowPlatform) PlatformServiceHandler {
@@ -233,6 +269,31 @@ func (d *DataIndexHandler) hasPostgreSQLConfigured() bool {
 			(d.platform.Spec.Persistence != nil && d.platform.Spec.Persistence.PostgreSQL != nil))
 }
 
+func getDBMigrationApproach(persistence *v1alpha08.PersistenceOptionsSpec) string {
+	dbMigrationApproach := ""
+
+	if persistence != nil {
+		return persistence.DBMigrationApproach
+	}
+
+	return dbMigrationApproach
+}
+
+func isServiceBasedDBMigration(persistence *v1alpha08.PersistenceOptionsSpec) bool {
+	dbMigrationApproach := getDBMigrationApproach(persistence)
+	return dbMigrationApproach == serviceBasedDBMigration
+}
+
+func isJobsBasedDBMigration(persistence *v1alpha08.PersistenceOptionsSpec) bool {
+	dbMigrationApproach := getDBMigrationApproach(persistence)
+	return dbMigrationApproach == jobBasedDBMigration
+}
+
+func isNoDBMigration(persistence *v1alpha08.PersistenceOptionsSpec) bool {
+	dbMigrationApproach := getDBMigrationApproach(persistence)
+	return dbMigrationApproach == noDBMigration || dbMigrationApproach == ""
+}
+
 func (d *DataIndexHandler) ConfigurePersistence(containerSpec *corev1.Container) *corev1.Container {
 	if d.hasPostgreSQLConfigured() {
 		p := persistence.RetrievePostgreSQLConfiguration(d.platform.Spec.Services.DataIndex.Persistence, d.platform.Spec.Persistence, d.GetServiceName())
@@ -240,13 +301,13 @@ func (d *DataIndexHandler) ConfigurePersistence(containerSpec *corev1.Container)
 		c.Image = d.GetServiceImageName(constants.PersistenceTypePostgreSQL)
 		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p.PostgreSQL, d.GetServiceName(), d.platform.Namespace)...)
 
-		migrateDBOnStart := "true"
+		serviceBasedDBMigration := "true"
 		if d.platform.Spec.Services.DataIndex.Persistence != nil {
-			migrateDBOnStart = strconv.FormatBool(d.platform.Spec.Services.DataIndex.Persistence.MigrateDBOnStartUp)
+			serviceBasedDBMigration = strconv.FormatBool(isServiceBasedDBMigration(d.platform.Spec.Services.DataIndex.Persistence))
 		}
 
 		// specific to DataIndex
-		c.Env = append(c.Env, corev1.EnvVar{Name: quarkusHibernateORMDatabaseGeneration, Value: "update"}, corev1.EnvVar{Name: quarkusFlywayMigrateAtStart, Value: migrateDBOnStart})
+		c.Env = append(c.Env, corev1.EnvVar{Name: quarkusHibernateORMDatabaseGeneration, Value: "update"}, corev1.EnvVar{Name: quarkusFlywayMigrateAtStart, Value: serviceBasedDBMigration})
 		return c
 	}
 	return containerSpec
@@ -287,6 +348,26 @@ func (d *DataIndexHandler) CheckKSinkInjected() (bool, error) {
 
 type JobServiceHandler struct {
 	platform *operatorapi.SonataFlowPlatform
+}
+
+// GetDBMigrationApproach returns db migration approach otherwise
+func (j *JobServiceHandler) GetDBMigrationApproach() string {
+	return getDBMigrationApproach(j.platform.Spec.Services.JobService.Persistence)
+}
+
+// IsJobsBasedDBMigration returns true if job based db migration, false otherwise
+func (j *JobServiceHandler) IsJobsBasedDBMigration() bool {
+	return isJobsBasedDBMigration(j.platform.Spec.Services.JobService.Persistence)
+}
+
+// IsNoDBMigration returns true if no db migration, false otherwise
+func (j *JobServiceHandler) IsNoDBMigration() bool {
+	return isNoDBMigration(j.platform.Spec.Services.JobService.Persistence)
+}
+
+// IsServiceBasedDBMigration returns true if service based db migration, false otherwise
+func (j *JobServiceHandler) IsServiceBasedDBMigration() bool {
+	return isServiceBasedDBMigration(j.platform.Spec.Services.JobService.Persistence)
 }
 
 func NewJobServiceHandler(platform *operatorapi.SonataFlowPlatform) PlatformServiceHandler {
@@ -416,13 +497,13 @@ func (j *JobServiceHandler) ConfigurePersistence(containerSpec *corev1.Container
 		c.Image = j.GetServiceImageName(constants.PersistenceTypePostgreSQL)
 		p := persistence.RetrievePostgreSQLConfiguration(j.platform.Spec.Services.JobService.Persistence, j.platform.Spec.Persistence, j.GetServiceName())
 		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p.PostgreSQL, j.GetServiceName(), j.platform.Namespace)...)
-		migrateDBOnStart := "true"
+		serviceBasedDBMigration := "true"
 		if j.platform.Spec.Services.JobService.Persistence != nil {
-			migrateDBOnStart = strconv.FormatBool(j.platform.Spec.Services.JobService.Persistence.MigrateDBOnStartUp)
+			serviceBasedDBMigration = strconv.FormatBool(isServiceBasedDBMigration(j.platform.Spec.Services.JobService.Persistence))
 		}
 
 		// Specific to Job Service
-		c.Env = append(c.Env, corev1.EnvVar{Name: "QUARKUS_FLYWAY_MIGRATE_AT_START", Value: migrateDBOnStart})
+		c.Env = append(c.Env, corev1.EnvVar{Name: "QUARKUS_FLYWAY_MIGRATE_AT_START", Value: serviceBasedDBMigration})
 		c.Env = append(c.Env, corev1.EnvVar{Name: "KOGITO_JOBS_SERVICE_LOADJOBERRORSTRATEGY", Value: "FAIL_SERVICE"})
 		return c
 	}
@@ -516,20 +597,6 @@ func isJobServiceSet(platform *operatorapi.SonataFlowPlatform) bool {
 
 func isServicesSet(platform *operatorapi.SonataFlowPlatform) bool {
 	return platform != nil && platform.Spec.Services != nil
-}
-
-func IsJobBasedDBMigrationDI(platform *operatorapi.SonataFlowPlatform) bool {
-	if platform != nil && platform.Spec.Services != nil {
-		return platform.Spec.Services.JobBasedDbMigrationDI
-	}
-	return false
-}
-
-func IsJobBasedDBMigrationJS(platform *operatorapi.SonataFlowPlatform) bool {
-	if platform != nil && platform.Spec.Services != nil {
-		return platform.Spec.Services.JobBasedDbMigrationJS
-	}
-	return false
 }
 
 func GenerateServiceURL(protocol string, namespace string, name string) string {

@@ -1199,9 +1199,14 @@ spec:
                           by default.
                         maxProperties: 2
                         properties:
-                          migrateDBOnStartUp:
-                            description: Whether to migrate database on service startup?
-                            type: boolean
+                          dbMigrationApproach:
+                            default: service
+                            description: |-
+                              DB Migration approach for service?
+                              job: use job based approach
+                              service: service itself shall migrate the db
+                              none: no db migration needed
+                            type: string
                           postgresql:
                             description: Connect configured services to a postgresql
                               database.
@@ -9230,13 +9235,6 @@ spec:
                             type: string
                         type: object
                     type: object
-                  jobBasedDbMigrationDI:
-                    description: |-
-                      true = Use DB Migration Job with DB Migrator tool image
-                      false = Use built-in DB migration capability within services e.g. DI/JS, use MigrateDBOnStartUp flag
-                    type: boolean
-                  jobBasedDbMigrationJS:
-                    type: boolean
                   jobService:
                     description: 'Deploys the Job service for use by workflows without
                       the `sonataflow.org/profile: dev` annotation.'
@@ -9250,9 +9248,14 @@ spec:
                           by default.
                         maxProperties: 2
                         properties:
-                          migrateDBOnStartUp:
-                            description: Whether to migrate database on service startup?
-                            type: boolean
+                          dbMigrationApproach:
+                            default: service
+                            description: |-
+                              DB Migration approach for service?
+                              job: use job based approach
+                              service: service itself shall migrate the db
+                              none: no db migration needed
+                            type: string
                           postgresql:
                             description: Connect configured services to a postgresql
                               database.
@@ -19462,9 +19465,14 @@ spec:
                   for the workflow
                 maxProperties: 2
                 properties:
-                  migrateDBOnStartUp:
-                    description: Whether to migrate database on service startup?
-                    type: boolean
+                  dbMigrationApproach:
+                    default: service
+                    description: |-
+                      DB Migration approach for service?
+                      job: use job based approach
+                      service: service itself shall migrate the db
+                      none: no db migration needed
+                    type: string
                   postgresql:
                     description: Connect configured services to a postgresql database.
                     maxProperties: 2

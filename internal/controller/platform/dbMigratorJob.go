@@ -92,14 +92,14 @@ func NewDBMigratorJobData(ctx context.Context, client client.Client, platform *o
 	quarkusDatasourceJobsservicePassword := ""
 	quarkusFlywayJobsserviceSchemas := ""
 
-	migrateDbDataindex := services.IsJobBasedDBMigrationDI(platform)
+	migrateDbDataindex := pshDI.IsJobsBasedDBMigration()
 	if migrateDbDataindex {
 		quarkusDatasourceDataindexJdbcUrl = platform.Spec.Services.DataIndex.Persistence.PostgreSQL.JdbcUrl
 		quarkusDatasourceDataindexUsername, _ = services.GetSecretKeyValueString(ctx, client, platform.Spec.Services.DataIndex.Persistence.PostgreSQL.SecretRef.Name, platform.Spec.Services.DataIndex.Persistence.PostgreSQL.SecretRef.UserKey, platform)
 		quarkusDatasourceDataindexPassword, _ = services.GetSecretKeyValueString(ctx, client, platform.Spec.Services.DataIndex.Persistence.PostgreSQL.SecretRef.Name, platform.Spec.Services.DataIndex.Persistence.PostgreSQL.SecretRef.PasswordKey, platform)
 		quarkusFlywayDataindexSchemas = getDBSchemaName(platform.Spec.Services.DataIndex.Persistence.PostgreSQL, "defaultDi")
 	}
-	migrateDbJobsservice := services.IsJobBasedDBMigrationJS(platform)
+	migrateDbJobsservice := pshJS.IsJobsBasedDBMigration()
 	if migrateDbJobsservice {
 		quarkusDatasourceJobsserviceJdbcUrl = platform.Spec.Services.JobService.Persistence.PostgreSQL.JdbcUrl
 		quarkusDatasourceJobsserviceUsername, _ = services.GetSecretKeyValueString(ctx, client, platform.Spec.Services.JobService.Persistence.PostgreSQL.SecretRef.Name, platform.Spec.Services.JobService.Persistence.PostgreSQL.SecretRef.UserKey, platform)

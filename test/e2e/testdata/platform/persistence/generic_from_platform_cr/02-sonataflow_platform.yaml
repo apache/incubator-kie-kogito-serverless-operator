@@ -31,7 +31,7 @@ spec:
     dataIndex:
       enabled: false
       persistence:
-        migrateDBOnStartUp: true
+        dbMigrationApproach: service
       podTemplate:
         initContainers:
           - name: init-postgres
@@ -41,7 +41,7 @@ spec:
     jobService:
       enabled: false
       persistence:
-        migrateDBOnStartUp: true
+        dbMigrationApproach: service
       podTemplate:
         initContainers:
           - name: init-postgres
