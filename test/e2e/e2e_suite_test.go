@@ -36,7 +36,7 @@ import (
 // Run e2e tests using the Ginkgo runner.
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
-	_, _ = fmt.Fprintf(GinkgoWriter, "Starting SonataFlow Operator suite\n")
+	GinkgoWriter.Println("Starting SonataFlow Operator suite")
 	RunSpecs(t, "SonataFlow Operator e2e suite")
 }
 
@@ -83,14 +83,14 @@ type DeployedWorkflow struct {
 
 var _ = BeforeSuite(func() {
 	GinkgoWriter.Print("Checking if resources namespace is available\n")
-	exists, err := kubectlNamespaceExists(resourcesNamespace)
+	namespaceExists, err := kubectlNamespaceExists(resourcesNamespace)
 	Expect(err).NotTo(HaveOccurred())
 
 	workflows := make(map[string]*DeployedWorkflow, 2)
 	workflows[flowCallbackName] = &DeployedWorkflow{YAMLFile: test.GetPathFromE2EDirectory("before-suite", "sonataflow.org_v1alpha08_sonataflow-callbackstatetimeouts.yaml")}
 	workflows[flowCallbackPersistenceName] = &DeployedWorkflow{YAMLFile: test.GetPathFromE2EDirectory("before-suite", "sonataflow.org_v1alpha08_sonataflow-callbackstatetimeouts-persistence.yaml")}
 	workflows[flowGreetingsName] = &DeployedWorkflow{YAMLFile: test.GetPathFromE2EDirectory("before-suite", "sonataflow.org_v1alpha08_sonataflow-greetings.yaml")}
-	if !exists {
+	if !namespaceExists {
 		GinkgoWriter.Println("Creating the resources namespace")
 		err = kubectlCreateNamespace(resourcesNamespace)
 		Expect(err).NotTo(HaveOccurred())

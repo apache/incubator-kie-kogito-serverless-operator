@@ -119,6 +119,9 @@ vet: ## Run go vet against code.
 
 .PHONY: test
 test: manifests generate envtest test-api ## Run tests.
+	@$(MAKE) addheaders
+	@$(MAKE) vet
+	@$(MAKE) fmt
 	@echo "🔍 Running controller tests..."
 	@KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" \
 	go test $(shell go list ./... | grep -v /test/) -coverprofile cover.out > /dev/null 2>&1
@@ -400,7 +403,7 @@ generate-all: generate generate-deploy bundle
 
 .PHONY: test-e2e # You will need to have a Minikube/Kind cluster up and running to run this target, and run container-builder before the test
 label = "flows-ephemeral" # possible values are flows-ephemeral, flows-persistence, platform, cluster
-test-e2e: kustomize
+test-e2e:
 ifeq ($(label), cluster)
 	@echo "🌐 Running e2e tests for cluster..."
 	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/clusterplatform_test.go \

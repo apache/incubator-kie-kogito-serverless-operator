@@ -286,7 +286,7 @@ func GetPathFromDataDirectory(join ...string) string {
 }
 
 func GetPathFromE2EDirectory(join ...string) string {
-	return filepath.Join(append([]string{getTestDataDir(), "e2e"}, join...)...)
+	return filepath.Join(append([]string{getProjectDir(), "test", "e2e", "testdata"}, join...)...)
 }
 
 // getTestDataDir gets the testdata directory containing every sample out there from test/testdata.
