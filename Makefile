@@ -399,30 +399,30 @@ generate-all: generate generate-deploy bundle
 	@$(MAKE) fmt
 
 .PHONY: test-e2e # You will need to have a Minikube/Kind cluster up and running to run this target, and run container-builder before the test
-label = "flows-non-persistence" # possible values are flows-non-persistence, flows-persistence, platform, cluster
-test-e2e:
+label = "flows-ephemeral" # possible values are flows-ephemeral, flows-persistence, platform, cluster
+test-e2e: kustomize
 ifeq ($(label), cluster)
 	@echo "🌐 Running e2e tests for cluster..."
 	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/clusterplatform_test.go \
 	-v -ginkgo.v -ginkgo.no-color -ginkgo.github-output -ginkgo.label-filter=$(label) \
-	-ginkgo.junit-report=./e2e-test-report-clusterplatform_test.xml -timeout 60m;
+	-ginkgo.junit-report=./e2e-test-report-clusterplatform_test.xml -timeout 60m KUSTOMIZE=$(KUSTOMIZE);
 else ifeq ($(label), platform)
 	@echo "📦 Running e2e tests for platform..."
 	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/platform_test.go \
 	-v -ginkgo.v -ginkgo.no-color -ginkgo.github-output -ginkgo.label-filter=$(label) \
-	-ginkgo.junit-report=./e2e-test-report-platform_test.xml -timeout 60m;
-else ifeq ($(label), flows-non-persistence)
-	@echo "🔄 Running e2e tests for flows-non-persistence..."
+	-ginkgo.junit-report=./e2e-test-report-platform_test.xml -timeout 60m KUSTOMIZE=$(KUSTOMIZE);
+else ifeq ($(label), flows-ephemeral)
+	@echo "🔄 Running e2e tests for flows-ephemeral..."
 	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/workflow_test.go \
 	-v -ginkgo.v -ginkgo.no-color -ginkgo.github-output -ginkgo.label-filter=$(label) \
-	-ginkgo.junit-report=./e2e-test-report-workflow_test.xml -timeout 60m;
+	-ginkgo.junit-report=./e2e-test-report-workflow_test.xml -timeout 60m KUSTOMIZE=$(KUSTOMIZE);
 else ifeq ($(label), flows-persistence)
 	@echo "🔁 Running e2e tests for flows-persistence..."
 	go test ./test/e2e/e2e_suite_test.go ./test/e2e/helpers.go ./test/e2e/workflow_test.go \
 	-v -ginkgo.v -ginkgo.no-color -ginkgo.github-output -ginkgo.label-filter=$(label) \
-	-ginkgo.junit-report=./e2e-test-report-workflow_test.xml -timeout 60m;
+	-ginkgo.junit-report=./e2e-test-report-workflow_test.xml -timeout 60m KUSTOMIZE=$(KUSTOMIZE);
 else
-	@echo "❌  Invalid label. Please use one of: cluster, platform, flows-non-persistence, flows-persistence"
+	@echo "❌  Invalid label. Please use one of: cluster, platform, flows-ephemeral, flows-persistence"
 endif
 
 
