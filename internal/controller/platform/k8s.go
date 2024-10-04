@@ -64,33 +64,36 @@ func (action *serviceAction) CanHandle(platform *operatorapi.SonataFlowPlatform)
 func (action *serviceAction) createOrUpdateDBMigrationJob(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, pshDI services.PlatformServiceHandler, pshJS services.PlatformServiceHandler) error {
 	dbMigratorJob, err := NewDBMigratorJobData(ctx, action.client, platform, pshDI, pshJS)
 	if err != nil {
-		klog.V(log.E).InfoS("Error extracting db-migration job data: ", "error", err)
+		klog.V(log.E).InfoS("Error creating a new new db migration job data: ", "error", err)
 		return err
 	}
-	klog.V(log.I).InfoS("Extracted db-migation job data ")
 
-	job := dbMigratorJob.GetDBMigratorK8sJob(platform)
-	if op, err := controllerutil.CreateOrUpdate(ctx, client, job, func() error {
-		return nil
-	}); err != nil {
-		return err
-	} else {
-		klog.V(log.I).InfoS("DB Migration Job successfully created on cluster", "operation", op)
+	if dbMigratorJob != nil {
+		// Invoke DB Migration only if both or either DI/JS services are requested, in addition to DBMigrationStrategyJob
+		klog.V(log.I).InfoS("Starting DB Migration Job: ")
+
+		job := dbMigratorJob.CreateJobDBMigration(platform)
+		if op, err := controllerutil.CreateOrUpdate(ctx, client, job, func() error {
+			return nil
+		}); err != nil {
+			return err
+		} else {
+			klog.V(log.I).InfoS("DB Migration Job successfully created on cluster", "operation", op)
+		}
+
+		if err != nil {
+			klog.V(log.E).InfoS("Error executing db-migration job: ", "error", err)
+			return err
+		}
+		klog.V(log.I).InfoS("Got db-migration k8s job")
+
+		err = dbMigratorJob.ReconcileMigratorJob(ctx, client, platform)
+		if err != nil {
+			klog.V(log.E).InfoS("Error monitoring completion of db-migration job: ", "error", err)
+			return err
+		}
+		klog.V(log.I).InfoS("Monitoring completed for db-migation k8s job")
 	}
-
-	if err != nil {
-		klog.V(log.E).InfoS("Error executing db-migration job: ", "error", err)
-		return err
-	}
-	klog.V(log.I).InfoS("Got db-migration k8s job")
-
-	err = dbMigratorJob.MonitorCompletionOfDBMigratorJob(ctx, client, platform)
-	if err != nil {
-		klog.V(log.E).InfoS("Error monitoring completion of db-migration job: ", "error", err)
-		return err
-	}
-	klog.V(log.I).InfoS("Monitoring completed for db-migation k8s job")
-
 	return nil
 }
 
@@ -103,13 +106,9 @@ func (action *serviceAction) Handle(ctx context.Context, platform *operatorapi.S
 	psDI := services.NewDataIndexHandler(platform)
 	psJS := services.NewJobServiceHandler(platform)
 
-	// Invoke DB Migration only if both or either DI/JS services are requested, in addition to jobBasedDBMigration
-	if (psDI.IsServiceSetInSpec() && psDI.IsJobsBasedDBMigration()) || (psJS.IsServiceSetInSpec() && psJS.IsJobsBasedDBMigration()) {
-		klog.V(log.I).InfoS("Starting DB Migration Job: ")
-		err := action.createOrUpdateDBMigrationJob(ctx, action.client, platform, psDI, psJS)
-		if err != nil {
-			return nil, err
-		}
+	err := action.createOrUpdateDBMigrationJob(ctx, action.client, platform, psDI, psJS)
+	if err != nil {
+		return nil, err
 	}
 
 	if psDI.IsServiceSetInSpec() {

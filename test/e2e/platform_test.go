@@ -224,7 +224,7 @@ var _ = Describe("Platform Use Cases :: ", Label("platform"), Ordered, func() {
 	},
 		Entry("and both Job Service and Data Index using the persistence from platform CR", test.GetPathFromE2EDirectory("platform", "persistence", "generic_from_platform_cr")),
 		Entry("and both Job Service and Data Index using the one defined in each service, discarding the one from the platform CR", test.GetPathFromE2EDirectory("platform", "persistence", "overwritten_by_services")),
-		Entry("Job Service and Data Index come up with service based db migration", test.GetSonataFlowE2EPlatformPersistenceSampleDataDirectory("service_based_db_migration")),
+		Entry("Job Service and Data Index come up with service based db migration", test.GetPathFromE2EDirectory("platform", "persistence", "service_based_db_migration")),
 	)
 
 	DescribeTable("when deploying a SonataFlowPlatform CR with PostgreSQL Persistence and using Job based DB migration", func(testcaseDir string) {
@@ -277,7 +277,7 @@ var _ = Describe("Platform Use Cases :: ", Label("platform"), Ordered, func() {
 			verifyHealthStatusInPod(pn, targetNamespace)
 		}
 	},
-		Entry("Job Service and Data Index come up with job based db migration", test.GetSonataFlowE2EPlatformPersistenceSampleDataDirectory("job_based_db_migration")),
+		Entry("Job Service and Data Index come up with job based db migration", test.GetPathFromE2EDirectory("platform", "persistence", "job_based_db_migration")),
 	)
 
 	DescribeTable("when deploying a SonataFlowPlatform CR with brokers", func(testcaseDir string) {

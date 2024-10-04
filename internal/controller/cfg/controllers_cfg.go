@@ -31,6 +31,20 @@ const (
 	defaultConfigMountPath = "/config/controllers_cfg.yaml"
 )
 
+const (
+	dbMigrationJobName       = "sonataflow-db-migrator-job"
+	dbMigrationContainerName = "db-migration-container"
+	dbMigratorToolImage      = "quay.io/rhkp/incubator-kie-kogito-service-db-migration-postgresql:latest"
+	dbMigrationCmd           = "./migration.sh"
+)
+
+type DBMigrationJobCfg struct {
+	JobName       string `yaml:"jobName,omitempty"`
+	ContainerName string `yaml:"containerName,omitempty"`
+	ToolImageName string `yaml:"toolImageName,omitempty"`
+	MigrationCmd  string `yaml:"migrationCmd,omitempty"`
+}
+
 var controllersCfg *ControllersCfg
 
 var defaultControllersCfg = &ControllersCfg{
@@ -108,4 +122,13 @@ func GetCfg() *ControllersCfg {
 		return defaultControllersCfg
 	}
 	return controllersCfg
+}
+
+func GetDBMigrationJobCfg() *DBMigrationJobCfg {
+	return &DBMigrationJobCfg{
+		JobName:       dbMigrationJobName,
+		ContainerName: dbMigrationContainerName,
+		ToolImageName: dbMigratorToolImage,
+		MigrationCmd:  dbMigrationCmd,
+	}
 }

@@ -14,6 +14,14 @@
 
 package v1alpha08
 
+type DBMigrationStrategyType string
+
+const (
+	DBMigrationStrategyService DBMigrationStrategyType = "service"
+	DBMigrationStrategyJob     DBMigrationStrategyType = "job"
+	DBMigrationStrategyNone    DBMigrationStrategyType = "none"
+)
+
 // PlatformPersistenceOptionsSpec configures the DataBase in the platform spec. This specification can
 // be used by workflows and platform services when they don't provide one of their own.
 // +optional
@@ -57,7 +65,7 @@ type PersistenceOptionsSpec struct {
 	// none: no db migration needed
 	// +optional
 	// +kubebuilder:default:=service
-	DBMigrationApproach string `json:"dbMigrationApproach,omitempty"`
+	DBMigrationStrategy string `json:"dbMigrationStrategy,omitempty"`
 }
 
 // PersistencePostgreSQL configure postgresql connection for service(s).

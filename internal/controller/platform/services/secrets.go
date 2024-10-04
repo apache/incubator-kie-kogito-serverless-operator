@@ -17,18 +17,22 @@ package services
 import (
 	"context"
 
-	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
-	"github.com/apache/incubator-kie-kogito-serverless-operator/container-builder/client"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
+	ctrl "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func GetSecretKeyValueString(ctx context.Context, client client.Client, secretName string, secretKey string, platform *operatorapi.SonataFlowPlatform) (string, error) {
-	secret, err := client.CoreV1().Secrets(platform.Namespace).Get(ctx,
-		secretName, metav1.GetOptions{})
+func GetSecretKeyValueString(ctx context.Context, secretName string, secretKey string, nameSpace string) (string, error) {
+	secret := corev1.Secret{}
+	err := utils.GetClient().Get(ctx, ctrl.ObjectKey{Namespace: nameSpace, Name: secretName}, &secret)
 	if err != nil {
-		klog.V(log.E).InfoS("Error extracting secret: ", "namespace", platform.Namespace, "error", err)
+		panic(err.Error())
+	}
+
+	if err != nil {
+		klog.V(log.E).InfoS("Error extracting secret: ", "namespace", nameSpace, "error", err)
 		return "", err
 	}
 

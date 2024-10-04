@@ -1199,7 +1199,7 @@ spec:
                           by default.
                         maxProperties: 2
                         properties:
-                          dbMigrationApproach:
+                          dbMigrationStrategy:
                             default: service
                             description: |-
                               DB Migration approach for service?
@@ -9248,7 +9248,7 @@ spec:
                           by default.
                         maxProperties: 2
                         properties:
-                          dbMigrationApproach:
+                          dbMigrationStrategy:
                             default: service
                             description: |-
                               DB Migration approach for service?
@@ -19465,7 +19465,7 @@ spec:
                   for the workflow
                 maxProperties: 2
                 properties:
-                  dbMigrationApproach:
+                  dbMigrationStrategy:
                     default: service
                     description: |-
                       DB Migration approach for service?

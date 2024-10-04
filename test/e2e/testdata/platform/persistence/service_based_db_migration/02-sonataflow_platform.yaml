@@ -11,20 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 apiVersion: sonataflow.org/v1alpha08
 kind: SonataFlowPlatform
 metadata:
   name: sonataflow-platform
 spec:
   build:
-    template:
-      buildArgs:
-      - name: QUARKUS_EXTENSIONS
-        value: org.kie.kogito:kogito-addons-quarkus-jobs-knative-eventing:999-20240912-SNAPSHOT
+    config:
+      strategyOptions:
+        KanikoBuildCacheEnabled: "true"
   services:
+    # jobBasedDbMigration: false
     dataIndex:
-      enabled: false
+      enabled: true
       persistence:
         dbMigrationStrategy: service
         postgresql:
@@ -40,7 +39,7 @@ spec:
             imagePullPolicy: IfNotPresent
             command: [ 'sh', '-c', 'until (echo 1 > /dev/tcp/postgres.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local/5432) >/dev/null 2>&1; do echo "Waiting for postgres server"; sleep 3; done;' ]
     jobService:
-      enabled: false
+      enabled: true
       persistence:
         dbMigrationStrategy: service
         postgresql:

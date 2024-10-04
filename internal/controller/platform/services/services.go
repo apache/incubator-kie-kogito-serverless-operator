@@ -53,12 +53,6 @@ const (
 	quarkusFlywayMigrateAtStart           string = "QUARKUS_FLYWAY_MIGRATE_AT_START"
 )
 
-const (
-	serviceBasedDBMigration string = "service"
-	jobBasedDBMigration     string = "job"
-	noDBMigration           string = "none"
-)
-
 type PlatformServiceHandler interface {
 	// GetContainerName returns the name of the service's container in the deployment.
 	GetContainerName() string
@@ -97,8 +91,8 @@ type PlatformServiceHandler interface {
 	IsServiceSetInSpec() bool
 	// IsServiceEnabledInSpec returns true if the service is enabled in the spec.
 	IsServiceEnabledInSpec() bool
-	// IsPersistenceSetInSpec returns true if the service has persistence set in the spec.
-	IsPersistenceSetInSpec() bool
+	// IsPersistenceEnabledtInSpec returns true if the service has persistence set in the spec.
+	IsPersistenceEnabledtInSpec() bool
 	// GetLocalServiceBaseUrl returns the base url of the local service
 	GetLocalServiceBaseUrl() string
 	// GetServiceBaseUrl returns the base url of the service, based on whether using local or cluster-scoped service.
@@ -117,7 +111,7 @@ type PlatformServiceHandler interface {
 	CheckKSinkInjected() (bool, error)
 
 	// Returns whether job based, service based or no DB migration is needed
-	GetDBMigrationApproach() string
+	GetDBMigrationApproach() operatorapi.DBMigrationStrategyType
 	// Returns true if job based db migration, false otherwise
 	IsJobsBasedDBMigration() bool
 	// Returns true if service based db migration, false otherwise
@@ -131,7 +125,7 @@ type DataIndexHandler struct {
 }
 
 // GetDBMigrationApproach returns DB migration approach
-func (d *DataIndexHandler) GetDBMigrationApproach() string {
+func (d *DataIndexHandler) GetDBMigrationApproach() operatorapi.DBMigrationStrategyType {
 	return getDBMigrationApproach(d.platform.Spec.Services.DataIndex.Persistence)
 }
 
@@ -206,7 +200,7 @@ func (d *DataIndexHandler) IsServiceEnabledInSpec() bool {
 	return isDataIndexEnabled(d.platform)
 }
 
-func (d DataIndexHandler) IsPersistenceSetInSpec() bool {
+func (d DataIndexHandler) IsPersistenceEnabledtInSpec() bool {
 	return d.IsServiceSetInSpec() && d.platform.Spec.Services.DataIndex.Persistence != nil
 }
 
@@ -269,29 +263,38 @@ func (d *DataIndexHandler) hasPostgreSQLConfigured() bool {
 			(d.platform.Spec.Persistence != nil && d.platform.Spec.Persistence.PostgreSQL != nil))
 }
 
-func getDBMigrationApproach(persistence *v1alpha08.PersistenceOptionsSpec) string {
-	dbMigrationApproach := ""
+func getDBMigrationApproach(persistence *operatorapi.PersistenceOptionsSpec) operatorapi.DBMigrationStrategyType {
+	dbMigrationStrategy := operatorapi.DBMigrationStrategyNone
 
 	if persistence != nil {
-		return persistence.DBMigrationApproach
+		return operatorapi.DBMigrationStrategyType(persistence.DBMigrationStrategy)
 	}
 
-	return dbMigrationApproach
+	return dbMigrationStrategy
 }
 
-func isServiceBasedDBMigration(persistence *v1alpha08.PersistenceOptionsSpec) bool {
-	dbMigrationApproach := getDBMigrationApproach(persistence)
-	return dbMigrationApproach == serviceBasedDBMigration
+func isServiceBasedDBMigration(persistence *operatorapi.PersistenceOptionsSpec) bool {
+	dbMigrationStrategy := getDBMigrationApproach(persistence)
+	return dbMigrationStrategy == operatorapi.DBMigrationStrategyService
 }
 
-func isJobsBasedDBMigration(persistence *v1alpha08.PersistenceOptionsSpec) bool {
-	dbMigrationApproach := getDBMigrationApproach(persistence)
-	return dbMigrationApproach == jobBasedDBMigration
+func isJobsBasedDBMigration(persistence *operatorapi.PersistenceOptionsSpec) bool {
+	dbMigrationStrategy := getDBMigrationApproach(persistence)
+	return dbMigrationStrategy == operatorapi.DBMigrationStrategyJob
 }
 
-func isNoDBMigration(persistence *v1alpha08.PersistenceOptionsSpec) bool {
-	dbMigrationApproach := getDBMigrationApproach(persistence)
-	return dbMigrationApproach == noDBMigration || dbMigrationApproach == ""
+func isNoDBMigration(persistence *operatorapi.PersistenceOptionsSpec) bool {
+	dbMigrationStrategy := getDBMigrationApproach(persistence)
+	return dbMigrationStrategy == operatorapi.DBMigrationStrategyNone || dbMigrationStrategy == ""
+}
+
+func isDBMigrationStrategyService(persistence *v1alpha08.PersistenceOptionsSpec) string {
+	dbMigrationStrategyService := "true"
+	if persistence != nil {
+		dbMigrationStrategyService = strconv.FormatBool(isServiceBasedDBMigration(persistence))
+	}
+
+	return dbMigrationStrategyService
 }
 
 func (d *DataIndexHandler) ConfigurePersistence(containerSpec *corev1.Container) *corev1.Container {
@@ -301,13 +304,10 @@ func (d *DataIndexHandler) ConfigurePersistence(containerSpec *corev1.Container)
 		c.Image = d.GetServiceImageName(constants.PersistenceTypePostgreSQL)
 		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p.PostgreSQL, d.GetServiceName(), d.platform.Namespace)...)
 
-		serviceBasedDBMigration := "true"
-		if d.platform.Spec.Services.DataIndex.Persistence != nil {
-			serviceBasedDBMigration = strconv.FormatBool(isServiceBasedDBMigration(d.platform.Spec.Services.DataIndex.Persistence))
-		}
+		dbMigrationStrategyService := isDBMigrationStrategyService(d.platform.Spec.Services.DataIndex.Persistence)
 
 		// specific to DataIndex
-		c.Env = append(c.Env, corev1.EnvVar{Name: quarkusHibernateORMDatabaseGeneration, Value: "update"}, corev1.EnvVar{Name: quarkusFlywayMigrateAtStart, Value: serviceBasedDBMigration})
+		c.Env = append(c.Env, corev1.EnvVar{Name: quarkusHibernateORMDatabaseGeneration, Value: "update"}, corev1.EnvVar{Name: quarkusFlywayMigrateAtStart, Value: dbMigrationStrategyService})
 		return c
 	}
 	return containerSpec
@@ -351,7 +351,7 @@ type JobServiceHandler struct {
 }
 
 // GetDBMigrationApproach returns db migration approach otherwise
-func (j *JobServiceHandler) GetDBMigrationApproach() string {
+func (j *JobServiceHandler) GetDBMigrationApproach() operatorapi.DBMigrationStrategyType {
 	return getDBMigrationApproach(j.platform.Spec.Services.JobService.Persistence)
 }
 
@@ -430,7 +430,7 @@ func (j *JobServiceHandler) IsServiceEnabledInSpec() bool {
 	return isJobServiceEnabled(j.platform)
 }
 
-func (j JobServiceHandler) IsPersistenceSetInSpec() bool {
+func (j JobServiceHandler) IsPersistenceEnabledtInSpec() bool {
 	return j.IsServiceSetInSpec() && j.platform.Spec.Services.DataIndex.Persistence != nil
 }
 
@@ -497,13 +497,11 @@ func (j *JobServiceHandler) ConfigurePersistence(containerSpec *corev1.Container
 		c.Image = j.GetServiceImageName(constants.PersistenceTypePostgreSQL)
 		p := persistence.RetrievePostgreSQLConfiguration(j.platform.Spec.Services.JobService.Persistence, j.platform.Spec.Persistence, j.GetServiceName())
 		c.Env = append(c.Env, persistence.ConfigurePostgreSQLEnv(p.PostgreSQL, j.GetServiceName(), j.platform.Namespace)...)
-		serviceBasedDBMigration := "true"
-		if j.platform.Spec.Services.JobService.Persistence != nil {
-			serviceBasedDBMigration = strconv.FormatBool(isServiceBasedDBMigration(j.platform.Spec.Services.JobService.Persistence))
-		}
+
+		dbMigrationStrategyService := isDBMigrationStrategyService(j.platform.Spec.Services.JobService.Persistence)
 
 		// Specific to Job Service
-		c.Env = append(c.Env, corev1.EnvVar{Name: "QUARKUS_FLYWAY_MIGRATE_AT_START", Value: serviceBasedDBMigration})
+		c.Env = append(c.Env, corev1.EnvVar{Name: "QUARKUS_FLYWAY_MIGRATE_AT_START", Value: dbMigrationStrategyService})
 		c.Env = append(c.Env, corev1.EnvVar{Name: "KOGITO_JOBS_SERVICE_LOADJOBERRORSTRATEGY", Value: "FAIL_SERVICE"})
 		return c
 	}
