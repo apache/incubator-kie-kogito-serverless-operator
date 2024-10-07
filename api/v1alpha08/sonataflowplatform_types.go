@@ -92,15 +92,17 @@ const (
 	PlatformDuplicatedReason = "Duplicated"
 )
 
+type DBMigrationStatus string
+
 const (
-	DBMigrationStatusStarted    = "Started"
-	DBMigrationStatusInProgress = "In-Progress"
-	DBMigrationStatusSucceeded  = "Succeeded"
-	DBMigrationStatusFailed     = "Failed"
+	DBMigrationStatusStarted    DBMigrationStatus = "Started"
+	DBMigrationStatusInProgress DBMigrationStatus = "In-Progress"
+	DBMigrationStatusSucceeded  DBMigrationStatus = "Succeeded"
+	DBMigrationStatusFailed     DBMigrationStatus = "Failed"
 )
 
 type SonataFlowPlatformDBMigrationStatus struct {
-	Status string `json:"dbMigrationStatus,omitempty"`
+	Status DBMigrationStatus `json:"dbMigrationStatus,omitempty"`
 }
 
 // SonataFlowPlatformStatus defines the observed state of SonataFlowPlatform

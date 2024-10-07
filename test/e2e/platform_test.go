@@ -114,7 +114,6 @@ var _ = Describe("Platform Use Cases :: ", Label("platform"), Ordered, func() {
 
 	})
 
-
 	var _ = Context("with platform services", func() {
 
 		DescribeTable("when creating a simple workflow", func(testcaseDir string, profile metadata.ProfileType, persistenceType string) {
