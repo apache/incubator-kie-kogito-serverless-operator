@@ -99,10 +99,22 @@ const (
 	DBMigrationStatusInProgress DBMigrationStatus = "In-Progress"
 	DBMigrationStatusSucceeded  DBMigrationStatus = "Succeeded"
 	DBMigrationStatusFailed     DBMigrationStatus = "Failed"
+
+	MessageDBMigrationStatusStarted    string = "Started the database migrations for the services"
+	MessageDBMigrationStatusInProgress string = "The database migrations for the services are in-progress"
+	MessageDBMigrationStatusSucceeded  string = "The database migrations for the services are successful"
+	MessageDBMigrationStatusFailed     string = "The database migrations for the services have failed"
+
+	ReasonDBMigrationStatusStarted    string = "Started by SonataFlow operator"
+	ReasonDBMigrationStatusInProgress string = "The database migration job is in-progress"
+	ReasonDBMigrationStatusSucceeded  string = "The database migration job completed as expected"
+	ReasonDBMigrationStatusFailed     string = "The database may be unreachable, invalid credentials supplied or flyway migration failed. Please check logs for further details."
 )
 
 type SonataFlowPlatformDBMigrationStatus struct {
-	Status DBMigrationStatus `json:"dbMigrationStatus,omitempty"`
+	Status  DBMigrationStatus `json:"dbMigrationStatus,omitempty"`
+	Message string            `json:"message,omitempty"`
+	Reason  string            `json:"reason,omitempty"`
 }
 
 // SonataFlowPlatformStatus defines the observed state of SonataFlowPlatform

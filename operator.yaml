@@ -17434,6 +17434,10 @@ spec:
                 properties:
                   dbMigrationStatus:
                     type: string
+                  message:
+                    type: string
+                  reason:
+                    type: string
                 type: object
               triggers:
                 description: Triggers list of triggers created for the SonataFlowPlatform
@@ -17450,6 +17454,10 @@ spec:
                     sonataFlowPlatformDBMigrationStatus:
                       properties:
                         dbMigrationStatus:
+                          type: string
+                        message:
+                          type: string
+                        reason:
                           type: string
                       type: object
                   required:
