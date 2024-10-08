@@ -165,12 +165,10 @@ spec:
         displayName: info
         path: info
       - displayName: dbMigrationStatus
-        path: sonataFlowPlatformDBMigrationStatus
+        path: sonataFlowPlatformDBMigrationPhase
       - description: Triggers list of triggers created for the SonataFlowPlatform
         displayName: triggers
         path: triggers
-      - displayName: dbMigrationStatus
-        path: triggers[0].sonataFlowPlatformDBMigrationStatus
       - description: Version the operator version controlling this Platform
         displayName: version
         path: version

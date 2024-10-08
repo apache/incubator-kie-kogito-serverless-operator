@@ -111,37 +111,16 @@ type PlatformServiceHandler interface {
 	CheckKSinkInjected() (bool, error)
 
 	// Returns whether job based, service based or no DB migration is needed
-	GetDBMigrationApproach() operatorapi.DBMigrationStrategyType
-	// Returns true if job based db migration, false otherwise
-	IsJobsBasedDBMigration() bool
-	// Returns true if service based db migration, false otherwise
-	IsServiceBasedDBMigration() bool
-	// Returns true if no DB migration is needed
-	IsNoDBMigration() bool
+	GetDBMigrationStrategy() operatorapi.DBMigrationStrategyType
 }
 
 type DataIndexHandler struct {
 	platform *operatorapi.SonataFlowPlatform
 }
 
-// GetDBMigrationApproach returns DB migration approach
-func (d *DataIndexHandler) GetDBMigrationApproach() operatorapi.DBMigrationStrategyType {
-	return getDBMigrationApproach(d.platform.Spec.Services.DataIndex.Persistence)
-}
-
-// IsJobsBasedDBMigration returns true if job based db migration, false otherwise
-func (d *DataIndexHandler) IsJobsBasedDBMigration() bool {
-	return isJobsBasedDBMigration(d.platform.Spec.Services.DataIndex.Persistence)
-}
-
-// IsNoDBMigration returns true if no db migration, false otherwise
-func (d *DataIndexHandler) IsNoDBMigration() bool {
-	return isNoDBMigration(d.platform.Spec.Services.DataIndex.Persistence)
-}
-
-// IsServiceBasedDBMigration returns true if service based db migration false otherwise
-func (d *DataIndexHandler) IsServiceBasedDBMigration() bool {
-	return isServiceBasedDBMigration(d.platform.Spec.Services.DataIndex.Persistence)
+// GetDBMigrationStrategy returns DB migration approach
+func (d *DataIndexHandler) GetDBMigrationStrategy() operatorapi.DBMigrationStrategyType {
+	return GetDBMigrationStrategy(d.platform.Spec.Services.DataIndex.Persistence)
 }
 
 func NewDataIndexHandler(platform *operatorapi.SonataFlowPlatform) PlatformServiceHandler {
@@ -263,7 +242,7 @@ func (d *DataIndexHandler) hasPostgreSQLConfigured() bool {
 			(d.platform.Spec.Persistence != nil && d.platform.Spec.Persistence.PostgreSQL != nil))
 }
 
-func getDBMigrationApproach(persistence *operatorapi.PersistenceOptionsSpec) operatorapi.DBMigrationStrategyType {
+func GetDBMigrationStrategy(persistence *operatorapi.PersistenceOptionsSpec) operatorapi.DBMigrationStrategyType {
 	dbMigrationStrategy := operatorapi.DBMigrationStrategyNone
 
 	if persistence != nil {
@@ -273,25 +252,25 @@ func getDBMigrationApproach(persistence *operatorapi.PersistenceOptionsSpec) ope
 	return dbMigrationStrategy
 }
 
-func isServiceBasedDBMigration(persistence *operatorapi.PersistenceOptionsSpec) bool {
-	dbMigrationStrategy := getDBMigrationApproach(persistence)
+func IsServiceBasedDBMigration(persistence *operatorapi.PersistenceOptionsSpec) bool {
+	dbMigrationStrategy := GetDBMigrationStrategy(persistence)
 	return dbMigrationStrategy == operatorapi.DBMigrationStrategyService
 }
 
-func isJobsBasedDBMigration(persistence *operatorapi.PersistenceOptionsSpec) bool {
-	dbMigrationStrategy := getDBMigrationApproach(persistence)
+func IsJobsBasedDBMigration(persistence *operatorapi.PersistenceOptionsSpec) bool {
+	dbMigrationStrategy := GetDBMigrationStrategy(persistence)
 	return dbMigrationStrategy == operatorapi.DBMigrationStrategyJob
 }
 
-func isNoDBMigration(persistence *operatorapi.PersistenceOptionsSpec) bool {
-	dbMigrationStrategy := getDBMigrationApproach(persistence)
+func IsNoDBMigration(persistence *operatorapi.PersistenceOptionsSpec) bool {
+	dbMigrationStrategy := GetDBMigrationStrategy(persistence)
 	return dbMigrationStrategy == operatorapi.DBMigrationStrategyNone || dbMigrationStrategy == ""
 }
 
 func isDBMigrationStrategyService(persistence *v1alpha08.PersistenceOptionsSpec) string {
 	dbMigrationStrategyService := "true"
 	if persistence != nil {
-		dbMigrationStrategyService = strconv.FormatBool(isServiceBasedDBMigration(persistence))
+		dbMigrationStrategyService = strconv.FormatBool(IsServiceBasedDBMigration(persistence))
 	}
 
 	return dbMigrationStrategyService
@@ -350,24 +329,9 @@ type JobServiceHandler struct {
 	platform *operatorapi.SonataFlowPlatform
 }
 
-// GetDBMigrationApproach returns db migration approach otherwise
-func (j *JobServiceHandler) GetDBMigrationApproach() operatorapi.DBMigrationStrategyType {
-	return getDBMigrationApproach(j.platform.Spec.Services.JobService.Persistence)
-}
-
-// IsJobsBasedDBMigration returns true if job based db migration, false otherwise
-func (j *JobServiceHandler) IsJobsBasedDBMigration() bool {
-	return isJobsBasedDBMigration(j.platform.Spec.Services.JobService.Persistence)
-}
-
-// IsNoDBMigration returns true if no db migration, false otherwise
-func (j *JobServiceHandler) IsNoDBMigration() bool {
-	return isNoDBMigration(j.platform.Spec.Services.JobService.Persistence)
-}
-
-// IsServiceBasedDBMigration returns true if service based db migration, false otherwise
-func (j *JobServiceHandler) IsServiceBasedDBMigration() bool {
-	return isServiceBasedDBMigration(j.platform.Spec.Services.JobService.Persistence)
+// GetDBMigrationStrategy returns db migration approach otherwise
+func (j *JobServiceHandler) GetDBMigrationStrategy() operatorapi.DBMigrationStrategyType {
+	return GetDBMigrationStrategy(j.platform.Spec.Services.JobService.Persistence)
 }
 
 func NewJobServiceHandler(platform *operatorapi.SonataFlowPlatform) PlatformServiceHandler {
@@ -431,7 +395,7 @@ func (j *JobServiceHandler) IsServiceEnabledInSpec() bool {
 }
 
 func (j JobServiceHandler) IsPersistenceEnabledtInSpec() bool {
-	return j.IsServiceSetInSpec() && j.platform.Spec.Services.DataIndex.Persistence != nil
+	return j.IsServiceSetInSpec() && j.platform.Spec.Services.JobService.Persistence != nil
 }
 
 func (j *JobServiceHandler) isServiceEnabledInStatus() bool {

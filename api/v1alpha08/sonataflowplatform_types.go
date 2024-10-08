@@ -111,7 +111,7 @@ const (
 	ReasonDBMigrationStatusFailed     string = "The database may be unreachable, invalid credentials supplied or flyway migration failed. Please check logs for further details."
 )
 
-type SonataFlowPlatformDBMigrationStatus struct {
+type SonataFlowPlatformDBMigrationPhase struct {
 	Status  DBMigrationStatus `json:"dbMigrationStatus,omitempty"`
 	Message string            `json:"message,omitempty"`
 	Reason  string            `json:"reason,omitempty"`
@@ -137,7 +137,7 @@ type SonataFlowPlatformStatus struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="triggers"
 	Triggers []SonataFlowPlatformTriggerRef `json:"triggers,omitempty"`
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="dbMigrationStatus"
-	SonataFlowPlatformDBMigrationStatus *SonataFlowPlatformDBMigrationStatus `json:"sonataFlowPlatformDBMigrationStatus,omitempty"`
+	SonataFlowPlatformDBMigrationPhase *SonataFlowPlatformDBMigrationPhase `json:"sonataFlowPlatformDBMigrationPhase,omitempty"`
 }
 
 // SonataFlowPlatformTriggerRef defines a trigger created for the SonataFlowPlatform.
@@ -148,8 +148,6 @@ type SonataFlowPlatformTriggerRef struct {
 	// Namespace of the Trigger
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Trigger_NS"
 	Namespace string `json:"namespace"`
-	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="dbMigrationStatus"
-	SonataFlowPlatformDBMigrationStatus *SonataFlowPlatformDBMigrationStatus `json:"sonataFlowPlatformDBMigrationStatus,omitempty"`
 }
 
 // SonataFlowClusterPlatformRefStatus information related to the (optional) active SonataFlowClusterPlatform

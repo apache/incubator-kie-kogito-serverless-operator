@@ -17430,7 +17430,7 @@ spec:
                 description: The generation observed by the deployment controller.
                 format: int64
                 type: integer
-              sonataFlowPlatformDBMigrationStatus:
+              sonataFlowPlatformDBMigrationPhase:
                 properties:
                   dbMigrationStatus:
                     type: string
@@ -17451,15 +17451,6 @@ spec:
                     namespace:
                       description: Namespace of the Trigger
                       type: string
-                    sonataFlowPlatformDBMigrationStatus:
-                      properties:
-                        dbMigrationStatus:
-                          type: string
-                        message:
-                          type: string
-                        reason:
-                          type: string
-                      type: object
                   required:
                   - name
                   - namespace
