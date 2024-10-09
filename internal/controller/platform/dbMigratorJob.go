@@ -24,13 +24,10 @@ import (
 	"errors"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/container-builder/client"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/platform/services"
-
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -100,7 +97,7 @@ func getNewQuarkusDataSource(jdbcURL string, userName string, password string, s
 	}
 }
 
-func getQuarkusDataSourceFromPersistence(ctx context.Context, platform *operatorapi.SonataFlowPlatform, persistence *v1alpha08.PersistenceOptionsSpec, defaultSchemaName string) *QuarkusDataSource {
+func getQuarkusDataSourceFromPersistence(ctx context.Context, platform *operatorapi.SonataFlowPlatform, persistence *operatorapi.PersistenceOptionsSpec, defaultSchemaName string) *QuarkusDataSource {
 	quarkusDataSource := getNewQuarkusDataSource("", "", "", "")
 	if persistence != nil && persistence.PostgreSQL != nil {
 		quarkusDataSource.JdbcUrl = persistence.PostgreSQL.JdbcUrl
@@ -111,7 +108,7 @@ func getQuarkusDataSourceFromPersistence(ctx context.Context, platform *operator
 	return quarkusDataSource
 }
 
-func NewDBMigratorJobData(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, pshDI services.PlatformServiceHandler, pshJS services.PlatformServiceHandler) (*DBMigratorJob, error) {
+func NewDBMigratorJobData(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, pshDI services.PlatformServiceHandler, pshJS services.PlatformServiceHandler) *DBMigratorJob {
 
 	diJobsBasedDBMigration := false
 	jsJobsBasedDBMigration := false
@@ -140,9 +137,9 @@ func NewDBMigratorJobData(ctx context.Context, client client.Client, platform *o
 			DataIndexDataSource:   quarkusDataSourceDataIndex,
 			MigrateDBJobsService:  jsJobsBasedDBMigration,
 			JobsServiceDataSource: quarkusDataSourceJobService,
-		}, nil
+		}
 	}
-	return nil, nil
+	return nil
 }
 
 func (dbmj DBMigratorJob) CreateJobDBMigration(platform *operatorapi.SonataFlowPlatform) *batchv1.Job {
@@ -215,7 +212,18 @@ func (dbmj DBMigratorJob) CreateJobDBMigration(platform *operatorapi.SonataFlowP
 	return job
 }
 
-func NewSonataFlowPlatformDBMigrationPhase(status v1alpha08.DBMigrationStatus, message string, reason string) *operatorapi.SonataFlowPlatformDBMigrationPhase {
+// GetDBMigrationJobStatus Returns db migration job status
+func (dbmj DBMigratorJob) GetDBMigrationJobStatus(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform) (*batchv1.JobStatus, error) {
+	job, err := client.BatchV1().Jobs(platform.Namespace).Get(ctx, dbMigrationJobName, metav1.GetOptions{})
+	if err != nil {
+		klog.V(log.E).InfoS("Error getting DB migrator job while monitoring completion: ", "error", err)
+		return nil, err
+	}
+	return &job.Status, nil
+}
+
+// NewSonataFlowPlatformDBMigrationPhase Returns a new DB migration phase for SonataFlowPlatform
+func NewSonataFlowPlatformDBMigrationPhase(status operatorapi.DBMigrationStatus, message string, reason string) *operatorapi.SonataFlowPlatformDBMigrationPhase {
 	return &operatorapi.SonataFlowPlatformDBMigrationPhase{
 		Status:  status,
 		Message: message,
@@ -223,7 +231,8 @@ func NewSonataFlowPlatformDBMigrationPhase(status v1alpha08.DBMigrationStatus, m
 	}
 }
 
-func UpdateSonataFlowPlatformDBMigrationPhase(dbMigrationStatus *operatorapi.SonataFlowPlatformDBMigrationPhase, status v1alpha08.DBMigrationStatus, message string, reason string) *operatorapi.SonataFlowPlatformDBMigrationPhase {
+// UpdateSonataFlowPlatformDBMigrationPhase Updates a given SonataFlowPlatformDBMigrationPhase with the supplied values
+func UpdateSonataFlowPlatformDBMigrationPhase(dbMigrationStatus *operatorapi.SonataFlowPlatformDBMigrationPhase, status operatorapi.DBMigrationStatus, message string, reason string) *operatorapi.SonataFlowPlatformDBMigrationPhase {
 	if dbMigrationStatus != nil {
 		dbMigrationStatus.Status = status
 		dbMigrationStatus.Message = message
@@ -242,31 +251,28 @@ func getDBMigrationJobCfg() *DBMigrationJobCfg {
 	}
 }
 
-func (dbmj DBMigratorJob) ReconcileMigratorJob(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform) error {
+// ReconcileDBMigrationJob Check the status of running DB migration job and return status
+func (dbmj DBMigratorJob) ReconcileDBMigrationJob(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform) (*batchv1.JobStatus, error) {
 	platform.Status.SonataFlowPlatformDBMigrationPhase = NewSonataFlowPlatformDBMigrationPhase(operatorapi.DBMigrationStatusStarted, operatorapi.MessageDBMigrationStatusStarted, operatorapi.ReasonDBMigrationStatusStarted)
 
-	for {
-		job, err := client.BatchV1().Jobs(platform.Namespace).Get(ctx, dbMigrationJobName, metav1.GetOptions{})
-		if err != nil {
-			klog.V(log.E).InfoS("Error getting DB migrator job while monitoring completion: ", "error", err)
-			return err
-		}
-
-		klog.V(log.I).InfoS("Started to monitor the db migration job: ", "error", err)
-		platform.Status.SonataFlowPlatformDBMigrationPhase = UpdateSonataFlowPlatformDBMigrationPhase(platform.Status.SonataFlowPlatformDBMigrationPhase, operatorapi.DBMigrationStatusInProgress, operatorapi.MessageDBMigrationStatusInProgress, operatorapi.ReasonDBMigrationStatusInProgress)
-
-		klog.V(log.I).InfoS("Db migration job status: ", "active", job.Status.Active, "ready", job.Status.Ready, "failed", job.Status.Failed, "success", job.Status.Succeeded, "CompletedIndexes", job.Status.CompletedIndexes, "terminatedPods", job.Status.UncountedTerminatedPods)
-		if job.Status.Failed > 0 {
-			platform.Status.SonataFlowPlatformDBMigrationPhase = UpdateSonataFlowPlatformDBMigrationPhase(platform.Status.SonataFlowPlatformDBMigrationPhase, operatorapi.DBMigrationStatusFailed, operatorapi.MessageDBMigrationStatusFailed, operatorapi.ReasonDBMigrationStatusFailed)
-			klog.V(log.E).InfoS("DB migrator job failed")
-			return errors.New("DB migrator job failed and could not complete")
-		} else if job.Status.Succeeded > 0 {
-			platform.Status.SonataFlowPlatformDBMigrationPhase = UpdateSonataFlowPlatformDBMigrationPhase(platform.Status.SonataFlowPlatformDBMigrationPhase, operatorapi.DBMigrationStatusSucceeded, operatorapi.MessageDBMigrationStatusSucceeded, operatorapi.ReasonDBMigrationStatusSucceeded)
-			klog.V(log.E).InfoS("DB migrator job completed successful")
-			return nil
-		} else {
-			time.Sleep(5 * time.Second)
-			klog.V(log.E).InfoS("Continue to monitoring the DB migrator job")
-		}
+	dbMigratorJobStatus, err := dbmj.GetDBMigrationJobStatus(ctx, client, platform)
+	if err != nil {
+		return nil, err
 	}
+
+	klog.V(log.I).InfoS("Db migration job status: ", "active", dbMigratorJobStatus.Active, "ready", dbMigratorJobStatus.Ready, "failed", dbMigratorJobStatus.Failed, "success", dbMigratorJobStatus.Succeeded, "CompletedIndexes", dbMigratorJobStatus.CompletedIndexes, "terminatedPods", dbMigratorJobStatus.UncountedTerminatedPods)
+
+	if dbMigratorJobStatus.Failed == 1 {
+		platform.Status.SonataFlowPlatformDBMigrationPhase = UpdateSonataFlowPlatformDBMigrationPhase(platform.Status.SonataFlowPlatformDBMigrationPhase, operatorapi.DBMigrationStatusFailed, operatorapi.MessageDBMigrationStatusFailed, operatorapi.ReasonDBMigrationStatusFailed)
+		klog.V(log.I).InfoS("DB migration job failed")
+		return dbMigratorJobStatus, errors.New("DB migration job failed")
+	} else if dbMigratorJobStatus.Succeeded == 1 {
+		platform.Status.SonataFlowPlatformDBMigrationPhase = UpdateSonataFlowPlatformDBMigrationPhase(platform.Status.SonataFlowPlatformDBMigrationPhase, operatorapi.DBMigrationStatusSucceeded, operatorapi.MessageDBMigrationStatusSucceeded, operatorapi.ReasonDBMigrationStatusSucceeded)
+		klog.V(log.I).InfoS("DB migration job succeeded")
+	} else {
+		// DB migration is still running
+		platform.Status.SonataFlowPlatformDBMigrationPhase = UpdateSonataFlowPlatformDBMigrationPhase(platform.Status.SonataFlowPlatformDBMigrationPhase, operatorapi.DBMigrationStatusInProgress, operatorapi.MessageDBMigrationStatusInProgress, operatorapi.ReasonDBMigrationStatusInProgress)
+	}
+
+	return dbMigratorJobStatus, nil
 }
