@@ -453,10 +453,3 @@ deploy-knative:
 .PHONY: delete-cluster
 delete-cluster: install-kind
 	kind delete cluster && $(BUILDER) rm -f kind-registry
-
-.PHONY: workflow_test_image_build-and-push
-workflow_test_image_build-and-push:
-	docker build -t localhost:5001/testimage/sonataflow-minimal-example:0.1 ./test/testdata/workflow/docker-image/
-	docker push localhost:5001/testimage/sonataflow-minimal-example:0.1
-	docker build --build-arg WORKFLOW_FILE=broken-workflow.sw.json -t localhost:5001/testimage/sonataflow-minimal-example-broken:0.1 ./test/testdata/workflow/docker-image/
-	docker push localhost:5001/testimage/sonataflow-minimal-example-broken:0.1

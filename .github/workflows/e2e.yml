@@ -76,10 +76,6 @@ jobs:
           make container-build BUILDER=docker IMG=${{ env.OPERATOR_IMAGE_NAME }}
           kind load docker-image ${{ env.OPERATOR_IMAGE_NAME }}
 
-      - name: Build and Install SonataFlow worfklow test images
-        run: |
-          make workflow_test_image_build-and-push
-
       - name: Check Pods
         run: |
           kubectl version

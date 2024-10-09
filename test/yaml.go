@@ -59,11 +59,8 @@ const (
 	sonataFlowBuilderConfig                   = "sonataflow-operator-builder-config_v1_configmap.yaml"
 	sonataFlowBuildSucceed                    = "sonataflow.org_v1alpha08_sonataflowbuild.yaml"
 	knativeDefaultBrokerCR                    = "knative_default_broker.yaml"
-
-	SonataFlowSimpleOpsYamlCRImageContainsNoWorkflow     = "sonataflow.org_v1alpha08_sonataflow-simpleops-no-workflow-in-image.yaml"
-	SonataFlowSimpleOpsYamlCRImageContainsBrokenWorkflow = "sonataflow.org_v1alpha08_sonataflow-simpleops-broken-workflow-in-image.yaml"
-	e2eSamples                                           = "test/testdata/"
-	manifestsPath                                        = "bundle/manifests/"
+	e2eSamples                                = "test/testdata/"
+	manifestsPath                             = "bundle/manifests/"
 )
 
 var projectDir = ""

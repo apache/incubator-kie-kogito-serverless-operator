@@ -21,6 +21,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
+
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/serverlessworkflow/sdk-go/v2/model"
 
 	operatorapi "github.com/apache/incubator-kie-kogito-serverless-operator/api/v1alpha08"
 	"github.com/google/go-cmp/cmp"
@@ -34,7 +38,7 @@ import (
 
 type imageValidator struct{}
 
-const workflowName = "deployments/app/workflow.sw.json"
+var workflowPathRegex = regexp.MustCompile(`^deployments/app/[^/]+\.sw\.(json|yaml)$`)
 
 func (v *imageValidator) Validate(ctx context.Context, client client.Client, sonataflow *operatorapi.SonataFlow, req ctrl.Request) error {
 	equals, err := validateImage(ctx, sonataflow)
@@ -68,7 +72,7 @@ func validateImage(ctx context.Context, sonataflow *operatorapi.SonataFlow) (boo
 		return false, err
 	}
 
-	reader, err := readWorkflowSpecLayer(ref, workflowName)
+	reader, err := readWorkflowSpecLayer(ref)
 	if err != nil {
 		return false, err
 	}
@@ -78,7 +82,7 @@ func validateImage(ctx context.Context, sonataflow *operatorapi.SonataFlow) (boo
 		return false, err
 	}
 
-	return cmp.Equal(workflowDockerImage, sonataflow.Spec.Flow), nil
+	return cmp.Equal(workflowDockerImage, sonataflow.Spec.Flow, cmpopts.IgnoreUnexported(model.Transition{})), nil
 }
 
 func remoteImage(sonataflow *operatorapi.SonataFlow) (v1.Image, error) {
@@ -114,23 +118,23 @@ func kindRegistryImage(sonataflow *operatorapi.SonataFlow) (v1.Image, error) {
 	return ref, nil
 }
 
-func readWorkflowSpecLayer(image v1.Image, workflow string) (*tar.Reader, error) {
+func readWorkflowSpecLayer(image v1.Image) (*tar.Reader, error) {
 	layers, err := image.Layers()
 	if err != nil {
 		return nil, err
 	}
 
 	for i := len(layers) - 1; i >= 0; i-- {
-		if reader, err := findWorkflowSpecLayer(layers[i], workflow); err == nil && reader != nil {
+		if reader, err := findWorkflowSpecLayer(layers[i]); err == nil && reader != nil {
 			return reader, nil
 		} else if err != nil {
 			return nil, err
 		}
 	}
-	return nil, fmt.Errorf("file not found %s in docker image", workflow)
+	return nil, fmt.Errorf("Workflow definition was not found in the Docker image")
 }
 
-func findWorkflowSpecLayer(layer v1.Layer, workflow string) (*tar.Reader, error) {
+func findWorkflowSpecLayer(layer v1.Layer) (*tar.Reader, error) {
 	uncompressedLayer, err := layer.Uncompressed()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get uncompressed layer: %v", err)
@@ -147,7 +151,7 @@ func findWorkflowSpecLayer(layer v1.Layer, workflow string) (*tar.Reader, error)
 			return nil, fmt.Errorf("error reading tar: %v", err)
 		}
 
-		if header.Typeflag == '0' && header.Name == workflow {
+		if header.Typeflag == '0' && workflowPathRegex.MatchString(header.Name) {
 			return tarReader, nil
 		}
 	}

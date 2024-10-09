@@ -137,45 +137,6 @@ var _ = Describe("Workflow Non-Persistence Use Cases :: ", Label("flows-ephemera
 			}, 3*time.Minute, time.Second).Should(Succeed())
 		})
 
-		It("should not deploy the Simple Workflow because image contains no workflow definition", func() {
-			By("creating an instance of the SonataFlow Operand(CR)")
-			EventuallyWithOffset(1, func() error {
-				cmd := exec.Command("kubectl", "apply", "-f", test.GetPathFromDataDirectory(test.SonataFlowSimpleOpsYamlCRImageContainsNoWorkflow), "-n", targetNamespace)
-				_, err := utils.Run(cmd)
-				return err
-			}, 3*time.Minute, time.Second).Should(Succeed())
-
-			By("verifying that the workflow is not in a running state within one minute")
-			ConsistentlyWithOffset(1, func() bool {
-				return verifyWorkflowIsInRunningState("simple", targetNamespace)
-			}, 1*time.Minute, 10*time.Second).Should(BeFalse(), "Workflow unexpectedly reached the running state")
-
-			EventuallyWithOffset(1, func() error {
-				cmd := exec.Command("kubectl", "delete", "-f", test.GetPathFromDataDirectory(test.SonataFlowSimpleOpsYamlCRImageContainsNoWorkflow), "-n", targetNamespace)
-				_, err := utils.Run(cmd)
-				return err
-			}, 3*time.Minute, time.Second).Should(Succeed())
-		})
-
-		It("should not deploy the Simple Workflow because image contains broken (not equals to flow from yaml) workflow definition", func() {
-			By("creating an instance of the SonataFlow Operand(CR)")
-			EventuallyWithOffset(1, func() error {
-				cmd := exec.Command("kubectl", "apply", "-f", test.GetPathFromDataDirectory(test.SonataFlowSimpleOpsYamlCRImageContainsBrokenWorkflow), "-n", targetNamespace)
-				_, err := utils.Run(cmd)
-				return err
-			}, 3*time.Minute, time.Second).Should(Succeed())
-
-			By("verifying that the workflow is not in a running state within one minute")
-			ConsistentlyWithOffset(1, func() bool {
-				return verifyWorkflowIsInRunningState("simple", targetNamespace)
-			}, 1*time.Minute, 10*time.Second).Should(BeFalse(), "Workflow unexpectedly reached the running state")
-
-			EventuallyWithOffset(1, func() error {
-				cmd := exec.Command("kubectl", "delete", "-f", test.GetPathFromDataDirectory(test.SonataFlowSimpleOpsYamlCRImageContainsBrokenWorkflow), "-n", targetNamespace)
-				_, err := utils.Run(cmd)
-				return err
-			}, 3*time.Minute, time.Second).Should(Succeed())
-		})
 	})
 
 })

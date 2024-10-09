@@ -22,7 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var validators = []Validator{NewImageValidator(), NewImageUrlSanitizer()}
+var validators = []Validator{NewImageValidator()}
 
 type Validator interface {
 	Validate(ctx context.Context, client client.Client, sonataflow *operatorapi.SonataFlow, req ctrl.Request) error
