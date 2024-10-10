@@ -174,7 +174,13 @@ func ServiceMutateVisitor(workflow *operatorapi.SonataFlow) MutateVisitor {
 			if kubeutil.IsObjectNew(object) {
 				return nil
 			}
-			original, err := ServiceCreator(workflow)
+			var original client.Object
+			var err error
+			if workflow.IsKnativeDeployment() {
+				original, err = KnativeMetricsServiceCreator(workflow)
+			} else {
+				original, err = ServiceCreator(workflow)
+			}
 			if err != nil {
 				return err
 			}

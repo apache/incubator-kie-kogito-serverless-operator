@@ -32,6 +32,7 @@ import (
 	cncfmodel "github.com/serverlessworkflow/sdk-go/v2/model"
 
 	"github.com/imdario/mergo"
+	prometheus "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -64,6 +65,10 @@ const (
 	deploymentKind           = "Deployment"
 	k8sServiceAPIVersion     = "v1"
 	k8sServiceKind           = "Service"
+	k8sServicePortName       = "web"
+	knativeServicePortName   = "user-port"
+	metricsServicePortPath   = "/q/metrics"
+	knativeServiceRouteLabel = "serving.knative.dev/route"
 )
 
 // ObjectCreator is the func that creates the initial reference object, if the object doesn't exist in the cluster, this one is created.
@@ -262,6 +267,7 @@ func ServiceCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
 		Spec: corev1.ServiceSpec{
 			Selector: lbl,
 			Ports: []corev1.ServicePort{{
+				Name:       k8sServicePortName,
 				Protocol:   corev1.ProtocolTCP,
 				Port:       defaultHTTPServicePort,
 				TargetPort: variables.DefaultHTTPWorkflowPortIntStr,
@@ -269,6 +275,29 @@ func ServiceCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
 		},
 	}
 
+	return service, nil
+}
+
+// KnativeMetricsServiceCreator is an objectCreator for a kubernetes service for exposing prometheus metrics for serverless workflows.
+// It maps the default HTTP port (80) to the target Java application webserver on port 8080.
+func KnativeMetricsServiceCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
+	lbl := workflowproj.GetMergedLabels(workflow)
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-metrics", workflow.Name), // default service name is already used by knaitve service
+			Namespace: workflow.Namespace,
+			Labels:    lbl,
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: lbl,
+			Ports: []corev1.ServicePort{{
+				Name:       knativeServicePortName,
+				Protocol:   corev1.ProtocolTCP,
+				Port:       defaultHTTPServicePort,
+				TargetPort: variables.DefaultHTTPWorkflowPortIntStr,
+			}},
+		},
+	}
 	return service, nil
 }
 
@@ -439,10 +468,65 @@ func UserPropsConfigMapCreator(workflow *operatorapi.SonataFlow) (client.Object,
 
 // ManagedPropsConfigMapCreator creates an empty ConfigMap to hold the external application properties
 func ManagedPropsConfigMapCreator(workflow *operatorapi.SonataFlow, platform *operatorapi.SonataFlowPlatform) (client.Object, error) {
-
 	props, err := properties.ApplicationManagedProperties(workflow, platform)
 	if err != nil {
 		return nil, err
 	}
 	return workflowproj.CreateNewManagedPropsConfigMap(workflow, props), nil
+}
+
+// ServiceMonitorCreator is an ObjectsCreator for Service Monitor for the workflow service.
+func ServiceMonitorCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
+	lbl := workflowproj.GetMergedLabels(workflow)
+	spec := &prometheus.ServiceMonitorSpec{
+		Selector: metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				workflowproj.LabelWorkflow:          workflow.Name,
+				workflowproj.LabelWorkflowNamespace: workflow.Namespace,
+			},
+		},
+		Endpoints: []prometheus.Endpoint{
+			{
+				Port: k8sServicePortName,
+				Path: metricsServicePortPath,
+			},
+		},
+	}
+	serviceMonitor := &prometheus.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workflow.Name,
+			Namespace: workflow.Namespace,
+			Labels:    lbl,
+		},
+		Spec: *spec,
+	}
+	return serviceMonitor, nil
+}
+
+func KnativeServiceMonitorCreator(workflow *operatorapi.SonataFlow) (client.Object, error) {
+	lbl := workflowproj.GetMergedLabels(workflow)
+	spec := &prometheus.ServiceMonitorSpec{
+		Selector: metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				workflowproj.LabelWorkflow:          workflow.Name,
+				workflowproj.LabelWorkflowNamespace: workflow.Namespace,
+			},
+		},
+		Endpoints: []prometheus.Endpoint{
+			{
+				Port:     knativeServicePortName,
+				Path:     metricsServicePortPath,
+				Interval: "10s",
+			},
+		},
+	}
+	serviceMonitor := &prometheus.ServiceMonitor{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workflow.Name,
+			Namespace: workflow.Namespace,
+			Labels:    lbl,
+		},
+		Spec: *spec,
+	}
+	return serviceMonitor, nil
 }

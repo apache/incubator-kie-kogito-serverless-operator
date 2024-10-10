@@ -123,8 +123,7 @@ test: manifests generate envtest test-api ## Run tests.
 	@$(MAKE) vet
 	@$(MAKE) fmt
 	@echo "🔍 Running controller tests..."
-	@KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" \
-	go test $(shell go list ./... | grep -v /test/) -coverprofile cover.out > /dev/null 2>&1
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $(shell go list ./... | grep -v /test/) -coverprofile cover.out
 	@echo "✅  Tests completed successfully. Coverage report generated: cover.out."
 
 .PHONY: test-api
@@ -264,6 +263,8 @@ GOLANGCI_LINT_VERSION ?= v1.57.2
 KIND_VERSION ?= v0.20.0
 KNATIVE_VERSION ?= v1.13.2
 TIMEOUT_SECS ?= 180s
+PROMETHEUS_VERSION ?= v0.70.0
+GRAFANA_VERSION ?= v5.13.0
 
 KNATIVE_SERVING_PREFIX ?= "https://github.com/knative/serving/releases/download/knative-$(KNATIVE_VERSION)"
 KNATIVE_EVENTING_PREFIX ?= "https://github.com/knative/eventing/releases/download/knative-$(KNATIVE_VERSION)"
@@ -450,6 +451,18 @@ deploy-knative:
 	kubectl wait  --for=condition=Ready=True KnativeServing/knative-serving -n knative-serving --timeout=$(TIMEOUT_SECS)
 	kubectl wait  --for=condition=Ready=True KnativeEventing/knative-eventing -n knative-eventing --timeout=$(TIMEOUT_SECS)
 	
+.PHONY: deploy-prometheus
+deploy-prometheus: create-cluster
+	kubectl create -f https://github.com/prometheus-operator/prometheus-operator/releases/download/$(PROMETHEUS_VERSION)/bundle.yaml
+	kubectl wait  --for=condition=Available=True deploy/prometheus-operator -n default --timeout=$(TIMEOUT_SECS)
+	kubectl apply -f ./test/testdata/prometheus.yaml
+	kubectl wait  --for=condition=Available=True prometheus/prometheus -n default --timeout=$(TIMEOUT_SECS)
+
+.PHONY: deploy-grafana
+deploy-grafana: create-cluster
+	kubectl create -f https://github.com/grafana/grafana-operator/releases/download/$(GRAFANA_VERSION)/kustomize-cluster_scoped.yaml
+	kubectl wait  --for=condition=Available=True deploy/grafana-operator-controller-manager -n grafana --timeout=$(TIMEOUT_SECS)
+
 .PHONY: delete-cluster
 delete-cluster: install-kind
 	kind delete cluster && $(BUILDER) rm -f kind-registry

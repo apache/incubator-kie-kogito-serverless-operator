@@ -63,6 +63,10 @@ type SonataFlowPlatformSpec struct {
 	// These properties MAY NOT be propagated to a SonataFlowClusterPlatform since PropertyVarSource can only refer local context sources.
 	// +optional
 	Properties *PropertyPlatformSpec `json:"properties,omitempty"`
+	// MonitoringEnabled indicates whether prometheus service monitors should be created for metrics scraping
+	// +optional
+	// +default: false
+	MonitoringEnabled bool `json:"monitoringEnabled"`
 }
 
 // PlatformEventingSpec specifies the Knative Eventing integration details in the platform.

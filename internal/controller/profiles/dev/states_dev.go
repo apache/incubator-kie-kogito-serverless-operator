@@ -111,6 +111,14 @@ func (e *ensureRunningWorkflowState) Do(ctx context.Context, workflow *operatora
 	}
 	objs = append(objs, service)
 
+	if pl.Spec.MonitoringEnabled {
+		serviceMonitor, _, err := e.ensurers.serviceMonitor.Ensure(ctx, workflow)
+		if err != nil {
+			return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, objs, err
+		}
+		objs = append(objs, serviceMonitor)
+	}
+
 	route, _, err := e.ensurers.network.Ensure(ctx, workflow)
 	if err != nil {
 		return ctrl.Result{RequeueAfter: constants.RequeueAfterFailure}, objs, err

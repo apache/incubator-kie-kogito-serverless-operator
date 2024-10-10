@@ -154,12 +154,19 @@ func (d *DeploymentReconciler) ensureObjects(ctx context.Context, workflow *oper
 		return reconcile.Result{}, nil, err
 	}
 
+	objs := []client.Object{deployment, managedPropsCM, service}
 	eventingObjs, err := common.NewKnativeEventingHandler(d.StateSupport, pl).Ensure(ctx, workflow)
 	if err != nil {
 		return reconcile.Result{}, nil, err
 	}
-
-	objs := []client.Object{deployment, managedPropsCM, service}
+	objs = append(objs, eventingObjs...)
+	if pl.Spec.MonitoringEnabled {
+		serviceMonitor, _, err := d.ensurers.ServiceMonitorByDeploymentModel(workflow).Ensure(ctx, workflow)
+		if err != nil {
+			return reconcile.Result{}, nil, err
+		}
+		objs = append(objs, serviceMonitor)
+	}
 	if deploymentOp == controllerutil.OperationResultCreated {
 		workflow.Status.Manager().MarkFalse(api.RunningConditionType, api.WaitingForDeploymentReason, "")
 		if _, err := d.PerformStatusUpdate(ctx, workflow); err != nil {
@@ -167,8 +174,6 @@ func (d *DeploymentReconciler) ensureObjects(ctx context.Context, workflow *oper
 		}
 		return reconcile.Result{RequeueAfter: constants.RequeueAfterFollowDeployment, Requeue: true}, objs, nil
 	}
-	objs = append(objs, eventingObjs...)
-
 	return reconcile.Result{}, objs, nil
 }
 

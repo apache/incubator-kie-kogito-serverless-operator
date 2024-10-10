@@ -503,6 +503,10 @@ spec:
                         type: string
                     type: object
                 type: object
+              monitoringEnabled:
+                description: MonitoringEnabled indicates whether prometheus service
+                  monitors should be created for metrics scraping
+                type: boolean
               persistence:
                 description: |-
                   Persistence defines the platform persistence configuration. When this field is set,
