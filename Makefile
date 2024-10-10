@@ -449,7 +449,7 @@ deploy-knative:
 	kubectl apply -f ./test/testdata/knative_serving_eventing.yaml
 	kubectl wait  --for=condition=Ready=True KnativeServing/knative-serving -n knative-serving --timeout=$(TIMEOUT_SECS)
 	kubectl wait  --for=condition=Ready=True KnativeEventing/knative-eventing -n knative-eventing --timeout=$(TIMEOUT_SECS)
-	
+
 .PHONY: delete-cluster
 delete-cluster: install-kind
 	kind delete cluster && $(BUILDER) rm -f kind-registry
