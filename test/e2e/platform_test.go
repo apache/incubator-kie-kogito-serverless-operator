@@ -350,7 +350,7 @@ var _ = Describe("Platform Use Cases :: ", Label("platform"), Ordered, func() {
 		Expect(verifyTrigger(triggers, prebuiltWorkflows.CallBack.Name, "", brokerNamespace, brokerName)).NotTo(HaveOccurred())
 		Expect(verifySinkBinding(fmt.Sprintf("%s-sb", prebuiltWorkflows.CallBack.Name), targetNamespace, brokerName)).NotTo(HaveOccurred())
 	},
-		Entry("and with broker and platform in the same namespace", test.GetPathFromE2EDirectory("platform", "services", "gitops", "knative", "platform-level-broker"), false),
+		Entry("and with broker and platform in the same namespace", test.GetPathFromE2EDirectory("platform", "services", "gitops", "knative", "service-level-broker"), false),
 		Entry("and with broker and platform in a separate namespace", test.GetPathFromE2EDirectory("platform", "services", "gitops", "knative", "platform-level-broker"), true),
 	)
 })
