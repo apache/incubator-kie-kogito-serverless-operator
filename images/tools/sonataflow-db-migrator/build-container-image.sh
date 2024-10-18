@@ -33,7 +33,7 @@ cleanup () {
 # Script variables with default values. These values will be updated by hack/bump-version.sh, don't change it.
 OPERATOR_VERSION=999.0.0 # comes from version.go
 DDL_VERSION=10.0.999-SNAPSHOT
-DDL_FILE=kogito-ddl-10.0.999-20240806.011718-23-db-scripts.zip
+DDL_FILE=kogito-ddl-10.0.999-20241002.021447-65-db-scripts.zip
 DDL_BASE_URL=https://repository.apache.org/content/groups/snapshots/org/kie/kogito/kogito-ddl
 CEKIT_BUILDER=podman
 

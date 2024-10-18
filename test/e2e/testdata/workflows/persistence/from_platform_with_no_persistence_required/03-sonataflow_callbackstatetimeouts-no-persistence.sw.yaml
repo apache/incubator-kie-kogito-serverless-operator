@@ -25,7 +25,7 @@ metadata:
     sonataflow.org/profile: gitops
 spec:
   persistence: {
-    migrateDBOnStartUp: true
+    dbMigrationStrategy: service
   }
   podTemplate:
     replicas: 0
