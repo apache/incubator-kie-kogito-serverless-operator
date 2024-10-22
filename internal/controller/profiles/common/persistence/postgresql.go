@@ -34,7 +34,7 @@ const (
 	defaultDatabaseName = "sonataflow"
 )
 
-// ConfigurePostgreSQLEnv returns the common env variables required for the DataIndex or JobsService when postresql persistence is used.
+// ConfigurePostgreSQLEnv returns the common env variables required for the DataIndex or JobsService when postgresql persistence is used.
 func ConfigurePostgreSQLEnv(postgresql *operatorapi.PersistencePostgreSQL, databaseSchema, databaseNamespace string) []corev1.EnvVar {
 	dataSourcePort := constants.DefaultPostgreSQLPort
 	databaseName := defaultDatabaseName

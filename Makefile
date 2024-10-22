@@ -124,7 +124,7 @@ test: manifests generate envtest test-api ## Run tests.
 	@$(MAKE) fmt
 	@echo "🔍 Running controller tests..."
 	@KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" \
-	go test $(shell go list ./... | grep -v /test/) -coverprofile cover.out > /dev/null 2>&1
+	go test $(shell go list ./... | grep -v /test/) -coverprofile cover.out
 	@echo "✅  Tests completed successfully. Coverage report generated: cover.out."
 
 .PHONY: test-api

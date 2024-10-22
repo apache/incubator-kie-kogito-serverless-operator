@@ -27602,6 +27602,7 @@ rules:
   - secrets
   - events
   - deployments
+  - statefulsets
   - nodes
   verbs:
   - create
@@ -27626,6 +27627,7 @@ rules:
   - secrets
   - events
   - deployments
+  - statefulsets
   - nodes
   verbs:
   - create
