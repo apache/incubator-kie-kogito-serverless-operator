@@ -77,6 +77,12 @@ const (
 
 	DefaultDatabaseName   string = "sonataflow"
 	DefaultPostgreSQLPort int    = 5432
+
+	ServiceProbeInitialDelaySeconds int = 45
+	ServiceProbeTimeoutSeconds      int = 10
+	ServiceProbePeriodSeconds       int = 30
+	ServiceProbeSuccessThreshold    int = 1
+	ServiceProbeFailureThreshold    int = 4
 )
 
 type PersistenceType string
@@ -89,3 +95,10 @@ const (
 func (p PersistenceType) String() string {
 	return string(p)
 }
+
+type DeploymentType string
+
+const (
+	Deployment  DeploymentType = "Deployment"
+	StatefulSet DeploymentType = "StatefulSet"
+)

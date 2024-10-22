@@ -85,66 +85,29 @@ func (action *serviceAction) Handle(ctx context.Context, platform *operatorapi.S
 }
 
 func createOrUpdateServiceComponents(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, psh services.PlatformServiceHandler) error {
-	if err := createOrUpdateConfigMap(ctx, client, platform, psh); err != nil {
+	var err error
+	if err = createOrUpdateConfigMap(ctx, client, platform, psh); err != nil {
 		return err
 	}
-	if err := createOrUpdateDeployment(ctx, client, platform, psh); err != nil {
+	if psh.GetDeploymentType() == constants.Deployment {
+		err = createOrUpdateDeployment(ctx, client, platform, psh)
+	} else {
+		err = createOrUpdateStatefulSet(ctx, client, platform, psh)
+	}
+	if err != nil {
 		return err
 	}
-	if err := createOrUpdateService(ctx, client, platform, psh); err != nil {
+	if err = createOrUpdateService(ctx, client, platform, psh); err != nil {
 		return err
 	}
 	return createOrUpdateKnativeResources(ctx, client, platform, psh)
 }
 
 func createOrUpdateDeployment(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, psh services.PlatformServiceHandler) error {
-	readyProbe := &corev1.Probe{
-		ProbeHandler: corev1.ProbeHandler{
-			HTTPGet: &corev1.HTTPGetAction{
-				Path:   constants.QuarkusHealthPathReady,
-				Port:   variables.DefaultHTTPWorkflowPortIntStr,
-				Scheme: corev1.URISchemeHTTP,
-			},
-		},
-		InitialDelaySeconds: int32(45),
-		TimeoutSeconds:      int32(10),
-		PeriodSeconds:       int32(30),
-		SuccessThreshold:    int32(1),
-		FailureThreshold:    int32(4),
-	}
-	liveProbe := readyProbe.DeepCopy()
-	liveProbe.ProbeHandler.HTTPGet.Path = constants.QuarkusHealthPathLive
-	imageTag := psh.GetServiceImageName(constants.PersistenceTypeEphemeral)
-	serviceContainer := &corev1.Container{
-		Image:           imageTag,
-		ImagePullPolicy: kubeutil.GetImagePullPolicy(imageTag),
-		Env:             psh.GetEnvironmentVariables(),
-		Resources:       psh.GetPodResourceRequirements(),
-		ReadinessProbe:  readyProbe,
-		LivenessProbe:   liveProbe,
-		Ports: []corev1.ContainerPort{
-			{
-				Name:          utils.DefaultServicePortName,
-				ContainerPort: int32(constants.DefaultHTTPWorkflowPortInt),
-				Protocol:      corev1.ProtocolTCP,
-			},
-		},
-		VolumeMounts: []corev1.VolumeMount{
-			{
-				Name:      "application-config",
-				MountPath: "/home/kogito/config",
-			},
-		},
-	}
-	serviceContainer = psh.ConfigurePersistence(serviceContainer)
-	serviceContainer, err := psh.MergeContainerSpec(serviceContainer)
+	serviceContainer, err := createServiceContainer(platform, psh)
 	if err != nil {
 		return err
 	}
-
-	// immutable
-	serviceContainer.Name = psh.GetContainerName()
-
 	replicas := psh.GetReplicaCount()
 	kSinkInjected, err := psh.CheckKSinkInjected()
 	if err != nil {
@@ -196,7 +159,7 @@ func createOrUpdateDeployment(ctx context.Context, client client.Client, platfor
 		return err
 	}
 
-	// Create or Update the deployment
+	// Create or Update the Deployment
 	if op, err := controllerutil.CreateOrUpdate(ctx, client, serviceDeployment, func() error {
 		knative.SaveKnativeData(&serviceDeploymentSpec.Template.Spec, &serviceDeployment.Spec.Template.Spec)
 		err := mergo.Merge(&(serviceDeployment.Spec), serviceDeploymentSpec, mergo.WithOverride)
@@ -210,6 +173,148 @@ func createOrUpdateDeployment(ctx context.Context, client client.Client, platfor
 		klog.V(log.I).InfoS("Deployment successfully reconciled", "operation", op)
 	}
 	return nil
+}
+
+func createOrUpdateStatefulSet(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, psh services.PlatformServiceHandler) error {
+	serviceContainer, err := createServiceContainer(platform, psh)
+	if err != nil {
+		return err
+	}
+	replicas := psh.GetReplicaCount()
+	kSinkInjected, err := psh.CheckKSinkInjected()
+	if err != nil {
+		return nil
+	}
+	if !kSinkInjected {
+		replicas = 0 // Wait for K_SINK injection
+	}
+	lbl, selectorLbl := getLabels(platform, psh)
+	serviceStatefulSetSpec := appsv1.StatefulSetSpec{
+		Selector: &metav1.LabelSelector{
+			MatchLabels: selectorLbl,
+		},
+		Replicas: &replicas,
+		Template: corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: lbl,
+			},
+			Spec: corev1.PodSpec{
+				Volumes: []corev1.Volume{
+					{
+						Name: "application-config",
+						VolumeSource: corev1.VolumeSource{
+							ConfigMap: &corev1.ConfigMapVolumeSource{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: psh.GetServiceCmName(),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	serviceStatefulSetSpec.Template.Spec, err = psh.MergePodSpec(serviceStatefulSetSpec.Template.Spec)
+	if err != nil {
+		return err
+	}
+	kubeutil.AddOrReplaceContainer(serviceContainer.Name, *serviceContainer, &serviceStatefulSetSpec.Template.Spec)
+
+	serviceStatefulSet := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: platform.Namespace,
+			Name:      psh.GetServiceName(),
+			Labels:    lbl,
+		}}
+	if err := controllerutil.SetControllerReference(platform, serviceStatefulSet, client.Scheme()); err != nil {
+		return err
+	}
+
+	// Create or Update the StatefulSet
+	if op, err := controllerutil.CreateOrUpdate(ctx, client, serviceStatefulSet, func() error {
+		knative.SaveKnativeData(&serviceStatefulSetSpec.Template.Spec, &serviceStatefulSet.Spec.Template.Spec)
+		err := mergo.Merge(&(serviceStatefulSet.Spec), serviceStatefulSetSpec, mergo.WithOverride)
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return err
+	} else {
+		klog.V(log.I).InfoS("StatefulSet successfully reconciled", "operation", op)
+	}
+	return nil
+}
+
+func createReadinessProbe() *corev1.Probe {
+	return &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   constants.QuarkusHealthPathReady,
+				Port:   variables.DefaultHTTPWorkflowPortIntStr,
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+		InitialDelaySeconds: int32(constants.ServiceProbeInitialDelaySeconds),
+		TimeoutSeconds:      int32(constants.ServiceProbeTimeoutSeconds),
+		PeriodSeconds:       int32(constants.ServiceProbePeriodSeconds),
+		SuccessThreshold:    int32(constants.ServiceProbeSuccessThreshold),
+		FailureThreshold:    int32(constants.ServiceProbeFailureThreshold),
+	}
+}
+
+func createLivenessProbe() *corev1.Probe {
+	return &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   constants.QuarkusHealthPathLive,
+				Port:   variables.DefaultHTTPWorkflowPortIntStr,
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+		InitialDelaySeconds: int32(constants.ServiceProbeInitialDelaySeconds),
+		TimeoutSeconds:      int32(constants.ServiceProbeTimeoutSeconds),
+		PeriodSeconds:       int32(constants.ServiceProbePeriodSeconds),
+		SuccessThreshold:    int32(constants.ServiceProbeSuccessThreshold),
+		FailureThreshold:    int32(constants.ServiceProbeFailureThreshold),
+	}
+}
+
+func createServiceContainer(platform *operatorapi.SonataFlowPlatform, psh services.PlatformServiceHandler) (*corev1.Container, error) {
+	readyProbe := createReadinessProbe()
+	liveProbe := createLivenessProbe()
+	imageTag := psh.GetServiceImageName(constants.PersistenceTypeEphemeral)
+	serviceContainer := &corev1.Container{
+		Image:           imageTag,
+		ImagePullPolicy: kubeutil.GetImagePullPolicy(imageTag),
+		Env:             psh.GetEnvironmentVariables(),
+		Resources:       psh.GetPodResourceRequirements(),
+		ReadinessProbe:  readyProbe,
+		LivenessProbe:   liveProbe,
+		Ports: []corev1.ContainerPort{
+			{
+				Name:          utils.DefaultServicePortName,
+				ContainerPort: int32(constants.DefaultHTTPWorkflowPortInt),
+				Protocol:      corev1.ProtocolTCP,
+			},
+		},
+		VolumeMounts: []corev1.VolumeMount{
+			{
+				Name:      "application-config",
+				MountPath: "/home/kogito/config",
+			},
+		},
+	}
+	serviceContainer = psh.ConfigurePersistence(serviceContainer)
+	serviceContainer, err := psh.MergeContainerSpec(serviceContainer)
+	if err != nil {
+		return nil, err
+	}
+
+	// immutable
+	serviceContainer.Name = psh.GetContainerName()
+	return serviceContainer, nil
 }
 
 func createOrUpdateService(ctx context.Context, client client.Client, platform *operatorapi.SonataFlowPlatform, psh services.PlatformServiceHandler) error {

@@ -69,6 +69,8 @@ type PlatformServiceHandler interface {
 	GetPodResourceRequirements() corev1.ResourceRequirements
 	// GetReplicaCount Returns the default pod replica count for the given service
 	GetReplicaCount() int32
+	// GetDeploymentType Returns the deployment type required for the service.
+	GetDeploymentType() constants.DeploymentType
 
 	// MergeContainerSpec performs a merge with override using the containerSpec argument and the expected values based on the service's pod template specifications. The returning
 	// object is the merged result
@@ -254,6 +256,10 @@ func (d *DataIndexHandler) GetReplicaCount() int32 {
 	return 1
 }
 
+func (d *DataIndexHandler) GetDeploymentType() constants.DeploymentType {
+	return constants.Deployment
+}
+
 func (d *DataIndexHandler) GetServiceCmName() string {
 	return fmt.Sprintf("%s-props", d.GetServiceName())
 }
@@ -383,6 +389,10 @@ func (j *JobServiceHandler) GetPodResourceRequirements() corev1.ResourceRequirem
 
 func (j *JobServiceHandler) GetReplicaCount() int32 {
 	return 1
+}
+
+func (j *JobServiceHandler) GetDeploymentType() constants.DeploymentType {
+	return constants.StatefulSet
 }
 
 func (j JobServiceHandler) MergeContainerSpec(containerSpec *corev1.Container) (*corev1.Container, error) {
@@ -705,7 +715,7 @@ func (j *JobServiceHandler) GenerateKnativeResources(platform *operatorapi.Sonat
 						Name:       j.GetServiceName(),
 						Namespace:  platform.Namespace,
 						APIVersion: "apps/v1",
-						Kind:       "Deployment",
+						Kind:       string(j.GetDeploymentType()),
 					},
 				},
 			},
