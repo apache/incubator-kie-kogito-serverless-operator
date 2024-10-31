@@ -22,6 +22,7 @@ package preview
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sort"
 
 	corev1 "k8s.io/api/core/v1"
@@ -40,7 +41,6 @@ import (
 	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/profiles/common"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/profiles/common/constants"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/log"
-	kubeutil "github.com/apache/incubator-kie-kogito-serverless-operator/utils/kubernetes"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/workflowproj"
 )
 
@@ -235,13 +235,13 @@ func (h *deployWithBuildWorkflowState) PostReconcile(ctx context.Context, workfl
 	return h.cleanupOutdatedRevisions(ctx, workflow)
 }
 
-// isWorkflowChanged marks the workflow status as unknown to require a new build reconciliation
+// isWorkflowChanged checks whether the contents of .spec.flow of the given workflow has changed.
 func (h *deployWithBuildWorkflowState) isWorkflowChanged(workflow *operatorapi.SonataFlow) bool {
-	generation := kubeutil.GetLastGeneration(workflow.Namespace, workflow.Name, h.C, context.TODO())
-	if generation > workflow.Status.ObservedGeneration {
-		return true
+	serverlessWorkflow := &operatorapi.SonataFlow{}
+	if err := h.C.Get(context.TODO(), client.ObjectKeyFromObject(workflow), serverlessWorkflow); err != nil {
+		klog.V(log.E).ErrorS(err, "unable to retrieve SonataFlow definition")
 	}
-	return false
+	return !reflect.DeepEqual(&serverlessWorkflow.Spec.Flow, &workflow.Spec.Flow)
 }
 
 func (h *deployWithBuildWorkflowState) cleanupOutdatedRevisions(ctx context.Context, workflow *operatorapi.SonataFlow) error {
