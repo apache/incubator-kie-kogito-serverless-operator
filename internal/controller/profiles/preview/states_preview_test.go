@@ -20,6 +20,8 @@ package preview
 import (
 	"testing"
 
+	"github.com/apache/incubator-kie-kogito-serverless-operator/utils"
+
 	"github.com/apache/incubator-kie-kogito-serverless-operator/internal/controller/profiles/common"
 	"github.com/apache/incubator-kie-kogito-serverless-operator/test"
 	"github.com/serverlessworkflow/sdk-go/v2/model"
@@ -29,11 +31,15 @@ import (
 func Test_deployWithBuildWorkflowState_isWorkflowChanged(t *testing.T) {
 	workflow1 := test.GetBaseSonataFlow(t.Name())
 	workflow2 := test.GetBaseSonataFlow(t.Name())
+	workflow1.Status.FlowCRC, _ = utils.Crc32Checksum(workflow1.Spec.Flow)
+	workflow2.Status.FlowCRC, _ = utils.Crc32Checksum(workflow2.Spec.Flow)
 	deployWithBuildWorkflowState := &deployWithBuildWorkflowState{
 		StateSupport: &common.StateSupport{C: test.NewSonataFlowClientBuilder().WithRuntimeObjects(workflow1).Build()},
 	}
 
-	assert.False(t, deployWithBuildWorkflowState.isWorkflowChanged(workflow2))
+	hasChanged, err := deployWithBuildWorkflowState.isWorkflowChanged(workflow2)
+	assert.NoError(t, err)
+	assert.False(t, hasChanged)
 
 	// change workflow2
 	workflow2.Spec.Flow.Metadata = model.Metadata{
@@ -42,5 +48,7 @@ func Test_deployWithBuildWorkflowState_isWorkflowChanged(t *testing.T) {
 		},
 	}
 
-	assert.True(t, deployWithBuildWorkflowState.isWorkflowChanged(workflow2))
+	hasChanged, err = deployWithBuildWorkflowState.isWorkflowChanged(workflow2)
+	assert.NoError(t, err)
+	assert.True(t, hasChanged)
 }
