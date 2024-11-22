@@ -29,6 +29,7 @@ Dockerfile
 /target/
 /__debug*
 database/
+container-builder/bin/
 
 database/index.db
 e2e-test-report*.xml
